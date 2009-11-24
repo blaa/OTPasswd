@@ -11,5 +11,5 @@ enum PRINT_LEVEL {
 extern int print_init(int log_level, int use_stdout, int use_syslog, const char *log_file);
 
 extern int print(int level, const char *fmt, ...);
-extern int print_perror(int level, const char *intro);
+extern int print_perror(int level, const char *fmt, ...);
 #endif

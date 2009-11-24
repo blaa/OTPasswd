@@ -59,10 +59,10 @@ static char *_state_file()
 
 /* Check if file exists, and if 
  * it does - enforce it's permissions */
-static int _state_file_permissions(const char *state_file)
+static int _state_file_permissions(const state *s)
 {
 	struct stat st;
-	if (stat(state_file, &st) != 0) {
+	if (stat(s->filename, &st) != 0) {
 		/* Does not exists */
 		return 1;
 	}
@@ -70,33 +70,34 @@ static int _state_file_permissions(const char *state_file)
 	/* It should be a file or a link to file */
 	if (!S_ISREG(st.st_mode)) {
 		/* Error, not a file */
-		print(PRINT_ERROR, "ERROR: %s is not a regular file\n", state_file);
+		print(PRINT_ERROR, "ERROR: %s is not a regular file\n", s->filename);
 		return 2;
 	}
 
-	if (chmod(state_file, S_IRUSR|S_IWUSR) != 0) {
-		print(PRINT_ERROR, "Unable to enforce " STATE_FILENAME " permissions");
+	if (chmod(s->filename, S_IRUSR|S_IWUSR) != 0) {
 		print_perror(PRINT_ERROR, "chmod");
-		return 1;
+		print(PRINT_ERROR, "Unable to enforce %s permissions", s->filename);
+		return 3;
 	}
 	return 0;
 }
 
 
-static int _state_lock(int *lock_fd) 
+static int _state_lock(state *s) 
 {
-        char *filename = _state_file();
         struct flock fl;
         int ret;
         int cnt;
+	int fd;
 
         fl.l_type = F_WRLCK;
         fl.l_whence = SEEK_SET;
         fl.l_start = fl.l_len = 0;
 
-        *lock_fd = open(filename, O_CREAT | O_WRONLY, S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP);
-	free(filename);
-        if (*lock_fd == -1) {
+        fd = open(s->filename, O_WRONLY, 0);
+
+        if (fd == -1) {
+		print_perror(PRINT_NOTICE, "Unable to lock file");
                 return 1; /* Unable to create file, therefore unable to obtain lock */
         } /* FIXME: DO NOT CREATE */
 
@@ -112,7 +113,7 @@ static int _state_lock(int *lock_fd)
 	 *
 	 */
         for (cnt = 0; cnt < 20; cnt++) {
-                ret = fcntl(*lock_fd, F_SETLK, &fl);
+                ret = fcntl(fd, F_SETLK, &fl);
                 if (ret == 0)
                         break;
                 usleep(700);
@@ -120,31 +121,40 @@ static int _state_lock(int *lock_fd)
 
         if (ret != 0) {
                 /* Unable to lock for 10 times */
-                close(*lock_fd), *lock_fd = -1;
+                close(fd);
+		print(PRINT_NOTICE, "Unable to lock opened state file\n");
                 return 1;
         }
+
+	s->lock_fd = fd;
+	print(PRINT_NOTICE, "Got lock on state file\n");
 
         return 0; /* Got lock */
 }
 
-static int _state_unlock(int *lock_fd) 
+static int _state_unlock(state *s) 
 {
         struct flock fl;
 
-        if (lock_fd < 0)
+        if (s->lock_fd < 0) {
+		print(PRINT_NOTICE, "No lock to release!\n");
                 return 1; /* No lock to release */
+	}
 
         fl.l_type = F_UNLCK;
         fl.l_whence = SEEK_SET;
         fl.l_start = fl.l_len = 0;
 
-        if (fcntl(*lock_fd, F_SETLK, &fl) != 0) {
+        int ret = fcntl(s->lock_fd, F_SETLK, &fl);
+
+	close(s->lock_fd);
+	s->lock_fd = -1;
+
+	if (ret != 0) {
+		print(PRINT_NOTICE, "Strange error while releasing lock\n");
                 /* Strange error while releasing the lock */
-                close(*lock_fd), *lock_fd = -1;
                 return 2;
         }
-
-        close(*lock_fd), *lock_fd = -1;
 
         return 0;
 }
@@ -157,8 +167,9 @@ static int _state_unlock(int *lock_fd)
 /* Load state file.
  * if lock = 1 then the lock persists 
  * until state_store is called. Otherwise
- * we lock file only for reading */
-int state_load(state *s, int lock)
+ * we lock file only for reading 
+ */
+int state_load(state *s)
 {
 	if (s->filename == NULL) {
 		print(PRINT_CRITICAL, "State data not initialized?\n");
@@ -170,28 +181,196 @@ int state_load(state *s, int lock)
 	 * Read data
 	 * Unlock / leave locked?
 	 */
+	if (s->lock_fd <= 0) {
+		print(PRINT_NOTICE, "State file not locked while reading from it\n");
+	}
 
+	int ret;
+	FILE *f;
+
+	if (_state_file_permissions(s) != 0) {
+		print(PRINT_NOTICE, "Unable to load state file.\n");
+		return 1;
+	}
+
+	f = fopen(s->filename, "r");
+	if (!f) {
+		print_perror(PRINT_ERROR, "Unable to open %s for reading", s->filename);
+		return 1;
+	}
+
+	ret = mpz_inp_str(s->sequence_key, f, STATE_BASE);
+	if (ret == 0) {
+		print_perror(PRINT_ERROR, "Error while reading sequence key from %s", s->filename);
+		goto error;
+	}
+
+	ret = mpz_inp_str(s->counter, f, STATE_BASE);
+	if (ret == 0) {
+		print_perror(PRINT_ERROR, "Error while reading counter from %s", s->filename);
+		goto error;
+	}
+
+	ret = mpz_inp_str(s->furthest_printed, f, STATE_BASE);
+	if (ret == 0) {
+		print_perror(PRINT_ERROR, "Error while reading number of last printed passcode from %s", s->filename);
+		goto error;
+	}
+
+	ret = fscanf(f, "%u\n", &s->passcode_length);
+	if (ret != 1) {
+		print(PRINT_ERROR, "Error while reading passcode length from %s\n", s->filename);
+		goto error;
+	}
+
+	ret = fscanf(f, "%u\n", &s->flags);
+	if (ret != 1) {
+		print(PRINT_ERROR, "Error while reading flags from %s\n", s->filename);
+		goto error;
+	}
+
+	fclose(f);
+	return 0;
+
+error:
+	fclose(f);
 	return 1;
 }
 
 int state_store(const state *s)
 {
+	int ret;
+	FILE *f;
+
+	if (s->filename == NULL) {
+		print(PRINT_CRITICAL, "State data not initialized?\n");
+		return 1;
+	}
+
+	if (s->lock_fd <= 0) {
+		print(PRINT_NOTICE, "State file not locked while writting to it\n");
+	}
+
+	f = fopen(s->filename, "w");
+	if (!f) {
+		print_perror(PRINT_ERROR, "Unable to open %s for writting", s->filename);
+		return 1;
+	}
+	
+	/* Write using ascii safe approach */
+
+	ret = mpz_out_str(f, STATE_BASE, s->sequence_key);
+	if (ret == 0) {
+		print(PRINT_ERROR, "Error while saving sequence key\n");
+		goto error;
+	}
+
+	if (fputc('\n', f) == EOF) {
+		print(PRINT_ERROR, "Error while writting to %s\n", s->filename);
+		goto error;
+	}
+
+	ret = mpz_out_str(f, STATE_BASE, s->counter);
+	if (ret == 0) {
+		print(PRINT_ERROR, "Error while saving counter\n");
+		goto error;
+	}
+
+	if (fputc('\n', f) == EOF) {
+		print(PRINT_ERROR, "Error while writting to %s\n", s->filename);
+		goto error;
+	}
+
+	ret = mpz_out_str(f, STATE_BASE, s->furthest_printed);
+	if (ret == 0) {
+		print(PRINT_ERROR, "Error while saving number of last printed passcode\n");
+		goto error;
+	}
+
+	ret = fprintf(f, "\n%u\n", s->passcode_length);
+	if (ret <= 0) {
+		print(PRINT_ERROR, "Error while writting passcode length to %s\n", s->filename);
+		goto error;
+	}
+
+	ret = fprintf(f, "%u\n", s->flags);
+	if (ret <= 0) {
+		print(PRINT_ERROR, "Error while writting flags to %s\n", s->filename);
+		goto error;
+	}
+
+	/* lock? */
+	print(PRINT_NOTICE, "State file written\n");
+	fclose(f);
+	return 0;
+
+error:
+	fclose(f);
 	return 1;
 }
 
 
+/* High level function used during authentication 
+ * 1. Lock file
+ * 2. Open it
+ * 3. Increment counter
+ * 4. Save it and unlock 
+ */
+int state_load_inc_store(state *s)
+{
+	int ret = 1;
+
+	if (_state_lock(s) != 0)
+		return 1;
+
+	if (state_load(s) != 0)
+		goto cleanup1;
+
+	/* Store current counter */
+	mpz_t tmp;
+	mpz_init(tmp);
+	mpz_set(tmp, s->counter);
+
+	/* Increment and save state */
+	state_inc(s);
+
+	if (state_store(s) != 0) {
+		goto cleanup2;
+	}
+
+	/* Restore current counter */
+	mpz_set(s->counter, tmp);
+	
+cleanup2:
+	num_dispose(tmp);
+	
+cleanup1:
+	_state_unlock(s);
+	return ret;
+}
 
 /******************************************
  * Functions for managing state information
  ******************************************/
+
+/* Increment counter */
+void state_inc(state *s)
+{
+	mpz_add_ui(s->counter, s->counter, 1);
+}
 
 /* Initializes state structure. Must be called first */
 int state_init(state *s)
 {
 	mpz_init(s->counter);
 	mpz_init(s->sequence_key);
+	mpz_init(s->furthest_printed);
+
+	s->passcode_length = 4;
+	s->flags = 0;
+
 	s->fd = -1;
-	s->locked = 0;
+	s->lock_fd = -1;
 	s->filename = _state_file();
 	if (s->filename == NULL) {
 		print(PRINT_CRITICAL, "Unable to locate user home directory\n");
@@ -205,19 +384,22 @@ void state_fini(state *s)
 {
 	num_dispose(s->counter);
 	num_dispose(s->sequence_key);
+	num_dispose(s->furthest_printed);
 	free(s->filename);
 }
 
 
-void state_key_generate(state *s)
+int state_key_generate(state *s)
 {
 	mpz_set_d(s->counter, 1);
 
 	unsigned char tmp[32] = {0x00};
 	tmp[3] = 0xAB;
+
 //	assert( crypto_rng(tmp, 32, 0) == 0 ); /* TODO: Change to secure */
 
 	num_from_bin(s->sequence_key, tmp, 32);
+	return 0;
 }
 
 void state_debug(const state *s)
@@ -226,4 +408,52 @@ void state_debug(const state *s)
 	num_print(s->sequence_key, 16);
 	printf("Counter: ");
 	num_print(s->counter, 16);
+}
+
+
+
+
+
+void state_testcase(void)
+{
+	state s1, s2;
+	int failed = 0;
+	int test = 0;
+
+	if (state_init(&s1) != 0)
+		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
+	test++; if (state_init(&s2) != 0)
+		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
+
+	test++; if (state_key_generate(&s1) != 0)
+		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
+	mpz_set_ui(s1.counter, 321323211UL);
+
+	test++; if (state_store(&s1) != 0)
+		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
+
+	test++; if (state_load(&s2) != 0)
+		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
+
+	/* Compare */
+	test++; if (mpz_cmp(s1.sequence_key, s2.sequence_key) != 0)
+		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
+
+	test++; if (mpz_cmp(s1.counter, s2.counter) != 0)
+		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
+
+	test++; if (mpz_cmp(s1.furthest_printed, s2.furthest_printed) != 0)
+		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
+
+	test++; if (s1.flags != s2.flags || s1.passcode_length != s2.passcode_length)
+		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
+
+
+	print(PRINT_NOTICE, "state_testcases %d FAILED %d PASSED\n", failed, test-failed);
+
+
+
+
+	state_fini(&s1);
+	state_fini(&s2);
 }

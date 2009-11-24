@@ -19,7 +19,9 @@ int main(int argc, char **argv)
 
 	state_init(&s);
 
-	state_debug(&s);
+	printf("STATE TESTCASE\n");
+	state_testcase();
+	printf("STATE TESTCASE END\n");
 
 	char passcode[6] = {0};
 	ppp_get_passcode(s.sequence_key, s.counter, passcode, 4);

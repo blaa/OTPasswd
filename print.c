@@ -63,7 +63,7 @@ int print(int level, const char *fmt, ...)
 	assert(ret > 0);
 	assert(ret < sizeof(buff));
 
-	if (ret > 0 || ret < sizeof(buff)) {
+	if (ret <= 0 || ret >= sizeof(buff)) {
 		return 2;
 	}
 
@@ -117,8 +117,27 @@ int print(int level, const char *fmt, ...)
 }
 
 
-int print_perror(int level, const char *intro)
+int print_perror(int level, const char *fmt, ...)
 {
+	char buff[512]; 
+
 	const char *error = strerror(errno);
-	return print(level, error);
+	int ret;
+
+	va_list ap;
+	va_start(ap, fmt);
+	ret = vsnprintf(buff, sizeof(buff), fmt, ap);
+	va_end(ap);
+
+	/* Ensure we log everything or fail at all */
+	assert(ret > 0);
+	assert(ret < sizeof(buff));
+
+	if (ret > 0 || ret < sizeof(buff)) {
+		return 2;
+	}
+
+
+	return print(level, "%s: %s\n", buff, error);
 }
+
