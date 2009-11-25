@@ -32,8 +32,6 @@ typedef struct {
 	unsigned int flags;
 
 
-
-
 	/* Not necessarily part of a user state, 
 	 * this is data used for storing/restoring
 	 * state information 

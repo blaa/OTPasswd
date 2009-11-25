@@ -65,3 +65,24 @@ clear:
 	num_dispose(cipher);
 	return ret;
 }
+
+/**********************
+ * Passcard management
+ **********************/
+
+void whatev(state *s)
+{
+	/* Passcode len  passcard size: pass capacity: (*10)
+	 * 2             A-K 11
+	 * 3             A-H 8
+	 * 4             A-G 7
+	 * 5,6           A-E 5
+	 * 7             A-D 4
+	 * 8,9,10        A-C 3
+	 * 11-16         A-B 2
+	 * 
+	 
+	 *
+	 *
+	 */
+}

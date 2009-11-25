@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <getopt.h>
 #include <gmp.h>
 
@@ -48,23 +49,24 @@ static void _usage(int argc, const char **argv)
 		"Actions:\n"
 		"  -k, --key    Generate a new key. Also resets all flags\n"
 		"               and prints first passcard immediately\n"
-		"  -s, --skip <num>\n"
+		"  -s, --skip <which>\n"
 		"               Skip to a card specified as an argument.\n"
-		"  -t, --text <num>\n"
+		"  -t, --text <which>\n"
 		"               Generate one ascii passcard of a specified number\n"
-		"  -l, --latex <num>\n"
+		"  -l, --latex <which>\n"
 		"               Generate a latex file with 6 passcards\n"
 		"               starting with the specified one\n"
-		"\n"
-		"  -p, --passcode <num | CRR[X] | current>\n"
+		"  -p, --passcode <which>\n"
 		"               Specify a single passcode identifier to print.\n"
-		"               Where:\n"
-		"               num     - is an absolute passcode number, alternatively:\n"
-		"               C       - column code (A through G)\n"
-		"               RR      - row code (1 through 10)\n"
-		"               X       - passcard number (CRRX example: B4[10])\n"
-		"               current - current passcode, which will be\n"
-		"                         used next time for the authentication.\n"
+		"\n"
+		"Where <which> might be one of:\n"
+		"  number      - specify a passcode with a decimal number\n"
+		"  [number]    - a passcard number\n"
+		"  CRR[number] - specify a passcode in passcard of a given number.\n"
+		"                C is its column (A through G), RR - row (1..10)\n"
+		"  current     - passcode used for next time authentication\n"
+		"  next        - first, not yet printed, passcard\n"
+		"\n"
 		"  -f, --flag <arg>\n"
 		"               Manages various user-selectable flags:\n"
 		"               skip              skip passcode on failure (default)\n"
@@ -93,6 +95,7 @@ static void _usage(int argc, const char **argv)
 struct cmds {
 	int log_level;
 	char action;
+	char *action_arg;
 
 	unsigned int flag_set_mask;
 	unsigned int flag_clear_mask;
@@ -100,6 +103,7 @@ struct cmds {
 } options = {
 	.log_level = PRINT_ERROR,
 	.action = 0,
+	.action_arg = NULL,
 
 
 	.flag_set_mask = 0,
@@ -202,6 +206,62 @@ cleanup:
 	state_fini(&s);	
 }
 
+void action_print(void)
+{
+	int ret;
+	/* This action requires created key */
+	state s;
+	if (state_init(&s) != 0) {
+		print(PRINT_ERROR, "Unable to initialize state\n");
+		exit(1);
+	}
+
+	/* Load our state */
+	if (state_load(&s) != 0) {
+		/* Unable to load state */
+		print(PRINT_ERROR, "Error while reading state, have you created a key with -k option?\n");
+		goto cleanup;
+	}
+
+
+	/* Parse argument, we need card number + passcode number */
+	mpz_t passcard_num;
+	mpz_t passcode_num;
+	mpz_init(passcard_num);
+	mpz_init(passcode_num);
+
+	if (strcasecmp(options.action_arg, "current")) {
+		
+	} else if (strcasecmp(options.action_arg, "next")) {
+		
+	} else if (isalpha(options.action_arg[0])) {
+		/* CRR[number] */
+		char column;
+		int row;
+		char number[200];
+		ret = sscanf("%c%d[%199s]", &column, &row, number);
+		column = toupper(column);
+		if (ret != 3 || (column < 'A' || column > 'J')) {
+			print(PRINT_ERROR, "Incorrect passcard specification\n");
+			goto cleanup1;
+		}
+
+	} else if (isdigit(options.action_arg[0])) {
+		/* number -- passcode number */
+	} else if (options.action_arg[0] == '[' 
+		   && options.action_arg[strlen(options.action_arg)-1] == ']') {
+		/* [number] -- passcard number */
+	}
+
+cleanup1:
+	num_dispose(passcode_num);
+	num_dispose(passcard_num);
+
+cleanup:
+	state_fini(&s);
+}
+
+
 void process_cmd_line(int argc, char **argv)
 {
 
@@ -230,6 +290,13 @@ void process_cmd_line(int argc, char **argv)
 
 		switch (c) {
 		case 'k':
+			if (options.action != 0) {
+				printf("Only one action can be specified on the command line\n");
+				exit(-1);
+			}
+			options.action = c;
+			break;
+
 		case 's':
 		case 't':
 		case 'l':
@@ -239,6 +306,7 @@ void process_cmd_line(int argc, char **argv)
 				exit(-1);
 			}
 			options.action = c;
+			options.action_arg = strdup(optarg);
 			/* Parse argument */
 			break;
 
@@ -299,11 +367,15 @@ void process_cmd_line(int argc, char **argv)
 	case 'f':
 		action_flags();
 		break;
+
+	case 's':
+	case 't':
+	case 'l':
+	case 'p':
+		action_print();
+		free(options.action_arg);
+		break;
 	}
-
-
-
-
 }
 
 

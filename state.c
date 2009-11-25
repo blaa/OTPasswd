@@ -491,9 +491,6 @@ void state_testcase(void)
 
 	print(PRINT_NOTICE, "state_testcases %d FAILED %d PASSED\n", failed, test-failed);
 
-
-
-
 	state_fini(&s1);
 	state_fini(&s2);
 }
