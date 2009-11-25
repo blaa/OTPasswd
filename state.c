@@ -7,11 +7,12 @@
 
 #include "print.h"
 #include "state.h"
+#include "crypto.h"
 #include "num.h"
 
 /********************************************
- * Helper functions for managing state files 
- * 
+ * Helper functions for managing state files
+ *
  ********************************************/
 
 /* Returns name to user state file */
@@ -29,7 +30,7 @@ static char *_state_file()
 
 		if (pwdata) {
 			home = pwdata->pw_dir;
-		} else 
+		} else
 			return NULL; /* Unable to locate home directory */
 	}
 
@@ -57,7 +58,7 @@ static char *_state_file()
 	return name;
 }
 
-/* Check if file exists, and if 
+/* Check if file exists, and if
  * it does - enforce it's permissions */
 static int _state_file_permissions(const state *s)
 {
@@ -83,25 +84,25 @@ static int _state_file_permissions(const state *s)
 }
 
 
-static int _state_lock(state *s) 
+static int _state_lock(state *s)
 {
-        struct flock fl;
-        int ret;
-        int cnt;
+	struct flock fl;
+	int ret;
+	int cnt;
 	int fd;
 
-        fl.l_type = F_WRLCK;
-        fl.l_whence = SEEK_SET;
-        fl.l_start = fl.l_len = 0;
+	fl.l_type = F_WRLCK;
+	fl.l_whence = SEEK_SET;
+	fl.l_start = fl.l_len = 0;
 
-        fd = open(s->filename, O_WRONLY, 0);
+	fd = open(s->filename, O_WRONLY, 0);
 
-        if (fd == -1) {
+	if (fd == -1) {
 		print_perror(PRINT_NOTICE, "Unable to lock file");
-                return 1; /* Unable to create file, therefore unable to obtain lock */
-        } /* FIXME: DO NOT CREATE */
+		return 1; /* Unable to create file, therefore unable to obtain lock */
+	}/* FIXME: DO NOT CREATE */
 
-        /*
+	/*
 	 * Trying to lock the file 20 times.
 	 * Any working otpasswd session shouldn't lock it for so long.
 	 *
@@ -112,63 +113,87 @@ static int _state_lock(state *s)
 	 * I'll stick to the second option for now.
 	 *
 	 */
-        for (cnt = 0; cnt < 20; cnt++) {
-                ret = fcntl(fd, F_SETLK, &fl);
-                if (ret == 0)
-                        break;
-                usleep(700);
-        }
+	for (cnt = 0; cnt < 20; cnt++) {
+		ret = fcntl(fd, F_SETLK, &fl);
+		if (ret == 0)
+			break;
+		usleep(700);
+	}
 
-        if (ret != 0) {
-                /* Unable to lock for 10 times */
-                close(fd);
+	if (ret != 0) {
+		/* Unable to lock for 10 times */
+		close(fd);
 		print(PRINT_NOTICE, "Unable to lock opened state file\n");
-                return 1;
-        }
+		return 1;
+	}
 
 	s->lock_fd = fd;
 	print(PRINT_NOTICE, "Got lock on state file\n");
 
-        return 0; /* Got lock */
+	return 0; /* Got lock */
 }
 
-static int _state_unlock(state *s) 
+static int _state_unlock(state *s)
 {
-        struct flock fl;
+	struct flock fl;
 
-        if (s->lock_fd < 0) {
+	if (s->lock_fd < 0) {
 		print(PRINT_NOTICE, "No lock to release!\n");
-                return 1; /* No lock to release */
+		return 1; /* No lock to release */
 	}
 
-        fl.l_type = F_UNLCK;
-        fl.l_whence = SEEK_SET;
-        fl.l_start = fl.l_len = 0;
+	fl.l_type = F_UNLCK;
+	fl.l_whence = SEEK_SET;
+	fl.l_start = fl.l_len = 0;
 
-        int ret = fcntl(s->lock_fd, F_SETLK, &fl);
+	int ret = fcntl(s->lock_fd, F_SETLK, &fl);
 
 	close(s->lock_fd);
 	s->lock_fd = -1;
 
 	if (ret != 0) {
 		print(PRINT_NOTICE, "Strange error while releasing lock\n");
-                /* Strange error while releasing the lock */
-                return 2;
-        }
+		/* Strange error while releasing the lock */
+		return 2;
+	}
 
-        return 0;
+	return 0;
+}
+
+
+static int _rng_read(const char *device, const char *msg, unsigned char *buf, const int count)
+{
+	const char spinner[] = "|/-\\"; // ".oO0Oo. ";
+	const int size = strlen(spinner);
+	int i;
+	FILE *f;
+	f= fopen(device, "r");
+	if (!f) {
+		return 1;
+	}
+
+	puts(
+		"Hint: Move your mouse, cause some disc activity\n"
+		"or type on keyboard to make the progress faster.\n");
+
+	for (i=0; i<count; i++) {
+		buf[i] = fgetc(f);
+		if (msg && i%11 == 0) {
+			printf("\r%s %3d%%  %c ", msg, i*100 / count, spinner[i/11 % size]);
+			fflush(stdout);
+		}
+	}
+	fclose(f);
+	if (msg)
+		printf("\r%s OK!       \n", msg);
+	return 0;
 }
 
 /**********************************************
  * Interface functions for managing state files
- * 
+ *
  **********************************************/
 
-/* Load state file.
- * if lock = 1 then the lock persists 
- * until state_store is called. Otherwise
- * we lock file only for reading 
- */
 int state_load(state *s)
 {
 	if (s->filename == NULL) {
@@ -256,7 +281,7 @@ int state_store(const state *s)
 		print_perror(PRINT_ERROR, "Unable to open %s for writting", s->filename);
 		return 1;
 	}
-	
+
 	/* Write using ascii safe approach */
 
 	ret = mpz_out_str(f, STATE_BASE, s->sequence_key);
@@ -309,13 +334,6 @@ error:
 	return 1;
 }
 
-
-/* High level function used during authentication 
- * 1. Lock file
- * 2. Open it
- * 3. Increment counter
- * 4. Save it and unlock 
- */
 int state_load_inc_store(state *s)
 {
 	int ret = 1;
@@ -340,10 +358,10 @@ int state_load_inc_store(state *s)
 
 	/* Restore current counter */
 	mpz_set(s->counter, tmp);
-	
+
 cleanup2:
 	num_dispose(tmp);
-	
+
 cleanup1:
 	_state_unlock(s);
 	return ret;
@@ -352,14 +370,11 @@ cleanup1:
 /******************************************
  * Functions for managing state information
  ******************************************/
-
-/* Increment counter */
 void state_inc(state *s)
 {
 	mpz_add_ui(s->counter, s->counter, 1);
 }
 
-/* Initializes state structure. Must be called first */
 int state_init(state *s)
 {
 	mpz_init(s->counter);
@@ -367,7 +382,7 @@ int state_init(state *s)
 	mpz_init(s->furthest_printed);
 
 	s->passcode_length = 4;
-	s->flags = 0;
+	s->flags = FLAG_SHOW;
 
 	s->fd = -1;
 	s->lock_fd = -1;
@@ -379,7 +394,6 @@ int state_init(state *s)
 	return 0;
 }
 
-/* Deinitializes state struct; should clear any secure-relevant data */
 void state_fini(state *s)
 {
 	num_dispose(s->counter);
@@ -388,20 +402,49 @@ void state_fini(state *s)
 	free(s->filename);
 }
 
-
 int state_key_generate(state *s)
 {
-	mpz_set_d(s->counter, 1);
+	unsigned char entropy_pool[256];
+	unsigned char key_bin[32];
 
-	unsigned char tmp[32] = {0x00};
-	tmp[3] = 0xAB;
+	/* Gather entropy from random, then fallback to urandom... */
+	if (_rng_read(
+		    "/dev/random",
+		    "Gathering entropy...",
+		    entropy_pool, sizeof(entropy_pool)) != 0)
+	{
+		print_perror(PRINT_WARN, "Unable to open /dev/random");
+		print(PRINT_NOTICE,
+		      "Trying /dev/urandom device\n");
+
+		if (_rng_read(
+			    "/dev/urandom",
+			    "Gathering entropy...",
+			    entropy_pool,
+			    sizeof(entropy_pool)) != 0)
+		{
+			print(PRINT_ERROR,
+			      "Unable to use neither"
+			      " /dev/random nor urandom.\n");
+			return 1;
+		}
+	}
+	crypto_sha256(entropy_pool, sizeof(entropy_pool), key_bin);
+	memset(entropy_pool, 0, sizeof(entropy_pool));
 
 //	assert( crypto_rng(tmp, 32, 0) == 0 ); /* TODO: Change to secure */
 
-	num_from_bin(s->sequence_key, tmp, 32);
+	num_from_bin(s->sequence_key, key_bin, sizeof(key_bin));
+	memset(key_bin, 0, sizeof(key_bin));
+	mpz_set_d(s->counter, 0);
+	mpz_set_d(s->furthest_printed, 0);
 	return 0;
 }
 
+
+/******************************************
+ * Miscellaneous functions
+ ******************************************/
 void state_debug(const state *s)
 {
 	printf("Sequence key: ");
@@ -409,9 +452,6 @@ void state_debug(const state *s)
 	printf("Counter: ");
 	num_print(s->counter, 16);
 }
-
-
-
 
 
 void state_testcase(void)

@@ -8,7 +8,9 @@
 #define STATE_BASE	62
 /* State */
 enum flags {
-	FLAG_SHOW_PASSCODE = 1
+	FLAG_SHOW = 1,
+	FLAG_SKIP = 2,
+	FLAG_ALPHABET_EXTENDED = 4,
 };
 	
 typedef struct {
@@ -43,16 +45,35 @@ typedef struct {
 } state;
 
 
+/* Initializes state structure. Must be called before
+ * any else function from this set */
 extern int state_init(state *s);
+
+/* Deinitializes state struct; should clear
+ * any secure-relevant data and free the memory */
 extern void state_fini(state *s);
 
+/* Generate new key */
 extern int state_key_generate(state *s);
+/* Increment passcode counter */
 extern void state_inc(state *s);
 
 extern void state_debug(const state *s);
-extern int state_store(const state *s);
+
+/* Load state file. */
 extern int state_load(state *s);
+/* Store state into file */
+extern int state_store(const state *s);
 
+/* High level function used during authentication 
+ * 1. Lock file
+ * 2. Open it
+ * 3. Increment counter
+ * 4. Save it and unlock 
+ */
+extern int state_load_inc_store(state *s);
+
+
+/* Do some tests (may overwrite your key file!) */
 extern void state_testcase(void);
-
 #endif 
