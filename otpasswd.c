@@ -34,8 +34,8 @@ static int _yes_or_no(const char *msg)
 		printf("\n");
 		return 1;
 	}
-	
-	if (strcasecmp(buf, "yes\n") == 0) 
+
+	if (strcasecmp(buf, "yes\n") == 0)
 		return 0;
 
 	return 1;
@@ -78,7 +78,8 @@ static void _usage(int argc, const char **argv)
 		"               codelenght-X      sets passcodes length, X is a number\n"
 		"                                 from 2 to 16 (default: codelength-4)\n"
 		"\n"
-		"  -v, --verbose      Display more information about what is happening.\n"
+		"  -v, --verbose Display more information about what is happening.\n"
+		"  -x, --check   Run all testcases.\n"
 		"\nNotes:\n"
 		"  \"dont-skip\" flag might introduce a security hole.\n"
 		"  Both --text and --latex can get \"next\" as a parameter which\n"
@@ -142,7 +143,7 @@ static void action_key(void)
 	/* TODO: LOCK! */
 	if (state_store(&s) != 0) {
 		print(PRINT_ERROR, "Unable to save state to ~/" STATE_FILENAME " file\n");
-		exit(1);		
+		exit(1);
 	}
 
 	state_fini(&s);
@@ -179,7 +180,7 @@ static void action_flags(void)
 	/* TODO: LOCK! */
 	if (state_store(&s) != 0) {
 		print(PRINT_ERROR, "Unable to save state to ~/" STATE_FILENAME " file\n");
-		exit(1);		
+		exit(1);
 	}
 
 
@@ -189,12 +190,12 @@ static void action_flags(void)
 		printf("show ");
 	else
 		printf("dont-show ");
-	
+
 	if (s.flags & FLAG_SKIP)
 		printf("skip ");
 	else
 		printf("dont-skip ");
-	
+
 	if (s.flags & FLAG_ALPHABET_EXTENDED)
 		printf("alphabet-extended ");
 	else
@@ -203,7 +204,7 @@ static void action_flags(void)
 	printf("codelength-%d\n", s.code_length);
 
 cleanup:
-	state_fini(&s);	
+	state_fini(&s);
 }
 
 void action_print(void)
@@ -231,9 +232,9 @@ void action_print(void)
 	mpz_init(passcode_num);
 
 	if (strcasecmp(options.action_arg, "current")) {
-		
+
 	} else if (strcasecmp(options.action_arg, "next")) {
-		
+
 	} else if (isalpha(options.action_arg[0])) {
 		/* CRR[number] */
 		char column;
@@ -248,7 +249,7 @@ void action_print(void)
 
 	} else if (isdigit(options.action_arg[0])) {
 		/* number -- passcode number */
-	} else if (options.action_arg[0] == '[' 
+	} else if (options.action_arg[0] == '['
 		   && options.action_arg[strlen(options.action_arg)-1] == ']') {
 		/* [number] -- passcard number */
 	}
@@ -272,17 +273,19 @@ void process_cmd_line(int argc, char **argv)
 		{"text",		required_argument,	0, 't'},
 		{"latex",		required_argument,	0, 'l'},
 		{"passcode",		required_argument,	0, 'p'},
-		
+
 		/* Flags */
 		{"flags",		required_argument,	0, 'f'},
-		{"verbose",		required_argument,	&options.log_level, PRINT_NOTICE},
+		{"verbose",		required_argument,	0, 'v'},
+		{"check",		no_argument,		0, 'x'},
+
 		{0, 0, 0, 0}
 	};
 
 	while (1) {
 		int option_index = 0;
 
-		int c = getopt_long(argc, argv, "ks:t:l:p:f:v", long_options, &option_index);
+		int c = getopt_long(argc, argv, "ks:t:l:p:f:vx", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1)
@@ -346,11 +349,24 @@ void process_cmd_line(int argc, char **argv)
 			exit(-1);
 			break;
 
+		case 'x':
+			if (options.action != 0) {
+				printf("Only one action can be specified on the command line\n");
+				exit(-1);
+			}
+			options.action = 'x';
+			break;
+
+		case 'v':
+			options.log_level = PRINT_NOTICE;
+			break;
+
 		default:
-			abort();
+			printf("Got %d %c\n", c, c);
+			assert(0);
 		}
 	}
-	
+
 	/* Perform action */
 	print_init(options.log_level, 1, 0, NULL);
 
@@ -375,15 +391,20 @@ void process_cmd_line(int argc, char **argv)
 		action_print();
 		free(options.action_arg);
 		break;
+
+	case 'x':
+		printf("*** Running testcases\n");
+		state_testcase(); /* FIXME: it mustn't overwrite .otpasswd */
+		num_testcase();
+		crypto_testcase();
+		ppp_testcase();
+		exit(0);
 	}
 }
 
 
 int main(int argc, char **argv)
 {
-	print_init(PRINT_NOTICE, 1, 0, NULL);
-	ppp_testcase();
-	return 0;
 	process_cmd_line(argc, argv);
 	return 0;
 }
