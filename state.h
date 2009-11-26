@@ -6,13 +6,14 @@
 /* Config */
 #define STATE_FILENAME ".otpasswd"
 #define STATE_BASE	62
+
 /* State */
 enum flags {
 	FLAG_SHOW = 1,
 	FLAG_SKIP = 2,
 	FLAG_ALPHABET_EXTENDED = 4,
 };
-	
+
 typedef struct {
 	/*** State stored in STATE_FILENAME ***/
 
@@ -45,11 +46,11 @@ typedef struct {
 	unsigned char current_row;	/* 1 - 10 */
 	unsigned char current_column;	/* A ... */
 
-	/* Not necessarily part of a user state, 
+	/* Not necessarily part of a user state,
 	 * this is data used for storing/restoring
-	 * state information 
+	 * state information
 	 */
-	
+
 	char *filename;	/* Path to state file    */
 	int fd;		/* State file descriptor */
 	int lock_fd;	/* Is the file locked?   */
@@ -76,15 +77,15 @@ extern int state_load(state *s);
 /* Store state into file */
 extern int state_store(const state *s);
 
-/* High level function used during authentication 
+/* High level function used during authentication
  * 1. Lock file
  * 2. Open it
  * 3. Increment counter
- * 4. Save it and unlock 
+ * 4. Save it and unlock
  */
 extern int state_load_inc_store(state *s);
 
 
 /* Do some tests (may overwrite your key file!) */
 extern void state_testcase(void);
-#endif 
+#endif

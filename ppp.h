@@ -2,9 +2,10 @@
 #define _PPP_H_
 
 #include <gmp.h>
+#include "state.h"
 
-extern int ppp_get_passcode(
-	const mpz_t key, const mpz_t counter, 
-	char *passcode, const int length);
+#define ROWS_PER_CARD 10
 
+extern int ppp_get_passcode(state *s, const mpz_t counter, char *passcode);
+extern void ppp_testcase(void);
 #endif

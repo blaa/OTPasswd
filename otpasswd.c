@@ -381,6 +381,9 @@ void process_cmd_line(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+	print_init(PRINT_NOTICE, 1, 0, NULL);
+	ppp_testcase();
+	return 0;
 	process_cmd_line(argc, argv);
 	return 0;
 }

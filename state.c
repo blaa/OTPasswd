@@ -252,21 +252,42 @@ int state_load(state *s)
 
 	ret = fscanf(f, "%u\n", &s->code_length);
 	if (ret != 1) {
-		print(PRINT_ERROR, 
-		      "Error while reading passcode length from %s\n",
-		      s->filename);
+		print_perror(PRINT_ERROR, 
+			     "Error while reading passcode length from %s",
+			     s->filename);
 		goto error;
 	}
 
 	ret = fscanf(f, "%u\n", &s->flags);
 	if (ret != 1) {
-		print(PRINT_ERROR, "Error while reading flags from %s\n",
-		      s->filename);
+		print_perror(PRINT_ERROR, "Error while reading flags from %s",
+			     s->filename);
 		goto error;
 	}
 
 	/* Everything is read. Now - check if it's correct */
 	/* TODO, FIXME */
+	if (mpz_sgn(s->sequence_key) == -1) {
+		print(PRINT_ERROR, 
+		      "Read a negative sequence key. File %s is corrupted.\n",
+		      s->filename);
+		goto error;
+	}
+
+	if (mpz_sgn(s->counter) == -1) {
+		print(PRINT_ERROR, 
+		      "Read a negative counter. File %s is corrupted.\n",
+		      s->filename);
+		goto error;
+	}
+
+	if (mpz_sgn(s->furthest_printed) == -1) {
+		print(PRINT_ERROR, 
+		      "Last printed card has a negative counter. File %s is corrupted.\n",
+		      s->filename);
+		goto error;
+	}
+
 	if (s->code_length < 2 || s->code_length > 16) {
 		print(PRINT_ERROR, "Illegal passcode length. %s is invalid\n", 
 		      s->filename);
@@ -279,7 +300,6 @@ int state_load(state *s)
 		goto error;
 
 	}
-
 
 	fclose(f);
 	return 0;

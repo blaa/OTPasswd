@@ -24,7 +24,7 @@ int main(int argc, char **argv)
 	printf("STATE TESTCASE END\n");
 
 	char passcode[6] = {0};
-	ppp_get_passcode(s.sequence_key, s.counter, passcode, 4);
+	ppp_get_passcode(&s, s.counter, passcode);
 	printf("passcode: %s\n", passcode);
 
 	num_testcase();
