@@ -14,6 +14,8 @@ enum flags {
 };
 	
 typedef struct {
+	/*** State stored in STATE_FILENAME ***/
+
 	/* 128 bit counter pointing at the next passcode
 	 * which will be used for authentication */
 	mpz_t counter;
@@ -26,11 +28,22 @@ typedef struct {
 	mpz_t furthest_printed;
 
 	/* Number of bytes used for passcode (2 - 16) */
-	unsigned int passcode_length;
+	unsigned int code_length;
 
 	/* User flags */
 	unsigned int flags;
 
+
+	/*** Temporary / not-saved data ***/
+
+	/* Card information, calculated once for
+	 * simplicity and stored here
+	 */
+	unsigned int codes_on_card;
+	unsigned int codes_in_row;
+	mpz_t current_card;		/* Card with current code */
+	unsigned char current_row;	/* 1 - 10 */
+	unsigned char current_column;	/* A ... */
 
 	/* Not necessarily part of a user state, 
 	 * this is data used for storing/restoring

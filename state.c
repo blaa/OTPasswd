@@ -207,7 +207,8 @@ int state_load(state *s)
 	 * Unlock / leave locked?
 	 */
 	if (s->lock_fd <= 0) {
-		print(PRINT_NOTICE, "State file not locked while reading from it\n");
+		print(PRINT_NOTICE, 
+		      "State file not locked while reading from it\n");
 	}
 
 	int ret;
@@ -220,39 +221,65 @@ int state_load(state *s)
 
 	f = fopen(s->filename, "r");
 	if (!f) {
-		print_perror(PRINT_ERROR, "Unable to open %s for reading", s->filename);
+		print_perror(PRINT_ERROR, "Unable to open %s for reading", 
+			     s->filename);
 		return 1;
 	}
 
 	ret = mpz_inp_str(s->sequence_key, f, STATE_BASE);
 	if (ret == 0) {
-		print_perror(PRINT_ERROR, "Error while reading sequence key from %s", s->filename);
+		print_perror(PRINT_ERROR, 
+			     "Error while reading sequence key from %s", 
+			     s->filename);
 		goto error;
 	}
 
 	ret = mpz_inp_str(s->counter, f, STATE_BASE);
 	if (ret == 0) {
-		print_perror(PRINT_ERROR, "Error while reading counter from %s", s->filename);
+		print_perror(PRINT_ERROR, 
+			     "Error while reading counter from %s",
+			     s->filename);
 		goto error;
 	}
 
 	ret = mpz_inp_str(s->furthest_printed, f, STATE_BASE);
 	if (ret == 0) {
-		print_perror(PRINT_ERROR, "Error while reading number of last printed passcode from %s", s->filename);
+		print_perror(PRINT_ERROR,
+			     "Error while reading number of "
+			     "last printed passcode from %s", s->filename);
 		goto error;
 	}
 
-	ret = fscanf(f, "%u\n", &s->passcode_length);
+	ret = fscanf(f, "%u\n", &s->code_length);
 	if (ret != 1) {
-		print(PRINT_ERROR, "Error while reading passcode length from %s\n", s->filename);
+		print(PRINT_ERROR, 
+		      "Error while reading passcode length from %s\n",
+		      s->filename);
 		goto error;
 	}
 
 	ret = fscanf(f, "%u\n", &s->flags);
 	if (ret != 1) {
-		print(PRINT_ERROR, "Error while reading flags from %s\n", s->filename);
+		print(PRINT_ERROR, "Error while reading flags from %s\n",
+		      s->filename);
 		goto error;
 	}
+
+	/* Everything is read. Now - check if it's correct */
+	/* TODO, FIXME */
+	if (s->code_length < 2 || s->code_length > 16) {
+		print(PRINT_ERROR, "Illegal passcode length. %s is invalid\n", 
+		      s->filename);
+		goto error;
+	}
+
+	if (s->flags > (FLAG_SHOW|FLAG_SKIP|FLAG_ALPHABET_EXTENDED)) {
+		print(PRINT_ERROR, "Unsupported set of flags. %s is invalid\n", 
+		      s->filename);
+		goto error;
+
+	}
+
 
 	fclose(f);
 	return 0;
@@ -273,12 +300,15 @@ int state_store(const state *s)
 	}
 
 	if (s->lock_fd <= 0) {
-		print(PRINT_NOTICE, "State file not locked while writting to it\n");
+		print(PRINT_NOTICE, 
+		      "State file not locked while writting to it\n");
 	}
 
 	f = fopen(s->filename, "w");
 	if (!f) {
-		print_perror(PRINT_ERROR, "Unable to open %s for writting", s->filename);
+		print_perror(PRINT_ERROR,
+			     "Unable to open %s for writting",
+			     s->filename);
 		return 1;
 	}
 
@@ -291,7 +321,8 @@ int state_store(const state *s)
 	}
 
 	if (fputc('\n', f) == EOF) {
-		print(PRINT_ERROR, "Error while writting to %s\n", s->filename);
+		print(PRINT_ERROR, "Error while writting to %s\n", 
+		      s->filename);
 		goto error;
 	}
 
@@ -302,25 +333,30 @@ int state_store(const state *s)
 	}
 
 	if (fputc('\n', f) == EOF) {
-		print(PRINT_ERROR, "Error while writting to %s\n", s->filename);
+		print(PRINT_ERROR, "Error while writting to %s\n", 
+		      s->filename);
 		goto error;
 	}
 
 	ret = mpz_out_str(f, STATE_BASE, s->furthest_printed);
 	if (ret == 0) {
-		print(PRINT_ERROR, "Error while saving number of last printed passcode\n");
+		print(PRINT_ERROR, 
+		      "Error while saving number of last printed passcode\n");
 		goto error;
 	}
 
-	ret = fprintf(f, "\n%u\n", s->passcode_length);
+	ret = fprintf(f, "\n%u\n", s->code_length);
 	if (ret <= 0) {
-		print(PRINT_ERROR, "Error while writting passcode length to %s\n", s->filename);
+		print(PRINT_ERROR, 
+		      "Error while writting passcode length to %s\n",
+		      s->filename);
 		goto error;
 	}
 
 	ret = fprintf(f, "%u\n", s->flags);
 	if (ret <= 0) {
-		print(PRINT_ERROR, "Error while writting flags to %s\n", s->filename);
+		print(PRINT_ERROR, "Error while writting flags to %s\n",
+		      s->filename);
 		goto error;
 	}
 
@@ -380,8 +416,9 @@ int state_init(state *s)
 	mpz_init(s->counter);
 	mpz_init(s->sequence_key);
 	mpz_init(s->furthest_printed);
+	mpz_init(s->current_card);
 
-	s->passcode_length = 4;
+	s->code_length = 4;
 	s->flags = FLAG_SHOW;
 
 	s->fd = -1;
@@ -399,6 +436,7 @@ void state_fini(state *s)
 	num_dispose(s->counter);
 	num_dispose(s->sequence_key);
 	num_dispose(s->furthest_printed);
+	num_dispose(s->current_card);
 	free(s->filename);
 }
 
@@ -485,7 +523,7 @@ void state_testcase(void)
 	test++; if (mpz_cmp(s1.furthest_printed, s2.furthest_printed) != 0)
 		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
 
-	test++; if (s1.flags != s2.flags || s1.passcode_length != s2.passcode_length)
+	test++; if (s1.flags != s2.flags || s1.code_length != s2.code_length)
 		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
 
 

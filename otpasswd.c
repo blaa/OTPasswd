@@ -169,7 +169,7 @@ static void action_flags(void)
 	s.flags &= ~(options.flag_clear_mask);
 
 	if (options.set_codelength >= 2 && options.set_codelength <= 16)
-		s.passcode_length = options.set_codelength;
+		s.code_length = options.set_codelength;
 	else if (options.set_codelength) {
 		print(PRINT_ERROR, "Illegal passcode length specified\n");
 		goto cleanup;
@@ -200,7 +200,7 @@ static void action_flags(void)
 	else
 		printf("alphabet-simple ");
 
-	printf("codelength-%d\n", s.passcode_length);
+	printf("codelength-%d\n", s.code_length);
 
 cleanup:
 	state_fini(&s);	

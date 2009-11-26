@@ -1,6 +1,7 @@
 #include "num.h"
 #include "crypto.h"
 #include "ppp.h"
+#include "state.h"
 
 const char alphabet[] =
 	"!#%+23456789:=?@"
@@ -69,6 +70,49 @@ clear:
 /**********************
  * Passcard management
  **********************/
+
+/* Number of passcodes in row depending on passcode length */
+static int _len_to_card_size[] = {
+	-1, /* use up index 0, just to make it easier */
+	-1, /* minimal length is 2 */
+	11, /* which fits 11 passcodes in row */
+	8, 
+	7,
+	5, /* 5 - 6 */
+	5,
+	4, /* 7 */
+	3, /* 8 - 10 */
+	3,
+	3,
+	2, /* 11 - 16 */
+	2,
+	2,
+	2,
+	2,
+	2,
+};
+
+static int _codes_on_card(state *s)
+{
+	/* is taken care elsewhere, but just to be sure */
+	assert(s->code_length >= 2 && s->code_length <= 16);
+
+	return _len_to_card_size[s->code_length];
+}
+
+/* Calculate card parameters and save them in state */
+static void _calculate_card(state *s)
+{
+	
+}
+
+
+/* Calculate passcard number from passcode number */
+void ppp_passcard_num_from_passcode_num(const mpz_t passcode, mpz_t passcard)
+{
+	
+}
+
 
 void whatev(state *s)
 {
