@@ -133,11 +133,10 @@ int print_perror(int level, const char *fmt, ...)
 	assert(ret > 0);
 	assert(ret < sizeof(buff));
 
-	if (ret > 0 || ret < sizeof(buff)) {
+	if (!(ret > 0 && ret < sizeof(buff))) {
 		return 2;
 	}
-
-
-	return print(level, "%s: %s\n", buff, error);
+	
+	return print(level, "%s (%s)\n", buff, error);
 }
 

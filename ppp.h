@@ -4,8 +4,11 @@
 #include <gmp.h>
 #include "state.h"
 
-#define ROWS_PER_CARD 10
 
-extern int ppp_get_passcode(state *s, const mpz_t counter, char *passcode);
+extern int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode);
+
+extern void ppp_calculate(state *s);
+
 extern void ppp_testcase(void);
+
 #endif

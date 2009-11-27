@@ -211,17 +211,17 @@ int state_load(state *s)
 		      "State file not locked while reading from it\n");
 	}
 
-	int ret;
+	int ret = 0;
 	FILE *f;
 
 	if (_state_file_permissions(s) != 0) {
-		print(PRINT_NOTICE, "Unable to load state file.\n");
+		print(PRINT_NOTICE, "Unable to load state file. Have you tried -k option?\n");
 		return 1;
 	}
 
 	f = fopen(s->filename, "r");
 	if (!f) {
-		print_perror(PRINT_ERROR, "Unable to open %s for reading", 
+		print_perror(PRINT_ERROR, "Unable to open %s for reading. Have you tried -k option?", 
 			     s->filename);
 		return 1;
 	}
@@ -258,12 +258,37 @@ int state_load(state *s)
 		goto error;
 	}
 
-	ret = fscanf(f, "%u\n", &s->flags);
+	ret = fscanf(f, "%u", &s->flags);
 	if (ret != 1) {
 		print_perror(PRINT_ERROR, "Error while reading flags from %s",
 			     s->filename);
 		goto error;
 	}
+
+	/* Read whitecharacters after flags */
+	if (fgetc(f) != '\n') {
+		print_perror(PRINT_ERROR, "Syntax error in %s.", s->filename);
+		goto error;
+	}
+
+	if (fgets(s->label, sizeof(s->label), f) == NULL) {
+		/* Nothing read, there should be at least one \n */
+		print_perror(PRINT_ERROR, "Error while reading label from %s"
+			     ", unexpected end of file",
+			     s->filename);
+		goto error;
+	}
+
+	if (s->label[strlen(s->label) - 1] != '\n') {
+		/* \n is put there if we find end of file,
+		 * it's lack might be caused by too long entry
+		 * at end of file 
+		 */
+		print_perror(PRINT_ERROR, "Garbage at end of %s.", s->filename);
+		goto error;
+	}
+
+	s->label[strlen(s->label) - 1] = '\0';
 
 	/* Everything is read. Now - check if it's correct */
 	/* TODO, FIXME */
@@ -380,6 +405,13 @@ int state_store(const state *s)
 		goto error;
 	}
 
+	ret = fprintf(f, "%s\n", s->label);
+	if (ret <= 0) {
+		print(PRINT_ERROR, "Error while writting label to %s\n",
+		      s->filename);
+		goto error;
+	}
+
 	/* lock? */
 	print(PRINT_NOTICE, "State file written\n");
 	fclose(f);
@@ -440,14 +472,19 @@ int state_init(state *s)
 
 	s->code_length = 4;
 	s->flags = FLAG_SHOW;
+	memset(s->label, 0x00, STATE_LABEL_SIZE);
 
 	s->fd = -1;
 	s->lock_fd = -1;
 	s->filename = _state_file();
 	if (s->filename == NULL) {
-		print(PRINT_CRITICAL, "Unable to locate user home directory\n");
+		print(PRINT_CRITICAL, 
+		      "Unable to locate user home directory\n");
 		return 1;
 	}
+
+	s->codes_on_card = s->codes_in_row = s->current_row =
+		s->current_column = 0;
 	return 0;
 }
 

@@ -14,6 +14,6 @@ CHECK_LIBRARY_EXISTS(ssl SHA256 "" HAVE_OPENSSL)
 FIND_PACKAGE(OpenSSL REQUIRED)
 
 
-ADD_EXECUTABLE( otpasswd crypto.c num.c ppp.c state.c print.c otpasswd.c)
+ADD_EXECUTABLE(otpasswd crypto.c num.c ppp.c state.c print.c otpasswd.c passcards.c)
 
 TARGET_LINK_LIBRARIES(otpasswd gmp ssl)

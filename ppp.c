@@ -16,7 +16,7 @@ const char alphabet_extended[] =
 	"PRSTUVWXYZ[\\]^_abcdefghijkmnopqrstuvwxyz{|}~";
 
 /* Calculate a single passcode of given number using specified key */
-int ppp_get_passcode(state *s, const mpz_t counter, char *passcode)
+int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
 {
 	unsigned char key_bin[32];
 	unsigned char cnt_bin[16];
@@ -103,10 +103,11 @@ static int _len_to_card_size[] = {
 	2,
 	2,
 	2,
+
 };
 
 /* Calculate card parameters and save them in state */
-static void _calculate_card(state *s)
+void ppp_calculate(state *s)
 {
 	const char columns[] = "ABCDEFGHIJKL";
 
@@ -127,9 +128,14 @@ static void _calculate_card(state *s)
 	s->current_column = columns[current_column];
 }
 
+
+/***************************
+ * Testcases
+ **************************/
+
 #define _PPP_TEST(cnt,len, col, row, code)			\
 mpz_set_ui(s.counter, (cnt)); s.code_length = (len);		\
-_calculate_card(&s);						\
+ppp_calculate(&s);						\
 buf1 = mpz_get_str(NULL, 10, s.counter);			\
 buf2 = mpz_get_str(NULL, 10, s.current_card);			\
 ppp_get_passcode(&s, s.counter, passcode);			\

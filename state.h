@@ -3,11 +3,14 @@
 
 #include <gmp.h>
 
-/* Config */
+/*** Config ***/
 #define STATE_FILENAME ".otpasswd"
+/* Base for storing big numbers inside STATE_FILENAME */
 #define STATE_BASE	62
+#define STATE_LABEL_SIZE 30
+#define ROWS_PER_CARD 10
 
-/* State */
+/*** State ***/
 enum flags {
 	FLAG_SHOW = 1,
 	FLAG_SKIP = 2,
@@ -34,6 +37,8 @@ typedef struct {
 	/* User flags */
 	unsigned int flags;
 
+	/* Card label (might be zeroed, then hostname is used) */
+	char label[STATE_LABEL_SIZE];
 
 	/*** Temporary / not-saved data ***/
 

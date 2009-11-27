@@ -12,6 +12,7 @@
 #include "num.h"
 #include "ppp.h"
 #include "state.h"
+#include "passcards.h"
 
 static const char *_program_name(const char *argv0)
 {
@@ -219,8 +220,7 @@ void action_print(void)
 
 	/* Load our state */
 	if (state_load(&s) != 0) {
-		/* Unable to load state */
-		print(PRINT_ERROR, "Error while reading state, have you created a key with -k option?\n");
+		/* Unable to load state, message should already be printed */
 		goto cleanup;
 	}
 
@@ -231,11 +231,12 @@ void action_print(void)
 	mpz_init(passcard_num);
 	mpz_init(passcode_num);
 
-	if (strcasecmp(options.action_arg, "current")) {
+	if (strcasecmp(options.action_arg, "current") == 0) {
 
-	} else if (strcasecmp(options.action_arg, "next")) {
+	} else if (strcasecmp(options.action_arg, "next") == 0) {
 
 	} else if (isalpha(options.action_arg[0])) {
+		printf("CRR[number]\n");
 		/* CRR[number] */
 		char column;
 		int row;
@@ -249,10 +250,27 @@ void action_print(void)
 
 	} else if (isdigit(options.action_arg[0])) {
 		/* number -- passcode number */
+		gmp_sscanf(options.action_arg, "%Z", passcode_num);
 	} else if (options.action_arg[0] == '['
 		   && options.action_arg[strlen(options.action_arg)-1] == ']') {
 		/* [number] -- passcard number */
+		ret = gmp_sscanf(options.action_arg, "[%Zd]", passcard_num);
+		if (ret != 1) {
+			print(PRINT_ERROR, "Error while parsing command argument (%d).\n", ret);
+			goto cleanup1;
+		}
+	} else {
+		print(PRINT_ERROR, "Illegal argument passed to option\n");
+		goto cleanup1;
 	}
+
+	ppp_calculate(&s);
+	char *card = card_ascii(&s, passcard_num);
+	if (!card) {
+		printf("error?\n");
+	}
+	puts(card);
+	free(card);
 
 cleanup1:
 	num_dispose(passcode_num);
@@ -398,6 +416,7 @@ void process_cmd_line(int argc, char **argv)
 		num_testcase();
 		crypto_testcase();
 		ppp_testcase();
+		card_testcase();
 		exit(0);
 	}
 }
