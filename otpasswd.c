@@ -1,3 +1,15 @@
+/**********************************************************************
+ * otpasswd -- One-time password manager and PAM module.
+ * (C) 2009 by Tomasz bla Fortuna <bla@thera.be>, <bla@af.gliwice.pl>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * See LICENSE file for details.
+ **********************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -171,7 +183,7 @@ static void action_key(void)
 static void action_license(void)
 {
 	printf(
-		"otpasswd -- a one-time password PAM plugin and manager.\n"
+		"otpasswd -- One-time password manager and PAM module.\n"
 		"Copyright (C) 2009 Tomasz bla Fortuna\n"
 		"\n"
 		"This program is free software: you can redistribute it and/or modify\n"
