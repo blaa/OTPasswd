@@ -94,7 +94,8 @@ static void _usage(int argc, const char **argv)
 		"               at the cost of (theoretically) less security.\n"
 		"\n"
 		"  -v, --verbose Display more information about what is happening.\n"
-		"  -x, --check   Run all testcases.\n"
+		"  --license     Display license, warranty and author information.\n"
+		"  --check       Run all testcases.\n"
 
 		"\nNotes:\n"
 		"  \"dont-skip\" flag might introduce a security hole.\n"
@@ -165,6 +166,27 @@ static void action_key(void)
 	}
 
 	state_fini(&s);
+}
+
+static void action_license(void)
+{
+	printf(
+		"otpasswd -- a one-time password PAM plugin and manager.\n"
+		"Copyright (C) 2009 Tomasz bla Fortuna\n"
+		"\n"
+		"This program is free software: you can redistribute it and/or modify\n"
+		"it under the terms of the GNU General Public License as published by\n"
+		"the Free Software Foundation, either version 3 of the License, or\n"
+		"(at your option) any later version.\n"
+		"\n"
+		"This program is distributed in the hope that it will be useful,\n"
+		"but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+		"MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+		"GNU General Public License for more details.\n"
+		"\n"
+		"You should have received a copy of the GNU General Public License\n"
+		"along with this program in a LICENSE file.\n"
+	);
 }
 
 /* Update flags based on mask which are stored in options struct */
@@ -408,6 +430,7 @@ void process_cmd_line(int argc, char **argv)
 		{"no-salt",		no_argument,		0, 'n'},
 		{"verbose",		required_argument,	0, 'v'},
 		{"check",		no_argument,		0, 'x'},
+		{"license",		no_argument,		0, 'a'},
 
 		{0, 0, 0, 0}
 	};
@@ -415,7 +438,7 @@ void process_cmd_line(int argc, char **argv)
 	while (1) {
 		int option_index = 0;
 
-		int c = getopt_long(argc, argv, "ks:t:l:p:f:d:c:nvx", long_options, &option_index);
+		int c = getopt_long(argc, argv, "ks:t:l:p:f:d:c:nv", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1)
@@ -508,6 +531,10 @@ void process_cmd_line(int argc, char **argv)
 			options.log_level = PRINT_NOTICE;
 			break;
 
+		case 'a':
+			options.action = 'a';
+			break;
+
 		default:
 			printf("Got %d %c\n", c, c);
 			assert(0);
@@ -529,6 +556,10 @@ void process_cmd_line(int argc, char **argv)
 
 	case 'f':
 		action_flags();
+		break;
+
+	case 'a':
+		action_license();
 		break;
 
 	case 's':
