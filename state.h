@@ -65,6 +65,7 @@ typedef struct {
 	 * state information
 	 */
 
+	char *username;
 	char *filename;	/* Path to state file    */
 	int fd;		/* State file descriptor */
 	int lock_fd;	/* Is the file locked?   */
@@ -72,8 +73,11 @@ typedef struct {
 
 
 /* Initializes state structure. Must be called before
- * any else function from this set */
-extern int state_init(state *s);
+ * any else function from this set 
+ * If username is given we determine user home directory
+ * using specified username, if it's NULL - we lookup environment
+ */
+extern int state_init(state *s, const char *username, const char *configfile);
 
 /* Deinitializes state struct; should clear
  * any secure-relevant data and free the memory */

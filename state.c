@@ -28,46 +28,74 @@
  ********************************************/
 
 /* Returns name to user state file */
-static char *_state_file()
+static char *_state_file(const char *username, const char *filename)
 {
 	static struct passwd *pwdata = NULL;
-	const char *home;
-
-	home = getenv("HOME");
-
-	if (!home) {
-		/* No env? Get home dir for current UID */
-		uid_t uid = geteuid();
-		pwdata = getpwuid(uid);
-
-		if (pwdata) {
-			home = pwdata->pw_dir;
-		} else
-			return NULL; /* Unable to locate home directory */
-	}
-
-	/* Append filename */
-	char *name;
+	char *home = NULL;
+	char *name = NULL;
 	int length;
 
+
+	if (username == NULL) {
+		if (getenv("HOME"))
+			home = strdup(getenv("HOME"));
+
+		if (!home) {
+			/* No env? Get home dir for current UID */
+			uid_t uid = geteuid();
+			pwdata = getpwuid(uid);
+			
+			if (pwdata) {
+				home = strdup(pwdata->pw_dir);
+			} else
+				return NULL; /* Unable to locate home directory */
+		}
+	} else {
+		const struct passwd *pwent;
+		while ((pwent = getpwent()) != NULL) {
+			if (strcmp(pwent->pw_name, username) == 0) {
+				home = strdup(pwent->pw_dir);
+				endpwent();
+				break;
+			}
+		}
+		if (!home) {
+			endpwent();
+			return NULL;
+		}
+		
+	}
+
+	/* Append a filename */
+	const char *configfile;
+	if (filename)
+		configfile = filename;
+	else
+		configfile = STATE_FILENAME;
+
 	length = strlen(home);
-	length += strlen(STATE_FILENAME);
+	length += strlen(filename);
 	length += 2;
 
 	name = malloc(length);
-	if (!name)
-		return NULL;
+	if (!name) 
+		goto error;
 
-	int ret = snprintf(name, length, "%s/%s", home, STATE_FILENAME);
+	int ret = snprintf(name, length, "%s/%s", home, filename);
 
 	assert( ret == length - 1 );
 
 	if (ret != length -1) {
-		free(name);
-		return NULL;
+		goto error;
 	}
 
+	free(home);
 	return name;
+
+error:
+	free(home);
+	free(name);
+	return NULL;
 }
 
 /* Check if file exists, and if
@@ -481,7 +509,7 @@ void state_inc(state *s)
 	mpz_add_ui(s->counter, s->counter, 1);
 }
 
-int state_init(state *s)
+int state_init(state *s, const char *username, const char *configfile)
 {
 	const char salt_mask[] =
 		"FFFFFFFFFFFFFFFFFFFFFFFF00000000";
@@ -499,7 +527,11 @@ int state_init(state *s)
 
 	s->fd = -1;
 	s->lock_fd = -1;
-	s->filename = _state_file();
+	s->filename = _state_file(username, configfile);
+	if (username)
+		s->username = strdup(username);
+	else 
+		s->username = NULL;
 	if (s->filename == NULL) {
 		print(PRINT_CRITICAL, 
 		      "Unable to locate user home directory\n");
@@ -520,6 +552,7 @@ void state_fini(state *s)
 	num_dispose(s->salt_mask);
 
 	free(s->filename);
+	free(s->username);
 }
 
 int state_key_generate(state *s, const int salt)
@@ -598,9 +631,9 @@ void state_testcase(void)
 	int failed = 0;
 	int test = 0;
 
-	if (state_init(&s1) != 0)
+	if (state_init(&s1, NULL, ".otpasswd_testcase") != 0)
 		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
-	test++; if (state_init(&s2) != 0)
+	test++; if (state_init(&s2, NULL, ".otpasswd_testcase") != 0)
 		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
 
 	test++; if (state_key_generate(&s1, 0) != 0)

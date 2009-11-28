@@ -30,7 +30,7 @@ static const char *_program_name(const char *argv0)
 {
 	const char *pos = strrchr(argv0, '/');
 	if (pos)
-		return pos;
+		return pos+1;
 	else
 		return argv0;
 }
@@ -115,10 +115,12 @@ static void _usage(int argc, const char **argv)
 		"  will print the first not-yet printed passcard\n"
 		"\nExamples:\n"
 		"%s --key                generate new key\n"
-		"%s --text 3             print third passcard to standard output\n"
-		"%s --flag codelength-5  use 5-character long passcodes\n",
-		prog_name, prog_name, prog_name, prog_name
-
+		"%s --text '[3]'         print third passcard to standard output\n"
+		"%s --flag codelength-5  use 5-character long passcodes\n"
+		"Generate a 6 passcards on A4 page using LaTeX:\n"
+		"%s --latex next > tmp.latex\n"
+		"pdflatex tmp.latex\n",
+		prog_name, prog_name, prog_name, prog_name, prog_name
 		);
 }
 
@@ -146,7 +148,7 @@ struct cmds {
 static void action_key(void)
 {
 	state s;
-	if (state_init(&s) != 0) {
+	if (state_init(&s, NULL, NULL) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
 		exit(1);
 	}
@@ -205,7 +207,7 @@ static void action_license(void)
 static void action_flags(void)
 {
 	state s;
-	if (state_init(&s) != 0) {
+	if (state_init(&s, NULL, NULL) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
 		exit(1);
 	}
@@ -271,7 +273,7 @@ void action_print(void)
 	/* This action requires a created key */
 	state s;
 	int state_changed = 0;
-	if (state_init(&s) != 0) {
+	if (state_init(&s, NULL, NULL) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
 		exit(1);
 	}
@@ -411,7 +413,6 @@ void action_print(void)
 		case 's':
 			break;
 		}
-
 	}
 
 cleanup1:

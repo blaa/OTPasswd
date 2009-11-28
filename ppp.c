@@ -189,7 +189,7 @@ void ppp_testcase(void)
 
 	/* Check calculations */
 	state s;
-	state_init(&s);
+	state_init(&s, NULL, NULL);
 
 	_PPP_TEST(0, 4, 'A', 1, "NH7j");
 

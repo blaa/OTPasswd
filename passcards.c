@@ -22,30 +22,13 @@
 #include "state.h"
 #include "passcards.h"
 
-/*
-Cirrus                             [1]
-    A    B    C    D    E    F    G
- 1: jsa? EYKb s@#+ cCri aH?r RnDD hBy@
- 2: +R2o Smx= rY#d gGvE fU5w 7u#h VyL:
- 3: TiAP grLz vtEs f2W= 5R#F PMWz q6#?
- 4: 9YBX %oL7 jAWs otr% ek+c NwJs hGG3
- 5: AVe5 !eg+ 9o6q YMnb 4dGZ rqR3 EDv+
- 6: Rqec KXgx tNed W3q3 KXcr nCKr szKA
- 7: e%V@ cxEh Zvh5 jiVZ #seN iRu3 xD:X
- 8: AKN9 LHcD T@g2 Tzjr 6b?R =FeZ qHZ#
- 9: E4uo nNKE ?yi+ mZ#R =3F6 jJnv yyje
-10: J5:X 3eWT GGdC JN4m oSbX r=vE Pnso
-----    -----
-  4     len+1
-*/
-
 char *card_ascii(const state *s, mpz_t number)
 {
 	const char columns[] = "ABCDEFGHIJKLMNOP";
-	const int whitespace = 2;
+	const int whitespace = 1;
 	const int label_max = STATE_LABEL_SIZE;	/* Maximal length of label */
 	const int num_min = 8;			/* Minimal size for number on card */
-	
+
 	char *label, *whole_card_num, *printed_card_num;
 	int label_len, card_num_len;
 	int i;
@@ -121,7 +104,7 @@ char *card_ascii(const state *s, mpz_t number)
 
 	} while (i < s->codes_in_row);
 	card -= whitespace - 1;
-	*(card-1) = '\n';	
+	*(card-1) = '\n';
 
 	/* Passcodes */
 	mpz_t code_num;
@@ -156,25 +139,25 @@ char *card_ascii(const state *s, mpz_t number)
 	return whole_card;
 }
 
-void card_testcase(void) 
+void card_testcase(void)
 {
 	unsigned char hash[32];
-	char *card; 
+	char *card;
 	state s;
 	mpz_t cnt;
 	int test = 0;
 	int failed = 0;
 
 	mpz_init(cnt);
-	state_init(&s);
+	state_init(&s, NULL, ".otpasswd_testcase");
 	strcpy(s.label, "hostname long");
 
-	const unsigned char hash1[] = 
+	const unsigned char hash1[] =
 		"\xEA\xBC\x42\xC2\x4A\xCB\xCB\xD1\xB7\x58\xA9\x2C"
 		"\x3D\xE3\xF2\x43\x9A\x4B\xCD\xF4\x2A\xFB\x8C\x1A"
 		"\xB8\xB0\x3A\x04\xF7\x28\x97\x6A";
 
-	const unsigned char hash2[] = 
+	const unsigned char hash2[] =
 		"\x28\xAD\xC8\xC7\x82\xE0\x35\xE6\xD0\x7F\xBC\x28"
 		"\x15\xDD\x27\x56\xB6\x5C\x59\xAA\x3A\xE7\x35\xC5"
 		"\x94\xFD\x42\x85\xA0\x6E\x25\x38";
@@ -186,9 +169,9 @@ void card_testcase(void)
 
 	mpz_set_ui(cnt, 254323245UL);
 	mpz_mul_ui(cnt, cnt, 21234887UL);
-	mpz_mul_ui(cnt, cnt, 21234565UL); 
-	mpz_mul_ui(cnt, cnt, 21234546UL); 
-	
+	mpz_mul_ui(cnt, cnt, 21234565UL);
+	mpz_mul_ui(cnt, cnt, 21234546UL);
+
 	card = card_ascii(&s, cnt);
 
 	crypto_sha256((unsigned char *)card, strlen(card), hash);
@@ -213,9 +196,9 @@ void card_testcase(void)
 
 	mpz_set_ui(cnt, 25432UL);
 	mpz_mul_ui(cnt, cnt, 214887UL);
-	mpz_mul_ui(cnt, cnt, 2134565UL); 
-	mpz_mul_ui(cnt, cnt, 214546UL); 
-	
+	mpz_mul_ui(cnt, cnt, 2134565UL);
+	mpz_mul_ui(cnt, cnt, 214546UL);
+
 	card = card_ascii(&s, cnt);
 
 	crypto_sha256((unsigned char *)card, strlen(card), hash);
@@ -239,5 +222,80 @@ void card_testcase(void)
 
 char *card_latex(const state *s, mpz_t number)
 {
-	return NULL; 
+	const char intro[] =
+		"\\documentclass[11pt,twocolumn,a4paper]{article}\n"
+		"\\usepackage{fullpage}\n"
+		"\\pagestyle{empty}\n"
+		"\\begin{document}\n";
+
+	const char block_start[] =
+		"\\begin{verbatim}\n";
+
+	const char block_stop[] =
+		"\\end{verbatim}\n"
+		"\\newpage";
+
+	const char outro[] =
+		"\\end{document}\n";
+
+	int i;
+	int size = 
+		sizeof(intro) + sizeof(outro) +
+		sizeof(block_start)*2 + sizeof(block_stop) * 2 +
+		700 * 6;
+	char *whole_card = malloc(size);
+	char *card_pos = whole_card;
+	
+	if (!whole_card)
+		return NULL;
+	memset(whole_card, 0, size);
+
+	mpz_t n;
+	mpz_init(n);
+
+	memcpy(card_pos, intro, sizeof(intro) - 1);
+	card_pos += sizeof(intro) - 1;
+
+	memcpy(card_pos, block_start, sizeof(block_start) - 1);
+	card_pos += sizeof(block_start) - 1;
+	for (i=0; i<=2; i++) {
+		mpz_add_ui(n, number, i);
+		char *part = card_ascii(s, n);
+		memcpy(card_pos, part, strlen(part));
+		card_pos += strlen(part);
+		free(part);
+
+		if (i != 2) {
+			memcpy(card_pos, "\n", 1);
+			card_pos += 1;
+		} 
+	}
+	memcpy(card_pos, "\n\n", 2);
+	card_pos += 2;
+
+	memcpy(card_pos, block_stop, sizeof(block_stop) - 1);
+	card_pos += sizeof(block_stop) - 1;
+
+	memcpy(card_pos, block_start, sizeof(block_start) - 1);
+	card_pos += sizeof(block_start) - 1;
+	for (i=3; i<=5; i++) {
+		mpz_add_ui(n, number, i);
+
+		char *part = card_ascii(s, n);
+		memcpy(card_pos, part, strlen(part));
+		card_pos += strlen(part);
+		free(part);
+
+		if (i != 5) {
+			memcpy(card_pos, "\n", 1);
+			card_pos += 1;
+		}
+	}
+	memcpy(card_pos, block_stop, sizeof(block_stop) - 1);
+	card_pos += sizeof(block_stop) - 1;
+
+	memcpy(card_pos, outro, sizeof(outro) - 1);
+	card_pos += sizeof(outro) - 1;
+
+	return whole_card;
 }
