@@ -27,8 +27,6 @@ Cirrus                             [1]
   4     len+1
 */
 
-
-
 char *card_ascii(const state *s, mpz_t number)
 {
 	const char columns[] = "ABCDEFGHIJKLMNOP";
@@ -224,4 +222,10 @@ void card_testcase(void)
 	printf("passcard_testcases: %d out of %d tests failed\n", failed, test);
 	state_fini(&s);
 	mpz_clear(cnt);
+}
+
+
+char *card_latex(const state *s, mpz_t number)
+{
+	return NULL;
 }

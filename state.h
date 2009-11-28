@@ -8,6 +8,7 @@
 /* Base for storing big numbers inside STATE_FILENAME */
 #define STATE_BASE	62
 #define STATE_LABEL_SIZE 30
+#define STATE_CONTACT_SIZE 60
 #define ROWS_PER_CARD 10
 
 /*** State ***/
@@ -15,6 +16,7 @@ enum flags {
 	FLAG_SHOW = 1,
 	FLAG_SKIP = 2,
 	FLAG_ALPHABET_EXTENDED = 4,
+	FLAG_NOT_SALTED = 8,
 };
 
 typedef struct {
@@ -40,7 +42,14 @@ typedef struct {
 	/* Card label (might be zeroed, then hostname is used) */
 	char label[STATE_LABEL_SIZE];
 
+	/* Phone number... ANY info used for informing a user
+	 * for example an email, or - a phone number... */
+	char contact[STATE_CONTACT_SIZE];
+
 	/*** Temporary / not-saved data ***/
+
+	/* Salt helper */
+	mpz_t salt_mask;
 
 	/* Card information, calculated once for
 	 * simplicity and stored here
@@ -71,7 +80,7 @@ extern int state_init(state *s);
 extern void state_fini(state *s);
 
 /* Generate new key */
-extern int state_key_generate(state *s);
+extern int state_key_generate(state *s, const int salt);
 /* Increment passcode counter */
 extern void state_inc(state *s);
 

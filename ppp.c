@@ -15,6 +15,26 @@ const char alphabet_extended[] =
 	"!\"#$%&'()*+,-./23456789:;<=>?@ABCDEFGHJKLMNO"
 	"PRSTUVWXYZ[\\]^_abcdefghijkmnopqrstuvwxyz{|}~";
 
+int ppp_get_passcode_number(const state *s, const mpz_t passcard, mpz_t passcode, char column, char row)
+{
+	/* TODO, FIXME Ensure ranges */
+	mpz_sub_ui(passcode, passcard, 1);
+	mpz_mul_ui(passcode, passcode, s->codes_on_card);
+	if (column < 'A' || column > 'A' + s->codes_in_row) {
+		print(PRINT_NOTICE, "Column out of possible range!\n");
+		return 1;
+	}
+
+	if (row < 0 || row > 10) {
+		print(PRINT_NOTICE, "Row out of range!\n");
+		return 1;
+	}
+
+	mpz_add_ui(passcode, passcode, row * s->codes_in_row);
+	mpz_add_ui(passcode, passcode, column - 'A');
+	return 0;
+}
+
 /* Calculate a single passcode of given number using specified key */
 int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
 {
@@ -206,6 +226,8 @@ void ppp_testcase(void)
 	_PPP_TEST(0, 7, 'A', 1, "Y*HJ;,(");
 	_PPP_TEST(70+34, 7, 'A', 7, "Ao_\"e82");
 	_PPP_TEST(70+36, 7, 'C', 7, "(&JV?E_");
+
+	/* TODO FIXME: do some get_passcode_number testcases */
 
 	state_fini(&s);
 }

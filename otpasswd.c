@@ -55,7 +55,7 @@ static void _usage(int argc, const char **argv)
 		"  -t, --text <which>\n"
 		"               Generate one ascii passcard of a specified number\n"
 		"  -l, --latex <which>\n"
-		"               Generate a latex file with 6 passcards\n"
+		"               Generate a LaTeX output with 6 passcards\n"
 		"               starting with the specified one\n"
 		"  -p, --passcode <which>\n"
 		"               Specify a single passcode identifier to print.\n"
@@ -67,7 +67,8 @@ static void _usage(int argc, const char **argv)
 		"                C is its column (A through G), RR - row (1..10)\n"
 		"  current     - passcode used for next time authentication\n"
 		"  next        - first, not yet printed, passcard\n"
-		"\n"
+
+		"\nConfiguration:\n"
 		"  -f, --flag <arg>\n"
 		"               Manages various user-selectable flags:\n"
 		"               skip              skip passcode on failure (default)\n"
@@ -78,9 +79,23 @@ static void _usage(int argc, const char **argv)
 		"               alphabet-extended 88-character alphabet\n"
 		"               codelenght-X      sets passcodes length, X is a number\n"
 		"                                 from 2 to 16 (default: codelength-4)\n"
+		"  -c, --contact <arg>\n"
+		"               Set a contact info (e.g. phone number) with which\n"
+		"               you want to receive current passcode during authentication.\n"
+		"               Details depends on pam module configuration. Use \"\"\n"
+		"               to disable.\n"
+		"  -d, --label <arg>\n"
+		"               Set a caption to use on generated passcards.\n"
+		"               Use \"\" to set default (hostname)\n"
+		"  -n, --no-salt\n"
+		"               Meaningful only during key generation. Disables salting\n"
+		"               of a passcode counter. Enabling this option will make program\n"
+		"               compatible with PPPv3 and will increase available passcard number\n"
+		"               at the cost of (theoretically) less security.\n"
 		"\n"
 		"  -v, --verbose Display more information about what is happening.\n"
 		"  -x, --check   Run all testcases.\n"
+
 		"\nNotes:\n"
 		"  \"dont-skip\" flag might introduce a security hole.\n"
 		"  Both --text and --latex can get \"next\" as a parameter which\n"
@@ -133,7 +148,9 @@ static void action_key(void)
 		}
 	}
 
-	if (state_key_generate(&s) != 0) {
+	int salted = options.flag_set_mask & FLAG_NOT_SALTED ? 0 : 1;
+
+	if (state_key_generate(&s, salted) != 0) {
 		print(PRINT_ERROR, "Unable to generate new key\n");
 		exit(1);
 	}
@@ -202,6 +219,11 @@ static void action_flags(void)
 	else
 		printf("alphabet-simple ");
 
+	if (s.flags & FLAG_NOT_SALTED)
+		printf("(no salt) ");
+	else
+		printf("(key salted) ");
+
 	printf("codelength-%d\n", s.code_length);
 
 cleanup:
@@ -211,8 +233,10 @@ cleanup:
 void action_print(void)
 {
 	int ret;
-	/* This action requires created key */
+
+	/* This action requires a created key */
 	state s;
+	int state_changed = 0;
 	if (state_init(&s) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
 		exit(1);
@@ -220,57 +244,141 @@ void action_print(void)
 
 	/* Load our state */
 	if (state_load(&s) != 0) {
-		/* Unable to load state, message should already be printed */
+		print(PRINT_ERROR, "Unable to load state file. Have you tried -k option?\n");
 		goto cleanup;
 	}
 
+	/* Calculate current cards etc */
+	ppp_calculate(&s);
+
+
+	/* Calculate maximal values for passcard and passcode */
+	/* FIXME */
+
+
 
 	/* Parse argument, we need card number + passcode number */
+	int code_selected = 0;
 	mpz_t passcard_num;
 	mpz_t passcode_num;
 	mpz_init(passcard_num);
 	mpz_init(passcode_num);
 
 	if (strcasecmp(options.action_arg, "current") == 0) {
-
+		/* Current passcode */
+		code_selected = 1;
+		mpz_set(passcode_num, s.counter);
 	} else if (strcasecmp(options.action_arg, "next") == 0) {
-
+		/* Next passcard */
+		code_selected = 0;
+		mpz_set(passcard_num, s.furthest_printed);
+		mpz_add_ui(passcard_num, passcard_num, 1);
 	} else if (isalpha(options.action_arg[0])) {
-		printf("CRR[number]\n");
-		/* CRR[number] */
+		/* Format: CRR[number] */
 		char column;
 		int row;
-		char number[200];
-		ret = sscanf("%c%d[%199s]", &column, &row, number);
+		char number[41];
+		ret = sscanf(options.action_arg, "%c%d[%40s]", &column, &row, number);
 		column = toupper(column);
 		if (ret != 3 || (column < 'A' || column > 'J')) {
-			print(PRINT_ERROR, "Incorrect passcard specification\n");
+			print(PRINT_ERROR, "Incorrect passcode specification. (%d)\n", ret);
 			goto cleanup1;
 		}
 
+		ret = gmp_sscanf(number, "%Zd", passcard_num);
+		if (ret != 1) {
+			print(PRINT_ERROR, "Incorrect passcard specification.\n");
+			goto cleanup1;
+		}
+				
+		ret = ppp_get_passcode_number(&s, passcard_num, passcode_num, column, row);
+		if (ret != 0) {
+			print(PRINT_ERROR, "Error while parsing passcard description.\n");
+			goto cleanup1;
+		}
+		gmp_printf("GOT: %Zd\n", passcode_num);
+
+		code_selected = 1;
+
 	} else if (isdigit(options.action_arg[0])) {
 		/* number -- passcode number */
-		gmp_sscanf(options.action_arg, "%Z", passcode_num);
+		ret = gmp_sscanf(options.action_arg, "%Zd", passcode_num);
+		if (ret != 1) {
+			print(PRINT_ERROR, "Error while parsing passcode number.\n");
+			goto cleanup1;
+		}
+
+		/* Ensure values are in range (1;...) */
+		mpz_sub_ui(passcode_num, passcode_num, 1);
+		
+		code_selected = 1;
 	} else if (options.action_arg[0] == '['
 		   && options.action_arg[strlen(options.action_arg)-1] == ']') {
 		/* [number] -- passcard number */
 		ret = gmp_sscanf(options.action_arg, "[%Zd]", passcard_num);
 		if (ret != 1) {
-			print(PRINT_ERROR, "Error while parsing command argument (%d).\n", ret);
+			print(PRINT_ERROR, "Error while parsing passcard number.\n");
 			goto cleanup1;
 		}
+
+		/* Ensure values are in range (1;...) */
+		mpz_sub_ui(passcard_num, passcard_num, 1);
+
+		code_selected = 0;
 	} else {
-		print(PRINT_ERROR, "Illegal argument passed to option\n");
+		print(PRINT_ERROR, "Illegal argument passed to option.\n");
 		goto cleanup1;
 	}
 
-	ppp_calculate(&s);
-	char *card = card_ascii(&s, passcard_num);
-	if (!card) {
-		printf("error?\n");
+
+	/* Print the thing requested */
+	if (code_selected == 0) {
+		char *card;
+		switch (options.action) {
+		case 't':
+			card = card_ascii(&s, passcard_num);
+			if (!card) {
+				print(PRINT_ERROR, "Error while printing card (not enough memory?)\n");
+				goto cleanup1;
+			}
+			puts(card);
+			free(card);
+			break;
+
+		case 'l':
+			card = card_latex(&s, passcard_num);
+			if (!card) {
+				print(PRINT_ERROR, "Error while printing card (not enough memory?)\n");
+				goto cleanup1;
+			}
+			puts(card);
+			free(card);
+			break;
+
+		case 's':
+			break;
+		}
+	} else {
+		char passcode[17];
+		switch (options.action) {
+		case 't':
+			ret = ppp_get_passcode(&s, passcode_num, passcode);
+			if (ret != 0) {
+				print(PRINT_ERROR, "Error while calculating passcode\n");
+				goto cleanup1;
+			}
+			printf("%s\n", passcode);
+			break;
+
+		case 'l':
+			print(PRINT_ERROR, "LaTeX parameter works only with passcard specification\n");
+			break;
+
+		case 's':
+			break;
+		}
+
 	}
-	puts(card);
-	free(card);
 
 cleanup1:
 	num_dispose(passcode_num);
@@ -292,8 +400,12 @@ void process_cmd_line(int argc, char **argv)
 		{"latex",		required_argument,	0, 'l'},
 		{"passcode",		required_argument,	0, 'p'},
 
+
 		/* Flags */
 		{"flags",		required_argument,	0, 'f'},
+		{"label",		required_argument,	0, 'd'},
+		{"contact",		required_argument,	0, 'c'},
+		{"no-salt",		no_argument,		0, 'n'},
 		{"verbose",		required_argument,	0, 'v'},
 		{"check",		no_argument,		0, 'x'},
 
@@ -303,7 +415,7 @@ void process_cmd_line(int argc, char **argv)
 	while (1) {
 		int option_index = 0;
 
-		int c = getopt_long(argc, argv, "ks:t:l:p:f:vx", long_options, &option_index);
+		int c = getopt_long(argc, argv, "ks:t:l:p:f:d:c:nvx", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1)
@@ -331,9 +443,23 @@ void process_cmd_line(int argc, char **argv)
 			/* Parse argument */
 			break;
 
+		case 'n':
+			if (options.flag_set_mask) {
+				printf("-n option can only be passed during key creation!\n");
+				exit(-1);
+			}
+
+			options.flag_set_mask |= FLAG_NOT_SALTED;
+			break;
+
 		case 'f':
 			if (options.action != 0) {
 				printf("Only one action can be specified on the command line\n");
+				exit(-1);
+			}
+
+			if (options.flag_set_mask) {
+				printf("-n option can only be passed during key creation!\n");
 				exit(-1);
 			}
 
@@ -361,6 +487,9 @@ void process_cmd_line(int argc, char **argv)
 				}
 			}
 			break;
+		case 'd':
+		case 'c':
+
 		case '?':
 			/* getopt_long already printed an error message. */
 			_usage(argc, (const char **)argv);

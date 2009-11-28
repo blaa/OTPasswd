@@ -196,6 +196,9 @@ static int _rng_read(const char *device, const char *msg, unsigned char *buf, co
 
 int state_load(state *s)
 {
+	/* TODO: Maybe rewrite using strtok? */
+
+
 	if (s->filename == NULL) {
 		print(PRINT_CRITICAL, "State data not initialized?\n");
 		return 1;
@@ -215,7 +218,7 @@ int state_load(state *s)
 	FILE *f;
 
 	if (_state_file_permissions(s) != 0) {
-		print(PRINT_NOTICE, "Unable to load state file. Have you tried -k option?\n");
+		print(PRINT_NOTICE, "Unable to load state file\n");
 		return 1;
 	}
 
@@ -265,7 +268,7 @@ int state_load(state *s)
 		goto error;
 	}
 
-	/* Read whitecharacters after flags */
+	/* Read a whitecharacter after flags */
 	if (fgetc(f) != '\n') {
 		print_perror(PRINT_ERROR, "Syntax error in %s.", s->filename);
 		goto error;
@@ -284,9 +287,27 @@ int state_load(state *s)
 		 * it's lack might be caused by too long entry
 		 * at end of file 
 		 */
-		print_perror(PRINT_ERROR, "Garbage at end of %s.", s->filename);
+		print_perror(PRINT_ERROR, "Garbage near label data in %s.", s->filename);
 		goto error;
 	}
+
+	if (fgets(s->contact, sizeof(s->contact), f) == NULL) {
+		/* Nothing read, there should be at least one \n */
+		print_perror(PRINT_ERROR, "Error while reading contact data from %s"
+			     ", unexpected end of file",
+			     s->filename);
+		goto error;
+	}
+
+	if (s->label[strlen(s->contact) - 1] != '\n') {
+		/* \n is put there if we find end of file,
+		 * it's lack might be caused by too long entry
+		 * at end of file 
+		 */
+		print_perror(PRINT_ERROR, "Garbage near contact data at end of %s.", s->filename);
+		goto error;
+	}
+
 
 	s->label[strlen(s->label) - 1] = '\0';
 
@@ -319,13 +340,12 @@ int state_load(state *s)
 		goto error;
 	}
 
-	if (s->flags > (FLAG_SHOW|FLAG_SKIP|FLAG_ALPHABET_EXTENDED)) {
+	if (s->flags > (FLAG_SHOW|FLAG_SKIP|FLAG_ALPHABET_EXTENDED|FLAG_NOT_SALTED)) {
 		print(PRINT_ERROR, "Unsupported set of flags. %s is invalid\n", 
 		      s->filename);
 		goto error;
 
 	}
-
 	fclose(f);
 	return 0;
 
@@ -336,6 +356,7 @@ error:
 
 int state_store(const state *s)
 {
+	/* Rewrite maybe using gmp_scanf? */
 	int ret;
 	FILE *f;
 
@@ -358,7 +379,6 @@ int state_store(const state *s)
 	}
 
 	/* Write using ascii safe approach */
-
 	ret = mpz_out_str(f, STATE_BASE, s->sequence_key);
 	if (ret == 0) {
 		print(PRINT_ERROR, "Error while saving sequence key\n");
@@ -390,24 +410,10 @@ int state_store(const state *s)
 		goto error;
 	}
 
-	ret = fprintf(f, "\n%u\n", s->code_length);
+	ret = fprintf(f, "\n%u\n%u\n%s\n%s\n", s->code_length, s->flags, s->label, s->contact);
 	if (ret <= 0) {
 		print(PRINT_ERROR, 
-		      "Error while writting passcode length to %s\n",
-		      s->filename);
-		goto error;
-	}
-
-	ret = fprintf(f, "%u\n", s->flags);
-	if (ret <= 0) {
-		print(PRINT_ERROR, "Error while writting flags to %s\n",
-		      s->filename);
-		goto error;
-	}
-
-	ret = fprintf(f, "%s\n", s->label);
-	if (ret <= 0) {
-		print(PRINT_ERROR, "Error while writting label to %s\n",
+		      "Error while writting passlength, flags, label and contact data to %s\n",
 		      s->filename);
 		goto error;
 	}
@@ -465,10 +471,15 @@ void state_inc(state *s)
 
 int state_init(state *s)
 {
+	const char salt_mask[] =
+		"FFFFFFFFFFFFFFFFFFFFFFFF00000000";
+	assert(sizeof(salt_mask) == 33);
+
 	mpz_init(s->counter);
 	mpz_init(s->sequence_key);
 	mpz_init(s->furthest_printed);
 	mpz_init(s->current_card);
+	assert(mpz_init_set_str(s->salt_mask, salt_mask, 16) == 0);
 
 	s->code_length = 4;
 	s->flags = FLAG_SHOW;
@@ -494,13 +505,17 @@ void state_fini(state *s)
 	num_dispose(s->sequence_key);
 	num_dispose(s->furthest_printed);
 	num_dispose(s->current_card);
+	num_dispose(s->salt_mask);
+
 	free(s->filename);
 }
 
-int state_key_generate(state *s)
+int state_key_generate(state *s, const int salt)
 {
-	unsigned char entropy_pool[256];
+	unsigned char entropy_pool[128]; /* 1024 bits */
 	unsigned char key_bin[32];
+	/* TODO: implement salting */
+	print(PRINT_NOTICE, "Generating new %s key.\n", salt ? "salted" : "not salted");
 
 	/* Gather entropy from random, then fallback to urandom... */
 	if (_rng_read(
@@ -524,15 +539,31 @@ int state_key_generate(state *s)
 			return 1;
 		}
 	}
-	crypto_sha256(entropy_pool, sizeof(entropy_pool), key_bin);
-	memset(entropy_pool, 0, sizeof(entropy_pool));
+	if (salt == 0) {
+		crypto_sha256(entropy_pool, sizeof(entropy_pool), key_bin);
+		memset(entropy_pool, 0, sizeof(entropy_pool));
 
-//	assert( crypto_rng(tmp, 32, 0) == 0 ); /* TODO: Change to secure */
+		num_from_bin(s->sequence_key, key_bin, sizeof(key_bin));
+		memset(key_bin, 0, sizeof(key_bin));
+		mpz_set_d(s->counter, 0);
+		mpz_set_d(s->furthest_printed, 0);
+	} else {
+		/* Use half of entropy to generate key */
+		crypto_sha256(entropy_pool, sizeof(entropy_pool)/2, key_bin);
+		num_from_bin(s->sequence_key, key_bin, sizeof(key_bin));
 
-	num_from_bin(s->sequence_key, key_bin, sizeof(key_bin));
-	memset(key_bin, 0, sizeof(key_bin));
-	mpz_set_d(s->counter, 0);
-	mpz_set_d(s->furthest_printed, 0);
+		/* And half to initialize counter */
+		crypto_sha256(entropy_pool+sizeof(entropy_pool)/2, sizeof(entropy_pool)/2, key_bin);
+		num_from_bin(s->counter, key_bin, 16); /* Counter is 128 bit only */
+		mpz_and(s->counter, s->counter, s->salt_mask);
+		mpz_set(s->furthest_printed, s->counter);
+
+		memset(entropy_pool, 0, sizeof(entropy_pool));
+		memset(key_bin, 0, sizeof(key_bin));
+	}
+
+	if (salt)
+		s->flags &= ~(FLAG_NOT_SALTED); 
 	return 0;
 }
 
@@ -560,7 +591,7 @@ void state_testcase(void)
 	test++; if (state_init(&s2) != 0)
 		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
 
-	test++; if (state_key_generate(&s1) != 0)
+	test++; if (state_key_generate(&s1, 0) != 0)
 		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
 	mpz_set_ui(s1.counter, 321323211UL);
 

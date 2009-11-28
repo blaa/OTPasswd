@@ -23,7 +23,6 @@ static inline void num_to_bin(const mpz_t num, unsigned char *data, const int le
 		memset(data, 0, length);
 	else 
 		mpz_export(data, &size, 1, length, -1, 0, num);
-
 	assert(size == 1);
 }
 
