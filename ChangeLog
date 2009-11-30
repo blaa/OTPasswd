@@ -14,3 +14,4 @@
 	* Decide on state file look, add version
 	* Implement label and contact setting
 	* Calling external script for mailing/sms 
+	* Share objects between targets (CMake)

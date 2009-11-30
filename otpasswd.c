@@ -195,11 +195,16 @@ static int action_authenticate(void)
 	}
 
 	/* Using locking load state, increment counter, and store new state */
-	retval = state_load_inc_store(&s);
+	retval = ppp_load_increment(&s);
 	switch (retval) {
 	case 0:
 		/* Everything fine */
 		break;
+
+	case STATE_NUMSPACE:
+		printf("Counter overflowed. Regenerate key\n");
+		retval = 0;
+		goto cleanup;
 
 	case STATE_DOESNT_EXISTS:
 		retval = 0;
@@ -360,10 +365,19 @@ void action_print(void)
 
 	/* This action requires a created key */
 	state s;
+	int state_locked = 1;
 	int state_changed = 0;
 	if (state_init(&s, NULL, NULL) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
 		exit(1);
+	}
+
+	ret = state_lock(&s);
+	if (ret != 0 && ret != STATE_DOESNT_EXISTS) {
+		/* whoops! */
+		print(PRINT_ERROR, "Unable to lock file! Unable to save"
+		      " any changes back to file!\n");
+		state_locked = 0;
 	}
 
 	/* Load our state */
@@ -375,6 +389,17 @@ void action_print(void)
 	/* Calculate current cards etc */
 	ppp_calculate(&s);
 
+	/* See if we have any counters left */
+	int counter_correct = 1;
+	ret = ppp_verify_range(&s);
+	if (ret == 2) {
+		/* State file corrupted */
+		goto cleanup;
+	}
+
+	if (ret != 0)
+		counter_correct = 0;
+
 	/* Parse argument, we need card number + passcode number */
 	int code_selected = 0;
 	mpz_t passcard_num;
@@ -384,11 +409,21 @@ void action_print(void)
 
 	if (strcasecmp(options.action_arg, "current") == 0) {
 		/* Current passcode */
+		if (counter_correct == 0) {
+			print(PRINT_ERROR, "Passcode counter overflowed. Regenerate key.\n");
+			goto cleanup1;
+		}
+
 		code_selected = 1;
 		mpz_set(passcode_num, s.counter);
 
 	} else if (strcasecmp(options.action_arg, "next") == 0) {
 		/* Next passcard */
+		if (counter_correct == 0) {
+			print(PRINT_ERROR, "Passcode counter overflowed. Regenerate key.\n");
+			goto cleanup1;
+		}
+
 		code_selected = 0;
 		mpz_set(passcard_num, s.furthest_printed);
 	} else if (isalpha(options.action_arg[0])) {
@@ -504,6 +539,11 @@ void action_print(void)
 			break;
 
 		case 's':
+			if (counter_correct == 0) {
+				print(PRINT_ERROR, "Passcode counter overflowed. Regenerate key.\n");
+				goto cleanup1;
+			}
+
 			break;
 			
 		case 'p':
@@ -532,9 +572,14 @@ void action_print(void)
 			break;
 
 		case 's':
+			if (counter_correct == 0) {
+				print(PRINT_ERROR, "Passcode counter overflowed. Regenerate key.\n");
+				goto cleanup1;
+			}
+
 			break;
 			
-		case 'P':
+		case 'p':
 
 			/* Don't save state after this operation */
 			mpz_set(s.counter, passcode_num);
@@ -551,7 +596,18 @@ cleanup1:
 	num_dispose(passcard_num);
 
 cleanup:
+	if (state_changed) {
+		if (state_locked == 0)  {
+			print(PRINT_NOTICE,  "NOT saving any changes since file is locked\n");
+		} else {
+			print(PRINT_NOTICE, "Saving changes to state file\n");
+			if (state_store(&s) != 0) {
+				print(PRINT_ERROR, "Error while saving changes!\n");
+			}
+		}
+	}
 	state_fini(&s);
+	state_unlock(&s);
 }
 
 

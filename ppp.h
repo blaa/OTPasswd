@@ -29,6 +29,23 @@ extern void ppp_dispose_prompt(state *s);
 /* Try to authenticate user; returns 0 on successful authentication */
 extern int ppp_authenticate(const state *s, const char *passcode);
 
+/* Verify that counter (and key) is in correct range 
+ * done usually after reading from the state file, when 
+ * the data could be maliciously changed */
+extern int ppp_verify_range(const state *s);
+
+/* High level function used during authentication.
+ * 1. Lock file
+ * 2a. Open it
+ * 2b. Verify that we still can perform authentication
+ *     (for example the counter is not bigger than 2^128)
+ * 3. Increment counter
+ * 4. Save it and unlock
+ *
+ * It also calls ppp_calculate();
+ */
+extern int ppp_load_increment(state *s);
+
 extern void ppp_testcase(void);
 
 #endif

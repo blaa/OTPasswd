@@ -263,6 +263,15 @@ void ppp_calculate(state *s)
 
 	mpz_div_ui(s->max_card, s->max_card, s->codes_on_card);
 
+	/* s->max_card is now technically correct, but 
+	 * we must be sure, that the last passcode is not 
+	 * the last from number namespace, like 2^128-1 when 
+	 * using not-salted key.
+	 * This should not happen... but, just for the sake
+	 * of simplicity
+	 */
+	mpz_sub_ui(s->max_card, s->max_card, 1);
+
 	/* Calculate max passcode.
 	 * This is the last passcode on last card.
 	 * (Which does not equal last counter value)
@@ -276,6 +285,118 @@ void ppp_calculate(state *s)
 	print(PRINT_NOTICE, "Max code = %s\n", 
 	      print_mpz(s->max_code, 10));
 }
+
+
+int ppp_verify_range(const state *s)
+{
+	/* First verify two conditions that should never happen
+	 * then check something theoretically possible */
+
+	/* Verify key size */
+	const char max_key_hex[] = 
+		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+	mpz_t max_key;
+	mpz_init_set_str(max_key, max_key_hex, 16);
+
+	if (mpz_cmp(s->sequence_key, max_key) > 0) {
+		print(PRINT_ERROR, "State file corrupted. Key number too big\n");
+		num_dispose(max_key);
+		return 2;
+	}
+	num_dispose(max_key);
+
+	/* Verify counter size */
+	const char max_counter_hex[] = 
+		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+	mpz_t max_counter;
+	mpz_init_set_str(max_counter, max_counter_hex, 16);
+
+	if (mpz_cmp(s->counter, max_counter) > 0) {
+		print(PRINT_ERROR, "State file corrupted. Counter number too big\n");
+		num_dispose(max_counter);
+		return 2;
+	}
+	num_dispose(max_counter);
+
+	/* Check if we have runned out of available passcodes */
+
+	/* Retrieve current counter without salt */
+	mpz_t just_counter; 
+	mpz_init(just_counter);
+	if (s->flags & FLAG_NOT_SALTED) {
+		mpz_set(just_counter, s->counter);
+	} else {
+		mpz_and(just_counter, s->counter, s->code_mask);
+	}
+
+	/* ppp_calculate must've been called before */
+	assert(s->codes_on_card > 0);
+
+	if (mpz_cmp(just_counter, s->max_code) > 0) {
+		/* Whoops */
+		num_dispose(just_counter);
+		return 1;
+	}
+
+	num_dispose(just_counter);
+	return 0;
+}
+
+/****************************************
+ * High-level state management functions
+ ****************************************/
+int ppp_load_increment(state *s)
+{
+	int ret;
+
+	if (state_lock(s) != 0)
+		return STATE_LOCK_ERROR;
+
+	ret = state_load(s);
+	if (ret != 0)
+		goto cleanup1;
+
+	/* TODO: At this point we must know whether
+	 * we still have any passcodes. Counter might 
+	 * be set to 2^128 or 2^32 and after incrementing 
+	 * it will modify salt or overflow 
+	 */
+	ppp_calculate(s);
+	
+	if (ppp_verify_range(s) != 0) {
+		ret = STATE_NUMSPACE;
+		goto cleanup1;
+	}
+
+	/* Store current counter */
+	mpz_t tmp;
+	mpz_init(tmp);
+	mpz_set(tmp, s->counter);
+
+	/* Increment and save state */
+	mpz_add_ui(s->counter, s->counter, 1);
+
+	ret = state_store(s);
+	if (ret != 0) {
+		goto cleanup2;
+	}
+
+	/* Restore current counter */
+	mpz_set(s->counter, tmp);
+
+
+cleanup2:
+	num_dispose(tmp);
+
+cleanup1:
+	state_unlock(s);
+	return ret;
+}
+
+
+
+
 
 /***************************
  * Testcases
@@ -324,7 +445,7 @@ static void _ppp_testcase_authenticate(const char *passcode)
 	}
 
 	/* Using locking load state, increment counter, and store new state */
-	retval = state_load_inc_store(&s);
+	retval = ppp_load_increment(&s);
 	switch (retval) {
 	case 0:
 		printf("LOAD_INC_STORE=OK\n");

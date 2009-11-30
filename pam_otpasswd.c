@@ -27,6 +27,10 @@ PAM_EXTERN int pam_sm_authenticate(
 
 	const char *user = NULL;
 	const char enforced_msg[] = "OTP not configured, unable to login.";
+	const char numspace_msg[] =
+		"Passcode counter overflowed or state "
+		"file corrupted. Regenerate key.";
+
 	const char *prompt = NULL;
 	int tries = 0;
 
@@ -107,11 +111,27 @@ PAM_EXTERN int pam_sm_authenticate(
 	}
 
 	/* Using locking load state, increment counter, and store new state */
-	retval = state_load_inc_store(&s);
+	retval = ppp_load_increment(&s);
 	switch (retval) {
 	case 0:
 		/* Everything fine */
 		break;
+
+	case STATE_NUMSPACE:
+		/* Strange error, might happen, but, huh! */
+		if (!(flags & PAM_SILENT)) {
+			/* Tell why */
+			message.msg_style = PAM_TEXT_INFO;
+			message.msg = numspace_msg;
+			conversation->conv(
+				1,
+				(const struct pam_message**)&pmessage,
+				&resp, conversation->appdata_ptr);
+			if (resp)
+				_pam_drop_reply(resp, 1);
+		}
+		retval = PAM_MAXTRIES;
+		goto cleanup;
 
 	case STATE_DOESNT_EXISTS:
 		if (enforced == 0) {

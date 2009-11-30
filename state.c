@@ -123,8 +123,7 @@ static int _state_file_permissions(const state *s)
 	return 0;
 }
 
-
-static int _state_lock(state *s)
+int state_lock(state *s)
 {
 	struct flock fl;
 	int ret;
@@ -174,7 +173,7 @@ static int _state_lock(state *s)
 	return 0; /* Got lock */
 }
 
-static int _state_unlock(state *s)
+int state_unlock(state *s)
 {
 	struct flock fl;
 
@@ -480,42 +479,6 @@ int state_store(const state *s)
 error:
 	fclose(f);
 	return 1;
-}
-
-int state_load_inc_store(state *s)
-{
-	int ret;
-
-	if (_state_lock(s) != 0)
-		return STATE_LOCK_ERROR;
-
-	ret = state_load(s);
-	if (ret != 0)
-		goto cleanup1;
-
-	/* Store current counter */
-	mpz_t tmp;
-	mpz_init(tmp);
-	mpz_set(tmp, s->counter);
-
-	/* Increment and save state */
-	mpz_add_ui(s->counter, s->counter, 1);
-
-	ret = state_store(s);
-	if (ret != 0) {
-		goto cleanup2;
-	}
-
-	/* Restore current counter */
-	mpz_set(s->counter, tmp);
-
-
-cleanup2:
-	num_dispose(tmp);
-
-cleanup1:
-	_state_unlock(s);
-	return ret;
 }
 
 /******************************************

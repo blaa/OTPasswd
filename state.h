@@ -16,8 +16,9 @@
 enum errors {
 	STATE_LOCK_ERROR = 45,
 	STATE_PARSE_ERROR = 46,
-	STATE_DOESNT_EXISTS = 47, /* or it not a regular file */
-	STATE_PERMISSIONS = 48, /* Insufficient possibly */
+	STATE_DOESNT_EXISTS = 47,	/* or it not a regular file */
+	STATE_PERMISSIONS = 48,		/* Insufficient possibly */
+	STATE_NUMSPACE = 49,		/* Counter too big */
 };
 
 
@@ -100,6 +101,12 @@ extern int state_init(state *s, const char *username, const char *configfile);
  * any secure-relevant data and free the memory */
 extern void state_fini(state *s);
 
+/* Lock state file */
+extern int state_lock(state *s);
+
+/* Unlock state file */
+extern int state_unlock(state *s);
+
 /* Generate new key */
 extern int state_key_generate(state *s, const int salt);
 /* Increment passcode counter */
@@ -111,15 +118,6 @@ extern void state_debug(const state *s);
 extern int state_load(state *s);
 /* Store state into file */
 extern int state_store(const state *s);
-
-/* High level function used during authentication
- * 1. Lock file
- * 2. Open it
- * 3. Increment counter
- * 4. Save it and unlock
- */
-extern int state_load_inc_store(state *s);
-
 
 /* Do some tests (may overwrite your key file!) */
 extern void state_testcase(void);
