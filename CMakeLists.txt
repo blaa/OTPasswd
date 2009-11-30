@@ -34,7 +34,7 @@ ADD_LIBRARY(pam_otpasswd SHARED crypto.c num.c ppp.c state.c print.c passcards.c
 TARGET_LINK_LIBRARIES(pam_otpasswd gmp ssl pam)
 
 # Password management target
-ADD_EXECUTABLE(otpasswd crypto.c num.c ppp.c state.c print.c otpasswd.c passcards.c)
+ADD_EXECUTABLE(otpasswd crypto.c num.c ppp.c state.c print.c otpasswd.c otpasswd_actions.c passcards.c)
 TARGET_LINK_LIBRARIES(otpasswd gmp ssl)
 
 # Install target

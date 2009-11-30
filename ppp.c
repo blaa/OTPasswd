@@ -279,13 +279,7 @@ void ppp_calculate(state *s)
 	 */
 	mpz_set(s->max_code, s->max_card);
 	mpz_mul_ui(s->max_code, s->max_code, s->codes_on_card);
-
-	print(PRINT_NOTICE, "Max card = %s\n", 
-	      print_mpz(s->max_card, 10));
-	print(PRINT_NOTICE, "Max code = %s\n", 
-	      print_mpz(s->max_code, 10));
 }
-
 
 int ppp_verify_range(const state *s)
 {
@@ -394,14 +388,9 @@ cleanup1:
 	return ret;
 }
 
-
-
-
-
 /***************************
  * Testcases
  **************************/
-
 #define _PPP_TEST(cnt,len, col, row, code)			\
 mpz_set_ui(s.counter, (cnt)); s.code_length = (len);		\
 ppp_calculate(&s);						\
