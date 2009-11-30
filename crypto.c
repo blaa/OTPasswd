@@ -18,7 +18,6 @@
 #include <openssl/rand.h>
 #include <openssl/sha.h>
 
-/* Get some random data and store at a passed location */
 int crypto_rng(unsigned char *buff, const int size, int secure)
 {
 	const int seed_size = 20;
@@ -41,7 +40,6 @@ int crypto_rng(unsigned char *buff, const int size, int secure)
 	return 0;
 }
 
-/* Encrypt 128 bits with 256 bit key */
 int crypto_aes_encrypt(const unsigned char *key,
 		     const unsigned char *plain,
 		     unsigned char *encrypted)
@@ -78,7 +76,6 @@ cleanup:
 	return ret;
 }
 
-/* Decrypt 128 bits with 256 bit key */
 int crypto_aes_decrypt(const unsigned char *key, 
 		const unsigned char *encrypted,
 		unsigned char *decrypted)

@@ -26,6 +26,34 @@
 #include "state.h"
 #include "passcards.h"
 
+static int is_passcard_in_range(const state *s, const mpz_t passcard)
+{
+	/* 1..max_passcode/codes_on_passcard */
+
+	return 0;
+}
+
+static int is_passcode_in_range(const state *s, const mpz_t passcard)
+{
+	/* 1..max_which_depends_on_salt */
+	if (mpz_cmp_ui(passcard, 1) < 0)
+		return 0; /* false */
+
+
+
+	
+
+	if (s->flags & FLAG_NOT_SALTED) {
+		if (mpz_cmp_ui(passcard, 4294967296UL) > 0)
+			return 0; /* false */		
+	} else {
+		// TODO
+	}
+
+
+	return 1;
+}
+
 static const char *_program_name(const char *argv0)
 {
 	const char *pos = strrchr(argv0, '/');
