@@ -170,9 +170,9 @@ void crypto_testcase(void)
 	}
 
 	/* SHA256 testcase */
-	unsigned char hash_plain[] = "To be encrypted.";
+	const unsigned char hash_plain[] = "To be encrypted.";
 	unsigned char hash[32];
-	unsigned char hash_origin[32] = 
+	const unsigned char hash_origin[32] = 
 		"\x4f\xee\xfa\x18\x7b\x71\xc8\xf1\x36\xb6\xdb\xc8\x6e"
 		"\xa6\x4f\x72\x1f\xfa\xa6\x0c\x52\x34\x96\x45\xeb\x87"
 		"\x82\x56\x8e\x72\x17\xe1";

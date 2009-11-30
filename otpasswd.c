@@ -29,6 +29,8 @@
 static int is_passcard_in_range(const state *s, const mpz_t passcard)
 {
 	/* 1..max_passcode/codes_on_passcard */
+	if (mpz_cmp_ui(passcard, 1) < 0)
+		return 0; /* false */
 
 	return 0;
 }
@@ -39,19 +41,26 @@ static int is_passcode_in_range(const state *s, const mpz_t passcard)
 	if (mpz_cmp_ui(passcard, 1) < 0)
 		return 0; /* false */
 
-
-
-	
-
 	if (s->flags & FLAG_NOT_SALTED) {
-		if (mpz_cmp_ui(passcard, 4294967296UL) > 0)
-			return 0; /* false */		
+		/* Maximal 2^32-1 value */
+		if (mpz_cmp_ui(passcard, 4294967295UL) > 0)
+			return 0;
+		else
+			return 1; /* true */ 
 	} else {
-		// TODO
+		mpz_t max;
+		const char max_hex[] =
+			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+
+		assert(mpz_init_set_str(max, max_hex, 16) == 0);
+		if (mpz_cmp(passcard, max) > 0) {
+			mpz_clear(max);
+			return 0;
+		} else {
+			mpz_clear(max);
+			return 0;
+		}
 	}
-
-
-	return 1;
 }
 
 static const char *_program_name(const char *argv0)

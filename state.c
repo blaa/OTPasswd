@@ -527,7 +527,8 @@ int state_init(state *s, const char *username, const char *configfile)
 
 	s->code_length = 4;
 	s->flags = FLAG_SHOW;
-	memset(s->label, 0x00, STATE_LABEL_SIZE);
+	memset(s->label, 0x00, sizeof(s->label));
+	memset(s->contact, 0x00, sizeof(s->contact));
 
 	s->prompt = NULL;
 
