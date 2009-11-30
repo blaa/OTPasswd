@@ -22,7 +22,7 @@
 #include "state.h"
 #include "passcards.h"
 
-char *card_ascii(const state *s, const mpz_t number)
+char *card_ascii(const state *s, const mpz_t passcard)
 {
 	const char columns[] = "ABCDEFGHIJKLMNOP";
 	const int whitespace = 1;
@@ -65,8 +65,7 @@ char *card_ascii(const state *s, const mpz_t number)
 
 	/* Get card number */
 	mpz_t tmp;
-	mpz_init_set(tmp, number);
-	mpz_add_ui(tmp, tmp, 1);
+	mpz_init_set(tmp, passcard);
 
 	whole_card_num = mpz_get_str(NULL, 10, tmp);
 	num_dispose(tmp);
@@ -114,7 +113,7 @@ char *card_ascii(const state *s, const mpz_t number)
 	/* Passcodes */
 	mpz_t code_num;
 	mpz_init(code_num);
-	mpz_set(code_num, number);
+	mpz_sub_ui(code_num, passcard, 1);
 	mpz_mul_ui(code_num, code_num, s->codes_on_card);
 
 	ppp_add_salt(s, code_num);
@@ -258,6 +257,7 @@ void card_testcase(void)
 	mpz_mul_ui(cnt, cnt, 21234887UL);
 	mpz_mul_ui(cnt, cnt, 21234565UL);
 	mpz_mul_ui(cnt, cnt, 21234546UL);
+	mpz_add_ui(cnt, cnt, 1UL);
 
 	card = card_ascii(&s, cnt);
 
@@ -285,6 +285,7 @@ void card_testcase(void)
 	mpz_mul_ui(cnt, cnt, 214887UL);
 	mpz_mul_ui(cnt, cnt, 2134565UL);
 	mpz_mul_ui(cnt, cnt, 214546UL);
+	mpz_add_ui(cnt, cnt, 1UL);
 
 	card = card_ascii(&s, cnt);
 

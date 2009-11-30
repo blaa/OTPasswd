@@ -504,13 +504,11 @@ void action_print(void)
 			goto cleanup1;
 		}
 
-		mpz_sub_ui(passcard_num, passcard_num, 1);
 		code_selected = 0;
 	} else {
 		print(PRINT_ERROR, "Illegal argument passed to option.\n");
 		goto cleanup1;
 	}
-
 
 	/* Print the thing requested */
 	if (code_selected == 0) {
@@ -543,7 +541,21 @@ void action_print(void)
 				print(PRINT_ERROR, "Passcode counter overflowed. Regenerate key.\n");
 				goto cleanup1;
 			}
+			/* Skip to passcard... */
+			ret = ppp_get_passcode_number(&s, passcard_num, passcode_num, 'A', 1);
+			if (ret != 0) {
+				print(PRINT_ERROR, "Error while generating destination passcode\n");
+				goto cleanup1;
+			}
 
+			if (mpz_cmp(s.counter, passcode_num) > 0) {
+				printf("WARNING: You should never skip "
+				       "backwards to reuse your codes!\n");
+			}
+
+			printf("Skipped to specified passcard.\n");
+			mpz_set(s.counter, passcode_num);
+			state_changed = 1;
 			break;
 			
 		case 'p':
@@ -576,7 +588,14 @@ void action_print(void)
 				print(PRINT_ERROR, "Passcode counter overflowed. Regenerate key.\n");
 				goto cleanup1;
 			}
-
+			/* Skip to passcode */
+			if (mpz_cmp(s.counter, passcode_num) > 0) {
+				printf("WARNING: You should never skip "
+				       "backwards to reuse your codes!\n");
+			}
+			printf("Skipped to specified passcode.\n");
+			mpz_set(s.counter, passcode_num);
+			state_changed = 1;
 			break;
 			
 		case 'p':
