@@ -28,11 +28,44 @@
 
 static int is_passcard_in_range(const state *s, const mpz_t passcard)
 {
+	mpz_t max_passcard;
+
 	/* 1..max_passcode/codes_on_passcard */
 	if (mpz_cmp_ui(passcard, 1) < 0)
 		return 0; /* false */
 
-	return 0;
+	if (s->flags & FLAG_NOT_SALTED) {
+		const char max_hex[] =
+			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+		assert(sizeof(max_hex)  == 33);
+		mpz_init_set_str(max_passcard, max_hex, 16);
+		printf("NOT SALTED\n");
+	} else {
+		printf("SALTED\n");
+		mpz_init_set(max_passcard, s->code_mask);
+	}
+
+	mpz_div_ui(max_passcard, max_passcard, s->codes_on_card);
+	/* Ok. We've got max_passcard possible */
+
+	/* FIXME: Should we exclude also last passcard... as it might not be "full"?
+	 * Ok, it seems ok. For not salted version max_passcard is
+	 * 4861176670299120906619637249025260163
+	 * and: 
+	 * 2^128 - 4861176670299120906619637249025260163 * 70 = 46
+	 * So it's last possible full passcard.
+	 * For salted version max_passcard is 61356675 which also fits...
+	 *
+	 * Note: It might be ok only because we decrement it later.
+	 */
+	if (mpz_cmp(passcard, max_passcard) > 0) {
+		gmp_printf("Number of the last available passcard is %Zd\n", max_passcard);
+		num_dispose(max_passcard);
+		return 0;
+	}
+
+	num_dispose(max_passcard);
+	return 1;
 }
 
 static int is_passcode_in_range(const state *s, const mpz_t passcard)
@@ -46,19 +79,21 @@ static int is_passcode_in_range(const state *s, const mpz_t passcard)
 		if (mpz_cmp_ui(passcard, 4294967295UL) > 0)
 			return 0;
 		else
-			return 1; /* true */ 
+			return 1; /* true */
 	} else {
 		mpz_t max;
+		/* It's not FFFFFFFF because we count from 1. */
 		const char max_hex[] =
-			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+			"100000000";
 
 		assert(mpz_init_set_str(max, max_hex, 16) == 0);
 		if (mpz_cmp(passcard, max) > 0) {
+			gmp_printf("Number of the last available passcode is %Zd\n", max);
 			mpz_clear(max);
 			return 0;
 		} else {
 			mpz_clear(max);
-			return 0;
+			return 1;
 		}
 	}
 }
@@ -110,6 +145,10 @@ static void _usage(int argc, const char **argv)
 		"               starting with the specified one\n"
 		"  -p, --passcode <which>\n"
 		"               Specify a single passcode identifier to print.\n"
+		"  -P, --prompt <which>\n"
+		"               Display authentication prompt for given passcode\n"
+		"  -a, --authenticate <passcode>\n"
+		"               Try to authenticate with given passcode\n"
 		"\n"
 		"Where <which> might be one of:\n"
 		"  number      - specify a passcode with a decimal number\n"
@@ -174,7 +213,7 @@ struct cmds {
 	unsigned int flag_clear_mask;
 	int set_codelength;
 } options = {
-	.log_level = PRINT_ERROR,
+	.log_level = PRINT_WARN, /* Default log level */
 	.action = 0,
 	.action_arg = NULL,
 
@@ -183,6 +222,57 @@ struct cmds {
 	.set_codelength = 0
 };
 
+
+/* Authenticate; returns boolean; 1 - authenticated */
+static int action_authenticate(void)
+{
+	int retval = 0;
+
+	/* OTP State */
+	state s;
+
+	if (state_init(&s, NULL, NULL) != 0) {
+		/* This will fail if we're unable to locate home directory */
+		print(PRINT_ERROR, "Unable to load state! Have you used -k option?\n");
+		return 0; /* False - not authenticated */
+	}
+
+	/* Using locking load state, increment counter, and store new state */
+	retval = state_load_inc_store(&s);
+	switch (retval) {
+	case 0:
+		/* Everything fine */
+		break;
+
+	case STATE_DOESNT_EXISTS:
+		retval = 0;
+		goto cleanup;
+		
+	default: /* Any other problem - error */
+		retval = 0;
+		goto cleanup;
+	}
+
+
+	/* Generate prompt */
+	ppp_calculate(&s);
+
+	if (ppp_authenticate(&s, options.action_arg) == 0) {
+		/* Correctly authenticated */
+		retval = 1;
+		goto cleanup;
+	}
+
+cleanup:
+	if (retval)
+		printf("Authentication successful.\n");
+	else 
+		printf("Authentication failed.\n");
+		
+	state_fini(&s);
+	free(options.action_arg);
+	return retval;
+}
 
 /* Generate new key */
 static void action_key(void)
@@ -204,6 +294,7 @@ static void action_key(void)
 	}
 
 	int salted = options.flag_set_mask & FLAG_NOT_SALTED ? 0 : 1;
+	s.flags |= options.flag_set_mask;
 
 	if (state_key_generate(&s, salted) != 0) {
 		print(PRINT_ERROR, "Unable to generate new key\n");
@@ -215,7 +306,7 @@ static void action_key(void)
 
 	/* TODO: LOCK! */
 	if (state_store(&s) != 0) {
-		print(PRINT_ERROR, "Unable to save state to ~/" STATE_FILENAME " file\n");
+		print(PRINT_ERROR, "Unable to save state to %s file\n", s.filename);
 		exit(1);
 	}
 
@@ -279,7 +370,7 @@ static void action_flags(void)
 
 	if (options.flag_set_mask || options.flag_clear_mask)
 		printf("Flags updated, current configuration: ");
-	else 
+	else
 		printf("Flags not changed, current configuration: ");
 	if (s.flags & FLAG_SHOW)
 		printf("show ");
@@ -328,10 +419,6 @@ void action_print(void)
 	/* Calculate current cards etc */
 	ppp_calculate(&s);
 
-
-	/* Calculate maximal values for passcard and passcode */
-	/* FIXME */
-
 	/* Parse argument, we need card number + passcode number */
 	int code_selected = 0;
 	mpz_t passcard_num;
@@ -343,11 +430,11 @@ void action_print(void)
 		/* Current passcode */
 		code_selected = 1;
 		mpz_set(passcode_num, s.counter);
+
 	} else if (strcasecmp(options.action_arg, "next") == 0) {
 		/* Next passcard */
 		code_selected = 0;
 		mpz_set(passcard_num, s.furthest_printed);
-		mpz_add_ui(passcard_num, passcard_num, 1);
 	} else if (isalpha(options.action_arg[0])) {
 		/* Format: CRR[number] */
 		char column;
@@ -360,22 +447,40 @@ void action_print(void)
 			goto cleanup1;
 		}
 
-		ret = gmp_sscanf(number, "%Zd", passcard_num);
+		ret = gmp_sscanf(number, "%Zu", passcard_num);
 		if (ret != 1) {
 			print(PRINT_ERROR, "Incorrect passcard specification.\n");
 			goto cleanup1;
 		}
-				
+
+		if (!is_passcard_in_range(&s, passcard_num)) {
+			print(PRINT_ERROR,
+			      "Passcard number out of range. "
+			      "First passcard has number 1.\n");
+			goto cleanup1;
+		}
+
+		/* ppp_get_passcode_number adds salt as needed */
 		ret = ppp_get_passcode_number(&s, passcard_num, passcode_num, column, row);
 		if (ret != 0) {
 			print(PRINT_ERROR, "Error while parsing passcard description.\n");
 			goto cleanup1;
 		}
-		gmp_printf("GOT: %Zd\n", passcode_num);
 
 		code_selected = 1;
 
 	} else if (isdigit(options.action_arg[0])) {
+		/* All characters must be a digit! */
+		int i;
+		for (i=0; options.action_arg[i]; i++) {
+			if (!isdigit(options.action_arg[i])) {
+				print(PRINT_ERROR, 
+				      "Illegal passcode number!\n");
+				goto cleanup1;
+			}
+		}
+
+
 		/* number -- passcode number */
 		ret = gmp_sscanf(options.action_arg, "%Zd", passcode_num);
 		if (ret != 1) {
@@ -383,10 +488,16 @@ void action_print(void)
 			goto cleanup1;
 		}
 
-		/* TODO Ensure values are in range (1;...) */
+		if (!is_passcode_in_range(&s, passcode_num)) {
+			print(PRINT_ERROR, "Passcode number out of range. Numbering starts at 1.\n");
+			goto cleanup1;
+		}
+
 		mpz_sub_ui(passcode_num, passcode_num, 1);
-		/* TODO: ADD SALT. It cames from user */
-		
+
+		/* Add salt and this number cames from user */
+		ppp_add_salt(&s, passcode_num);
+
 		code_selected = 1;
 	} else if (options.action_arg[0] == '['
 		   && options.action_arg[strlen(options.action_arg)-1] == ']') {
@@ -397,9 +508,12 @@ void action_print(void)
 			goto cleanup1;
 		}
 
-		/* TODO: Ensure values are in range (1;...) */
-		mpz_sub_ui(passcard_num, passcard_num, 1);
+		if (!is_passcard_in_range(&s, passcard_num)) {
+			print(PRINT_ERROR, "Passcard out of accessible range.\n");
+			goto cleanup1;
+		}
 
+		mpz_sub_ui(passcard_num, passcard_num, 1);
 		code_selected = 0;
 	} else {
 		print(PRINT_ERROR, "Illegal argument passed to option.\n");
@@ -414,7 +528,8 @@ void action_print(void)
 		case 't':
 			card = card_ascii(&s, passcard_num);
 			if (!card) {
-				print(PRINT_ERROR, "Error while printing card (not enough memory?)\n");
+				print(PRINT_ERROR, "Error while printing "
+				      "card (not enough memory?)\n");
 				goto cleanup1;
 			}
 			puts(card);
@@ -424,7 +539,8 @@ void action_print(void)
 		case 'l':
 			card = card_latex(&s, passcard_num);
 			if (!card) {
-				print(PRINT_ERROR, "Error while printing card (not enough memory?)\n");
+				print(PRINT_ERROR, "Error while printing "
+				      "card (not enough memory?)\n");
 				goto cleanup1;
 			}
 			puts(card);
@@ -433,11 +549,18 @@ void action_print(void)
 
 		case 's':
 			break;
+
+		case 'P':
+			print(PRINT_ERROR, "Option requires passcode as argument\n");
+			break;
 		}
 	} else {
 		char passcode[17];
+		const char *prompt;
 		switch (options.action) {
 		case 't':
+			/* ppp_get_passcode wants internal
+			 * passcodes (with salt) */
 			ret = ppp_get_passcode(&s, passcode_num, passcode);
 			if (ret != 0) {
 				print(PRINT_ERROR, "Error while calculating passcode\n");
@@ -447,10 +570,22 @@ void action_print(void)
 			break;
 
 		case 'l':
-			print(PRINT_ERROR, "LaTeX parameter works only with passcard specification\n");
+			print(PRINT_ERROR,
+			      "LaTeX parameter works only with"
+			      " passcard specification\n");
 			break;
 
 		case 's':
+			break;
+			
+		case 'P':
+
+			/* Don't save state after this operation */
+			mpz_set(s.counter, passcode_num);
+			ppp_calculate(&s);
+			prompt = ppp_get_prompt(&s);
+			printf("%s\n", prompt);
+
 			break;
 		}
 	}
@@ -473,8 +608,8 @@ void process_cmd_line(int argc, char **argv)
 		{"skip",		required_argument,	0, 's'},
 		{"text",		required_argument,	0, 't'},
 		{"latex",		required_argument,	0, 'l'},
-		{"passcode",		required_argument,	0, 'p'},
-
+		{"prompt",		required_argument,	0, 'P'},
+		{"authenticate",	required_argument,	0, 'Q'},
 
 		/* Flags */
 		{"flags",		required_argument,	0, 'f'},
@@ -491,7 +626,7 @@ void process_cmd_line(int argc, char **argv)
 	while (1) {
 		int option_index = 0;
 
-		int c = getopt_long(argc, argv, "ks:t:l:p:f:d:c:nv", long_options, &option_index);
+		int c = getopt_long(argc, argv, "ks:t:l:P:a:p:f:d:c:nv", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1)
@@ -510,6 +645,7 @@ void process_cmd_line(int argc, char **argv)
 		case 't':
 		case 'l':
 		case 'p':
+		case 'P':
 			if (options.action != 0) {
 				printf("Only one action can be specified on the command line\n");
 				exit(-1);
@@ -517,6 +653,15 @@ void process_cmd_line(int argc, char **argv)
 			options.action = c;
 			options.action_arg = strdup(optarg);
 			/* Parse argument */
+			break;
+
+		case 'a':
+			if (options.action != 0) {
+				printf("Only one action can be specified on the command line\n");
+				exit(-1);
+			}
+			options.action = c;
+			options.action_arg = strdup(optarg);
 			break;
 
 		case 'n':
@@ -589,8 +734,8 @@ void process_cmd_line(int argc, char **argv)
 			options.log_level = PRINT_NOTICE;
 			break;
 
-		case 'a':
-			options.action = 'a';
+		case 'Q':
+			options.action = 'Q';
 			break;
 
 		default:
@@ -601,7 +746,7 @@ void process_cmd_line(int argc, char **argv)
 
 	/* Perform action */
 	print_init(options.log_level, 1, 0, NULL);
-
+	int ret;
 	switch (options.action) {
 	case 0:
 		print(PRINT_ERROR, "No action specified. Try passing -k, -s, -t or -l\n\n");
@@ -617,6 +762,14 @@ void process_cmd_line(int argc, char **argv)
 		break;
 
 	case 'a':
+		ret = action_authenticate();
+		print_fini();
+		if (ret)
+			exit(0);
+		else
+			exit(1);
+
+	case 'Q':
 		action_license();
 		break;
 
@@ -624,13 +777,14 @@ void process_cmd_line(int argc, char **argv)
 	case 't':
 	case 'l':
 	case 'p':
+	case 'P':
 		action_print();
 		free(options.action_arg);
 		break;
 
 	case 'x':
 		printf("*** Running testcases\n");
-		state_testcase(); 
+		state_testcase();
 		num_testcase();
 		crypto_testcase();
 		card_testcase();

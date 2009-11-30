@@ -462,7 +462,19 @@ int state_store(const state *s)
 
 	/* lock? */
 	print(PRINT_NOTICE, "State file written\n");
+
+	fflush(f);
 	fclose(f);
+
+	/* It might fail, but shouldn't
+	 * Also we just want to ensure others 
+	 * can't read this file */
+	if (_state_file_permissions(s) != 0) {
+		print(PRINT_WARN, 
+		      "Unable to set state file permissions. "
+		      "Key might be world-readable!\n");
+	}
+
 	return 0;
 
 error:

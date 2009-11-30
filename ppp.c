@@ -42,25 +42,27 @@ int ppp_get_passcode_number(const state *s, const mpz_t passcard, mpz_t passcode
 {
 	/* TODO, FIXME Ensure ranges */
 
+	if (column < 'A' || column >= 'A' + s->codes_in_row) {
+		print(PRINT_NOTICE, "Column out of possible range!\n");
+		return 1;
+	}
+
+	if (row < 1 || row > 10) {
+		print(PRINT_NOTICE, "Row out of range!\n");
+		return 1;
+	}
+
 	/* Start with calculating first passcode on card */
 	/* passcode = (passcard-1)*codes_on_card + salt */
 	mpz_sub_ui(passcode, passcard, 1);
 	mpz_mul_ui(passcode, passcode, s->codes_on_card);
 
-	ppp_add_salt(s, passcode);
-
-	if (column < 'A' || column > 'A' + s->codes_in_row) {
-		print(PRINT_NOTICE, "Column out of possible range!\n");
-		return 1;
-	}
-
-	if (row < 0 || row > 10) {
-		print(PRINT_NOTICE, "Row out of range!\n");
-		return 1;
-	}
-
-	mpz_add_ui(passcode, passcode, row * s->codes_in_row);
+	/* Then add location on card */
+	mpz_add_ui(passcode, passcode, (row - 1) * s->codes_in_row);
 	mpz_add_ui(passcode, passcode, column - 'A');
+
+	/* Add salt if required */
+	ppp_add_salt(s, passcode);
 	return 0;
 }
 
@@ -74,6 +76,9 @@ int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
 	int i;
 
 	int ret;
+
+	/* Assure range during development */
+	assert(mpz_tstbit(counter, 128) == 0);
 
 	/* Check for illegal data */
 	assert(s->code_length >= 2 && s->code_length <= 16);

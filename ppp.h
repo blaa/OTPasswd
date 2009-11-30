@@ -4,7 +4,9 @@
 #include <gmp.h>
 #include "state.h"
 
-/* Decode external card number and XY code position into a counter */
+/* Decode external card number and XY code position into a counter 
+ * This function decreases passcard by one.
+ */
 extern int ppp_get_passcode_number(
 	const state *s, const mpz_t passcard,
 	mpz_t passcode, char column, char row);

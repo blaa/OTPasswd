@@ -1,0 +1,15 @@
+2009-11 intro/rapid-development TODO
+
+== "Roadmap" to v1.0 == 
+	* CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
+	* CHECK: Make testcase to check if locking file and then rewritting it has any sense.
+	* Implement/debug Retries
+	* Implement skipping
+	* Implement next functionality
+	* Warnings when on last passcard
+	* Printing 'next' passcard.
+	* Calling external script for mailing/sms 
+	* Ensure passcards/codes passed by user are in range and won't get larger because of increments.
+	* Ensure file permissions are always set correctly
+	* If not locked when storing/loading lock it for this procedure.
+	* Decide on state file look, add version

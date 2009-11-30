@@ -1,8 +1,0 @@
-- Can pam module use openlog()? Maybe the log is already opened? I guess so...
-- Retries
-- Skipping
-- Warnings when on last passcard
-- Printing 'next' passcard.
-- Calling external script for mailing/sms 
-- Ensure passcards/codes passed by user are in range and won't get larger because of increments.
-- Make testcase to check if locking file and then rewritting it has any sense.
