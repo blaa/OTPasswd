@@ -534,6 +534,8 @@ int state_init(state *s, const char *username, const char *configfile)
 	mpz_init(s->sequence_key);
 	mpz_init(s->furthest_printed);
 	mpz_init(s->current_card);
+	mpz_init(s->max_card);
+	mpz_init(s->max_code);
 	assert(mpz_init_set_str(s->salt_mask, salt_mask, 16) == 0);
 	assert(mpz_init_set_str(s->code_mask, code_mask, 16) == 0);
 
@@ -570,6 +572,8 @@ void state_fini(state *s)
 	num_dispose(s->current_card);
 	num_dispose(s->salt_mask);
 	num_dispose(s->code_mask);
+	num_dispose(s->max_card);
+	num_dispose(s->max_code);
 
 	if (s->prompt) {
 		const int length = strlen(s->prompt);

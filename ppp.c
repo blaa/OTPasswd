@@ -250,6 +250,31 @@ void ppp_calculate(state *s)
 	r -= current_column;
 	s->current_row = 1 + r / s->codes_in_row;
 	s->current_column = columns[current_column];
+
+	/* Calculate max passcard */
+	if (s->flags & FLAG_NOT_SALTED) {
+		const char max_hex[] =
+			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+		assert(sizeof(max_hex)  == 33);
+		mpz_init_set_str(s->max_card, max_hex, 16);
+	} else {
+		mpz_init_set(s->max_card, s->code_mask);
+	}
+
+	mpz_div_ui(s->max_card, s->max_card, s->codes_on_card);
+
+	/* Calculate max passcode.
+	 * This is the last passcode on last card.
+	 * (Which does not equal last counter value)
+	 * Cards and codes are calculated from 1 here.
+	 */
+	mpz_set(s->max_code, s->max_card);
+	mpz_mul_ui(s->max_code, s->max_code, s->codes_on_card);
+
+	print(PRINT_NOTICE, "Max card = %s\n", 
+	      print_mpz(s->max_card, 10));
+	print(PRINT_NOTICE, "Max code = %s\n", 
+	      print_mpz(s->max_code, 10));
 }
 
 /***************************

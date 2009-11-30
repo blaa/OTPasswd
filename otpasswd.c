@@ -28,74 +28,32 @@
 
 static int is_passcard_in_range(const state *s, const mpz_t passcard)
 {
-	mpz_t max_passcard;
-
 	/* 1..max_passcode/codes_on_passcard */
-	if (mpz_cmp_ui(passcard, 1) < 0)
+	if (mpz_cmp_ui(passcard, 1) < 0) {
+		printf("Card numbering starts at 1\n");
 		return 0; /* false */
-
-	if (s->flags & FLAG_NOT_SALTED) {
-		const char max_hex[] =
-			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
-		assert(sizeof(max_hex)  == 33);
-		mpz_init_set_str(max_passcard, max_hex, 16);
-		printf("NOT SALTED\n");
-	} else {
-		printf("SALTED\n");
-		mpz_init_set(max_passcard, s->code_mask);
 	}
 
-	mpz_div_ui(max_passcard, max_passcard, s->codes_on_card);
-	/* Ok. We've got max_passcard possible */
-
-	/* FIXME: Should we exclude also last passcard... as it might not be "full"?
-	 * Ok, it seems ok. For not salted version max_passcard is
-	 * 4861176670299120906619637249025260163
-	 * and: 
-	 * 2^128 - 4861176670299120906619637249025260163 * 70 = 46
-	 * So it's last possible full passcard.
-	 * For salted version max_passcard is 61356675 which also fits...
-	 *
-	 * Note: It might be ok only because we decrement it later.
-	 */
-	if (mpz_cmp(passcard, max_passcard) > 0) {
-		gmp_printf("Number of the last available passcard is %Zd\n", max_passcard);
-		num_dispose(max_passcard);
+	if (mpz_cmp(passcard, s->max_card) > 0) {
+		gmp_printf("Number of the last available passcard is %Zd\n", s->max_card);
 		return 0;
 	}
 
-	num_dispose(max_passcard);
 	return 1;
 }
 
 static int is_passcode_in_range(const state *s, const mpz_t passcard)
 {
-	/* 1..max_which_depends_on_salt */
+	/* 1..max_which_depends_on_salt and passcard configuration */
 	if (mpz_cmp_ui(passcard, 1) < 0)
 		return 0; /* false */
 
-	if (s->flags & FLAG_NOT_SALTED) {
-		/* Maximal 2^32-1 value */
-		if (mpz_cmp_ui(passcard, 4294967295UL) > 0)
-			return 0;
-		else
-			return 1; /* true */
-	} else {
-		mpz_t max;
-		/* It's not FFFFFFFF because we count from 1. */
-		const char max_hex[] =
-			"100000000";
-
-		assert(mpz_init_set_str(max, max_hex, 16) == 0);
-		if (mpz_cmp(passcard, max) > 0) {
-			gmp_printf("Number of the last available passcode is %Zd\n", max);
-			mpz_clear(max);
-			return 0;
-		} else {
-			mpz_clear(max);
-			return 1;
-		}
+	if (mpz_cmp(passcard, s->max_code) > 0) {
+		gmp_printf("Number of the last available passcode is %Zd\n", s->max_code);
+		return 0;
 	}
+
+	return 1;
 }
 
 static const char *_program_name(const char *argv0)
@@ -139,13 +97,12 @@ static void _usage(int argc, const char **argv)
 		"  -s, --skip <which>\n"
 		"               Skip to a card specified as an argument.\n"
 		"  -t, --text <which>\n"
-		"               Generate one ascii passcard of a specified number\n"
+		"               Generate either one ascii passcard\n"
+		"               or a single passcode depending on argument. \n"
 		"  -l, --latex <which>\n"
 		"               Generate a LaTeX output with 6 passcards\n"
 		"               starting with the specified one\n"
-		"  -p, --passcode <which>\n"
-		"               Specify a single passcode identifier to print.\n"
-		"  -P, --prompt <which>\n"
+		"  -p, --prompt <which>\n"
 		"               Display authentication prompt for given passcode\n"
 		"  -a, --authenticate <passcode>\n"
 		"               Try to authenticate with given passcode\n"
@@ -252,7 +209,6 @@ static int action_authenticate(void)
 		retval = 0;
 		goto cleanup;
 	}
-
 
 	/* Generate prompt */
 	ppp_calculate(&s);
@@ -489,7 +445,7 @@ void action_print(void)
 		}
 
 		if (!is_passcode_in_range(&s, passcode_num)) {
-			print(PRINT_ERROR, "Passcode number out of range. Numbering starts at 1.\n");
+			print(PRINT_ERROR, "Passcode number out of range.\n");
 			goto cleanup1;
 		}
 
@@ -549,8 +505,8 @@ void action_print(void)
 
 		case 's':
 			break;
-
-		case 'P':
+			
+		case 'p':
 			print(PRINT_ERROR, "Option requires passcode as argument\n");
 			break;
 		}
@@ -608,7 +564,7 @@ void process_cmd_line(int argc, char **argv)
 		{"skip",		required_argument,	0, 's'},
 		{"text",		required_argument,	0, 't'},
 		{"latex",		required_argument,	0, 'l'},
-		{"prompt",		required_argument,	0, 'P'},
+		{"prompt",		required_argument,	0, 'p'},
 		{"authenticate",	required_argument,	0, 'Q'},
 
 		/* Flags */
@@ -626,7 +582,7 @@ void process_cmd_line(int argc, char **argv)
 	while (1) {
 		int option_index = 0;
 
-		int c = getopt_long(argc, argv, "ks:t:l:P:a:p:f:d:c:nv", long_options, &option_index);
+		int c = getopt_long(argc, argv, "ks:t:l:p:a:f:d:c:nv", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1)
@@ -645,7 +601,6 @@ void process_cmd_line(int argc, char **argv)
 		case 't':
 		case 'l':
 		case 'p':
-		case 'P':
 			if (options.action != 0) {
 				printf("Only one action can be specified on the command line\n");
 				exit(-1);

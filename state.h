@@ -67,11 +67,13 @@ typedef struct {
 	mpz_t code_mask;
 
 	/* Card information, calculated once for
-	 * simplicity and stored here
+	 * simplicity by ppp_calculate and stored here.
 	 */
+	mpz_t current_card;		/* Card with current code */
+	mpz_t max_card;			/* Last available passcard (from 1) */
+	mpz_t max_code;			/* Last code from last passcard (from 1) */
 	unsigned int codes_on_card;
 	unsigned int codes_in_row;
-	mpz_t current_card;		/* Card with current code */
 	unsigned char current_row;	/* 1 - 10 */
 	unsigned char current_column;	/* A ... */
 

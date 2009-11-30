@@ -8,8 +8,9 @@
 	* Implement next functionality
 	* Warnings when on last passcard
 	* Printing 'next' passcard.
-	* Calling external script for mailing/sms 
 	* Ensure passcards/codes passed by user are in range and won't get larger because of increments.
 	* Ensure file permissions are always set correctly
 	* If not locked when storing/loading lock it for this procedure.
 	* Decide on state file look, add version
+	* Implement label and contact setting
+	* Calling external script for mailing/sms 
