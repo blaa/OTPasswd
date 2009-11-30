@@ -48,8 +48,10 @@ static int _yes_or_no(const char *msg)
 		return 1;
 	}
 
-	if (strcasecmp(buf, "yes\n") == 0)
+	if (strcasecmp(buf, "yes\n") == 0) {
+		printf("\n");
 		return 0;
+	}
 
 	return 1;
 }
@@ -91,6 +93,8 @@ static void _usage(int argc, const char **argv)
 		"               alphabet-extended 88-character alphabet\n"
 		"               codelenght-X      sets passcodes length, X is a number\n"
 		"                                 from 2 to 16 (default: codelength-4)\n"
+		"               list              not a real flag; will just print current\n"
+		"\n                               list of flags\n"
 		"  -c, --contact <arg>\n"
 		"               Set a contact info (e.g. phone number) with which\n"
 		"               you want to receive current passcode during authentication.\n"
@@ -136,7 +140,6 @@ struct cmds {
 	.log_level = PRINT_ERROR,
 	.action = 0,
 	.action_arg = NULL,
-
 
 	.flag_set_mask = 0,
 	.flag_clear_mask = 0,
@@ -237,9 +240,10 @@ static void action_flags(void)
 		exit(1);
 	}
 
-
-	printf("Flags updated, current configuration: ");
-
+	if (options.flag_set_mask || options.flag_clear_mask)
+		printf("Flags updated, current configuration: ");
+	else 
+		printf("Flags not changed, current configuration: ");
 	if (s.flags & FLAG_SHOW)
 		printf("show ");
 	else
@@ -290,8 +294,6 @@ void action_print(void)
 
 	/* Calculate maximal values for passcard and passcode */
 	/* FIXME */
-
-
 
 	/* Parse argument, we need card number + passcode number */
 	int code_selected = 0;
@@ -344,8 +346,9 @@ void action_print(void)
 			goto cleanup1;
 		}
 
-		/* Ensure values are in range (1;...) */
+		/* TODO Ensure values are in range (1;...) */
 		mpz_sub_ui(passcode_num, passcode_num, 1);
+		/* TODO: ADD SALT. It cames from user */
 		
 		code_selected = 1;
 	} else if (options.action_arg[0] == '['
@@ -357,7 +360,7 @@ void action_print(void)
 			goto cleanup1;
 		}
 
-		/* Ensure values are in range (1;...) */
+		/* TODO: Ensure values are in range (1;...) */
 		mpz_sub_ui(passcard_num, passcard_num, 1);
 
 		code_selected = 0;
@@ -512,7 +515,9 @@ void process_cmd_line(int argc, char **argv)
 				options.flag_clear_mask |= FLAG_ALPHABET_EXTENDED;
 			else if (strcmp(optarg, "alphabet-extended") == 0)
 				options.flag_set_mask |= FLAG_ALPHABET_EXTENDED;
-			else {
+			else if (strcmp(optarg, "list") == 0) {
+				/* Nothing */
+			} else {
 				int tmp;
 				if (sscanf(optarg, "codelength-%d", &tmp) == 1) {
 					options.set_codelength = tmp;
@@ -523,8 +528,11 @@ void process_cmd_line(int argc, char **argv)
 				}
 			}
 			break;
+
 		case 'd':
 		case 'c':
+			printf("Unimplemented\n");
+			assert(0);
 
 		case '?':
 			/* getopt_long already printed an error message. */
@@ -585,13 +593,14 @@ void process_cmd_line(int argc, char **argv)
 
 	case 'x':
 		printf("*** Running testcases\n");
-		state_testcase(); /* FIXME: it mustn't overwrite .otpasswd */
+		state_testcase(); 
 		num_testcase();
 		crypto_testcase();
-		ppp_testcase();
 		card_testcase();
-		exit(0);
+		ppp_testcase();
 	}
+
+	print_fini();
 }
 
 

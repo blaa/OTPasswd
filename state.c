@@ -74,14 +74,14 @@ static char *_state_file(const char *username, const char *filename)
 		configfile = STATE_FILENAME;
 
 	length = strlen(home);
-	length += strlen(filename);
+	length += strlen(configfile);
 	length += 2;
 
 	name = malloc(length);
 	if (!name) 
 		goto error;
 
-	int ret = snprintf(name, length, "%s/%s", home, filename);
+	int ret = snprintf(name, length, "%s/%s", home, configfile);
 
 	assert( ret == length - 1 );
 
@@ -105,14 +105,14 @@ static int _state_file_permissions(const state *s)
 	struct stat st;
 	if (stat(s->filename, &st) != 0) {
 		/* Does not exists */
-		return 1;
+		return STATE_DOESNT_EXISTS;
 	}
 
 	/* It should be a file or a link to file */
 	if (!S_ISREG(st.st_mode)) {
 		/* Error, not a file */
 		print(PRINT_ERROR, "ERROR: %s is not a regular file\n", s->filename);
-		return 2;
+		return STATE_DOESNT_EXISTS;
 	}
 
 	if (chmod(s->filename, S_IRUSR|S_IWUSR) != 0) {
@@ -138,9 +138,10 @@ static int _state_lock(state *s)
 	fd = open(s->filename, O_WRONLY, 0);
 
 	if (fd == -1) {
-		print_perror(PRINT_NOTICE, "Unable to lock file");
-		return 1; /* Unable to create file, therefore unable to obtain lock */
-	}/* FIXME: DO NOT CREATE */
+		/* Unable to create file, therefore unable to obtain lock */
+		print_perror(PRINT_NOTICE, "Unable to open a state file");
+		return STATE_DOESNT_EXISTS;
+	}
 
 	/*
 	 * Trying to lock the file 20 times.
@@ -164,7 +165,7 @@ static int _state_lock(state *s)
 		/* Unable to lock for 10 times */
 		close(fd);
 		print(PRINT_NOTICE, "Unable to lock opened state file\n");
-		return 1;
+		return STATE_LOCK_ERROR;
 	}
 
 	s->lock_fd = fd;
@@ -179,7 +180,7 @@ static int _state_unlock(state *s)
 
 	if (s->lock_fd < 0) {
 		print(PRINT_NOTICE, "No lock to release!\n");
-		return 1; /* No lock to release */
+		return STATE_LOCK_ERROR; /* No lock to release */
 	}
 
 	fl.l_type = F_UNLCK;
@@ -194,7 +195,7 @@ static int _state_unlock(state *s)
 	if (ret != 0) {
 		print(PRINT_NOTICE, "Strange error while releasing lock\n");
 		/* Strange error while releasing the lock */
-		return 2;
+		return STATE_LOCK_ERROR;
 	}
 
 	return 0;
@@ -238,7 +239,6 @@ int state_load(state *s)
 {
 	/* TODO: Maybe rewrite using strtok? */
 
-
 	if (s->filename == NULL) {
 		print(PRINT_CRITICAL, "State data not initialized?\n");
 		return 1;
@@ -259,7 +259,7 @@ int state_load(state *s)
 
 	if (_state_file_permissions(s) != 0) {
 		print(PRINT_NOTICE, "Unable to load state file\n");
-		return 1;
+		return STATE_DOESNT_EXISTS;
 	}
 
 	f = fopen(s->filename, "r");
@@ -339,7 +339,7 @@ int state_load(state *s)
 		goto error;
 	}
 
-	if (s->label[strlen(s->contact) - 1] != '\n') {
+	if (s->contact[strlen(s->contact) - 1] != '\n') {
 		/* \n is put there if we find end of file,
 		 * it's lack might be caused by too long entry
 		 * at end of file 
@@ -348,8 +348,9 @@ int state_load(state *s)
 		goto error;
 	}
 
-
+	/* Strip \n from the end of label and contact */
 	s->label[strlen(s->label) - 1] = '\0';
+	s->contact[strlen(s->contact) - 1] = '\0';
 
 	/* Everything is read. Now - check if it's correct */
 	/* TODO, FIXME */
@@ -386,6 +387,7 @@ int state_load(state *s)
 		goto error;
 
 	}
+
 	fclose(f);
 	return 0;
 
@@ -415,7 +417,7 @@ int state_store(const state *s)
 		print_perror(PRINT_ERROR,
 			     "Unable to open %s for writting",
 			     s->filename);
-		return 1;
+		return STATE_PERMISSIONS;
 	}
 
 	/* Write using ascii safe approach */
@@ -470,12 +472,13 @@ error:
 
 int state_load_inc_store(state *s)
 {
-	int ret = 1;
+	int ret;
 
 	if (_state_lock(s) != 0)
-		return 1;
+		return STATE_LOCK_ERROR;
 
-	if (state_load(s) != 0)
+	ret = state_load(s);
+	if (ret != 0)
 		goto cleanup1;
 
 	/* Store current counter */
@@ -484,14 +487,16 @@ int state_load_inc_store(state *s)
 	mpz_set(tmp, s->counter);
 
 	/* Increment and save state */
-	state_inc(s);
+	mpz_add_ui(s->counter, s->counter, 1);
 
-	if (state_store(s) != 0) {
+	ret = state_store(s);
+	if (ret != 0) {
 		goto cleanup2;
 	}
 
 	/* Restore current counter */
 	mpz_set(s->counter, tmp);
+
 
 cleanup2:
 	num_dispose(tmp);
@@ -504,15 +509,13 @@ cleanup1:
 /******************************************
  * Functions for managing state information
  ******************************************/
-void state_inc(state *s)
-{
-	mpz_add_ui(s->counter, s->counter, 1);
-}
-
 int state_init(state *s, const char *username, const char *configfile)
 {
 	const char salt_mask[] =
 		"FFFFFFFFFFFFFFFFFFFFFFFF00000000";
+	const char code_mask[] =
+		"000000000000000000000000FFFFFFFF";
+
 	assert(sizeof(salt_mask) == 33);
 
 	mpz_init(s->counter);
@@ -520,10 +523,13 @@ int state_init(state *s, const char *username, const char *configfile)
 	mpz_init(s->furthest_printed);
 	mpz_init(s->current_card);
 	assert(mpz_init_set_str(s->salt_mask, salt_mask, 16) == 0);
+	assert(mpz_init_set_str(s->code_mask, code_mask, 16) == 0);
 
 	s->code_length = 4;
 	s->flags = FLAG_SHOW;
 	memset(s->label, 0x00, STATE_LABEL_SIZE);
+
+	s->prompt = NULL;
 
 	s->fd = -1;
 	s->lock_fd = -1;
@@ -550,6 +556,14 @@ void state_fini(state *s)
 	num_dispose(s->furthest_printed);
 	num_dispose(s->current_card);
 	num_dispose(s->salt_mask);
+	num_dispose(s->code_mask);
+
+	if (s->prompt) {
+		const int length = strlen(s->prompt);
+		memset(s->prompt, 0, length);
+		free(s->prompt);
+		s->prompt = NULL;
+	}
 
 	free(s->filename);
 	free(s->username);
@@ -584,6 +598,7 @@ int state_key_generate(state *s, const int salt)
 			return 1;
 		}
 	}
+
 	if (salt == 0) {
 		crypto_sha256(entropy_pool, sizeof(entropy_pool), key_bin);
 		memset(entropy_pool, 0, sizeof(entropy_pool));
@@ -633,6 +648,7 @@ void state_testcase(void)
 
 	if (state_init(&s1, NULL, ".otpasswd_testcase") != 0)
 		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
+
 	test++; if (state_init(&s2, NULL, ".otpasswd_testcase") != 0)
 		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
 

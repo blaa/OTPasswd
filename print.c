@@ -16,25 +16,34 @@
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <syslog.h>
 
 #include "print.h"
 
 /* Currently used print_level */
 struct log_state {
 	/* Log messages of level equal or greater to print_level */
+	int initialized;
 	int print_level;
 	int use_stdout; /* Log to stdout if 1, stderr if 2 */
 	int use_syslog; /* Log to syslog if 1 */
 	FILE *log_file;	/* Log to file if not null */
-} log_state;
+} log_state = {0};
 
 struct log_state log_state;
 
 int print_init(int print_level, int use_stdout, int use_syslog, const char *log_file)
 {
+	if (log_state.initialized)
+		print_fini();
+
 	log_state.print_level = print_level;
 	log_state.use_stdout = use_stdout;
 	log_state.use_syslog = use_syslog;
+
+	if (use_syslog) {
+		openlog("otpasswd", 0, LOG_AUTHPRIV);
+	}
 	
 	if (log_file) {
 		log_state.log_file = fopen(log_file, "a");
@@ -47,6 +56,7 @@ int print_init(int print_level, int use_stdout, int use_syslog, const char *log_
 	} else 
 		log_state.log_file = NULL;
 
+	log_state.initialized = 1;
 	return 0;
 }
 
@@ -56,6 +66,7 @@ int print(int level, const char *fmt, ...)
 	int ret;
 	char buff[512]; 
 	char *intro;
+	int syslog_level = LOG_INFO;
 
 	if (log_state.print_level == 0) {
 		printf("Attempted to use print subsystem without initialization\n");
@@ -83,18 +94,23 @@ int print(int level, const char *fmt, ...)
 	switch (level) {
 	case PRINT_NOTICE:
 		intro = "NOTICE:  ";
+		syslog_level = LOG_NOTICE;
 		break;
 	case PRINT_WARN:
 		intro = "WARNING: ";
+		syslog_level = LOG_WARNING;
 		break;
 	case PRINT_ERROR:
 		intro = "ERROR:   ";
+		syslog_level = LOG_ERR;
 		break;
 	case PRINT_CRITICAL:
 		intro = "CRITICAL: ";
+		syslog_level = LOG_CRIT;
 		break;
 	default:
 		intro = "Unknown: ";
+		syslog_level = LOG_INFO;
 		break;
 
 	}
@@ -116,14 +132,14 @@ int print(int level, const char *fmt, ...)
 
 	/* syslog */
 	if (log_state.use_syslog) {
-		printf("Unimplemented!\n");
-		assert(0);
+		syslog(syslog_level, "%s:%s", intro, buff); /* FIXME; intro needed? */
 	}
 
 	/* log file */
 	if (log_state.log_file) {
 		fputs(intro, log_state.log_file);
 		fputs(buff, log_state.log_file);
+		fflush(log_state.log_file);
 	}
 	return 0;
 }
@@ -152,3 +168,12 @@ int print_perror(int level, const char *fmt, ...)
 	return print(level, "%s (%s)\n", buff, error);
 }
 
+void print_fini()
+{
+	if (log_state.use_syslog)
+		closelog();
+	if (log_state.log_file)
+		fclose(log_state.log_file);
+
+	log_state.initialized = 0;
+}

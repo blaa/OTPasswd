@@ -1,0 +1,6 @@
+auth            required        pam_tally.so onerr=succeed
+auth            required        pam_shells.so
+auth            required        pam_nologin.so
+auth            required        pam_env.so
+auth            requisite       pam_unix.so try_first_pass likeauth nullok
+auth            required        pam_otpasswd.so secure debug

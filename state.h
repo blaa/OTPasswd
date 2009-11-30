@@ -11,6 +11,16 @@
 #define STATE_CONTACT_SIZE 60
 #define ROWS_PER_CARD 10
 
+/* We must distinguish between locking problems (critical)
+ * and non-existant state file (usually not critical) */
+enum errors {
+	STATE_LOCK_ERROR = 45,
+	STATE_PARSE_ERROR = 46,
+	STATE_DOESNT_EXISTS = 47, /* or it not a regular file */
+	STATE_PERMISSIONS = 48, /* Insufficient possibly */
+};
+
+
 /*** State ***/
 enum flags {
 	FLAG_SHOW = 1,
@@ -47,9 +57,14 @@ typedef struct {
 	char contact[STATE_CONTACT_SIZE];
 
 	/*** Temporary / not-saved data ***/
+	char *prompt; /* Keep it here so we can safely dispose of it */
 
-	/* Salt helper */
+	/* Salt helper. counter & salt_mask = salt while
+	 * counter & code_mask = passcode number 
+	 * TODO: this can probably be achieved without this masks.
+	 */
 	mpz_t salt_mask;
+	mpz_t code_mask;
 
 	/* Card information, calculated once for
 	 * simplicity and stored here

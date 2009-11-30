@@ -29,9 +29,22 @@ const char alphabet_extended[] =
 
 int ppp_get_passcode_number(const state *s, const mpz_t passcard, mpz_t passcode, char column, char row)
 {
+	mpz_t salt;
 	/* TODO, FIXME Ensure ranges */
+	/* TODO: Convert passcard when salted */
+
+	/* passcode = passcard*codes_on_card + salt */
 	mpz_sub_ui(passcode, passcard, 1);
 	mpz_mul_ui(passcode, passcode, s->codes_on_card);
+
+	if (!(s->flags & FLAG_NOT_SALTED)) {
+		/* Add salt */
+		mpz_init_set(salt, s->counter);
+		mpz_and(salt, salt, s->salt_mask);
+		mpz_add(passcode, passcode, salt);
+		num_dispose(salt);
+	}
+
 	if (column < 'A' || column > 'A' + s->codes_in_row) {
 		print(PRINT_NOTICE, "Column out of possible range!\n");
 		return 1;
@@ -47,7 +60,6 @@ int ppp_get_passcode_number(const state *s, const mpz_t passcard, mpz_t passcode
 	return 0;
 }
 
-/* Calculate a single passcode of given number using specified key */
 int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
 {
 	unsigned char key_bin[32];
@@ -112,10 +124,73 @@ clear:
 	return ret;
 }
 
+void ppp_dispose_prompt(state *s)
+{
+	if (!s->prompt)
+		return;
+
+	const int length = strlen(s->prompt);
+	memset(s->prompt, 0, length);
+	free(s->prompt);
+	s->prompt = NULL;
+}
+
+const char *ppp_get_prompt(state *s)
+{
+	/* "Passcode RRC [number]: " */
+	const char intro[] = "Passcode ";
+	int length = sizeof(intro)-1 + 3 + 5 + 1;
+	char *num;
+
+	if (s->prompt)
+		ppp_dispose_prompt(s);
+
+	/* Ensure ppp_calculate was called already! */
+	assert(s->codes_on_card != 0);
+
+	num = mpz_get_str(NULL, 10, s->current_card);
+	length += strlen(num);
+
+	s->prompt = malloc(length);
+	if (!s->prompt)
+		return NULL;
+
+	int ret = sprintf(s->prompt, "%s%2d%c [%s]: ", intro, s->current_row, s->current_column, num);
+
+	memset(num, 0, strlen(num)); 
+	free(num);
+	num = NULL;
+
+	assert(ret+1 == length);
+
+	if (ret <= 0) {
+		memset(s->prompt, 0, length);
+		free(s->prompt);
+		s->prompt = NULL;
+		return NULL;
+	}
+	return s->prompt;
+}
+
+int ppp_authenticate(const state *s, const char *passcode) 
+{
+	char current_passcode[17];
+
+	if (passcode == NULL)
+		return 1;
+
+	if (ppp_get_passcode(s, s->counter, current_passcode) != 0)
+		return 2;
+
+	if (strcmp(passcode, current_passcode) != 0)
+		return 3;
+
+	return 0;
+}
+
 /**********************
  * Passcard management
  **********************/
-
 /* Number of passcodes in row depending on passcode length */
 static int _len_to_card_size[] = {
 	-1, /* use up index 0, just to make it easier */
@@ -138,7 +213,6 @@ static int _len_to_card_size[] = {
 
 };
 
-/* Calculate card parameters and save them in state */
 void ppp_calculate(state *s)
 {
 	const char columns[] = "ABCDEFGHIJKL";
@@ -151,15 +225,23 @@ void ppp_calculate(state *s)
 	s->codes_on_card = s->codes_in_row * ROWS_PER_CARD;
 
 	/* Calculate current card */
-	unsigned long int r = mpz_fdiv_q_ui(s->current_card, s->counter, s->codes_on_card);
+	mpz_t unsalted_counter;
+	mpz_init_set(unsalted_counter, s->counter);
+	if (!(s->flags & FLAG_NOT_SALTED)) {
+		mpz_and(unsalted_counter, unsalted_counter, s->code_mask);
+	} 
+
+	unsigned long int r = mpz_fdiv_q_ui(s->current_card, unsalted_counter, s->codes_on_card);
 	mpz_add_ui(s->current_card, s->current_card, 1);
 
+	num_dispose(unsalted_counter);
+
+	/* Calculate column/row using rest from division */
 	int current_column = r % s->codes_in_row;
 	r -= current_column;
 	s->current_row = 1 + r / s->codes_in_row;
 	s->current_column = columns[current_column];
 }
-
 
 /***************************
  * Testcases
@@ -180,6 +262,78 @@ if (s.current_row == (row) && s.current_column == (col)		\
 	printf(" PASSED\n"); else printf(" FAILED\n\n");	\
 free(buf1); free(buf2);
 
+
+static void _ppp_testcase_authenticate(const char *passcode)
+{
+	int retval;
+
+	const char *prompt = NULL;
+
+	/* OTP State */
+	state s;
+
+	/* Module options */
+
+	/* Enforced makes any user without an .otpasswd config
+	 * fail to login */
+	int enforced = 0;	/* Do we enforce OTP logons? */
+
+	printf("*** Authenticate testcase\n");
+	print_init(PRINT_NOTICE, 1, 1, "/tmp/otpasswd_dbg");
+	
+	/* Initialize state with given username, and default config file */
+	if (state_init(&s, NULL, ".otpasswd_testcase") != 0) {
+		/* This will fail if we're unable to locate home directory */
+		printf("STATE_INIT FAILED\n");
+		print_fini();
+		return;
+	}
+
+	/* Using locking load state, increment counter, and store new state */
+	retval = state_load_inc_store(&s);
+	switch (retval) {
+	case 0:
+		printf("LOAD_INC_STORE=OK\n");
+		/* Everything fine */
+		break;
+
+	case STATE_DOESNT_EXISTS:
+		if (enforced == 0) {
+			/* Not enforced - ignore */
+			printf("IGNORING - NO DIR\n");
+			goto cleanup;
+		} else {
+			printf("ENFORCING AND NO DIRECTORY\n");
+			goto cleanup;
+		}
+
+		
+	default: /* Any other problem - error */
+		printf("STATE_LOAD_INC_STORE FAILED\n");
+		goto cleanup;
+	}
+
+
+	/* Generate prompt */
+	ppp_calculate(&s);
+	prompt = ppp_get_prompt(&s);
+	if (!prompt) {
+		printf("GET_PROMPT FAILED\n");
+		goto cleanup;
+	}
+
+	if (ppp_authenticate(&s, passcode) == 0) {
+			
+		/* Correctly authenticated */
+		printf("AUTHENTICATION SUCCESSFULL\n");
+		goto cleanup;
+	}
+
+	printf("AUTHENTICATION NOT SUCCESSFULL\n");
+
+cleanup:
+	state_fini(&s);
+}
 
 void ppp_testcase(void)
 {
@@ -242,4 +396,19 @@ void ppp_testcase(void)
 	/* TODO FIXME: do some get_passcode_number testcases */
 
 	state_fini(&s);
+
+
+	/* Authenticate testcase */
+	/* Create file with empty key */
+	if (state_init(&s, NULL, ".otpasswd_testcase") != 0) {
+		printf("ERROR WHILE CREATING TEST KEY\n");
+		return;
+	}
+	state_store(&s);
+	state_fini(&s);
+	
+	printf("Should succeed:\n");
+	_ppp_testcase_authenticate("NH7j");
+	printf("Should NOT succeed:\n");
+	_ppp_testcase_authenticate("aSsD");
 }

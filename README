@@ -1,0 +1,176 @@
+= Intro =
+A one-time password (OTP) is a password that is only valid for a
+single login session or transaction. OTPs avoid a number of
+shortcomings that are associated with traditional (static)
+passwords: in contrast to static passwords, they are not vulnerable to
+replay attacks. This means that, if a potential intruder manages to
+record an OTP that was already used to log into a service or to
+conduct a transaction, he will not be able to abuse it since it will
+be no longer valid. On the downside, OTPs cannot be memorized by human
+beings.
+                                                   -- Wikipedia
+
+The otpasswd consists of a pam module and a user utility. PAM module
+enables (for example) SSH to do a OTP authentication, and the utility
+manages user keys and prints passcards, like this one:
+
+server                            [12]
+    A    B    C    D    E    F    G
+ 1: aj5V rLxi sUb7 W@Un miKM dz:i !z#=
+ 2: Pme4 gKMx rR#4 :MuA %yjY uvG5 8tfx
+ 3: AmqM F@p2 Z+2% :8!@ xg#J ELDj FZGr
+ 4: ky83 3LUh GMp3 ZBz3 Mo9= h6j@ h@6D
+ 5: UGrU E+9V W8Gm uX:Z DP:L rc66 @vD9
+ 6: #:yY L::g x6nc Kn2# =o8z B+8C a+Wv
+ 7: @AfJ heuT igVH Ei?+ o!5q #wWv iz5W
+ 8: :KEo 6G@= n#gX U6e: mPxz ?u8C kzT:
+ 9: DkYp rwRg JTA! zJ9a MUY8 p#hk n=EC
+10: Nuu! stWi iDDH aSug fRvc aFDB FeER
+
+Example usage:
+user@host $ ssh user@server
+Password: <user unix password>
+Passcode 3B [12]: F@p2
+
+user@server $
+
+
+
+== Installation ==
+To enable OTP for your ssh you have to:
+0. Have all required dependencies (with headers)
+1. Install the package
+2. Enable its use in /etc/pam.d
+3. Configure ssh to use PAM.
+4. Generate keys for user (and print at least one password card)
+
+So.
+
+0) Package required openssl and gmp libraries and cmake tool. Should be available
+   in repository of your distribution. 
+
+1) Package can be installed using your distribution repository (hopefully), 
+or in a simple way:
+$ ./build.sh
+
+This will use cmake to build Makefiles, and then call make.
+You can then copy two files, PAM module into /lib/security
+and otpasswd password manager to /usr/bin.
+
+Or, hopefully, type make install.
+
+2) For exemplary PAM config see examples/otpasswd-auth.
+
+PAM module supports following options:
+enforced - disallow logon if user doesn't have generated key
+           instead of ignoring OTP.
+nolock   - disable locking (can cause race conditions)
+secure   - disallow usage of --dontSkip option (dontSkip works bad with
+           locking and can cause some security holes)
+show     - always use passcodes (ignore user options)
+noshow   - never show passcodes (ignore user options)
+
+3) In /etc/ssh/sshd_config you should have the following two lines:
+ChallengeResponseAuthentication yes
+UsePAM yes
+
+4) To generate key, and display first passcard as fast as possible (so
+you won't loose ability to login in case you're configuring OTP
+remotely) you can use:
+$ otpasswd -k
+
+
+== About PAM (short version) ==
+Most application which require password input check
+the password using PAM. I'll stick to the sshd as an example.
+
+SSH when user logs in tries to authenticate him using it's own
+method - keys. Then, if this method fails it talks with PAM.
+PAM to see how to authenticate sshd reads /etc/pam.d/sshd.
+
+In default Gentoo installation it will contain following lines:
+auth       include        system-remote-login
+account    include        system-remote-login
+password   include        system-remote-login
+session    include        system-remote-login
+
+This is line-oriented file in which each line tells us what to do.
+We're interested in "auth" part only, which - includes configuration
+from system-remote-login, which looks like this:
+auth            include         system-login
+
+And, as you can see, it just reads configuration from yet another file:
+auth            required        pam_tally.so onerr=succeed
+auth            required        pam_shells.so
+auth            required        pam_nologin.so
+auth            include         system-auth
+(account, password, session omitted)
+
+One more file (system-auth) to look into:
+auth            required        pam_env.so
+auth            required        pam_unix.so try_first_pass likeauth nullok
+
+
+PAM when authenticating user will read the lines from top to bottom.
+pam_tally - reads failures and can do some action according to them
+pam_shells - checks if user has a valid shell (listed in /etc/shells)
+pam_nologin - checks if logins were disabled (shows message)
+pam_env - does something with environment
+and finally:
+pam_unix - checks password according to /etc/shadow
+
+This is default schema and somewhere there we ought to add our OTP.
+
+Easiest approach just modifies the first file: sshd. After all auth
+entries we just add our pam_otpasswd module. File would look like:
+
+auth            include         system-remote-login
+# Line added for OTP:
+auth            required        pam_otpasswd.so secure
+
+account    include        system-remote-login
+password   include        system-remote-login
+session           include        system-remote-login
+
+This will ask us for OTP after we are asked for our normal unix password
+regardless if the unix password was correct or not. This can lead to Denial
+of Service problem when attacker tries to login enough times to use up all
+our printed passcards. If we have some other security mechanism (like 
+sshguard - which blocks sshd port for people who try the dictionary attacks)
+it might be perfectly ok. 
+
+If not, we can change the line with pam_unix.so module from:
+auth            required        pam_unix.so try_first_pass likeauth nullok
+To:
+auth            requisite       pam_unix.so try_first_pass likeauth nullok
+
+Which will require correct unix password before asking OTP at all. If
+we don't like to mess with global pam config files (system-auth etc.)
+we can move all auth lines to sshd file, change this one line and add 
+pam_otpasswd line, which results in following configuration:
+
+# Include commented out:
+#auth       include        system-remote-login
+# All auths included in sshd:
+auth            required        pam_tally.so onerr=succeed
+auth            required        pam_shells.so
+auth            required        pam_nologin.so
+auth            required        pam_env.so
+auth            requisite       pam_unix.so try_first_pass likeauth nullok
+# Our line:
+auth            required        pam_otpasswd.so secure
+
+#Rest
+account    include        system-remote-login
+password   include        system-remote-login
+session           include        system-remote-login
+
+
+This is exactly what is written in our examples/otpasswd-login file. You can
+place this file in /etc/pam.d, and then edit your ssh to use it 
+in it's auth part:
+auth       include        otpasswd-login
+account    include        system-remote-login
+password   include        system-remote-login
+session    include        system-remote-login
+
