@@ -4,10 +4,13 @@
 #include <gmp.h>
 #include "state.h"
 
-/* Decode card number and XY code position into a counter */
+/* Decode external card number and XY code position into a counter */
 extern int ppp_get_passcode_number(
 	const state *s, const mpz_t passcard,
 	mpz_t passcode, char column, char row);
+
+/* Adds a salt to given passcode if salt is used */
+extern void ppp_add_salt(const state *s, mpz_t passcode);
 
 /* Calculate a single passcode of given number using specified key */
 extern int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode);

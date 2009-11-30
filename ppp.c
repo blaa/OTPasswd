@@ -27,23 +27,27 @@ const char alphabet_extended[] =
 	"!\"#$%&'()*+,-./23456789:;<=>?@ABCDEFGHJKLMNO"
 	"PRSTUVWXYZ[\\]^_abcdefghijkmnopqrstuvwxyz{|}~";
 
-int ppp_get_passcode_number(const state *s, const mpz_t passcard, mpz_t passcode, char column, char row)
+void ppp_add_salt(const state *s, mpz_t passcode) 
 {
-	mpz_t salt;
-	/* TODO, FIXME Ensure ranges */
-	/* TODO: Convert passcard when salted */
-
-	/* passcode = passcard*codes_on_card + salt */
-	mpz_sub_ui(passcode, passcard, 1);
-	mpz_mul_ui(passcode, passcode, s->codes_on_card);
-
 	if (!(s->flags & FLAG_NOT_SALTED)) {
-		/* Add salt */
+		mpz_t salt;
 		mpz_init_set(salt, s->counter);
 		mpz_and(salt, salt, s->salt_mask);
 		mpz_add(passcode, passcode, salt);
 		num_dispose(salt);
 	}
+}
+
+int ppp_get_passcode_number(const state *s, const mpz_t passcard, mpz_t passcode, char column, char row)
+{
+	/* TODO, FIXME Ensure ranges */
+
+	/* Start with calculating first passcode on card */
+	/* passcode = (passcard-1)*codes_on_card + salt */
+	mpz_sub_ui(passcode, passcard, 1);
+	mpz_mul_ui(passcode, passcode, s->codes_on_card);
+
+	ppp_add_salt(s, passcode);
 
 	if (column < 'A' || column > 'A' + s->codes_in_row) {
 		print(PRINT_NOTICE, "Column out of possible range!\n");

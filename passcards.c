@@ -117,6 +117,8 @@ char *card_ascii(const state *s, const mpz_t number)
 	mpz_set(code_num, number);
 	mpz_mul_ui(code_num, code_num, s->codes_on_card);
 
+	ppp_add_salt(s, code_num);
+
 	for (i = 1; i < 1 + ROWS_PER_CARD; i++) {
 		sprintf(card, "%2d: ", i);
 		card += 4;
