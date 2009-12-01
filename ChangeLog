@@ -28,6 +28,7 @@ ChangeLog / TODO
 	* [-] Share objects between targets (CMake)
 	* [-] Using Gecos field for phone information?
 	* [?] Keep lines below 75 columns? Or 80?
+	* [?] 'next' behaviour with LaTeX (+6!) 
 
 2009-11-24 intro/rapid-development TODO
 == "Roadmap" to v1.0 == 
