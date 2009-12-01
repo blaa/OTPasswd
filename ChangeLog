@@ -10,7 +10,7 @@ ChangeLog / TODO
 2009-12-01 v0.1 first working version
 
 	* [!] CHECK: Make testcase to check if locking file and then rewritting it has any sense.
-		It didn't rewritten code uses .lck file
+		It didn't; rewritten code uses .lck file
 	* [+] Implement/debug Retries
 	* [+] Implement skipping
 	* [+] Implement next functionality
@@ -18,20 +18,23 @@ ChangeLog / TODO
 	* [+] Ensure passcards/codes passed by user are in range and won't get larger because of increments.
 		Needs debuging. Especially internal incrementation.
 	* [+] Ensure file permissions are always set correctly
-	
+
 	* [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
 	* [-] Warnings when on last passcard
 	* [+] If not locked when storing/loading lock it for this procedure.
 	* [-] Decide on state file look, add version
 	* [-] Implement label and contact setting
-	* [-] Calling external script for mailing/sms 
+	* [-] Calling external script for mailing/sms
 	* [-] Share objects between targets (CMake)
 	* [-] Using Gecos field for phone information?
 	* [?] Keep lines below 75 columns? Or 80?
-	* [?] 'next' behaviour with LaTeX (+6!) 
+	* [?] 'next' behaviour with LaTeX (+6!)
+	* [?] ppp testcase - statistical
+	* [?] off-by-one testcase
+	* [?] manuals
 
 2009-11-24 intro/rapid-development TODO
-== "Roadmap" to v1.0 == 
+== "Roadmap" to v1.0 ==
 	* [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
 	* [-] CHECK: Make testcase to check if locking file and then rewritting it has any sense.
 	* [-] Implement/debug Retries
@@ -44,6 +47,6 @@ ChangeLog / TODO
 	* [-] If not locked when storing/loading lock it for this procedure.
 	* [-] Decide on state file look, add version
 	* [-] Implement label and contact setting
-	* [-] Calling external script for mailing/sms 
+	* [-] Calling external script for mailing/sms
 	* [-] Share objects between targets (CMake)
 	* [-] Using Gecos field for phone information?

@@ -440,6 +440,93 @@ cleanup0:
 /***************************
  * Testcases
  **************************/
+
+static void _ppp_testcase_statistical(const state *s)
+{
+	/* Calculate distribution of 1s and 0s in 
+	 * generated passcodes for specified state key 
+	 */
+//int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
+
+
+	/* Parameters */
+	const int alphabet_len = 64;
+	const int code_length = 4;
+		
+	unsigned long zeroes[24] = {0};
+	unsigned long ones[24] = {0};
+
+	unsigned char key_bin[32];
+	unsigned char cnt_bin[16];
+	unsigned char cipher_bin[16];
+	mpz_t counter;
+	mpz_t cipher;
+	mpz_t quotient;
+	int i;
+	unsigned int cnt;
+
+	int ret;
+
+	mpz_init(counter);
+	mpz_init(quotient);
+	mpz_init(cipher);
+
+	/* Convert numbers to binary */
+	num_to_bin(s->sequence_key, key_bin, 32);
+
+
+	for (cnt = 0; cnt < 100000; cnt++) {
+		mpz_add_ui(counter, counter, 1);
+		num_to_bin(counter, cnt_bin, 16);
+
+		/* Encrypt counter with key */
+		ret = crypto_aes_encrypt(key_bin, cnt_bin, cipher_bin);
+		if (ret != 0) {
+			printf("AES ERROR\n");
+			goto clear;
+		}
+
+		/* Convert result back to number */
+		num_from_bin(cipher, cipher_bin, 16);
+
+		int bit = 0;
+		int y;
+		for (i=0; i<code_length; i++) {
+			unsigned long int r = mpz_fdiv_q_ui(quotient, cipher, alphabet_len);
+			mpz_set(cipher, quotient);
+			
+			// calculate things in r
+			for (y=0; y<6; y++) {
+				if (r & (1<<y)) 
+					ones[bit]++;
+				else
+					zeroes[bit]++;
+				bit++;
+			}
+		}
+
+	}
+	int bit;
+	for (bit=0; bit<24; bit++) {
+		printf("%5lu ", ones[bit]);
+	}
+	printf("\n");
+	for (bit=0; bit<24; bit++) {
+		printf("%5lu ", zeroes[bit]);
+	}
+	printf("\n");
+
+clear:
+	memset(key_bin, 0, sizeof(key_bin));
+	memset(cnt_bin, 0, sizeof(cnt_bin));
+	memset(cipher_bin, 0, sizeof(cipher_bin));
+
+	num_dispose(quotient);
+	num_dispose(cipher);
+	num_dispose(counter);
+}
+
+
 #define _PPP_TEST(cnt,len, col, row, code)			\
 mpz_set_ui(s.counter, (cnt)); s.code_length = (len);		\
 ppp_calculate(&s);						\
@@ -528,6 +615,10 @@ cleanup:
 	state_fini(&s);
 }
 
+
+
+
+
 void ppp_testcase(void)
 {
 	char *buf1, *buf2;
@@ -537,6 +628,8 @@ void ppp_testcase(void)
 	/* Check calculations */
 	state s;
 	state_init(&s, NULL, NULL);
+
+	_ppp_testcase_statistical(&s);
 
 	_PPP_TEST(0, 4, 'A', 1, "NH7j");
 
