@@ -46,6 +46,11 @@ extern int ppp_verify_range(const state *s);
  */
 extern int ppp_load_increment(state *s);
 
+/* Locked read, compare and decrement
+ *
+ */
+extern int ppp_load_decrement(state *s);
+
 extern void ppp_testcase(void);
 
 #endif

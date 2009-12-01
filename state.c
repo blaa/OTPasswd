@@ -134,12 +134,19 @@ int state_lock(state *s)
 	fl.l_whence = SEEK_SET;
 	fl.l_start = fl.l_len = 0;
 
-	fd = open(s->filename, O_WRONLY, 0);
+	/* Create lock filename; normal file + .lck */
+	s->lockname = malloc(strlen(s->filename) + 4 + 1);
+	if (!s->lockname)
+		return 1;
+	assert(sprintf(s->lockname, "%s.lck", s->filename) > 0);
+
+	/* Open/create lock file */
+	fd = open(s->lockname, O_WRONLY|O_CREAT, S_IWUSR|S_IRUSR);
 
 	if (fd == -1) {
 		/* Unable to create file, therefore unable to obtain lock */
-		print_perror(PRINT_NOTICE, "Unable to open a state file");
-		return STATE_DOESNT_EXISTS;
+		print_perror(PRINT_NOTICE, "Unable to create lock file");
+		goto error;
 	}
 
 	/*
@@ -164,13 +171,17 @@ int state_lock(state *s)
 		/* Unable to lock for 10 times */
 		close(fd);
 		print(PRINT_NOTICE, "Unable to lock opened state file\n");
-		return STATE_LOCK_ERROR;
+		goto error;
 	}
 
 	s->lock_fd = fd;
 	print(PRINT_NOTICE, "Got lock on state file\n");
 
 	return 0; /* Got lock */
+error:
+	free(s->lockname);
+	s->lockname = NULL;
+	return STATE_LOCK_ERROR;
 }
 
 int state_unlock(state *s)
@@ -190,6 +201,10 @@ int state_unlock(state *s)
 
 	close(s->lock_fd);
 	s->lock_fd = -1;
+
+	unlink(s->lockname);
+	free(s->lockname);
+	s->lockname = NULL;
 
 	if (ret != 0) {
 		print(PRINT_NOTICE, "Strange error while releasing lock\n");
@@ -512,6 +527,7 @@ int state_init(state *s, const char *username, const char *configfile)
 	s->fd = -1;
 	s->lock_fd = -1;
 	s->filename = _state_file(username, configfile);
+	s->lockname = NULL;
 	if (username)
 		s->username = strdup(username);
 	else 
@@ -596,7 +612,7 @@ int state_key_generate(state *s, const int salt)
 		crypto_sha256(entropy_pool+sizeof(entropy_pool)/2, sizeof(entropy_pool)/2, key_bin);
 		num_from_bin(s->counter, key_bin, 16); /* Counter is 128 bit only */
 		mpz_and(s->counter, s->counter, s->salt_mask);
-		mpz_set(s->furthest_printed, s->counter);
+		mpz_set_ui(s->furthest_printed, 0);
 
 		memset(entropy_pool, 0, sizeof(entropy_pool));
 		memset(key_bin, 0, sizeof(key_bin));

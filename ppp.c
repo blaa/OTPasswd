@@ -388,6 +388,55 @@ cleanup1:
 	return ret;
 }
 
+int ppp_load_decrement(state *s)
+{
+	state s_tmp; /* Second state, so we won't clobber current one */
+	int ret = 1;
+
+	if (state_init(&s_tmp, s->username, NULL) != 0)
+		return 1;
+
+	/* It doesn't matter which state we will lock */
+	if (state_lock(&s_tmp) != 0) {
+		ret = STATE_LOCK_ERROR;
+		goto cleanup0;
+	}
+
+	/* Read state file */
+	if (state_load(&s_tmp) != 0)
+		goto cleanup1;
+
+	/* freshly read counter must be bigger by 1
+	 * to continue, so decrement it and compare... */
+	mpz_sub_ui(s_tmp.counter, s_tmp.counter, 1);
+
+	if (mpz_cmp(s_tmp.counter, s->counter) != 0) {
+		/* Whoops, in the meantime somebody else
+		 * tried to authenticate! */
+		print(PRINT_NOTICE,
+		      "load_decrement failed, file "
+		      "modified in the meantime!\n");
+		ret = 2;
+		goto cleanup1;
+	}
+
+	/* Didn't changed, store */
+	if (state_store(s) != 0) {
+		print(PRINT_WARN, "Unable to save decremented state\n");
+		goto cleanup1;
+	}
+	
+	ret = 0; /* Everything ok */
+
+cleanup1: 
+	state_unlock(&s_tmp);
+cleanup0:
+	state_fini(&s_tmp);
+
+	return ret;
+}
+
+
 /***************************
  * Testcases
  **************************/

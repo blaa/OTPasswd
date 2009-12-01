@@ -87,6 +87,8 @@ typedef struct {
 	char *filename;	/* Path to state file    */
 	int fd;		/* State file descriptor */
 	int lock_fd;	/* Is the file locked?   */
+	char *lockname; /* Name of lock filename, 
+			 * allocated/deallocated during locking */
 } state;
 
 

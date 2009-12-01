@@ -18,25 +18,8 @@
 #include "state.h"
 #include "ppp.h"
 
-/* PAM_AUTH_ERR, PAM_CRED_INSUFFICIENT PAM_AUTHINFO_UNAVAIL PAM_USER_UNKNOWN PAM_MAXTRIES */
-/* PAM_TEXT_INFO PAM_ERROR_MSG PAM_PROMPT_ECHO_ON PAM_RPOMPT_ECHO_OFF */
-PAM_EXTERN int pam_sm_authenticate(
-	pam_handle_t *pamh, int flags, int argc, const char **argv)
+static void pam_show_message(pam_handle_t *pamh, int flags, const char *msg)
 {
-	int retval;
-
-	const char *user = NULL;
-	const char enforced_msg[] = "OTP not configured, unable to login.";
-	const char numspace_msg[] =
-		"Passcode counter overflowed or state "
-		"file corrupted. Regenerate key.";
-
-	const char *prompt = NULL;
-	int tries = 0;
-
-	/* OTP State */
-	state s;
-
 	/* Required for communication with user */
 	struct pam_conv *conversation;
 	struct pam_message message;
@@ -46,12 +29,106 @@ PAM_EXTERN int pam_sm_authenticate(
 	/* Initialize conversation function */
 	pam_get_item(pamh, PAM_CONV, (const void **)&conversation);
 
+	if (!(flags & PAM_SILENT)) {
+		/* Tell why */
+		message.msg_style = PAM_TEXT_INFO;
+		message.msg = msg;
+		conversation->conv(
+			1,
+			(const struct pam_message**)&pmessage,
+			&resp, conversation->appdata_ptr);
+		if (resp)
+			_pam_drop_reply(resp, 1);
+	}
+
+}
+
+static int pam_handle_load(pam_handle_t *pamh, int flags, int enforced, state *s)
+{
+	const char enforced_msg[] = "OTP not configured, unable to login.";
+	const char numspace_msg[] =
+		"Passcode counter overflowed or state "
+		"file corrupted. Regenerate key.";
+
+	switch (ppp_load_increment(s)) {
+	case 0:
+		/* Everything fine */
+		return 0;
+		
+	case STATE_NUMSPACE:
+		/* Strange error, might happen, but, huh! */
+		pam_show_message(pamh, flags, numspace_msg);
+		return PAM_AUTH_ERR;
+		
+	case STATE_DOESNT_EXISTS:
+		if (enforced == 0) {
+			/* Not enforced - ignore */
+			return PAM_IGNORE;
+		} else {
+			pam_show_message(pamh, flags, enforced_msg);
+		}
+		
+		/* Fall-throught */
+		
+	default: /* Any other problem - error */
+		return PAM_AUTH_ERR;
+	}
+
+}
+
+static struct pam_response *pam_query_user(pam_handle_t *pamh, int flags, int show, const char *prompt, const state *s)
+{
+	/* Required for communication with user */
+	struct pam_conv *conversation;
+	struct pam_message message;
+	struct pam_message *pmessage = &message;
+	struct pam_response *resp = NULL;
+
+	/* Initialize conversation function */
+	pam_get_item(pamh, PAM_CONV, (const void **)&conversation);
+
+	/* Echo on if enforced by "show" option or enabled by user
+	 * and not disabled by "noshow" option 
+	 */
+	if ((show == 2) || (show == 1 && (s->flags & FLAG_SHOW))) {
+		message.msg_style = PAM_PROMPT_ECHO_ON;
+	} else {
+		message.msg_style = PAM_PROMPT_ECHO_OFF;
+	}
+	
+	message.msg = prompt;
+	conversation->conv(1, (const struct pam_message **)&pmessage,
+			   &resp, conversation->appdata_ptr);
+
+	return resp;
+}
+
+
+/* PAM_AUTH_ERR, PAM_CRED_INSUFFICIENT PAM_AUTHINFO_UNAVAIL PAM_USER_UNKNOWN PAM_MAXTRIES */
+/* PAM_TEXT_INFO PAM_ERROR_MSG PAM_PROMPT_ECHO_ON PAM_RPOMPT_ECHO_OFF */
+PAM_EXTERN int pam_sm_authenticate(
+	pam_handle_t *pamh, int flags, int argc, const char **argv)
+{
+	int retval;
+
+	/* User info from PAM */
+	const char *user = NULL;
+
+	/* Prompt to ask user */
+	const char *prompt = NULL;
+
+	/* OTP State */
+	state s;
+
+	/* Required for communication with user */
+	struct pam_response *resp = NULL;
+
 	/* Module options */
 
 	/* Enforced makes any user without an .otpasswd config
 	 * fail to login */
 	int enforced = 0;	/* Do we enforce OTP logons? */
-	int secure = 0;		/* Do we allow dont-skip? */
+	int secure = 0;		/* Do we allow dont-skip? 0 - yes */
 	int debug = 0;		/* Turns on increased debugging (into syslog) */
 	int retry = 0;		/* 0 - no retry 
 				 * 1 - retry with new passcode
@@ -83,9 +160,14 @@ PAM_EXTERN int pam_sm_authenticate(
 		}
 	}
 
-	/*
-	 * Authentication requires we know who the user wants to be
-	 */
+	/* Initialize internal debugging */
+	if (debug) {
+		print_init(PRINT_NOTICE, 0, 1, "/tmp/otpasswd_dbg");
+		print(PRINT_NOTICE, "LOG FILE OPENED FROM PAM\n");
+	} else
+		print_init(PRINT_ERROR, 0, 1, NULL);
+
+	/* We must know where to look for state file */
 	retval = pam_get_user(pamh, &user, NULL);
 	if (retval != PAM_SUCCESS && user) {
 		D(("pam_get_user %s", pam_strerror(pamh,retval)));
@@ -98,98 +180,38 @@ PAM_EXTERN int pam_sm_authenticate(
 		return PAM_USER_UNKNOWN;
 	}
 
-	/* Initialize internal debugging */
-	if (debug)
-		print_init(PRINT_NOTICE, 0, 1, "/tmp/otpasswd_dbg");
-	else
-		print_init(PRINT_ERROR, 0, 1, NULL);
-
 	/* Initialize state with given username, and default config file */
 	if (state_init(&s, user, NULL) != 0) {
 		/* This will fail if we're unable to locate home directory */
 		return PAM_USER_UNKNOWN;
 	}
 
-	/* Using locking load state, increment counter, and store new state */
-	retval = ppp_load_increment(&s);
-	switch (retval) {
-	case 0:
-		/* Everything fine */
-		break;
+	/* Retry = 0 - do not retry, 1 - with changing passcodes */
+	int tries;
+	for (tries = 0; tries < (retry == 0 ? 1 : 3); tries++) {
+		if (tries == 0 || retry == 1) {
+			/* First time or we are retrying while changing the password */
+			retval = pam_handle_load(pamh, flags, enforced, &s);
+			if (retval != 0)
+				goto cleanup;
 
-	case STATE_NUMSPACE:
-		/* Strange error, might happen, but, huh! */
-		if (!(flags & PAM_SILENT)) {
-			/* Tell why */
-			message.msg_style = PAM_TEXT_INFO;
-			message.msg = numspace_msg;
-			conversation->conv(
-				1,
-				(const struct pam_message**)&pmessage,
-				&resp, conversation->appdata_ptr);
-			if (resp)
-				_pam_drop_reply(resp, 1);
-		}
-		retval = PAM_MAXTRIES;
-		goto cleanup;
-
-	case STATE_DOESNT_EXISTS:
-		if (enforced == 0) {
-			/* Not enforced - ignore */
-			retval = PAM_IGNORE;
-			goto cleanup;
-		} else if (!(flags & PAM_SILENT)) {
-			/* Tell why */
-			message.msg_style = PAM_TEXT_INFO;
-			message.msg = enforced_msg;
-			conversation->conv(
-				1,
-				(const struct pam_message**)&pmessage,
-				&resp, conversation->appdata_ptr);
-			if (resp)
-				_pam_drop_reply(resp, 1);
+			/* Generate prompt */
+			ppp_calculate(&s);
+			prompt = ppp_get_prompt(&s);
+			if (!prompt) {
+				print(PRINT_ERROR, "Error while generating prompt\n");
+				retval = PAM_AUTH_ERR;
+				goto cleanup;
+			}
 		}
 
-		/* Fall-thought */
+		resp = pam_query_user(pamh, flags, show, prompt, &s);
 
-	default: /* Any other problem - error */
-		retval = PAM_AUTH_ERR;
-		goto cleanup;
-	}
-
-
-	/* Echo on if enforced by "show" option or enabled by user
-	 * and not disabled by "noshow" option 
-	 */
-	if ((show == 2) || (show == 1 && (s.flags & FLAG_SHOW))) {
-		message.msg_style = PAM_PROMPT_ECHO_ON;
-	} else {
-		message.msg_style = PAM_PROMPT_ECHO_OFF;
-	}
-	
-	/* Generate prompt */
-	ppp_calculate(&s);
-	prompt = ppp_get_prompt(&s);
-	if (!prompt) {
-		print(PRINT_ERROR, "Error while generating prompt\n");
-		retval = PAM_AUTH_ERR;
-		goto cleanup;
-	}
-
-	for (tries = 0; tries < 3; tries++) {
-		
-		message.msg = prompt;
-
-		conversation->conv(1, (const struct pam_message **)&pmessage,
-				   &resp, conversation->appdata_ptr);
-		
-		/* Default: fail to authenticate */
 		retval = PAM_AUTH_ERR; 
 		if (!resp) {
 			/* No response? */
 			goto cleanup;
 		}
-
 
 		if (ppp_authenticate(&s, resp[0].resp) == 0) {
 			_pam_drop_reply(resp, 1);
@@ -199,18 +221,19 @@ PAM_EXTERN int pam_sm_authenticate(
 			goto cleanup;
 		}
 
-		switch (retry) {
-		case 0:
-			/* No retry */
-			goto cleanup;
-		case 2:
-			/* Retry without changing passcode */
-			break;
-		case 1:
-			/* Retry while changing the password */
-			/* TODO: NOT IMPLEMENTED */
-			break;
+		/* Error during authentication */
+		print(PRINT_NOTICE, "secure %d retry %d flags %d\n", secure, retry, s.flags);
+		if (retry == 0 && secure == 0 && !(s.flags & FLAG_SKIP)) {
+			/* Decrement counter */
+			retval = ppp_load_decrement(&s);
+			if (retval != 0) {
+				retval = PAM_AUTH_ERR;
+				print(PRINT_WARN, "Error while decrementing\n");
+				goto cleanup;
+			}
 		}
+
+		retval = PAM_AUTH_ERR;
 	}
 
 cleanup:
