@@ -13,13 +13,13 @@
  */
 
 
-$pppauth = "/usr/bin/pppauth";
+$pppauth = "/usr/bin/otpasswd";
 $password = "some_anti_spam_password";
 $tofield = "phonenumber@sms.gate.org";
 $userhome = "/home/user"; // make sure pppauth locates our userdir. 
 $from = "From: OTP System\r\n";
 
-$cmd = $pppauth . " -t -p current";
+$cmd = $pppauth . " -t current";
 
 
 if ($_POST['password'] == $password) {
