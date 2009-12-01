@@ -34,7 +34,8 @@ Passcode 3B [12]: F@p2
 
 user@server $
 
-
+TODO: Write something about config file, where it is, about approach (PPP)
+and about salting.
 
 == Installation ==
 To enable OTP for your ssh you have to:
@@ -46,8 +47,8 @@ To enable OTP for your ssh you have to:
 
 So.
 
-0) Package required openssl and gmp libraries and cmake tool. Should be available
-   in repository of your distribution. 
+0) Package required openssl and gmp libraries and cmake tool. 
+   All should be available in repository of your distribution. 
 
 1) Package can be installed using your distribution repository (hopefully), 
 or in a simple way:

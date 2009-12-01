@@ -103,23 +103,20 @@ extern int state_init(state *s, const char *username, const char *configfile);
  * any secure-relevant data and free the memory */
 extern void state_fini(state *s);
 
+/* Generate new key */
+extern int state_key_generate(state *s, const int salt);
+
+
 /* Lock state file */
 extern int state_lock(state *s);
-
 /* Unlock state file */
 extern int state_unlock(state *s);
 
-/* Generate new key */
-extern int state_key_generate(state *s, const int salt);
-/* Increment passcode counter */
-extern void state_inc(state *s);
-
-extern void state_debug(const state *s);
 
 /* Load state file. */
 extern int state_load(state *s);
 /* Store state into file */
-extern int state_store(const state *s);
+extern int state_store(state *s);
 
 /* Do some tests (may overwrite your key file!) */
 extern void state_testcase(void);

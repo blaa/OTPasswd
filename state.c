@@ -246,11 +246,15 @@ static int _rng_read(const char *device, const char *msg, unsigned char *buf, co
 
 /**********************************************
  * Interface functions for managing state files
- *
  **********************************************/
-
 int state_load(state *s)
 {
+	/* Did we lock it here? */
+	int locked = 0;
+
+	int ret = 0;
+	FILE *f;
+
 	/* TODO: Maybe rewrite using strtok? */
 
 	if (s->filename == NULL) {
@@ -258,29 +262,28 @@ int state_load(state *s)
 		return 1;
 	}
 
-	/*
-	 * Lock file
-	 * Read data
-	 * Unlock / leave locked?
-	 */
+	if (_state_file_permissions(s) != 0) {
+		print(PRINT_NOTICE,
+		      "Unable to load state file. "
+		      "Have you created key with -k option?\n");
+		return STATE_DOESNT_EXISTS;
+	}
+
 	if (s->lock_fd <= 0) {
 		print(PRINT_NOTICE, 
 		      "State file not locked while reading from it\n");
-	}
-
-	int ret = 0;
-	FILE *f;
-
-	if (_state_file_permissions(s) != 0) {
-		print(PRINT_NOTICE, "Unable to load state file\n");
-		return STATE_DOESNT_EXISTS;
+		if (state_lock(s) != 0) {
+			print(PRINT_ERROR, "Unable to lock file for reading!\n");
+			return 1;
+		}
+		locked = 1;
 	}
 
 	f = fopen(s->filename, "r");
 	if (!f) {
 		print_perror(PRINT_ERROR, "Unable to open %s for reading. Have you tried -k option?", 
 			     s->filename);
-		return 1;
+		goto error;
 	}
 
 	ret = mpz_inp_str(s->sequence_key, f, STATE_BASE);
@@ -402,19 +405,27 @@ int state_load(state *s)
 
 	}
 
+	if (locked && state_unlock(s) != 0) {
+		print(PRINT_ERROR, "Error while unlocking state file!\n");
+	}
 	fclose(f);
 	return 0;
 
 error:
+	if (locked && state_unlock(s) != 0) {
+		print(PRINT_ERROR, "Error while unlocking state file!\n");
+	}
 	fclose(f);
 	return 1;
 }
 
-int state_store(const state *s)
+int state_store(state *s)
 {
 	/* Rewrite maybe using gmp_scanf? */
 	int ret;
 	FILE *f;
+
+	int locked = 0;
 
 	if (s->filename == NULL) {
 		print(PRINT_CRITICAL, "State data not initialized?\n");
@@ -423,7 +434,12 @@ int state_store(const state *s)
 
 	if (s->lock_fd <= 0) {
 		print(PRINT_NOTICE, 
-		      "State file not locked while writting to it\n");
+		      "State file not locked while writing to it\n");
+		if (state_lock(s) != 0) {
+			print(PRINT_ERROR, "Unable to lock file for reading!\n");
+			return 1;
+		}
+		locked = 1;
 	}
 
 	f = fopen(s->filename, "w");
@@ -431,6 +447,9 @@ int state_store(const state *s)
 		print_perror(PRINT_ERROR,
 			     "Unable to open %s for writting",
 			     s->filename);
+
+		if (locked)
+			state_unlock(s);
 		return STATE_PERMISSIONS;
 	}
 
@@ -489,9 +508,16 @@ int state_store(const state *s)
 		      "Key might be world-readable!\n");
 	}
 
+	if (locked && state_unlock(s) != 0) {
+		print(PRINT_ERROR, "Error while unlocking state file!\n");
+	}
 	return 0;
 
 error:
+	if (locked && state_unlock(s) != 0) {
+		print(PRINT_ERROR, "Error while unlocking state file!\n");
+	}
+
 	fclose(f);
 	return 1;
 }
@@ -627,15 +653,6 @@ int state_key_generate(state *s, const int salt)
 /******************************************
  * Miscellaneous functions
  ******************************************/
-void state_debug(const state *s)
-{
-	printf("Sequence key: ");
-	num_print(s->sequence_key, 16);
-	printf("Counter: ");
-	num_print(s->counter, 16);
-}
-
-
 void state_testcase(void)
 {
 	state s1, s2;

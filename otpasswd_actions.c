@@ -27,6 +27,12 @@
 
 #include "otpasswd_actions.h"
 
+enum {
+	QUERY_YES=0,
+	QUERY_NO=2,
+	QUERY_OBSCURE=1
+};
+
 /* Ask a question; return 0 only if "yes" was written, 1 otherwise */
 static int _yes_or_no(const char *msg)
 {
@@ -42,10 +48,26 @@ static int _yes_or_no(const char *msg)
 
 	if (strcasecmp(buf, "yes\n") == 0) {
 		printf("\n");
-		return 0;
+		return QUERY_YES;
+	} else if (strcasecmp(buf, "no\n") == 0) {
+		return QUERY_NO;
 	}
 
-	return 1;
+	/* Incomprehensible answer */
+	return QUERY_OBSCURE;
+}
+
+static int _enforced_yes_or_no(const char *msg)
+{
+	int ret;
+	do {
+		ret = _yes_or_no(msg);
+		if (ret == QUERY_OBSCURE) {
+			printf("Please answer 'yes' or 'no'.\n");
+			continue;
+		}
+	} while(ret != QUERY_YES && ret != QUERY_NO);
+	return ret;
 }
 
 static int is_passcard_in_range(const state *s, const mpz_t passcard)
@@ -76,6 +98,31 @@ static int is_passcode_in_range(const state *s, const mpz_t passcard)
 	}
 
 	return 1;
+}
+
+static void _show_flags(const state *s)
+{
+	if (s->flags & FLAG_SHOW)
+		printf("show ");
+	else
+		printf("dont-show ");
+
+	if (s->flags & FLAG_SKIP)
+		printf("skip ");
+	else
+		printf("dont-skip ");
+
+	if (s->flags & FLAG_ALPHABET_EXTENDED)
+		printf("alphabet-extended ");
+	else
+		printf("alphabet-simple ");
+
+	if (s->flags & FLAG_NOT_SALTED)
+		printf("(no salt) ");
+	else
+		printf("(key salted) ");
+
+	printf("codelength-%d\n", s->code_length);
 }
 
 /* Authenticate; returns boolean; 1 - authenticated */
@@ -136,6 +183,7 @@ cleanup:
 /* Generate new key */
 void action_key(options_t *options)
 {
+	int ret;
 	state s;
 	if (state_init(&s, NULL, NULL) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
@@ -145,10 +193,25 @@ void action_key(options_t *options)
 	/* Check existance of previous key */
 	if (state_load(&s) == 0) {
 		/* We loaded state correctly, key exists */
-		if (_yes_or_no("This will erase irreversibly your previous key.\n"
-			       "Are you sure you want to continue?") != 0) {
+		puts(
+			"*****************************************************\n"
+			"* This will irreversibly erase your previous key    *\n"
+			"* making all already printed passcards worthless!   *\n"
+			"*****************************************************\n"
+		);
+
+		if (_yes_or_no("Are you sure you want to continue?") != 0) {
 			printf("Stopping\n");
-			exit(1);
+			goto cleanup;
+		}
+
+		printf("Your current flags: ");
+		_show_flags(&s);
+		if (_enforced_yes_or_no(
+			    "Do you want to keep them?") == QUERY_NO) {
+			printf("Reverting to defaults.\n");
+			state_fini(&s);
+			state_init(&s, NULL, NULL);
 		}
 	}
 
@@ -157,18 +220,44 @@ void action_key(options_t *options)
 
 	if (state_key_generate(&s, salted) != 0) {
 		print(PRINT_ERROR, "Unable to generate new key\n");
-		exit(1);
+		goto cleanup;
 	}
 
-	/* TODO: print first page in text */
+	mpz_add_ui(s.furthest_printed, s.furthest_printed, 1);
+	ppp_calculate(&s);
+	puts(
+		"\n"
+		"*****************************************************\n"
+		"* Print following passcard or at least make a note  *\n"
+		"* with a few first passcodes so you won't loose     *\n"
+		"* ability to log into your system!                  *\n"
+		"*****************************************************\n"
+	);
+	char *card = card_ascii(&s, s.furthest_printed);
+	puts(card);
+	free(card);
 
+	do {
+		ret = _yes_or_no("Are you ready to start using one-time passwords?");
+		if (ret == 1) {
+			printf("Please answer 'yes' or 'no'.\n");
+			continue;
+		}
+	} while(ret != 0 && ret != 2);
 
-	/* TODO: LOCK! */
+	if (ret != 0) {
+		printf("Key forgotten.\n");
+		goto cleanup;
+	}
+
 	if (state_store(&s) != 0) {
 		print(PRINT_ERROR, "Unable to save state to %s file\n", s.filename);
-		exit(1);
+		goto cleanup;
 	}
 
+	printf("Key stored!\n");
+
+cleanup:
 	state_fini(&s);
 }
 
@@ -196,65 +285,70 @@ void action_license(options_t *options)
 /* Update flags based on mask which are stored in options struct */
 void action_flags(options_t *options)
 {
+	int ret, state_locked;
+	int state_changed = 0;
 	state s;
 	if (state_init(&s, NULL, NULL) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
 		exit(1);
 	}
 
+	state_locked = 1;
+	ret = state_lock(&s);
+	if (ret != 0 && ret != STATE_DOESNT_EXISTS) {
+		/* whoops! */
+		print(PRINT_ERROR, "Unable to lock file! Unable to save"
+		      " any changes back to file!\n");
+		state_locked = 0;
+	} else if (ret == STATE_DOESNT_EXISTS)
+		goto no_key_file;
+
 	/* Load our state */
 	if (state_load(&s) != 0) {
 		/* Unable to load state */
-		print(PRINT_ERROR, "Error while reading state, have you created a key with -k option?\n");
-		exit(1);
+		goto no_key_file;
 	}
 
 	/* Change flags */
 	s.flags |= options->flag_set_mask;
 	s.flags &= ~(options->flag_clear_mask);
 
-	if (options->set_codelength >= 2 && options->set_codelength <= 16)
+	if (options->flag_set_mask || options->flag_clear_mask) {
+		state_changed = 1;
+	}
+
+	if (options->set_codelength >= 2 && options->set_codelength <= 16) {
 		s.code_length = options->set_codelength;
-	else if (options->set_codelength) {
+		state_changed = 1;
+	} else if (options->set_codelength) {
 		print(PRINT_ERROR, "Illegal passcode length specified\n");
 		goto cleanup;
 	}
 
 
-	/* TODO: LOCK! */
-	if (state_store(&s) != 0) {
-		print(PRINT_ERROR, "Unable to save state to ~/" STATE_FILENAME " file\n");
-		exit(1);
+	if (state_locked == 1 && state_changed == 1) {
+		print(PRINT_NOTICE, "Saving changes to state file\n");
+		if (state_store(&s) != 0) {
+			print(PRINT_ERROR, "Error while saving changes!\n");
+			goto cleanup;
+		} else 
+			printf("Flags updated, current configuration: ");
+	} else {
+		printf("Flags not changed, current configuration: ");
 	}
 
-	if (options->flag_set_mask || options->flag_clear_mask)
-		printf("Flags updated, current configuration: ");
-	else
-		printf("Flags not changed, current configuration: ");
-	if (s.flags & FLAG_SHOW)
-		printf("show ");
-	else
-		printf("dont-show ");
-
-	if (s.flags & FLAG_SKIP)
-		printf("skip ");
-	else
-		printf("dont-skip ");
-
-	if (s.flags & FLAG_ALPHABET_EXTENDED)
-		printf("alphabet-extended ");
-	else
-		printf("alphabet-simple ");
-
-	if (s.flags & FLAG_NOT_SALTED)
-		printf("(no salt) ");
-	else
-		printf("(key salted) ");
-
-	printf("codelength-%d\n", s.code_length);
+	_show_flags(&s);
 
 cleanup:
+	if (state_unlock(&s) != 0)
+		print(PRINT_ERROR, "Error while releasing lock!\n");
+
 	state_fini(&s);
+	return;
+
+no_key_file:
+	print(PRINT_ERROR, "Error while reading state, have you created a key with -k option?\n");
+	exit(1);
 }
 
 void action_print(options_t *options)

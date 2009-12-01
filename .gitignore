@@ -1,6 +1,7 @@
-pppv3
 otpasswd
+pam_otpasswd.so
 CMakeFiles
 Makefile
 CMakeCache.txt
 cmake_install.cmake
+install_manifest.txt
