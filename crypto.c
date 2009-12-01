@@ -154,7 +154,7 @@ void crypto_testcase(void)
 		printf("PASSED\n");		
 	}
 
-	printf("crypto_aes_test [%2d]: ", i+1);
+	printf("crypto_aes_test [ 2]: ");
 	for (i = 0; i < 10; i++) {
 		crypto_rng(plain, 16, 0);
 		crypto_aes_encrypt(key, plain, encrypted);

@@ -8,19 +8,22 @@ ChangeLog / TODO
 [?] New feature in TODO
 
 2009-12-01 v0.2
+	* [!] One off-by-one error fixed
+	* [+] Implement label and contact setting
+	* [+] Differentiate abnormal errors from normal errors
+	* [+] 'next' behaviour with LaTeX (+6!)
+	
 	* [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
 	* [-] Warnings when on last passcard
 	* [-] Decide on state file look, add version
-	* [+] Implement label and contact setting
-	* [+] Differentiate abnormal errors from normal errors
 	* [-] Calling external script for mailing/sms
 	* [-] Share objects between targets (CMake)
 	* [-] Using Gecos field for phone information?
 	* [?] Keep lines below 75 columns? Or 80?
-	* [?] 'next' behaviour with LaTeX (+6!)
 	* [?] ppp testcase - statistical
-	* [?] off-by-one testcase
+	* [?] off-by-one testcase; a bit done
 	* [?] manuals
+
 2009-12-01 v0.1 first working version
 
 	* [!] CHECK: Make testcase to check if locking file and then rewritting it has any sense.
@@ -32,10 +35,10 @@ ChangeLog / TODO
 	* [+] Ensure passcards/codes passed by user are in range and won't get larger because of increments.
 		Needs debuging. Especially internal incrementation.
 	* [+] Ensure file permissions are always set correctly
+	* [+] If not locked when storing/loading lock it for this procedure.
 
 	* [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
 	* [-] Warnings when on last passcard
-	* [+] If not locked when storing/loading lock it for this procedure.
 	* [-] Decide on state file look, add version
 	* [-] Implement label and contact setting
 	* [-] Calling external script for mailing/sms

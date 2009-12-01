@@ -281,7 +281,9 @@ int state_load(state *s)
 
 	f = fopen(s->filename, "r");
 	if (!f) {
-		print_perror(PRINT_ERROR, "Unable to open %s for reading. Have you tried -k option?", 
+		print_perror(PRINT_ERROR,
+			     "Unable to open %s for reading. "
+			     "Have you tried -k option?", 
 			     s->filename);
 		goto error;
 	}
@@ -344,13 +346,15 @@ int state_load(state *s)
 		 * it's lack might be caused by too long entry
 		 * at end of file 
 		 */
-		print_perror(PRINT_ERROR, "Garbage near label data in %s.", s->filename);
+		print_perror(PRINT_ERROR,
+			     "Garbage near label data in %s.", s->filename);
 		goto error;
 	}
 
 	if (fgets(s->contact, sizeof(s->contact), f) == NULL) {
 		/* Nothing read, there should be at least one \n */
-		print_perror(PRINT_ERROR, "Error while reading contact data from %s"
+		print_perror(PRINT_ERROR,
+			     "Error while reading contact data from %s"
 			     ", unexpected end of file",
 			     s->filename);
 		goto error;
@@ -361,7 +365,9 @@ int state_load(state *s)
 		 * it's lack might be caused by too long entry
 		 * at end of file 
 		 */
-		print_perror(PRINT_ERROR, "Garbage near contact data at end of %s.", s->filename);
+		print_perror(PRINT_ERROR, 
+			     "Garbage near contact data at end of %s.",
+			     s->filename);
 		goto error;
 	}
 
