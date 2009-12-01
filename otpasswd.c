@@ -237,8 +237,13 @@ void process_cmd_line(int argc, char **argv)
 
 		case 'd':
 		case 'c':
-			printf("Unimplemented\n");
-			assert(0);
+			if (options.action != 0) {
+				printf("Only one action can be specified on the command line\n");
+				exit(-1);
+			}
+			options.action = c;
+			options.action_arg = strdup(optarg);
+			break;
 
 		case '?':
 			/* getopt_long already printed an error message. */
@@ -282,6 +287,8 @@ void process_cmd_line(int argc, char **argv)
 		break;
 
 	case 'f':
+	case 'd':
+	case 'c':
 		action_flags(&options);
 		break;
 
@@ -303,7 +310,6 @@ void process_cmd_line(int argc, char **argv)
 	case 'p':
 	case 'P':
 		action_print(&options);
-		free(options.action_arg);
 		break;
 
 	case 'x':
@@ -315,6 +321,7 @@ void process_cmd_line(int argc, char **argv)
 		ppp_testcase();
 	}
 
+	free(options.action_arg);
 	print_fini();
 }
 

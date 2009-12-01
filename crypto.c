@@ -143,31 +143,31 @@ void crypto_testcase(void)
 
 	printf("crypto_aes_test [ 1]: ");
 	if (memcmp(plain, decrypted, 16) != 0) {
-		printf("FAILED\n");
+		printf("FAILED ");
 	} else {
-		printf("PASSED\n");		
+		printf("PASSED ");		
 	}
 
-	printf("crypto_aes_test [ 2]: ");
 	if (memcmp(encrypted, encrypted_origin, 16) != 0) {
 		printf("FAILED\n");
 	} else {
 		printf("PASSED\n");		
 	}
 
+	printf("crypto_aes_test [%2d]: ", i+1);
 	for (i = 0; i < 10; i++) {
 		crypto_rng(plain, 16, 0);
 		crypto_aes_encrypt(key, plain, encrypted);
 		crypto_aes_decrypt(key, encrypted, decrypted);
 		
-		printf("crypto_aes_test [%2d]: ", i+2);
-		if (memcmp(plain, decrypted, 16) != 0) {
-			printf("FAILED\n");
-		} else {
-			printf("PASSED\n");		
-		}
 
+		if (memcmp(plain, decrypted, 16) != 0) {
+			printf("FAILED ");
+		} else {
+			printf("PASSED ");		
+		}
 	}
+	printf("\n");
 
 	/* SHA256 testcase */
 	const unsigned char hash_plain[] = "To be encrypted.";

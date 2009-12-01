@@ -57,6 +57,30 @@ static int _yes_or_no(const char *msg)
 	return QUERY_OBSCURE;
 }
 
+/* Validate contact / label data */
+static int _validate_string(const char *str)
+{
+	const int len = strlen(str);
+	int i;
+	/* Spaces are ok, \n and \r not.
+	 * alpha, digits, +, -, @ are ok
+	 * These characters must be LaTeX safe, so no {}
+	 * Also they can be passed to some external script,
+	 * so they must obey restrictions.
+	 */
+	for (i=0; i<len; i++) {
+		if (isalnum(str[i]))
+			continue;
+		if (str[i] == ' ' || str[i] == '+' || str[i] == '@' || 
+		    str[i] == '-' || str[i] == '.' || str[i] == ',' ||
+		    str[i] == '*')
+			continue;
+		return 0; /* False */
+	}
+	return 1;
+}
+
+
 static int _enforced_yes_or_no(const char *msg)
 {
 	int ret;
@@ -123,6 +147,17 @@ static void _show_flags(const state *s)
 		printf("(key salted) ");
 
 	printf("codelength-%d\n", s->code_length);
+	if (strlen(s->label) > 0) {
+		printf("Passcard label='%s', ", s->label);
+	} else {
+		printf("No label, ");
+	}
+
+	if (strlen(s->contact) > 0) {
+		printf("contact='%s'.\n", s->contact);
+	} else {
+		printf("no contact information.\n");
+	}
 }
 
 /* Authenticate; returns boolean; 1 - authenticated */
@@ -147,7 +182,7 @@ int action_authenticate(options_t *options)
 		break;
 
 	case STATE_NUMSPACE:
-		printf("Counter overflowed. Regenerate key\n");
+		printf("Counter overflowed. Regenerate key.\n");
 		retval = 0;
 		goto cleanup;
 
@@ -176,7 +211,6 @@ cleanup:
 		printf("Authentication failed.\n");
 		
 	state_fini(&s);
-	free(options->action_arg);
 	return retval;
 }
 
@@ -309,20 +343,59 @@ void action_flags(options_t *options)
 		goto no_key_file;
 	}
 
-	/* Change flags */
-	s.flags |= options->flag_set_mask;
-	s.flags &= ~(options->flag_clear_mask);
+	switch(options->action) {
+	case 'f':
+		/* Change flags */
+		s.flags |= options->flag_set_mask;
+		s.flags &= ~(options->flag_clear_mask);
 
-	if (options->flag_set_mask || options->flag_clear_mask) {
-		state_changed = 1;
-	}
+		if (options->flag_set_mask || options->flag_clear_mask) {
+			state_changed = 1;
+		}
 
-	if (options->set_codelength >= 2 && options->set_codelength <= 16) {
-		s.code_length = options->set_codelength;
+		if (options->set_codelength >= 2 && options->set_codelength <= 16) {
+			s.code_length = options->set_codelength;
+			state_changed = 1;
+		} else if (options->set_codelength) {
+			printf("Illegal passcode length specified\n");
+			goto cleanup;
+		}
+		break;
+
+	case 'd':
+		/* Change label */
+		if (strlen(options->action_arg) + 1 > sizeof(s.label)) {
+			printf("Label can't be longer than %lu characters\n", sizeof(s.label)-1);
+			goto cleanup;
+		}
+
+		if (!_validate_string(options->action_arg)) {
+			printf(
+			      "Contact contains illegal characters.\n"
+			      "Alphanumeric + ' -+,.@_*' are allowed\n");
+			goto cleanup;			
+		}
+
 		state_changed = 1;
-	} else if (options->set_codelength) {
-		print(PRINT_ERROR, "Illegal passcode length specified\n");
-		goto cleanup;
+		strcpy(s.label, options->action_arg);
+		break;
+
+	case 'c':
+		/* Change contact info */
+		if (strlen(options->action_arg) + 1 > sizeof(s.contact)) {
+			printf("Contact can't be longer than %lu characters\n", sizeof(s.contact)-1);
+			goto cleanup;
+		}
+
+		if (!_validate_string(options->action_arg)) {
+			printf(
+			      "Contact contains illegal characters.\n"
+			      "Alphanumeric + ' -+,.@_*' are allowed\n");
+			goto cleanup;			
+		}
+		strcpy(s.contact, options->action_arg);
+		state_changed = 1;
+		break;
 	}
 
 
@@ -332,11 +405,11 @@ void action_flags(options_t *options)
 			print(PRINT_ERROR, "Error while saving changes!\n");
 			goto cleanup;
 		} else 
-			printf("Flags updated, current configuration: ");
+			printf("Flags updated, current configuration:\n");
 	} else {
-		printf("Flags not changed, current configuration: ");
+		printf("Flags not changed, current configuration:\n");
 	}
-
+	
 	_show_flags(&s);
 
 cleanup:
@@ -402,7 +475,8 @@ void action_print(options_t *options)
 	if (strcasecmp(options->action_arg, "current") == 0) {
 		/* Current passcode */
 		if (counter_correct == 0) {
-			print(PRINT_ERROR, "Passcode counter overflowed. Regenerate key.\n");
+			printf("Passcode counter overflowed. "
+			       "Regenerate key.\n");
 			goto cleanup1;
 		}
 
@@ -412,12 +486,19 @@ void action_print(options_t *options)
 	} else if (strcasecmp(options->action_arg, "next") == 0) {
 		/* Next passcard */
 		if (counter_correct == 0) {
-			print(PRINT_ERROR, "Passcode counter overflowed. Regenerate key.\n");
+			printf( 
+			      "Passcode counter overflowed. "
+			      "Regenerate key.\n");
 			goto cleanup1;
 		}
 
 		code_selected = 0;
-		mpz_add_ui(s.furthest_printed, s.furthest_printed, 1);
+
+		/* By 1 or by 6 for LaTeX */
+		mpz_add_ui(
+			s.furthest_printed,
+			s.furthest_printed,
+			options->action == 't' ? 1 : 6);
 		mpz_set(passcard_num, s.furthest_printed);
 		state_changed = 1;
 	} else if (isalpha(options->action_arg[0])) {
@@ -428,18 +509,18 @@ void action_print(options_t *options)
 		ret = sscanf(options->action_arg, "%c%d[%40s]", &column, &row, number);
 		column = toupper(column);
 		if (ret != 3 || (column < 'A' || column > 'J')) {
-			print(PRINT_ERROR, "Incorrect passcode specification. (%d)\n", ret);
+			printf("Incorrect passcode specification. (%d)\n", ret);
 			goto cleanup1;
 		}
 
 		ret = gmp_sscanf(number, "%Zu", passcard_num);
 		if (ret != 1) {
-			print(PRINT_ERROR, "Incorrect passcard specification.\n");
+			printf("Incorrect passcard specification.\n");
 			goto cleanup1;
 		}
 
 		if (!is_passcard_in_range(&s, passcard_num)) {
-			print(PRINT_ERROR,
+			printf(
 			      "Passcard number out of range. "
 			      "First passcard has number 1.\n");
 			goto cleanup1;
@@ -448,7 +529,7 @@ void action_print(options_t *options)
 		/* ppp_get_passcode_number adds salt as needed */
 		ret = ppp_get_passcode_number(&s, passcard_num, passcode_num, column, row);
 		if (ret != 0) {
-			print(PRINT_ERROR, "Error while parsing passcard description.\n");
+			printf("Error while parsing passcard description.\n");
 			goto cleanup1;
 		}
 
@@ -469,12 +550,12 @@ void action_print(options_t *options)
 		/* number -- passcode number */
 		ret = gmp_sscanf(options->action_arg, "%Zd", passcode_num);
 		if (ret != 1) {
-			print(PRINT_ERROR, "Error while parsing passcode number.\n");
+			printf("Error while parsing passcode number.\n");
 			goto cleanup1;
 		}
 
 		if (!is_passcode_in_range(&s, passcode_num)) {
-			print(PRINT_ERROR, "Passcode number out of range.\n");
+			printf("Passcode number out of range.\n");
 			goto cleanup1;
 		}
 
@@ -489,18 +570,18 @@ void action_print(options_t *options)
 		/* [number] -- passcard number */
 		ret = gmp_sscanf(options->action_arg, "[%Zd]", passcard_num);
 		if (ret != 1) {
-			print(PRINT_ERROR, "Error while parsing passcard number.\n");
+			printf("Error while parsing passcard number.\n");
 			goto cleanup1;
 		}
 
 		if (!is_passcard_in_range(&s, passcard_num)) {
-			print(PRINT_ERROR, "Passcard out of accessible range.\n");
+			printf("Passcard out of accessible range.\n");
 			goto cleanup1;
 		}
 
 		code_selected = 0;
 	} else {
-		print(PRINT_ERROR, "Illegal argument passed to option.\n");
+		printf("Illegal argument passed to option.\n");
 		goto cleanup1;
 	}
 
@@ -532,19 +613,24 @@ void action_print(options_t *options)
 
 		case 's':
 			if (counter_correct == 0) {
-				print(PRINT_ERROR, "Passcode counter overflowed. Regenerate key.\n");
+				printf("Passcode counter overflowed. Regenerate key.\n");
 				goto cleanup1;
 			}
 			/* Skip to passcard... */
-			ret = ppp_get_passcode_number(&s, passcard_num, passcode_num, 'A', 1);
+			ret = ppp_get_passcode_number(&s, passcard_num,
+						      passcode_num, 'A', 1);
 			if (ret != 0) {
-				print(PRINT_ERROR, "Error while generating destination passcode\n");
+				print(PRINT_ERROR, 
+				      "Error while generating destination passcode\n");
 				goto cleanup1;
 			}
 
 			if (mpz_cmp(s.counter, passcode_num) > 0) {
-				printf("WARNING: You should never skip "
-				       "backwards to reuse your codes!\n");
+				printf(
+					"**********************************\n"
+					"* WARNING: You should never skip *\n"
+					"* backwards to reuse your codes! *\n"
+					"**********************************\n");
 			}
 
 			printf("Skipped to specified passcard.\n");
@@ -572,20 +658,23 @@ void action_print(options_t *options)
 			break;
 
 		case 'l':
-			print(PRINT_ERROR,
+			printf(
 			      "LaTeX parameter works only with"
 			      " passcard specification\n");
 			break;
 
 		case 's':
 			if (counter_correct == 0) {
-				print(PRINT_ERROR, "Passcode counter overflowed. Regenerate key.\n");
+				printf("Passcode counter overflowed. Regenerate key.\n");
 				goto cleanup1;
 			}
 			/* Skip to passcode */
 			if (mpz_cmp(s.counter, passcode_num) > 0) {
-				printf("WARNING: You should never skip "
-				       "backwards to reuse your codes!\n");
+				printf(
+					"**********************************\n"
+					"* WARNING: You should never skip *\n"
+					"* backwards to reuse your codes! *\n"
+					"**********************************\n");
 			}
 			printf("Skipped to specified passcode.\n");
 			mpz_set(s.counter, passcode_num);

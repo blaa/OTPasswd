@@ -327,7 +327,9 @@ int ppp_verify_range(const state *s)
 	/* ppp_calculate must've been called before */
 	assert(s->codes_on_card > 0);
 
-	if (mpz_cmp(just_counter, s->max_code) > 0) {
+	/* Equal is too big because max_code is calculated starting from 1
+	 * whereas counter starts from 0 */
+	if (mpz_cmp(just_counter, s->max_code) >= 0) {
 		/* Whoops */
 		num_dispose(just_counter);
 		return 1;
@@ -441,20 +443,26 @@ cleanup0:
  * Testcases
  **************************/
 
-static void _ppp_testcase_statistical(const state *s)
+static void _ppp_testcase_statistical(const state *s, const int alphabet_len, const int code_length, const int tests)
 {
 	/* Calculate distribution of 1s and 0s in 
 	 * generated passcodes for specified state key 
 	 */
-//int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
+	int bits_to_test;
+	int bits_in_character;
+	if (alphabet_len <= 64) {
+		bits_in_character = 6; /* Exactly 6! */
+		bits_to_test = code_length * bits_in_character;
+	} else if (alphabet_len <= 128) { /* 2^x = 88 -> 6.4594bits */
+		bits_in_character = 6;
+		bits_to_test = code_length * bits_in_character;
+	}
 
+	unsigned long zeroes[130] = {0};
+	unsigned long ones[130] = {0};
 
-	/* Parameters */
-	const int alphabet_len = 64;
-	const int code_length = 4;
-		
-	unsigned long zeroes[24] = {0};
-	unsigned long ones[24] = {0};
+	/* 6 is number of bits in a 
+	 * character of 64-letter alphabet */
 
 	unsigned char key_bin[32];
 	unsigned char cnt_bin[16];
@@ -474,8 +482,8 @@ static void _ppp_testcase_statistical(const state *s)
 	/* Convert numbers to binary */
 	num_to_bin(s->sequence_key, key_bin, 32);
 
-
-	for (cnt = 0; cnt < 100000; cnt++) {
+	printf("ppp_testcase_stat: Evaluating %d bits distribution in %u passcodes\n", bits_to_test, tests);
+	for (cnt = 0; cnt < tests; cnt++) {
 		mpz_add_ui(counter, counter, 1);
 		num_to_bin(counter, cnt_bin, 16);
 
@@ -496,7 +504,7 @@ static void _ppp_testcase_statistical(const state *s)
 			mpz_set(cipher, quotient);
 			
 			// calculate things in r
-			for (y=0; y<6; y++) {
+			for (y=0; y<bits_in_character; y++) {
 				if (r & (1<<y)) 
 					ones[bit]++;
 				else
@@ -507,13 +515,41 @@ static void _ppp_testcase_statistical(const state *s)
 
 	}
 	int bit;
-	for (bit=0; bit<24; bit++) {
-		printf("%5lu ", ones[bit]);
+	/* Perfect distribution */
+	const double perfect = tests / 2.0;
+
+	/* Calculate distribution */
+	double average1 = 0.0, average0 = 0.0;
+	printf("ppp_testcase_stat: Results:\n");
+
+	for (bit=0; bit<bits_to_test; bit++) {
+		average1 += ones[bit];
+		average0 += zeroes[bit];
+		double tmp1= (double)ones[bit] / perfect;
+		double tmp0 = (double)zeroes[bit] / perfect;
+		if (tmp1 > 1.004 || tmp1 < 0.993 || tmp0 < 0.993 || tmp0 > 1.004) {
+			printf("ppp_testcase_stat: FAILED. Bit %d has too big error (%0.10f, %0.10f)\n",
+			       bit, tmp1, tmp0);
+		}
 	}
-	printf("\n");
-	for (bit=0; bit<24; bit++) {
-		printf("%5lu ", zeroes[bit]);
+
+	average1 /= bits_to_test;
+	average0 /= bits_to_test;
+	printf("Perfect distribution is %.2f\n", perfect);
+	printf("Average distribution 1/0: %.10f %.10f\n", average1, average0);
+	double abs_err1 = average1 > perfect ? average1 - perfect : perfect - average1;
+	double abs_err0 = average0 > perfect ? average0 - perfect : perfect - average0;
+	double rel_err1 = average1 / perfect;
+	double rel_err0 = average0 / perfect;
+	printf("Absolute error: 1/0: %.10f %.10f\n", abs_err1, abs_err0);
+	printf("Relative error: 1/0: %.10f %.10f\n", rel_err1, rel_err0);
+	
+	if (rel_err1 > 1.001 || rel_err1 < 0.999 || rel_err0 > 1.001 || rel_err0 < 0.999) {
+		printf("ppp_testcase_stat: FAILED. Too big average relative errors!\n");
+	} else {
+		printf("ppp_testcase_stat: PASSED!\n");
 	}
+
 	printf("\n");
 
 clear:
@@ -525,22 +561,6 @@ clear:
 	num_dispose(cipher);
 	num_dispose(counter);
 }
-
-
-#define _PPP_TEST(cnt,len, col, row, code)			\
-mpz_set_ui(s.counter, (cnt)); s.code_length = (len);		\
-ppp_calculate(&s);						\
-buf1 = mpz_get_str(NULL, 10, s.counter);			\
-buf2 = mpz_get_str(NULL, 10, s.current_card);			\
-ppp_get_passcode(&s, s.counter, passcode);			\
-printf("ppp_testcase[%2d]: ", test++);				\
-printf("cnt=%10s len=%2d in_row=%d pos=%d%c[%8s] code=%16s",	\
-       buf1, s.code_length, s.codes_in_row, s.current_row,	\
-       s.current_column, buf2, passcode);			\
-if (s.current_row == (row) && s.current_column == (col)		\
-    && strcmp(passcode, (code)) == 0)				\
-	printf(" PASSED\n"); else printf(" FAILED\n\n");	\
-free(buf1); free(buf2);
 
 
 static void _ppp_testcase_authenticate(const char *passcode)
@@ -615,9 +635,20 @@ cleanup:
 	state_fini(&s);
 }
 
-
-
-
+#define _PPP_TEST(cnt,len, col, row, code)			\
+mpz_set_ui(s.counter, (cnt)); s.code_length = (len);		\
+ppp_calculate(&s);						\
+buf1 = mpz_get_str(NULL, 10, s.counter);			\
+buf2 = mpz_get_str(NULL, 10, s.current_card);			\
+ppp_get_passcode(&s, s.counter, passcode);			\
+printf("ppp_testcase[%2d]: ", test++);				\
+printf("cnt=%10s len=%2d in_row=%d pos=%d%c[%8s] code=%16s",	\
+       buf1, s.code_length, s.codes_in_row, s.current_row,	\
+       s.current_column, buf2, passcode);			\
+if (s.current_row == (row) && s.current_column == (col)		\
+    && strcmp(passcode, (code)) == 0)				\
+	printf(" PASSED\n"); else printf(" FAILED\n\n");	\
+free(buf1); free(buf2);
 
 void ppp_testcase(void)
 {
@@ -629,10 +660,16 @@ void ppp_testcase(void)
 	state s;
 	state_init(&s, NULL, NULL);
 
-	_ppp_testcase_statistical(&s);
+	/* Statistical tests using key = 0 */
+	mpz_set_ui(s.sequence_key, 1345126463UL);
+	_ppp_testcase_statistical(&s, 64, 16, 2000000);
 
+	/* Following test should fail using norms from first test */
+	// _ppp_testcase_statistical(&s, 88, 16, 1000000);
+
+	printf("*** Sequence key = 0.\n");
+	mpz_set_ui(s.sequence_key, 0UL);
 	_PPP_TEST(0, 4, 'A', 1, "NH7j");
-
 	_PPP_TEST(34, 4, 'G', 5, "EXh5");
 	_PPP_TEST(864197393UL+50UL, 4, 'E', 8, "u2Yp");
 
@@ -643,6 +680,15 @@ void ppp_testcase(void)
 	/* length = 16 */
 	_PPP_TEST(574734UL, 16, 'A', 8, "wcLSDqSyXJqxxYyr");
 
+	/*** Tests with extended alphabet ***/
+	printf("*** Extended alphabet tests:\n");
+	s.flags |= FLAG_ALPHABET_EXTENDED;
+	_PPP_TEST(0, 4, 'A', 1, "7OPJ");
+	_PPP_TEST(34, 4, 'G', 5, "Y7CB");
+	_PPP_TEST(864197393UL+50UL, 4, 'E', 8, "=sb;");
+	s.flags &= ~FLAG_ALPHABET_EXTENDED;
+
+	printf("*** Another sequence key tests:\n");
 	/*** Tests with other sequence_key ***/
 	const unsigned char key_bin[32] = {
 		0x80, 0x45, 0x32, 0x22,
@@ -682,7 +728,6 @@ void ppp_testcase(void)
 	/* TODO FIXME: do some get_passcode_number testcases */
 
 	state_fini(&s);
-
 
 	/* Authenticate testcase */
 	/* Create file with empty key */
