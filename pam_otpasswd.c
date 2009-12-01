@@ -45,9 +45,10 @@ static void pam_show_message(pam_handle_t *pamh, int flags, const char *msg)
 
 static int pam_handle_load(pam_handle_t *pamh, int flags, int enforced, state *s)
 {
-	const char enforced_msg[] = "OTP not configured, unable to login.";
+	const char enforced_msg[] = "otpasswd: Key not generated, unable to login.";
+	const char lock_msg[] = "otpasswd: Unable to lock user state file.";
 	const char numspace_msg[] =
-		"Passcode counter overflowed or state "
+		"otpasswd: Passcode counter overflowed or state "
 		"file corrupted. Regenerate key.";
 
 	switch (ppp_load_increment(s)) {
@@ -60,6 +61,10 @@ static int pam_handle_load(pam_handle_t *pamh, int flags, int enforced, state *s
 		pam_show_message(pamh, flags, numspace_msg);
 		return PAM_AUTH_ERR;
 		
+	case STATE_LOCK_ERROR:
+		pam_show_message(pamh, flags, lock_msg);
+		return PAM_AUTH_ERR;
+
 	case STATE_DOESNT_EXISTS:
 		if (enforced == 0) {
 			/* Not enforced - ignore */
