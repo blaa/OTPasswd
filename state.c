@@ -651,7 +651,7 @@ void state_fini(state *s)
 
 int state_key_generate(state *s, const int salt)
 {
-	unsigned char entropy_pool[128]; /* 1024 bits */
+	unsigned char entropy_pool[64]; /* 512 bits */
 	unsigned char key_bin[32];
 
 	print(PRINT_NOTICE, "Generating new %s key.\n", salt ? "salted" : "not salted");
