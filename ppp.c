@@ -40,8 +40,6 @@ void ppp_add_salt(const state *s, mpz_t passcode)
 
 int ppp_get_passcode_number(const state *s, const mpz_t passcard, mpz_t passcode, char column, char row)
 {
-	/* TODO, FIXME Ensure ranges */
-
 	if (column < 'A' || column >= 'A' + s->codes_in_row) {
 		print(PRINT_NOTICE, "Column out of possible range!\n");
 		return 1;
@@ -353,7 +351,7 @@ int ppp_load_increment(state *s)
 	if (ret != 0)
 		goto cleanup1;
 
-	/* TODO: At this point we must know whether
+	/* At this point we must know whether
 	 * we still have any passcodes. Counter might 
 	 * be set to 2^128 or 2^32 and after incrementing 
 	 * it will modify salt or overflow 
@@ -725,7 +723,7 @@ void ppp_testcase(void)
 	_PPP_TEST(70+34, 7, 'A', 7, "Ao_\"e82");
 	_PPP_TEST(70+36, 7, 'C', 7, "(&JV?E_");
 
-	/* TODO FIXME: do some get_passcode_number testcases */
+	/* TODO: do some get_passcode_number testcases */
 
 	state_fini(&s);
 

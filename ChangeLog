@@ -13,15 +13,17 @@ ChangeLog / TODO
 	* [+] Implement label and contact setting
 	* [+] Differentiate abnormal errors from normal errors
 	* [+] 'next' behaviour with LaTeX (+6!)
+	* [+] Decide on state file look, add version
+	* [+] ppp testcase - statistical
+	* [+] Check all assertions! If they don't contain anything important
 	* [%] Ensure state loaded correctly when label/caption full
 	* [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
 	* [-] Warnings when on last passcard
-	* [+] Decide on state file look, add version
 	* [-] Calling external script for mailing/sms
 	* [-] Share objects between targets (CMake)
 	* [-] Using Gecos field for phone information?
+	* [?] Scan all FIXME/TODO entries
 	* [?] Keep lines below 75 columns? Or 80?
-	* [?] ppp testcase - statistical
 	* [?] off-by-one testcase; a bit done
 	* [?] manuals
 	* [%] GMP might leak information with reallocs of it's mpz_t

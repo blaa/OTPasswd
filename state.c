@@ -178,7 +178,9 @@ int state_lock(state *s)
 	s->lockname = malloc(strlen(s->filename) + 4 + 1);
 	if (!s->lockname)
 		return 1;
-	assert(sprintf(s->lockname, "%s.lck", s->filename) > 0);
+
+	ret = sprintf(s->lockname, "%s.lck", s->filename);
+	assert(ret > 0);
 
 	/* Open/create lock file */
 	fd = open(s->lockname, O_WRONLY|O_CREAT, S_IWUSR|S_IRUSR);
@@ -582,6 +584,9 @@ int state_init(state *s, const char *username, const char *configfile)
 	const char code_mask[] =
 		"000000000000000000000000FFFFFFFF";
 
+	int ret;
+
+
 	assert(sizeof(salt_mask) == 33);
 
 	mpz_init(s->counter);
@@ -590,8 +595,11 @@ int state_init(state *s, const char *username, const char *configfile)
 	mpz_init(s->current_card);
 	mpz_init(s->max_card);
 	mpz_init(s->max_code);
-	assert(mpz_init_set_str(s->salt_mask, salt_mask, 16) == 0);
-	assert(mpz_init_set_str(s->code_mask, code_mask, 16) == 0);
+
+	ret = mpz_init_set_str(s->salt_mask, salt_mask, 16);
+	assert(ret == 0);
+	ret = mpz_init_set_str(s->code_mask, code_mask, 16);
+	assert(ret == 0);
 
 	s->code_length = 4;
 	s->flags = FLAG_SHOW;
@@ -645,7 +653,7 @@ int state_key_generate(state *s, const int salt)
 {
 	unsigned char entropy_pool[128]; /* 1024 bits */
 	unsigned char key_bin[32];
-	/* TODO: implement salting */
+
 	print(PRINT_NOTICE, "Generating new %s key.\n", salt ? "salted" : "not salted");
 
 	/* Gather entropy from random, then fallback to urandom... */

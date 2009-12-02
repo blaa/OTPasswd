@@ -145,7 +145,6 @@ PAM_EXTERN int pam_sm_authenticate(
 				 * 0 - (noshow) echo disabled
 				 * 2 - (show) echo enabled
 				 */
-	/* TODO: retry option */
 	for (; argc-- > 0; argv++) {
 		if (strcmp("enforced", *argv) == 0)
 			enforced = 1;

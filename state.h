@@ -74,7 +74,6 @@ typedef struct {
 
 	/* Salt helper. counter & salt_mask = salt while
 	 * counter & code_mask = passcode number 
-	 * TODO: this can probably be achieved without this masks.
 	 */
 	mpz_t salt_mask;
 	mpz_t code_mask;

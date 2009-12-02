@@ -231,6 +231,10 @@ void action_key(options_t *options)
 			state_fini(&s);
 			state_init(&s, NULL, NULL);
 		}
+	} else {
+		/* Failed load might have changed something in struct */
+		state_fini(&s);
+		state_init(&s, NULL, NULL);
 	}
 
 	int salted = options->flag_set_mask & FLAG_NOT_SALTED ? 0 : 1;
