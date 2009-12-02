@@ -102,13 +102,14 @@ static void _usage(int argc, const char **argv)
 		"  Both --text and --latex can get \"next\" as a parameter which\n"
 		"  will print the first not-yet printed passcard\n"
 		"\nExamples:\n"
-		"%s --key                generate new key\n"
+		"%s --key                generate new (salted) key\n"
 		"%s --text '[3]'         print third passcard to standard output\n"
+		"%s --text current       print current passcode\n"
 		"%s --flag codelength-5  use 5-character long passcodes\n"
 		"Generate a 6 passcards on A4 page using LaTeX:\n"
 		"%s --latex next > tmp.latex\n"
 		"pdflatex tmp.latex\n",
-		prog_name, prog_name, prog_name, prog_name, prog_name
+		prog_name, prog_name, prog_name, prog_name, prog_name, prog_name
 		);
 }
 
@@ -124,16 +125,14 @@ void process_cmd_line(int argc, char **argv)
 		.set_codelength = 0
 	};
 
-
-
 	static struct option long_options[] = {
 		/* Action selection */
-		{"key",			no_argument,		0, 'k'},
+		{"key",			no_argument,		0, 'k'}, /* L used up */
 		{"skip",		required_argument,	0, 's'},
 		{"text",		required_argument,	0, 't'},
 		{"latex",		required_argument,	0, 'l'},
 		{"prompt",		required_argument,	0, 'p'},
-		{"authenticate",	required_argument,	0, 'Q'},
+		{"authenticate",	required_argument,	0, 'a'},
 
 		/* Flags */
 		{"flags",		required_argument,	0, 'f'},
@@ -142,7 +141,7 @@ void process_cmd_line(int argc, char **argv)
 		{"no-salt",		no_argument,		0, 'n'},
 		{"verbose",		required_argument,	0, 'v'},
 		{"check",		no_argument,		0, 'x'},
-		{"license",		no_argument,		0, 'a'},
+		{"license",		no_argument,		0, 'Q'},
 
 		{0, 0, 0, 0}
 	};
@@ -185,6 +184,15 @@ void process_cmd_line(int argc, char **argv)
 			}
 			options.action = c;
 			options.action_arg = strdup(optarg);
+			break;
+
+		case 'Q':
+			if (options.action != 0) {
+				printf("Only one action can be specified on the command line\n");
+				exit(-1);
+			}
+
+			options.action = 'Q';
 			break;
 
 		case 'n':
@@ -261,10 +269,6 @@ void process_cmd_line(int argc, char **argv)
 
 		case 'v':
 			options.log_level = PRINT_NOTICE;
-			break;
-
-		case 'Q':
-			options.action = 'Q';
 			break;
 
 		default:

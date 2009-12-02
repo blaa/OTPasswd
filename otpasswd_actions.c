@@ -10,6 +10,10 @@
  * See LICENSE file for details.
  **********************************************************************/
 
+#ifndef PROG_VERSION
+#define PROG_VERSION "v0.2"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -287,6 +291,7 @@ void action_license(options_t *options)
 {
 	printf(
 		"otpasswd -- One-time password manager and PAM module.\n"
+		"Version " PROG_VERSION "\n"
 		"Copyright (C) 2009 Tomasz bla Fortuna\n"
 		"\n"
 		"This program is free software: you can redistribute it and/or modify\n"
