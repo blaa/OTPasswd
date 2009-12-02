@@ -117,12 +117,13 @@ static void _show_flags(const state *s)
 	else
 		printf("alphabet-simple ");
 
-	if (s->flags & FLAG_NOT_SALTED)
-		printf("(no salt) ");
-	else
-		printf("(key salted) ");
+	printf("codelength-%d ", s->code_length);
 
-	printf("codelength-%d\n", s->code_length);
+	if (s->flags & FLAG_NOT_SALTED)
+		printf("(no salt)\n");
+	else
+		printf("(key salted)\n");
+
 	if (strlen(s->label) > 0) {
 		printf("Passcard label='%s', ", s->label);
 	} else {
@@ -138,8 +139,8 @@ static void _show_flags(const state *s)
 
 static void _show_keys(const state *s)
 {
-	gmp_printf("Key         = %032ZX\n", s->sequence_key);
-	gmp_printf("Counter     = %016ZX\n", s->counter);
+	gmp_printf("Key         = %064ZX\n", s->sequence_key);
+	gmp_printf("Counter     = %032ZX\n", s->counter);
 	gmp_printf("Latest card = %Zd\n", s->furthest_printed);
 }
 
@@ -382,7 +383,7 @@ void action_flags(options_t *options)
 
 	case 'L': /* List */
 		_show_keys(&s);
-		printf("Flags:\n");
+		printf("\nFlags:\n");
 		_show_flags(&s);
 		/* Omit saving */
 		goto cleanup;

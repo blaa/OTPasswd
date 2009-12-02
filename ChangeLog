@@ -16,7 +16,7 @@ ChangeLog / TODO
 	* [%] Ensure state loaded correctly when label/caption full
 	* [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
 	* [-] Warnings when on last passcard
-	* [-] Decide on state file look, add version
+	* [+] Decide on state file look, add version
 	* [-] Calling external script for mailing/sms
 	* [-] Share objects between targets (CMake)
 	* [-] Using Gecos field for phone information?
