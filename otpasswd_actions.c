@@ -358,7 +358,7 @@ void action_flags(options_t *options)
 	case 'd':
 		/* Change label */
 		if (strlen(options->action_arg) + 1 > sizeof(s.label)) {
-			printf("Label can't be longer than %lu characters\n", sizeof(s.label)-1);
+			printf("Label can't be longer than %zu characters\n", sizeof(s.label)-1);
 			goto cleanup;
 		}
 
@@ -376,7 +376,7 @@ void action_flags(options_t *options)
 	case 'c':
 		/* Change contact info */
 		if (strlen(options->action_arg) + 1 > sizeof(s.contact)) {
-			printf("Contact can't be longer than %lu characters\n", sizeof(s.contact)-1);
+			printf("Contact can't be longer than %zu characters\n", sizeof(s.contact)-1);
 			goto cleanup;
 		}
 
