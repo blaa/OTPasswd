@@ -219,6 +219,9 @@ char *card_latex(const state *s, const mpz_t number)
 			card_pos += 1;
 		}
 	}
+
+	num_dispose(n);
+
 	memcpy(card_pos, block_stop, sizeof(block_stop) - 1);
 	card_pos += sizeof(block_stop) - 1;
 

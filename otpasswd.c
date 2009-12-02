@@ -299,6 +299,7 @@ void process_cmd_line(int argc, char **argv)
 
 	case 'a':
 		ret = action_authenticate(&options);
+		free(options.action_arg);
 		print_fini();
 		if (ret)
 			exit(0);
