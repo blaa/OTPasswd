@@ -8,6 +8,20 @@ ChangeLog / TODO
 [-] Feature in TODO
 [?] New feature in TODO
 
+2009-12-02 v0.3
+	* [%] Ensure state loaded correctly when label/caption full
+	* [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
+	* [-] Warnings when on last passcard
+	* [-] Calling external script for mailing/sms
+	* [-] Share objects between targets (CMake)
+	* [-] Using Gecos field for phone information?
+	* [?] Scan all FIXME/TODO entries
+	* [?] Keep lines below 75 columns? Or 80?
+	* [?] off-by-one testcase; a bit done
+	* [?] manuals
+	* [%] GMP might leak information with reallocs of it's mpz_t
+	* [?] Single-authentication per user option to prevent DoS
+
 2009-12-01 v0.2
 	* [!] One off-by-one error fixed
 	* [+] Implement label and contact setting

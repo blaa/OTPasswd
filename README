@@ -2,6 +2,9 @@ Contents
 ========
 
 1. Introduction
+  a. Security concerns
+  b. Contact
+  c. History
 2. Installation
 3. Passcode generation algorithm
 4. Demo (Screenshot!)
@@ -25,52 +28,120 @@ and prints passcards with one-time passwords.
 PAM module enables (for example) OpenSSH to do an authentication using
 one-time password with the information from user state file.
 
-Program is written in C (C99) and implements OTP as described in
+The program is written in C (C99) and implements OTP as described in
 "Perfect Paper Passwords" description of which can be found here
-https://www.grc.com/ppp.htm Program also kind of extends this idea
-with "salt".
+https://www.grc.com/ppp.htm
+This program also kind of extends this idea with "salt".
 
-Program is in development. In ChangeLog there's a list of things i'd
+OTPasswd is in development. In ChangeLog there's a list of things i'd
 like to implement before publishing this as version 1.0.  Most of
 features work currently (as of v0.1) but of course - it requires
 tests. Think of this as a beta software.
+
+a. Security concerns
+--------------------
+There are certain security related issues you should be aware of.
+
+This program is not intended to replace normal passwords, it's supposed to
+add a second level of authentication. Therefore an attacker to log into
+your system must know something you know - a unix password (which he can
+for example keylog or sniff using e-m radiation of your keyboard's PS/2
+communication) and must posess something only you have - a passcard with
+codes or your mobile phone.
+
+Second issue is a DoS attack possible in some configurations. When the
+attacker repeatedly tries to authenticate he can use up all your printed
+passcodes and therefore make you unable to login. This can be fixed in
+several ways:
+1) By requesting that the unix password be correctly entered before asking
+   (and therefore using up) a passcode. (See required/requisite difference
+   in PAM description chapter).
+     This will limit the problem to the case when the attacker sniffs your
+   password. He won't be able to login still, but he can perform this DoS
+   attack. Well. That's ok with me. Even better - if he does it, then I
+   know I must change my unix password.
+
+2) By limiting number of trials on another level. For example sshguard can
+   block IP access to SSH after 3 unsuccessful attempts to authenticate. I
+   think that such a security measures should always be enabled no matter
+   if you use OTP or not. Their use would make attacker use a lot more IP
+   addresses (in certain configuration around 23 to skip one passcard)
+
+3) Kind of by enabling dont-skip option. This option is a bit of a problem
+   because we must NEVER allow successful authentication with the same
+   passcode. They must be completely ONE-TIME. Enabling dont-skip causes
+   otpasswd to authenticate like this:
+   a) Read state file, increment passcode counter, store file
+   b) If user authenticates passcode is already incremented and everything
+      is fine. If he fails to authenticate then do the step c:
+   c) Read state file, check if somebody modified this state file
+      in the meantime (second authentication for example). If not -
+      decrement counter and store file. If file was modified nothing is
+      changed, and therefore passcode is securetly skipped.
+   This behaviour *doesn't* solve the problem as you can see, because
+   attacker might use two separate authenticate sessions. This would have
+   to be blocked in some other way (might be implemented in otpasswd one
+   day!)
+
+If the attacker will get your previous, used up, passcards he can try to do
+a brute-force attack on your key. Yet, this is kind of hard thing to do,
+especially if salting is enabled. See 'Passcode generation algorithm' for
+details.
+
+b. Contact
+----------
+You can contact author with questions, support, praises or curses at
+bla@thera.be. Any feedback welcomed (even faint one). And no, I don't get a
+lot of feedback so don't think 'nah, I'wont write anything he's probably
+pissed at us anyway'.
+
+c. History
+----------
+The creation of this program was inspired by the ppp-pam project
+(http://code.google.com/p/ppp-pam/). Idea is basically the same. I started
+development by contributing to ppp-pam, but there was plenty of things to
+fix, author didn't answer and I just decided I'll be better off rewritting
+everything from scratch. Projects share some of my code, like locking
+functions but nothing more. You can kind of thing about otpasswd as a fork
+of ppp-pam.
 
 
 
 2. Installation
 ===============
-To enable OTP for your ssh you have to:
+To install otpasswd and configure it to work with ssh you have to:
 0. Have all required dependencies (with headers)
 1. Install the package
 2. Enable its use in /etc/pam.d
 3. Configure ssh to use PAM.
 4. Generate keys for user (and print at least one password card)
+5. Tweak PAM module configuration
 
 So.
 
-0) Package required openssl and gmp libraries and cmake tool.
-   All should be available in repository of your distribution.
+0) Package required openssl and gmp libraries and cmake tool (with their
+   -dev packages!). All of these should be available in the repository of
+   your distribution. 
 
-1) Package can be installed using your distribution repository (hopefully),
-or in a simple way:
-$ ./build.sh
+1) Check if the package is not in your distribution package manager. If it
+is - install it as any other software. Otherwise fallback to compilation:
+$ cd otpasswd
+$ cmake .      # This will generate makefiles
+$ make         # This should compile anything
+$ make install # This should install binaries into system.
 
-This will use cmake to build Makefiles, and then call make.
-You can then copy two files, PAM module into /lib/security
-and otpasswd password manager to /usr/bin.
+Instead of using make install you can also copy two files, PAM module into
+/lib/security and otpasswd password manager to /usr/bin. There's also
+examplary pam configuration in example/otpasswd-login this can be copied to
+/etc/pam.d (which itself won't change anything in your PAM config).
 
-Or, hopefully, type make install.
+2) See last chapter for detailed information. In short install
+example/otpasswd-login in /etc/pam.d and change a line in /etc/pam.d/sshd
+from:
+auth       include        system-remote-login
+to:
+auth       include        otpasswd-login
 
-2) For exemplary PAM config see examples/otpasswd-auth.
-
-PAM module supports following options:
-enforced - disallow logon if user doesn't have generated key
-	   instead of ignoring OTP.
-nolock   - disable locking (can cause race conditions)
-secure   - disallow usage of --dontSkip option (dontSkip works bad with
-	   locking and can cause some security holes)
-show     - always use passcodes (ignore user options)
-noshow   - never show passcodes (ignore user options)
 
 3) In /etc/ssh/sshd_config you should have the following two lines:
 ChallengeResponseAuthentication yes
@@ -80,6 +151,38 @@ UsePAM yes
 you won't loose ability to login in case you're configuring OTP
 remotely) you can use:
 $ otpasswd -k
+
+5) Last line of /etc/pam.d/otpasswd-login has form:
+auth            required        pam_otpasswd.so <PARAMETERS>
+
+There's a certain set of parameters you can define here:
+enforced - disallow logon if user doesn't have generated key.
+           (default is to ignore OTP.)
+secure   - disallow dont-skip flag 
+show     - always show entered passcodes (ignore user options)
+noshow   - never show passcodes (ignore user options)
+debug    - increase debugging (don't leave this option there for long!
+           as it may leak some passcode information.)
+retry=X  - This configures retry behaviour during single authentication: 
+           X:  Behaviour:
+           0   do not retry passcode question (default)
+           1   retry, but use next passcode from card
+           2   retry, use the same passcode.
+
+
+and few more are proposed and _might_be_ implemented in future:
+usechannel=X  - Configures a 'second-channel' (for example an email or sms)
+                used for sending user current passcode.
+                X:  Behaviour:
+                0   Don't use other channel (default)
+                1   Always use channel
+                2   Use if requested
+                Enabling channel also requires second option:
+channel=X     - X is full-path to script or a program which will be given
+                two parameters on input. User contact information and
+		current prompt + correct passcode.
+		This program operates this 'second-channel' so he might for
+		example send a SMS to the user.
 
 
 
@@ -142,8 +245,8 @@ take you... 1.22 * 10^54 yeeeaaarrrsss. With salt that is more than
 
 4. About PAM (short talk)
 =========================
-Most application which require password input check
-the password using PAM. I'll stick to the sshd as an example.
+Most application which require password input use PAM. I'll stick to the
+sshd as an example.
 
 SSH when user logs in tries to authenticate him using it's own
 method - keys. Then, if this method fails it talks with PAM.
@@ -156,8 +259,8 @@ password   include        system-remote-login
 session    include        system-remote-login
 
 This is line-oriented file in which each line tells us what to do.
-We're interested in "auth" part only, which - includes configuration
-from system-remote-login, which looks like this:
+We're interested in "auth" part only, which here - includes configuration
+from system-remote-login file, which looks like this:
 auth            include         system-login
 
 And, as you can see, it just reads configuration from yet another file:
@@ -167,12 +270,11 @@ auth            required        pam_nologin.so
 auth            include         system-auth
 (account, password, session omitted)
 
-One more file (system-auth) to look into:
+Still one more file (system-auth) to look into:
 auth            required        pam_env.so
 auth            required        pam_unix.so try_first_pass likeauth nullok
 
-
-PAM when authenticating user will read the lines from top to bottom.
+PAM when authenticating a user will read the lines from top to bottom.
 pam_tally - reads failures and can do some action according to them
 pam_shells - checks if user has a valid shell (listed in /etc/shells)
 pam_nologin - checks if logins were disabled (shows message)
@@ -211,20 +313,21 @@ we can move all auth lines to sshd file, change this one line and add
 pam_otpasswd line, which results in following configuration:
 
 # Include commented out:
-#auth       include        system-remote-login
+#auth       include         system-remote-login
 # All auths included in sshd:
-auth            required        pam_tally.so onerr=succeed
-auth            required        pam_shells.so
-auth            required        pam_nologin.so
-auth            required        pam_env.so
-auth            requisite       pam_unix.so try_first_pass likeauth nullok
-# Our line:
-auth            required        pam_otpasswd.so secure
+auth        required        pam_tally.so onerr=succeed
+auth        required        pam_shells.so
+auth        required        pam_nologin.so
+auth        required        pam_env.so
+# Changed 'required' to 'requisite':
+auth        requisite       pam_unix.so try_first_pass likeauth nullok
+# Our added line:
+auth        required        pam_otpasswd.so secure
 
 #Rest
 account    include        system-remote-login
 password   include        system-remote-login
-session           include        system-remote-login
+session    include        system-remote-login
 
 
 This is exactly what is written in our examples/otpasswd-login file. You can
