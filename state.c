@@ -270,7 +270,7 @@ static int _rng_read(const char *device, const char *msg, unsigned char *buf, co
 	}
 
 	puts(
-		"Hint: Move your mouse, cause some disc activity\n"
+		"Hint: Move your mouse, cause some disc activity (`find /` is good)\n"
 		"or type on keyboard to make the progress faster.\n");
 
 	for (i=0; i<count; i++) {

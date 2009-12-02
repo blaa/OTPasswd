@@ -254,9 +254,9 @@ void ppp_calculate(state *s)
 		const char max_hex[] =
 			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
 		assert(sizeof(max_hex)  == 33);
-		mpz_init_set_str(s->max_card, max_hex, 16);
+		mpz_set_str(s->max_card, max_hex, 16);
 	} else {
-		mpz_init_set(s->max_card, s->code_mask);
+		mpz_set(s->max_card, s->code_mask);
 	}
 
 	mpz_div_ui(s->max_card, s->max_card, s->codes_on_card);

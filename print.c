@@ -180,6 +180,8 @@ void print_fini()
 	if (log_state.log_file)
 		fclose(log_state.log_file);
 
+	free(log_state.number);
+
 	log_state.initialized = 0;
 }
 
