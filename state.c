@@ -11,7 +11,9 @@
  **********************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -26,6 +28,44 @@
  * Helper functions for managing state files
  *
  ********************************************/
+
+int state_validate_str(const char *str)
+{
+	const int len = strlen(str);
+	int i;
+	/* Spaces are ok, \n and \r not.
+	 * alpha, digits, +, -, @ are ok
+	 * These characters must be LaTeX safe, so no {}
+	 * Also they can be passed to some external script,
+	 * so they must obey restrictions.
+	 */
+	for (i=0; i<len; i++) {
+		if (isalnum(str[i]))
+			continue;
+		if (str[i] == ' ' || str[i] == '+' || str[i] == '@' || 
+		    str[i] == '-' || str[i] == '.' || str[i] == ',' ||
+		    str[i] == '*')
+			continue;
+		return 0; /* False */
+	}
+	return 1;
+}
+
+static char *_strtok(char *input, const char *delim)
+{
+	static char *position;
+	if (input != NULL)
+		position = input;
+	char *token = strsep(&position, delim); /* Non C99 function */
+
+	/* Cut token at any \n found */
+	if (token) {
+		char *pos = strchr(token, '\n');
+		if (pos)
+			*pos = '\0';
+	}
+	return token;
+}
 
 /* Returns name to user state file */
 static char *_state_file(const char *username, const char *filename)
@@ -247,7 +287,292 @@ static int _rng_read(const char *device, const char *msg, unsigned char *buf, co
 /**********************************************
  * Interface functions for managing state files
  **********************************************/
+
+static const int _version = 2;
+static const int _fields = 8;
+static const char *_delim = ":";
+
+enum {
+	FIELD_VERSION = 0,
+	FIELD_KEY,
+	FIELD_COUNTER,
+	FIELD_LATEST_CARD,
+	FIELD_CODE_LENGTH,
+	FIELD_FLAGS,
+	FIELD_LABEL,
+	FIELD_CONTACT,
+};
+
 int state_load(state *s)
+{
+	/* State file should never be larger than 160 bytes */
+	char buff[512];
+	/* How many bytes are in buff? */
+	unsigned int buff_size = 0; 
+
+	/* Did we lock it here? */
+	int locked = 0;
+
+	char *field[_fields]; /* Fields in file */
+
+	int i;
+	int ret = 0;
+	FILE *f = NULL;
+
+	assert(s->filename != NULL);
+
+	if (_state_file_permissions(s) != 0) {
+		print(PRINT_NOTICE,
+		      "Unable to load state file. "
+		      "Have you created key with -k option?\n");
+		return STATE_DOESNT_EXISTS;
+	}
+
+	if (s->lock_fd <= 0) {
+		print(PRINT_NOTICE, 
+		      "State file not locked while reading from it\n");
+		if (state_lock(s) != 0) {
+			print(PRINT_ERROR, "Unable to lock file for reading!\n");
+			return 1;
+		}
+		locked = 1;
+	}
+
+	f = fopen(s->filename, "r");
+	if (!f) {
+		print_perror(PRINT_ERROR,
+			     "Unable to open %s for reading.",
+			     s->filename);
+		goto error;
+	}
+
+	/* Read all file into buffer */
+	buff_size = fread(buff, 1, sizeof(buff), f);
+	if (buff_size < 10) {
+		/* This can't hold correct state */
+		print(PRINT_NOTICE, 
+		      "State file %s is invalid\n", s->filename);
+		goto error;
+	}
+
+	/* Split into fields */
+	for (i=0; i<_fields; i++) {
+		field[i] = _strtok(i == 0 ? buff : NULL, _delim);
+		if (field[i] == NULL) {
+			print(PRINT_ERROR, "State file invalid. Not enough fields.\n");
+			goto error;
+		}
+	}
+
+	if (_strtok(NULL, _delim) != NULL) {
+		print(PRINT_ERROR, "State file invalid. Too much fields.\n");
+		goto error;
+	}
+
+	/* Parse fields */
+	if (sscanf(field[FIELD_VERSION], "%u", &ret) != 1) {
+		print(PRINT_ERROR, "Error while parsing state file version.\n");
+		goto error;
+	}
+
+	if (ret != _version) {
+		print(PRINT_ERROR, "State file version is incompatible. Recreate key.\n");
+		goto error;		
+	}
+
+	if (mpz_set_str(s->sequence_key, field[FIELD_KEY], 62) != 0) {
+		print(PRINT_ERROR, "Error while parsing sequence key.\n");
+		goto error;
+	}
+
+	if (mpz_set_str(s->counter, field[FIELD_COUNTER], 62) != 0) {
+		print(PRINT_ERROR, "Error while parsing counter.\n");
+		goto error;
+	}
+
+	if (mpz_set_str(s->furthest_printed, 
+			field[FIELD_LATEST_CARD], 62) != 0) {	
+		print(PRINT_ERROR,
+		      "Error while parsing number "
+		      "of latest printed passcard\n");
+		goto error;
+	}
+
+	if (sscanf(field[FIELD_CODE_LENGTH], "%u", &s->code_length) != 1) {
+		print(PRINT_ERROR, "Error while parsing passcode length\n");
+		goto error;
+	}
+
+	if (sscanf(field[FIELD_FLAGS], "%u", &s->flags) != 1) {
+		print(PRINT_ERROR, "Error while parsing flags\n");
+		goto error;
+	}
+
+	/* Copy label and contact */
+	strncpy(s->label, field[FIELD_LABEL], sizeof(s->label)-1);
+	strncpy(s->contact, field[FIELD_CONTACT], sizeof(s->contact)-1);
+
+	if (s->label[sizeof(s->label)-1] != '\0') {
+		print(PRINT_ERROR, "Label field too long\n");
+		goto error;
+	}
+
+	if (s->contact[sizeof(s->label)-1] != '\0') {
+		print(PRINT_ERROR, "Label field too long\n");
+		goto error;
+	}
+
+	if (!state_validate_str(s->label)) {
+		print(PRINT_ERROR, "Illegal characters in label\n");
+		goto error;
+	}
+
+	if (!state_validate_str(s->contact)) {
+		print(PRINT_ERROR, "Illegal characters in contact\n");
+		goto error;
+	}
+
+	/* Everything is read. Now - check if it's correct */
+	if (mpz_sgn(s->sequence_key) == -1) {
+		print(PRINT_ERROR, 
+		      "Read a negative sequence key. "
+		      "State file is invalid\n");
+		goto error;
+	}
+
+	if (mpz_sgn(s->counter) == -1) {
+		print(PRINT_ERROR, 
+		      "Read a negative counter. "
+		      "State file is corrupted.\n");
+		goto error;
+	}
+
+	if (mpz_sgn(s->furthest_printed) == -1) {
+		print(PRINT_ERROR, 
+		      "Latest printed card is negative. "
+		      "State file is corrupted.\n");
+		goto error;
+	}
+
+	if (s->code_length < 2 || s->code_length > 16) {
+		print(PRINT_ERROR, "Illegal passcode length. %s is invalid\n", 
+		      s->filename);
+		goto error;
+	}
+
+	if (s->flags > (FLAG_SHOW|FLAG_SKIP|FLAG_ALPHABET_EXTENDED|FLAG_NOT_SALTED)) {
+		print(PRINT_ERROR, "Unsupported set of flags. %s is invalid\n", 
+		      s->filename);
+		goto error;
+
+	}
+
+	if (locked && state_unlock(s) != 0) {
+		print(PRINT_ERROR, "Error while unlocking state file!\n");
+	}
+	fclose(f);
+	return 0;
+
+error:
+	memset(buff, 0, sizeof(buff));
+	if (locked && state_unlock(s) != 0) {
+		print(PRINT_ERROR, "Error while unlocking state file!\n");
+	}
+	fclose(f);
+	return 1;
+}
+
+int state_store(state *s)
+{
+	/* Return value, by default return error */
+	int ret = 1;
+
+	/* State file */
+	FILE *f;
+
+	/* Did we lock the file? */
+	int locked = 0;
+
+	/* Converted state parts */
+	char *sequence_key = NULL;
+	char *counter = NULL;
+	char *latest_card = NULL;
+
+	int tmp;
+
+	assert(s->filename != NULL);
+
+	if (s->lock_fd <= 0) {
+		print(PRINT_NOTICE, 
+		      "State file not locked while writing to it\n");
+		if (state_lock(s) != 0) {
+			print(PRINT_ERROR, "Unable to lock file for reading!\n");
+			return 1;
+		}
+		locked = 1;
+	}
+
+	f = fopen(s->filename, "w");
+	if (!f) {
+		print_perror(PRINT_ERROR,
+			     "Unable to open %s for writting",
+			     s->filename);
+
+		if (locked)
+			state_unlock(s);
+		return STATE_PERMISSIONS;
+	}
+
+	/* Write using ascii safe approach */
+	sequence_key = mpz_get_str(NULL, STATE_BASE, s->sequence_key);
+	counter = mpz_get_str(NULL, STATE_BASE, s->counter);
+	latest_card = mpz_get_str(NULL, STATE_BASE, s->furthest_printed);
+
+	if (!sequence_key || !counter || !latest_card) {
+		print(PRINT_ERROR, "Error while converting numbers\n");
+		goto error;
+	}
+
+	const char d = _delim[0];
+	tmp = fprintf(f, "%d%c%s%c%s%c%s%c%u%c%u%c%s%c%s\n",
+		      _version, d,
+		      sequence_key, d, counter, d, latest_card, d,
+		      s->code_length, d, s->flags, d, s->label, d, s->contact);
+	if (tmp <= 0) {
+		print(PRINT_ERROR, "Error while writing data to state file.");
+		goto error;
+	}
+	
+	tmp = fflush(f);
+	tmp += fclose(f);
+	if (tmp != 0)
+		print_perror(PRINT_ERROR, "Error while flushing/closing state file");
+	else
+		print(PRINT_NOTICE, "State file written\n");
+
+	/* It might fail, but shouldn't
+	 * Also we just want to ensure others 
+	 * can't read this file */
+	if (_state_file_permissions(s) != 0) {
+		print(PRINT_WARN, 
+		      "Unable to set state file permissions. "
+		      "Key might be world-readable!\n");
+	}
+
+	ret = 0; /* More less fine */
+
+error:
+	if (locked && state_unlock(s) != 0) {
+		print(PRINT_ERROR, "Error while unlocking state file!\n");
+	}
+
+	free(sequence_key);
+	free(counter);
+	free(latest_card);
+	return ret;
+}
+
+int state_load_old(state *s)
 {
 	/* Did we lock it here? */
 	int locked = 0;
@@ -333,6 +658,7 @@ int state_load(state *s)
 		goto error;
 	}
 
+	/* FIXME: BUG! When label is full we have nowhere to store \n */
 	if (fgets(s->label, sizeof(s->label), f) == NULL) {
 		/* Nothing read, there should be at least one \n */
 		print_perror(PRINT_ERROR, "Error while reading label from %s"
@@ -425,7 +751,7 @@ error:
 	return 1;
 }
 
-int state_store(state *s)
+int state_store_old(state *s)
 {
 	/* Rewrite maybe using gmp_scanf? */
 	int ret;
@@ -527,6 +853,7 @@ error:
 	fclose(f);
 	return 1;
 }
+
 
 /******************************************
  * Functions for managing state information

@@ -57,30 +57,6 @@ static int _yes_or_no(const char *msg)
 	return QUERY_OBSCURE;
 }
 
-/* Validate contact / label data */
-static int _validate_string(const char *str)
-{
-	const int len = strlen(str);
-	int i;
-	/* Spaces are ok, \n and \r not.
-	 * alpha, digits, +, -, @ are ok
-	 * These characters must be LaTeX safe, so no {}
-	 * Also they can be passed to some external script,
-	 * so they must obey restrictions.
-	 */
-	for (i=0; i<len; i++) {
-		if (isalnum(str[i]))
-			continue;
-		if (str[i] == ' ' || str[i] == '+' || str[i] == '@' || 
-		    str[i] == '-' || str[i] == '.' || str[i] == ',' ||
-		    str[i] == '*')
-			continue;
-		return 0; /* False */
-	}
-	return 1;
-}
-
-
 static int _enforced_yes_or_no(const char *msg)
 {
 	int ret;
@@ -158,6 +134,13 @@ static void _show_flags(const state *s)
 	} else {
 		printf("no contact information.\n");
 	}
+}
+
+static void _show_keys(const state *s)
+{
+	gmp_printf("Key         = %032ZX\n", s->sequence_key);
+	gmp_printf("Counter     = %016ZX\n", s->counter);
+	gmp_printf("Latest card = %Zd\n", s->furthest_printed);
 }
 
 /* Authenticate; returns boolean; 1 - authenticated */
@@ -369,7 +352,7 @@ void action_flags(options_t *options)
 			goto cleanup;
 		}
 
-		if (!_validate_string(options->action_arg)) {
+		if (!state_validate_str(options->action_arg)) {
 			printf(
 			      "Contact contains illegal characters.\n"
 			      "Alphanumeric + ' -+,.@_*' are allowed\n");
@@ -387,7 +370,7 @@ void action_flags(options_t *options)
 			goto cleanup;
 		}
 
-		if (!_validate_string(options->action_arg)) {
+		if (!state_validate_str(options->action_arg)) {
 			printf(
 			      "Contact contains illegal characters.\n"
 			      "Alphanumeric + ' -+,.@_*' are allowed\n");
@@ -396,6 +379,17 @@ void action_flags(options_t *options)
 		strcpy(s.contact, options->action_arg);
 		state_changed = 1;
 		break;
+
+	case 'L': /* List */
+		_show_keys(&s);
+		printf("Flags:\n");
+		_show_flags(&s);
+		/* Omit saving */
+		goto cleanup;
+
+	default:
+		printf("You should never end up here\n");
+		assert(0);
 	}
 
 

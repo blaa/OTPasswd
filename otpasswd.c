@@ -78,8 +78,7 @@ static void _usage(int argc, const char **argv)
 		"               alphabet-extended 88-character alphabet\n"
 		"               codelenght-X      sets passcodes length, X is a number\n"
 		"                                 from 2 to 16 (default: codelength-4)\n"
-		"               list              not a real flag; will just print current\n"
-		"\n                               list of flags\n"
+		"               list              print current state data\n"
 		"  -c, --contact <arg>\n"
 		"               Set a contact info (e.g. phone number) with which\n"
 		"               you want to receive current passcode during authentication.\n"
@@ -223,6 +222,7 @@ void process_cmd_line(int argc, char **argv)
 				options.flag_set_mask |= FLAG_ALPHABET_EXTENDED;
 			else if (strcmp(optarg, "list") == 0) {
 				/* Nothing */
+				options.action = 'L'; /* List! Instead of changing flags */
 			} else {
 				int tmp;
 				if (sscanf(optarg, "codelength-%d", &tmp) == 1) {
@@ -286,6 +286,7 @@ void process_cmd_line(int argc, char **argv)
 		action_key(&options);
 		break;
 
+	case 'L': /* list action */
 	case 'f':
 	case 'd':
 	case 'c':

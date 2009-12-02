@@ -3,6 +3,7 @@ ChangeLog / TODO
 
 [+] New functionality
 [!] Fixed error
+[%] Found bug
 [*] Changes in existing functionality
 [-] Feature in TODO
 [?] New feature in TODO
@@ -12,7 +13,7 @@ ChangeLog / TODO
 	* [+] Implement label and contact setting
 	* [+] Differentiate abnormal errors from normal errors
 	* [+] 'next' behaviour with LaTeX (+6!)
-	
+	* [%] Ensure state loaded correctly when label/caption full
 	* [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
 	* [-] Warnings when on last passcard
 	* [-] Decide on state file look, add version
@@ -23,6 +24,7 @@ ChangeLog / TODO
 	* [?] ppp testcase - statistical
 	* [?] off-by-one testcase; a bit done
 	* [?] manuals
+	* [%] GMP might leak information with reallocs of it's mpz_t
 
 2009-12-01 v0.1 first working version
 
