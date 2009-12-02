@@ -54,7 +54,7 @@ typedef struct {
 
 	/* Furthest printed passcode
 	 * used for warnings */
-	mpz_t furthest_printed;
+	mpz_t latest_card;
 
 	/* Number of bytes used for passcode (2 - 16) */
 	unsigned int code_length;
@@ -69,6 +69,12 @@ typedef struct {
 	 * for example an email, or - a phone number... */
 	char contact[STATE_CONTACT_SIZE];
 
+	/* Number of failures since previous correct login */
+	unsigned int failures;
+	
+	/* Cleared on correct authentication */
+	unsigned int recent_failures; 
+	
 	/*** Temporary / not-saved data ***/
 	char *prompt; /* Keep it here so we can safely dispose of it */
 

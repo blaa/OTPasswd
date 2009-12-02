@@ -88,6 +88,8 @@ a brute-force attack on your key. Yet, this is kind of hard thing to do,
 especially if salting is enabled. See 'Passcode generation algorithm' for
 details.
 
+TODO: What is trusted what's not trusted. Man-in-the middle attacks on SSH.
+
 b. Contact
 ----------
 You can contact author with questions, support, praises or curses at

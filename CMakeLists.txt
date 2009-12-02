@@ -27,13 +27,16 @@ INCLUDE_DIRECTORIES(${PAM_INCLUDE_DIR})
 ##
 # Targets
 ##
+SET(FILES src/crypto.c src/num.c src/ppp.c 
+	src/state.c src/print.c src/passcards.c)
+
 # Pam module target
 SET(CMAKE_SHARED_LIBRARY_PREFIX "")
-ADD_LIBRARY(pam_otpasswd SHARED pam_otpasswd.c crypto.c num.c ppp.c state.c print.c passcards.c)
+ADD_LIBRARY(pam_otpasswd SHARED src/pam_otpasswd.c ${FILES}) 
 TARGET_LINK_LIBRARIES(pam_otpasswd gmp ssl pam)
 
 # Password management target
-ADD_EXECUTABLE(otpasswd otpasswd.c otpasswd_actions.c crypto.c num.c ppp.c state.c print.c passcards.c)
+ADD_EXECUTABLE(otpasswd src/otpasswd.c src/otpasswd_actions.c ${FILES})
 TARGET_LINK_LIBRARIES(otpasswd gmp ssl)
 
 # Install target

@@ -289,24 +289,26 @@ static int _rng_read(const char *device, const char *msg, unsigned char *buf, co
 /**********************************************
  * Interface functions for managing state files
  **********************************************/
-
-static const int _version = 2;
-static const int _fields = 8;
+static const int _version = 3;
 static const char *_delim = ":";
-
-enum {
-	FIELD_VERSION = 0,
-	FIELD_KEY,
-	FIELD_COUNTER,
-	FIELD_LATEST_CARD,
-	FIELD_CODE_LENGTH,
-	FIELD_FLAGS,
-	FIELD_LABEL,
-	FIELD_CONTACT,
-};
 
 int state_load(state *s)
 {
+	const int fields = 10;
+
+	enum {
+		FIELD_VERSION = 0,
+		FIELD_KEY,
+		FIELD_COUNTER,
+		FIELD_LATEST_CARD,
+		FIELD_FAILURES,
+		FIELD_RECENT_FAILURES,
+		FIELD_CODE_LENGTH,
+		FIELD_FLAGS,
+		FIELD_LABEL,
+		FIELD_CONTACT,
+	};
+
 	/* State file should never be larger than 160 bytes */
 	char buff[512];
 	/* How many bytes are in buff? */
@@ -315,7 +317,7 @@ int state_load(state *s)
 	/* Did we lock it here? */
 	int locked = 0;
 
-	char *field[_fields]; /* Fields in file */
+	char *field[fields]; /* Fields in file */
 
 	int i;
 	int ret = 0;
@@ -358,7 +360,7 @@ int state_load(state *s)
 	}
 
 	/* Split into fields */
-	for (i=0; i<_fields; i++) {
+	for (i=0; i<fields; i++) {
 		field[i] = _strtok(i == 0 ? buff : NULL, _delim);
 		if (field[i] == NULL) {
 			print(PRINT_ERROR, "State file invalid. Not enough fields.\n");
@@ -392,11 +394,21 @@ int state_load(state *s)
 		goto error;
 	}
 
-	if (mpz_set_str(s->furthest_printed, 
+	if (mpz_set_str(s->latest_card, 
 			field[FIELD_LATEST_CARD], 62) != 0) {	
 		print(PRINT_ERROR,
 		      "Error while parsing number "
 		      "of latest printed passcard\n");
+		goto error;
+	}
+
+	if (sscanf(field[FIELD_FAILURES], "%u", &s->failures) != 1) {
+		print(PRINT_ERROR, "Error while parsing failures count\n");
+		goto error;
+	}
+
+	if (sscanf(field[FIELD_RECENT_FAILURES], "%u", &s->recent_failures) != 1) {
+		print(PRINT_ERROR, "Error while parsing recent failure count\n");
 		goto error;
 	}
 
@@ -449,7 +461,7 @@ int state_load(state *s)
 		goto error;
 	}
 
-	if (mpz_sgn(s->furthest_printed) == -1) {
+	if (mpz_sgn(s->latest_card) == -1) {
 		print(PRINT_ERROR, 
 		      "Latest printed card is negative. "
 		      "State file is corrupted.\n");
@@ -528,7 +540,7 @@ int state_store(state *s)
 	/* Write using ascii safe approach */
 	sequence_key = mpz_get_str(NULL, STATE_BASE, s->sequence_key);
 	counter = mpz_get_str(NULL, STATE_BASE, s->counter);
-	latest_card = mpz_get_str(NULL, STATE_BASE, s->furthest_printed);
+	latest_card = mpz_get_str(NULL, STATE_BASE, s->latest_card);
 
 	if (!sequence_key || !counter || !latest_card) {
 		print(PRINT_ERROR, "Error while converting numbers\n");
@@ -536,11 +548,18 @@ int state_store(state *s)
 	}
 
 	const char d = _delim[0];
-	tmp = fprintf(f, "%d%c%s%c%s%c%s%c%u%c%u%c%s%c%s\n",
+	tmp = fprintf(f, 
+		      "%d%c"
+		      "%s%c%s%c%s%c"
+		      "%u%c%u%c"
+		      "%u%c%u%c"
+		      "%s%c%s\n",
 		      _version, d,
 		      sequence_key, d, counter, d, latest_card, d,
-		      s->code_length, d, s->flags, d, s->label, d, s->contact);
-	if (tmp <= 0) {
+		      s->failures, d, s->recent_failures, d,
+		      s->code_length, d, s->flags, d,
+		      s->label, d, s->contact);
+	if (tmp <= 10) {
 		print(PRINT_ERROR, "Error while writing data to state file.");
 		goto error;
 	}
@@ -591,7 +610,7 @@ int state_init(state *s, const char *username, const char *configfile)
 
 	mpz_init(s->counter);
 	mpz_init(s->sequence_key);
-	mpz_init(s->furthest_printed);
+	mpz_init(s->latest_card);
 	mpz_init(s->current_card);
 	mpz_init(s->max_card);
 	mpz_init(s->max_code);
@@ -603,6 +622,8 @@ int state_init(state *s, const char *username, const char *configfile)
 
 	s->code_length = 4;
 	s->flags = FLAG_SHOW;
+	s->failures = 0;
+	s->recent_failures = 0;
 	memset(s->label, 0x00, sizeof(s->label));
 	memset(s->contact, 0x00, sizeof(s->contact));
 
@@ -631,7 +652,7 @@ void state_fini(state *s)
 {
 	num_dispose(s->counter);
 	num_dispose(s->sequence_key);
-	num_dispose(s->furthest_printed);
+	num_dispose(s->latest_card);
 	num_dispose(s->current_card);
 	num_dispose(s->salt_mask);
 	num_dispose(s->code_mask);
@@ -686,7 +707,7 @@ int state_key_generate(state *s, const int salt)
 		num_from_bin(s->sequence_key, key_bin, sizeof(key_bin));
 		memset(key_bin, 0, sizeof(key_bin));
 		mpz_set_d(s->counter, 0);
-		mpz_set_d(s->furthest_printed, 0);
+		mpz_set_d(s->latest_card, 0);
 	} else {
 		/* Use half of entropy to generate key */
 		crypto_sha256(entropy_pool, sizeof(entropy_pool)/2, key_bin);
@@ -696,7 +717,7 @@ int state_key_generate(state *s, const int salt)
 		crypto_sha256(entropy_pool+sizeof(entropy_pool)/2, sizeof(entropy_pool)/2, key_bin);
 		num_from_bin(s->counter, key_bin, 16); /* Counter is 128 bit only */
 		mpz_and(s->counter, s->counter, s->salt_mask);
-		mpz_set_ui(s->furthest_printed, 0);
+		mpz_set_ui(s->latest_card, 0);
 
 		memset(entropy_pool, 0, sizeof(entropy_pool));
 		memset(key_bin, 0, sizeof(key_bin));
@@ -740,7 +761,7 @@ void state_testcase(void)
 	test++; if (mpz_cmp(s1.counter, s2.counter) != 0)
 		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
 
-	test++; if (mpz_cmp(s1.furthest_printed, s2.furthest_printed) != 0)
+	test++; if (mpz_cmp(s1.latest_card, s2.latest_card) != 0)
 		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
 
 	test++; if (s1.flags != s2.flags || s1.code_length != s2.code_length)

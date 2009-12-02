@@ -94,7 +94,7 @@ static void _usage(int argc, const char **argv)
 		"               at the cost of (theoretically) less security.\n"
 		"\n"
 		"  -v, --verbose Display more information about what is happening.\n"
-		"  --license     Display license, warranty and author information.\n"
+		"  --license     Display license, warranty, version and author information.\n"
 		"  --check       Run all testcases.\n"
 
 		"\nNotes:\n"

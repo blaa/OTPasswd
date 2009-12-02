@@ -11,7 +11,7 @@
  **********************************************************************/
 
 #ifndef PROG_VERSION
-#define PROG_VERSION "v0.2"
+#define PROG_VERSION "v0.3"
 #endif
 
 #include <stdio.h>
@@ -145,7 +145,7 @@ static void _show_keys(const state *s)
 {
 	gmp_printf("Key         = %064ZX\n", s->sequence_key);
 	gmp_printf("Counter     = %032ZX\n", s->counter);
-	gmp_printf("Latest card = %Zd\n", s->furthest_printed);
+	gmp_printf("Latest card = %Zd\n", s->latest_card);
 }
 
 /* Authenticate; returns boolean; 1 - authenticated */
@@ -249,7 +249,7 @@ void action_key(options_t *options)
 		goto cleanup;
 	}
 
-	mpz_add_ui(s.furthest_printed, s.furthest_printed, 1);
+	mpz_add_ui(s.latest_card, s.latest_card, 1);
 	ppp_calculate(&s);
 	puts(
 		"\n"
@@ -259,7 +259,7 @@ void action_key(options_t *options)
 		"* ability to log into your system!                  *\n"
 		"*****************************************************\n"
 	);
-	char *card = card_ascii(&s, s.furthest_printed);
+	char *card = card_ascii(&s, s.latest_card);
 	puts(card);
 	free(card);
 
@@ -500,10 +500,10 @@ void action_print(options_t *options)
 
 		/* By 1 or by 6 for LaTeX */
 		mpz_add_ui(
-			s.furthest_printed,
-			s.furthest_printed,
+			s.latest_card,
+			s.latest_card,
 			options->action == 't' ? 1 : 6);
-		mpz_set(passcard_num, s.furthest_printed);
+		mpz_set(passcard_num, s.latest_card);
 		state_changed = 1;
 	} else if (isalpha(options->action_arg[0])) {
 		/* Format: CRR[number] */
