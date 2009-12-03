@@ -1,13 +1,19 @@
 /**********************************************************************
  * otpasswd -- One-time password manager and PAM module.
- * (C) 2009 by Tomasz bla Fortuna <bla@thera.be>, <bla@af.gliwice.pl>
+ * Copyright (C) 2009 by Tomasz bla Fortuna <bla@thera.be>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * See LICENSE file for details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
  **********************************************************************/
 
 #include <stdio.h>
@@ -46,10 +52,6 @@ int print_init(int print_level, int use_stdout, int use_syslog, const char *log_
 	log_state.use_stdout = use_stdout;
 	log_state.use_syslog = use_syslog;
 
-	if (use_syslog) {
-		openlog("otpasswd", 0, LOG_AUTHPRIV);
-	}
-	
 	if (log_file) {
 		log_state.log_file = fopen(log_file, "a");
 	
@@ -137,7 +139,9 @@ int print(int level, const char *fmt, ...)
 
 	/* syslog */
 	if (log_state.use_syslog) {
-		syslog(syslog_level, "%s:%s", intro, buff); /* FIXME; intro needed? */
+		openlog("otpasswd", LOG_CONS | LOG_PID, LOG_AUTHPRIV);
+		syslog(syslog_level, "%s:%s", intro, buff); /* FIXME; is intro needed? */
+		closelog();
 	}
 
 	/* log file */
@@ -175,8 +179,6 @@ int print_perror(int level, const char *fmt, ...)
 
 void print_fini()
 {
-	if (log_state.use_syslog)
-		closelog();
 	if (log_state.log_file)
 		fclose(log_state.log_file);
 

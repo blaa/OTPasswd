@@ -1,13 +1,19 @@
 /**********************************************************************
  * otpasswd -- One-time password manager and PAM module.
- * (C) 2009 by Tomasz bla Fortuna <bla@thera.be>, <bla@af.gliwice.pl>
+ * Copyright (C) 2009 by Tomasz bla Fortuna <bla@thera.be>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * See LICENSE file for details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
  **********************************************************************/
 
 #ifndef PROG_VERSION
@@ -272,7 +278,7 @@ void action_key(options_t *options)
 	} while(ret != 0 && ret != 2);
 
 	if (ret != 0) {
-		printf("Key forgotten.\n");
+		printf("Wiping out key. One-time passwords not enabled.\n");
 		goto cleanup;
 	}
 
@@ -281,7 +287,7 @@ void action_key(options_t *options)
 		goto cleanup;
 	}
 
-	printf("Key stored!\n");
+	printf("Key stored! One-time passwords enabled for this account.\n");
 
 cleanup:
 	state_fini(&s);
@@ -292,7 +298,7 @@ void action_license(options_t *options)
 	printf(
 		"otpasswd -- One-time password manager and PAM module.\n"
 		"Version " PROG_VERSION "\n"
-		"Copyright (C) 2009 Tomasz bla Fortuna\n"
+		"Copyright (C) 2009 Tomasz bla Fortuna <bla@thera.be>\n"
 		"\n"
 		"This program is free software: you can redistribute it and/or modify\n"
 		"it under the terms of the GNU General Public License as published by\n"

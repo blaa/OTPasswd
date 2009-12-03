@@ -10,12 +10,12 @@ ChangeLog / TODO
 
 2009-12-02 v0.3
 	* [!] Fixed some memory leaks.
-	* [%] Ensure state loaded correctly when label/caption full
+	* [!] Ensure state loaded correctly when label/caption full
 	* [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
 	* [-] Warnings when on last passcard
 	* [-] Calling external script for mailing/sms
 	* [-] Share objects between targets (CMake)
-	* [-] Using Gecos field for phone information?
+	      I'll rather ignore it. .so must have -fPIC, util shouldn't...
 	* [?] Scan all FIXME/TODO entries
 	* [?] Keep lines below 75 columns? Or 80?
 	* [?] off-by-one testcase; a bit done
@@ -29,6 +29,7 @@ ChangeLog / TODO
 	      Also is there any reason to use SHA256 on RANDOM data?
 	      Maybe few bytes from rng + some from prng and SHA out of it?
 	* [?] Keeping track of failures.
+	      Started (place in state files created)
 
 2009-12-01 v0.2
 	* [!] One off-by-one error fixed

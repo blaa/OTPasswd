@@ -12,6 +12,7 @@ Contents
 4. About PAM (short talk)
    More details about how PAM works        
 
+5. Licensing
 
 
 1. Introduction
@@ -84,9 +85,9 @@ several ways:
    day!)
 
 If the attacker will get your previous, used up, passcards he can try to do
-a brute-force attack on your key. Yet, this is kind of hard thing to do,
-especially if salting is enabled. See 'Passcode generation algorithm' for
-details.
+a brute-force attack on your key to predict future passcodes. Yet, this is 
+kind of a hard thing to do, especially if salting is enabled. 
+See 'Passcode generation algorithm' for details.
 
 TODO: What is trusted what's not trusted. Man-in-the middle attacks on SSH.
 
@@ -397,3 +398,28 @@ Passcode B3 [1]: f%T
 user@cirrus $
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+5. Licensing
+============
+This README file, examples and the source code of the otpasswd program
+are all licensed under GNU General Public License version 3. License 
+should be included with the project inside LICENSE file. Copyright notice
+follows: 
+
+Copyright (C) 2009 by Tomasz bla Fortuna <bla@thera.be>
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+
