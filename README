@@ -10,7 +10,7 @@ Contents
 4. Demo (Screenshot!)
 
 4. About PAM (short talk)
-   More details about how PAM works        
+   More details about how PAM works
 
 5. Licensing
 
@@ -36,7 +36,7 @@ This program also kind of extends this idea with "salt".
 
 OTPasswd is in development. In ChangeLog there's a list of things i'd
 like to implement before publishing this as version 1.0.  Most of
-features work currently (as of v0.1) but of course - it requires
+features work currently (as of v0.3) but of course - it requires
 tests. Think of this as a beta software.
 
 a. Security concerns
@@ -68,7 +68,15 @@ several ways:
    if you use OTP or not. Their use would make attacker use a lot more IP
    addresses (in certain configuration around 23 to skip one passcard)
 
-3) Kind of by enabling dont-skip option. This option is a bit of a problem
+3) By enabling yourself to receive a next passcode anytime via a secure
+   channel which cannot be blocked by attacker (like SMS).
+
+   In some scenarios DoS also can be performed. For example if we'd use a
+   free SMS gateway, attacker who'd know our phone number can use it himself
+   to send you few tenths of any messages consuming limit of
+   SMSes/phone number/day.
+
+4) Kind of by enabling dont-skip option. This option is a bit of a problem
    because we must NEVER allow successful authentication with the same
    passcode. They must be completely ONE-TIME. Enabling dont-skip causes
    otpasswd to authenticate like this:
@@ -85,8 +93,8 @@ several ways:
    day!)
 
 If the attacker will get your previous, used up, passcards he can try to do
-a brute-force attack on your key to predict future passcodes. Yet, this is 
-kind of a hard thing to do, especially if salting is enabled. 
+a brute-force attack on your key to predict future passcodes. Yet, this is
+kind of a hard thing to do, especially if salting is enabled.
 See 'Passcode generation algorithm' for details.
 
 TODO: What is trusted what's not trusted. Man-in-the middle attacks on SSH.
@@ -124,7 +132,7 @@ So.
 
 0) Package required openssl and gmp libraries and cmake tool (with their
    -dev packages!). All of these should be available in the repository of
-   your distribution. 
+   your distribution.
 
 1) Check if the package is not in your distribution package manager. If it
 is - install it as any other software. Otherwise fallback to compilation:
@@ -160,32 +168,32 @@ auth            required        pam_otpasswd.so <PARAMETERS>
 
 There's a certain set of parameters you can define here:
 enforced - disallow logon if user doesn't have generated key.
-           (default is to ignore OTP.)
-secure   - disallow dont-skip flag 
+	   (default is to ignore OTP.)
+secure   - disallow dont-skip flag
 show     - always show entered passcodes (ignore user options)
 noshow   - never show passcodes (ignore user options)
 debug    - increase debugging (don't leave this option there for long!
-           as it may leak some passcode information.)
-retry=X  - This configures retry behaviour during single authentication: 
-           X:  Behaviour:
-           0   do not retry passcode question (default)
-           1   retry, but use next passcode from card
-           2   retry, use the same passcode.
+	   as it may leak some passcode information.)
+retry=X  - This configures retry behaviour during single authentication:
+	   X:  Behaviour:
+	   0   do not retry passcode question (default)
+	   1   retry, but use next passcode from card
+	   2   retry, use the same passcode.
 
 
 and few more are proposed and _might_be_ implemented in future:
 usechannel=X  - Configures a 'second-channel' (for example an email or sms)
                 used for sending user current passcode.
                 X:  Behaviour:
-                0   Don't use other channel (default)
-                1   Always use channel
-                2   Use if requested
+                0Don't use other channel (default)
+                1Always use channel
+                2Use if requested
                 Enabling channel also requires second option:
 channel=X     - X is full-path to script or a program which will be given
                 two parameters on input. User contact information and
-		current prompt + correct passcode.
-		This program operates this 'second-channel' so he might for
-		example send a SMS to the user.
+                current prompt + correct passcode.
+                This program operates this 'second-channel' so he might for
+                example send a SMS to the user.
 
 
 
@@ -202,7 +210,7 @@ passcode generated the corresponding counter value is encrypted with
 key:
 
        |-------------|
-       | 256 bit key |  
+       | 256 bit key |
        |-------------|
              ||
              ||
@@ -218,11 +226,11 @@ key:
              ||                          | by alphabet length.
              ||                        \ | /
              ||                         \./
-     |-----------------|            /------------/ 
+     |-----------------|            /------------/
      | Salt  | counter |           /  Passcode  /
-     | 96bit |  32bit  |          /------------/ 
+     | 96bit |  32bit  |          /------------/
      |-----------------|
-              
+
 This salt needs a bit of explanation. Genuine PPPv3 algorithms doesn't
 use salt at all - counter is 128bit long. This allows to use over
 3.4 * 10^38  passcodes, that is around 4.86 * 10^36 passcards. Nobody
@@ -404,9 +412,9 @@ user@cirrus $
 5. Licensing
 ============
 This README file, examples and the source code of the otpasswd program
-are all licensed under GNU General Public License version 3. License 
+are all licensed under GNU General Public License version 3. License
 should be included with the project inside LICENSE file. Copyright notice
-follows: 
+follows:
 
 Copyright (C) 2009 by Tomasz bla Fortuna <bla@thera.be>
 
@@ -422,4 +430,3 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
-

@@ -17,8 +17,8 @@
  **********************************************************************/
 
 #define PAM_SM_AUTH
-//#define PAM_SM_ACCOUNT
 #define PAM_SM_SESSION
+//#define PAM_SM_ACCOUNT
 //#define PAM_SM_PASSWORD
 #define _PAM_EXTERN_FUNCTIONS
 
