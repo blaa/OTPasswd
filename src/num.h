@@ -25,8 +25,6 @@
 #include <gmp.h>
 #include <assert.h>
 
-extern void num_testcase(void);
-
 static inline void num_from_bin(mpz_t num, const unsigned char *data, const int length)
 {
 	/* Store data as LSB - to match pppv3 */
@@ -59,5 +57,7 @@ static inline void num_print(const mpz_t num, const int base)
 	puts(result);
 	free(result);
 }
+
+extern int num_testcase(void);
 
 #endif

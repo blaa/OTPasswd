@@ -29,5 +29,5 @@ extern char *card_ascii(const state *s, const mpz_t number);
 /* Returns allocated memory with LaTeX document with 6 passcards */
 extern char *card_latex(const state *s, const mpz_t number);
 
-extern void card_testcase(void);
+extern int card_testcase(void);
 #endif

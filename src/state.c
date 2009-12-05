@@ -710,6 +710,9 @@ void state_fini(state *s)
 
 	free(s->filename);
 	free(s->username);
+
+	/* Clear the rest of memory */
+	memset(s, 0, sizeof(*s));
 }
 
 int state_key_generate(state *s, const int salt)
@@ -774,7 +777,7 @@ int state_key_generate(state *s, const int salt)
 /******************************************
  * Miscellaneous functions
  ******************************************/
-void state_testcase(void)
+int state_testcase(void)
 {
 	state s1, s2;
 	int failed = 0;
@@ -814,4 +817,6 @@ void state_testcase(void)
 
 	state_fini(&s1);
 	state_fini(&s2);
+
+	return failed;
 }

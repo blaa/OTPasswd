@@ -154,5 +154,5 @@ extern int state_store(state *s);
 extern int state_validate_str(const char *str);
 
 /* Do some tests (may overwrite your key file!) */
-extern void state_testcase(void);
+extern int state_testcase(void);
 #endif

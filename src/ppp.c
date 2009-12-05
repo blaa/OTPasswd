@@ -117,7 +117,6 @@ int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
 		alphabet_len = sizeof(alphabet_simple) - 1;
 	}
 
-
 	for (i=0; i<s->code_length; i++) {
 		unsigned long int r = mpz_fdiv_q_ui(quotient, cipher, alphabet_len);
 		mpz_set(cipher, quotient);
@@ -204,6 +203,7 @@ int ppp_authenticate(const state *s, const char *passcode)
 /**********************
  * Passcard management
  **********************/
+
 /* Number of passcodes in row depending on passcode length */
 static int _len_to_card_size[] = {
 	-1, /* use up index 0, just to make it easier */
@@ -272,7 +272,7 @@ void ppp_calculate(state *s)
 	 * the last from number namespace, like 2^128-1 when 
 	 * using not-salted key.
 	 * This should not happen... but, just for the sake
-	 * of simplicity
+	 * of simplicity.
 	 */
 	mpz_sub_ui(s->max_card, s->max_card, 1);
 
@@ -447,7 +447,7 @@ cleanup0:
  * Testcases
  **************************/
 
-static void _ppp_testcase_statistical(const state *s, const int alphabet_len, const int code_length, const int tests)
+static int _ppp_testcase_statistical(const state *s, const int alphabet_len, const int code_length, const int tests)
 {
 	/* Calculate distribution of 1s and 0s in 
 	 * generated passcodes for specified state key 
@@ -519,6 +519,7 @@ static void _ppp_testcase_statistical(const state *s, const int alphabet_len, co
 
 	}
 	int bit;
+	int failed = 0;
 	/* Perfect distribution */
 	const double perfect = tests / 2.0;
 
@@ -534,6 +535,7 @@ static void _ppp_testcase_statistical(const state *s, const int alphabet_len, co
 		if (tmp1 > 1.004 || tmp1 < 0.993 || tmp0 < 0.993 || tmp0 > 1.004) {
 			printf("ppp_testcase_stat: FAILED. Bit %d has too big error (%0.10f, %0.10f)\n",
 			       bit, tmp1, tmp0);
+			failed = 1; /* Count each fail as one */
 		}
 	}
 
@@ -550,6 +552,7 @@ static void _ppp_testcase_statistical(const state *s, const int alphabet_len, co
 	
 	if (rel_err1 > 1.001 || rel_err1 < 0.999 || rel_err0 > 1.001 || rel_err0 < 0.999) {
 		printf("ppp_testcase_stat: FAILED. Too big average relative errors!\n");
+		failed++;
 	} else {
 		printf("ppp_testcase_stat: PASSED!\n");
 	}
@@ -564,12 +567,14 @@ clear:
 	num_dispose(quotient);
 	num_dispose(cipher);
 	num_dispose(counter);
+
+	return failed;
 }
 
 
-static void _ppp_testcase_authenticate(const char *passcode)
+static int _ppp_testcase_authenticate(const char *passcode)
 {
-	int retval;
+	int retval = 0;
 
 	const char *prompt = NULL;
 
@@ -590,7 +595,7 @@ static void _ppp_testcase_authenticate(const char *passcode)
 		/* This will fail if we're unable to locate home directory */
 		printf("STATE_INIT FAILED\n");
 		print_fini();
-		return;
+		return retval;
 	}
 
 	/* Using locking load state, increment counter, and store new state */
@@ -630,13 +635,15 @@ static void _ppp_testcase_authenticate(const char *passcode)
 			
 		/* Correctly authenticated */
 		printf("AUTHENTICATION SUCCESSFULL\n");
+		retval = 1;
 		goto cleanup;
 	}
 
 	printf("AUTHENTICATION NOT SUCCESSFULL\n");
-
+	retval = 0;
 cleanup:
 	state_fini(&s);
+	return retval;
 }
 
 #define _PPP_TEST(cnt,len, col, row, code)			\
@@ -651,11 +658,14 @@ printf("cnt=%10s len=%2d in_row=%d pos=%d%c[%8s] code=%16s",	\
        s.current_column, buf2, passcode);			\
 if (s.current_row == (row) && s.current_column == (col)		\
     && strcmp(passcode, (code)) == 0)				\
-	printf(" PASSED\n"); else printf(" FAILED\n\n");	\
+	printf(" PASSED\n"); else {				\
+		printf(" FAILED\n\n");				\
+		failed++; }					\
 free(buf1); free(buf2);
 
-void ppp_testcase(void)
+int ppp_testcase(void)
 {
+	int failed = 0;
 	char *buf1, *buf2;
 	int test = 1;
 	char passcode[17] = {0};
@@ -666,10 +676,10 @@ void ppp_testcase(void)
 
 	/* Statistical tests using key = 0 */
 	mpz_set_ui(s.sequence_key, 1345126463UL);
-	_ppp_testcase_statistical(&s, 64, 16, 500000);
+	failed += _ppp_testcase_statistical(&s, 64, 16, 500000);
 
 	/* Following test should fail using norms from first test */
-	// _ppp_testcase_statistical(&s, 88, 16, 1000000);
+	// failed += _ppp_testcase_statistical(&s, 88, 16, 500000);
 
 	printf("*** Sequence key = 0.\n");
 	mpz_set_ui(s.sequence_key, 0UL);
@@ -737,13 +747,20 @@ void ppp_testcase(void)
 	/* Create file with empty key */
 	if (state_init(&s, NULL, ".otpasswd_testcase") != 0) {
 		printf("ERROR WHILE CREATING TEST KEY\n");
-		return;
+		failed++;
+		return failed;
 	}
 	state_store(&s);
 	state_fini(&s);
 	
 	printf("Should succeed:\n");
-	_ppp_testcase_authenticate("NH7j");
+	if (_ppp_testcase_authenticate("NH7j") == 0) { /* Check if returned true */
+		failed++;
+	}
 	printf("Should NOT succeed:\n");
-	_ppp_testcase_authenticate("aSsD");
+	if (_ppp_testcase_authenticate("aSsD") != 0) {
+		failed++;
+	}
+
+	return failed;
 }

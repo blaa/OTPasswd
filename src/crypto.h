@@ -43,7 +43,7 @@ extern int crypto_sha256(
 	const unsigned int length,
 	unsigned char *hash);
 
-extern void crypto_testcase(void);
+extern int crypto_testcase(void);
 
 /* Helpers */
 extern void crypto_print_hex(

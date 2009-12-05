@@ -119,13 +119,14 @@ static void _usage(int argc, const char **argv)
 		);
 }
 
-void process_cmd_line(int argc, char **argv)
+int process_cmd_line(int argc, char **argv)
 {
+	int retval = 0;
 	options_t options = {
 		.log_level = PRINT_WARN,
 		.action = 0,
 		.action_arg = NULL,
-		
+
 		.flag_set_mask = 0,
 		.flag_clear_mask = 0,
 		.set_codelength = 0
@@ -307,11 +308,9 @@ void process_cmd_line(int argc, char **argv)
 		ret = action_authenticate(&options);
 		free(options.action_arg);
 		print_fini();
-		if (ret)
-			exit(0);
-		else
-			exit(1);
-
+		if (ret == 0)
+			retval = 1;
+		break;
 	case 'Q':
 		action_license(&options);
 		break;
@@ -326,20 +325,38 @@ void process_cmd_line(int argc, char **argv)
 
 	case 'x':
 		printf("*** Running testcases\n");
-		state_testcase();
-		num_testcase();
-		crypto_testcase();
-		card_testcase();
-		ppp_testcase();
+		{
+			int failed = 0;
+			failed += state_testcase();
+			failed += num_testcase();
+			failed += crypto_testcase();
+			failed += card_testcase();
+			failed += ppp_testcase();
+			if (failed) {
+				printf(
+					"***********************************************\n"
+					"*         !!! %d testcases failed !!!         *\n"
+					"* Don't use this release until this is fixed! *\n"
+					"***********************************************\n",
+					failed);
+				retval = 1;
+			} else {
+				printf(
+					"**********************************\n"
+					"* All testcases seem successful. *\n"
+					"**********************************\n");
+				retval = 0;
+			}
+		}
 	}
 
 	free(options.action_arg);
 	print_fini();
+	return retval;
 }
 
 
 int main(int argc, char **argv)
 {
-	process_cmd_line(argc, argv);
-	return 0;
+	return process_cmd_line(argc, argv);
 }

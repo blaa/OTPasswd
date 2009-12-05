@@ -22,8 +22,9 @@
 
 #include "num.h"
 
-void num_testcase(void)
+int num_testcase(void)
 {
+	int failed = 0;
 	unsigned char num[32];
 	mpz_t tmp_num;
 	char *result;
@@ -43,9 +44,10 @@ void num_testcase(void)
 	if (memcmp(num,
 		   "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xAB\x00\x00\x00"
 		   "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-		   "\x00\x00\x00\x00", 32) != 0) 
+		   "\x00\x00\x00\x00", 32) != 0) {
 		printf("FAILED\n");
-	else
+		failed++;
+	} else
 		printf("PASSED\n");
 	free(result);
 
@@ -57,9 +59,10 @@ void num_testcase(void)
 	if (memcmp(num,
 		   "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xAB\x00\x00\x00"
 		   "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-		   "\x00\x00\x00\x00", 32) != 0) 
+		   "\x00\x00\x00\x00", 32) != 0) {
 		printf("FAILED\n");
-	else
+		failed++;
+	} else
 		printf("PASSED\n");
 
 
@@ -75,9 +78,10 @@ void num_testcase(void)
 	if (strcmp(result,
 		   "1155668197009629607909301529759657"
 		   "36218812795816796563554883271612554597662890"
-		   ) != 0)
+		    ) != 0) {
 		printf("FAILED\n");
-	else
+		failed++;
+	} else
 		printf("PASSED\n");
 	free(result);
 
@@ -89,12 +93,14 @@ void num_testcase(void)
 	if (memcmp(num,
 		   "\xaa\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80"
 		   "\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80"
-		   "\x80\x80\x80\xff", 32) != 0) 
+		   "\x80\x80\x80\xff", 32) != 0) {
 		printf("FAILED\n");
-	else
+		failed++;
+	} else
 		printf("PASSED\n");
 	
 	mpz_clear(tmp_num);
+	return failed;
 }
 
 

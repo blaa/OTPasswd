@@ -237,7 +237,7 @@ char *card_latex(const state *s, const mpz_t number)
 	return whole_card;
 }
 
-void card_testcase(void)
+int card_testcase(void)
 {
 	unsigned char hash[32];
 	char *card;
@@ -317,4 +317,6 @@ void card_testcase(void)
 	printf("passcard_testcases: %d out of %d tests failed\n", failed, test);
 	state_fini(&s);
 	mpz_clear(cnt);
+
+	return failed;
 }

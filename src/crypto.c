@@ -131,8 +131,9 @@ void crypto_print_hex(const unsigned char *data, const unsigned int length)
 	printf("\n");
 }
 
-void crypto_testcase(void)
+int crypto_testcase(void)
 {
+	int failed;
 	int i;
 
 	unsigned char plain[] = 
@@ -150,12 +151,14 @@ void crypto_testcase(void)
 	printf("crypto_aes_test [ 1]: ");
 	if (memcmp(plain, decrypted, 16) != 0) {
 		printf("FAILED ");
+		failed++;
 	} else {
 		printf("PASSED ");		
 	}
 
 	if (memcmp(encrypted, encrypted_origin, 16) != 0) {
 		printf("FAILED\n");
+		failed++;
 	} else {
 		printf("PASSED\n");		
 	}
@@ -169,6 +172,7 @@ void crypto_testcase(void)
 
 		if (memcmp(plain, decrypted, 16) != 0) {
 			printf("FAILED ");
+			failed++;
 		} else {
 			printf("PASSED ");		
 		}
@@ -187,7 +191,10 @@ void crypto_testcase(void)
 	printf("sha_test [ 1]: ");
 	if (memcmp(hash, hash_origin, 32) != 0) {
 		printf("FAILED\n");
+		failed++;
 	} else {
 		printf("PASSED\n");		
 	}
+
+	return failed;
 }
