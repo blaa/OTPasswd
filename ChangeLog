@@ -8,7 +8,7 @@ ChangeLog / TODO
 [-] Feature in TODO
 [?] New feature in TODO
 
-2009-12-02 v0.4
+2009-12-05 v0.4
 	* [!] Fixed some memory leaks.
 	* [!] Ensure state loaded correctly when label/caption full
 	* [+] Fixed licensing so the project can be hosted on Savannah
@@ -37,8 +37,10 @@ ChangeLog / TODO
               channel. Important to limit number of e.g. sent sms.
 	* [?] Improve LaTeX output (some colors, borders?)
 	* [?] Add a place for static password in state files.
+        * [?] Incorporate SSH key fingerprints on passcards?
+        * [?] Move state files to /etc/ + SUID.
 
-2009-12-02 v0.3
+2008-12-02 v0.3
 	* [!] Fixed some memory leaks.
 	* [!] Ensure state loaded correctly when label/caption full
 	* [+] Fixed licensing so the project can be hosted on Savannah

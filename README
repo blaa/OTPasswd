@@ -20,7 +20,7 @@ Contents
 A one-time password (OTP) is a password that is only valid for a
 single login session or transaction (usually along a normal static
 password). Using them reduces risks associated with login into your
-system from unsecure (keylogged) workstations.
+system from insecure (key logged) workstations.
 
 The otpasswd consists of a pam module and an user utility. With the
 utility user manages his "state" file: creates his KEY, manages flags
@@ -34,7 +34,7 @@ The program is written in C (C99) and implements OTP as described in
 https://www.grc.com/ppp.htm
 This program also kind of extends this idea with "salt".
 
-OTPasswd is in development. In ChangeLog there's a list of things i'd
+OTPasswd is in development. In ChangeLog there's a list of things I'd
 like to implement before publishing this as version 1.0.  Most of
 features work currently (as of v0.3) but of course - it requires
 tests. Think of this as a beta software.
@@ -43,24 +43,25 @@ a. Security concerns
 --------------------
 There are certain security related issues you should be aware of.
 
-This program is not intended to replace normal passwords, it's supposed to
-add a second level of authentication. Therefore an attacker to log into
-your system must know something you know - a unix password (which he can
-for example keylog or sniff using e-m radiation of your keyboard's PS/2
-communication) and must posess something only you have - a passcard with
-codes or your mobile phone.
+I. This program is not intended to replace normal passwords, it's
+supposed to add a second level of authentication. Therefore an
+attacker to log into your system must know something you know - a UNIX
+password (which he can for example keylog or sniff using e-m radiation
+of your keyboard's PS/2 communication), and additionaly must posses
+something only you have - a passcard with codes or, for example, your
+mobile phone.
 
-Second issue is a DoS attack possible in some configurations. When the
-attacker repeatedly tries to authenticate he can use up all your printed
-passcodes and therefore make you unable to login. This can be fixed in
-several ways:
-1) By requesting that the unix password be correctly entered before asking
+II. Second issue is a DoS attack possible in some configurations. When
+the attacker repeatedly tries to authenticate he can use up all your
+printed passcodes and therefore make you unable to login. This can be
+fixed in several ways:
+1) By requesting that the UNIX password be correctly entered before asking
    (and therefore using up) a passcode. (See required/requisite difference
    in PAM description chapter).
      This will limit the problem to the case when the attacker sniffs your
    password. He won't be able to login still, but he can perform this DoS
-   attack. Well. That's ok with me. Even better - if he does it, then I
-   know I must change my unix password.
+   attack. Well. That's OK with me. Even better - if he does it, then I
+   know I must change my UNIX password.
 
 2) By limiting number of trials on another level. For example sshguard can
    block IP access to SSH after 3 unsuccessful attempts to authenticate. I
@@ -73,37 +74,49 @@ several ways:
 
    In some scenarios DoS also can be performed. For example if we'd use a
    free SMS gateway, attacker who'd know our phone number can use it himself
-   to send you few tenths of any messages consuming limit of
-   SMSes/phone number/day.
+   to send you lots of any messages consuming limit of
+   SMSes/phone number/day. It's pretty unlikely scenario and
+   furthermore, it can be secured by using other means of sending sms
+   (sending with GSM modem/phone connected to the computer).
 
 4) Kind of by enabling dont-skip option. This option is a bit of a problem
    because we must NEVER allow successful authentication with the same
    passcode. They must be completely ONE-TIME. Enabling dont-skip causes
    otpasswd to authenticate like this:
    a) Read state file, increment passcode counter, store file
-   b) If user authenticates passcode is already incremented and everything
-      is fine. If he fails to authenticate then do the step c:
+   b) If user authenticates successfully, passcode is already
+      incremented and everything is fine. If he fails to authenticate
+      then do the step c:
    c) Read state file, check if somebody modified this state file
       in the meantime (second authentication for example). If not -
       decrement counter and store file. If file was modified nothing is
-      changed, and therefore passcode is securetly skipped.
+      changed, and therefore passcode is securely skipped.
    This behaviour *doesn't* solve the problem as you can see, because
-   attacker might use two separate authenticate sessions. This would have
+   attacker might use two separate authentication sessions. This would have
    to be blocked in some other way (might be implemented in otpasswd one
    day!)
 
-If the attacker will get your previous, used up, passcards he can try to do
-a brute-force attack on your key to predict future passcodes. Yet, this is
-kind of a hard thing to do, especially if salting is enabled.
-See 'Passcode generation algorithm' for details.
+III. If the attacker will get your previous, used up, passcards he can
+try to do a brute-force attack on your key to predict future
+passcodes. Yet, this is kind of a hard thing to do, especially if
+salting is enabled.  See 'Passcode generation algorithm' for details.
 
-TODO: What is trusted what's not trusted. Man-in-the middle attacks on SSH.
+IV. OTPasswd secures the process of authentication by fixing the
+problem of classical static passwords - their /staticness/. After
+you're authenticated someone still might takeover your session to do
+something nasty. So while man-in-the-middle attack on your SSH to
+eavesdrop your password for later authentication might not be
+feasible, it still can be used to hijack authenticated sessions. 
+
+To securely log into a system with SSH you still must have a trusted
+ssh client software (from pendrive?) and validate server key
+fingerprint. 
 
 b. Contact
 ----------
 You can contact author with questions, support, praises or curses at
 bla@thera.be. Any feedback welcomed (even faint one). And no, I don't get a
-lot of feedback so don't think 'nah, I'wont write anything he's probably
+lot of feedback so don't think 'nah, I won't write anything he's probably
 pissed at us anyway'.
 
 c. History
@@ -111,7 +124,7 @@ c. History
 The creation of this program was inspired by the ppp-pam project
 (http://code.google.com/p/ppp-pam/). Idea is basically the same. I started
 development by contributing to ppp-pam, but there was plenty of things to
-fix, author didn't answer and I just decided I'll be better off rewritting
+fix, author didn't answer and I just decided I'll be better off rewriting
 everything from scratch. Projects share some of my code, like locking
 functions but nothing more. You can kind of thing about otpasswd as a fork
 of ppp-pam.
@@ -143,7 +156,7 @@ $ make install # This should install binaries into system.
 
 Instead of using make install you can also copy two files, PAM module into
 /lib/security and otpasswd password manager to /usr/bin. There's also
-examplary pam configuration in example/otpasswd-login this can be copied to
+exemplary pam configuration in example/otpasswd-login this can be copied to
 /etc/pam.d (which itself won't change anything in your PAM config).
 
 2) See last chapter for detailed information. In short install
@@ -242,7 +255,7 @@ Many ciphers were vulnerable to, so called, known-plaintext
 attacks. Rijndael -- as far as I know -- isn't but it doesn't mean
 that in future such attack couldn't be discovered.
 
-Closing this hole was easy. By generating additionaly 96bits of random
+Closing this hole was easy. By generating additionally 96bits of random
 data and storing them inside counter value we make attacker impossible
 task of breaking the key even more impossible. Also brute-force attack
 on key will take a bit longer.

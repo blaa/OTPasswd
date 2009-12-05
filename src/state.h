@@ -27,6 +27,8 @@
 #define STATE_BASE	62
 #define STATE_LABEL_SIZE 30
 #define STATE_CONTACT_SIZE 60
+#define STATE_STATIC_SIZE 32 /* binary SHA256 of static password */
+#define STATE_ENTRY_SIZE 512 /* Maximal size of a valid state entry (single line) */
 #define ROWS_PER_CARD 10
 
 /* We must distinguish between locking problems (critical)
@@ -68,6 +70,10 @@ typedef struct {
 	/* User flags */
 	unsigned int flags;
 
+	/* Static password (spass) */
+	mpz_t spass;
+	int spass_set; /* Bool: 0 - not set, 1 - set */
+
 	/* Card label (might be zeroed, then hostname is used) */
 	char label[STATE_LABEL_SIZE];
 
@@ -75,12 +81,15 @@ typedef struct {
 	 * for example an email, or - a phone number... */
 	char contact[STATE_CONTACT_SIZE];
 
-	/* Number of failures since previous correct login */
+	/* Number of all failures */
 	unsigned int failures;
 	
-	/* Cleared on correct authentication */
+	/* Failures since last correct login */
 	unsigned int recent_failures; 
 	
+	/* UNIX timestamp of latest channel usage */
+	mpz_t channel_time;
+
 	/*** Temporary / not-saved data ***/
 	char *prompt; /* Keep it here so we can safely dispose of it */
 

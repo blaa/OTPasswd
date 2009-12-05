@@ -295,12 +295,12 @@ static int _rng_read(const char *device, const char *msg, unsigned char *buf, co
 /**********************************************
  * Interface functions for managing state files
  **********************************************/
-static const int _version = 3;
+static const int _version = 4;
 static const char *_delim = ":";
 
 int state_load(state *s)
 {
-	const int fields = 10;
+	const int fields = 12;
 
 	enum {
 		FIELD_VERSION = 0,
@@ -309,14 +309,16 @@ int state_load(state *s)
 		FIELD_LATEST_CARD,
 		FIELD_FAILURES,
 		FIELD_RECENT_FAILURES,
+		FIELD_CHANNEL_TIME,
 		FIELD_CODE_LENGTH,
 		FIELD_FLAGS,
+		FIELD_SPASS,
 		FIELD_LABEL,
 		FIELD_CONTACT,
 	};
 
 	/* State file should never be larger than 160 bytes */
-	char buff[512];
+	char buff[STATE_ENTRY_SIZE];
 	/* How many bytes are in buff? */
 	unsigned int buff_size = 0; 
 
@@ -356,7 +358,7 @@ int state_load(state *s)
 		goto error;
 	}
 
-	/* Read all file into buffer */
+	/* Read all file into a buffer */
 	buff_size = fread(buff, 1, sizeof(buff), f);
 	if (buff_size < 10) {
 		/* This can't hold correct state */
@@ -418,6 +420,13 @@ int state_load(state *s)
 		goto error;
 	}
 
+	if (mpz_set_str(s->channel_time, field[FIELD_CHANNEL_TIME], 62) != 0) {
+		print(PRINT_ERROR, "Error while parsing channel use time.\n");
+		goto error;
+		s->spass_set = 0;
+	}
+
+
 	if (sscanf(field[FIELD_CODE_LENGTH], "%u", &s->code_length) != 1) {
 		print(PRINT_ERROR, "Error while parsing passcode length\n");
 		goto error;
@@ -426,6 +435,16 @@ int state_load(state *s)
 	if (sscanf(field[FIELD_FLAGS], "%u", &s->flags) != 1) {
 		print(PRINT_ERROR, "Error while parsing flags\n");
 		goto error;
+	}
+
+	if (strlen(field[FIELD_SPASS]) == 0) {
+		s->spass_set = 0;
+	} else {
+		if (mpz_set_str(s->spass, field[FIELD_SPASS], 62) != 0) {
+			print(PRINT_ERROR, "Error while parsing static password.\n");
+			goto error;
+		}
+		s->spass_set = 1;
 	}
 
 	/* Copy label and contact */
@@ -517,6 +536,8 @@ int state_store(state *s)
 	char *sequence_key = NULL;
 	char *counter = NULL;
 	char *latest_card = NULL;
+	char *spass = NULL;
+	char *channel_time = NULL;
 
 	int tmp;
 
@@ -543,10 +564,17 @@ int state_store(state *s)
 		return STATE_PERMISSIONS;
 	}
 
-	/* Write using ascii safe approach */
+	/* Write using ascii-safe approach */
 	sequence_key = mpz_get_str(NULL, STATE_BASE, s->sequence_key);
 	counter = mpz_get_str(NULL, STATE_BASE, s->counter);
 	latest_card = mpz_get_str(NULL, STATE_BASE, s->latest_card);
+
+	if (s->spass) 
+		spass = mpz_get_str(NULL, STATE_BASE, s->spass);
+	else
+		spass = strdup("");
+
+	channel_time = mpz_get_str(NULL, STATE_BASE, s->channel_time);
 
 	if (!sequence_key || !counter || !latest_card) {
 		print(PRINT_ERROR, "Error while converting numbers\n");
@@ -556,14 +584,14 @@ int state_store(state *s)
 	const char d = _delim[0];
 	tmp = fprintf(f, 
 		      "%d%c"
-		      "%s%c%s%c%s%c"
-		      "%u%c%u%c"
-		      "%u%c%u%c"
+		      "%s%c%s%c%s%c" /* Key, counter, latest_card */
+		      "%u%c%u%c%s%c" /* Failures, recent fails, channel time */
+		      "%u%c%u%c%s%c" /* Codelength, flags, spass */
 		      "%s%c%s\n",
 		      _version, d,
 		      sequence_key, d, counter, d, latest_card, d,
-		      s->failures, d, s->recent_failures, d,
-		      s->code_length, d, s->flags, d,
+		      s->failures, d, s->recent_failures, d, channel_time, d,
+		      s->code_length, d, s->flags, d, spass, d,
 		      s->label, d, s->contact);
 	if (tmp <= 10) {
 		print(PRINT_ERROR, "Error while writing data to state file.");
@@ -596,6 +624,8 @@ error:
 	free(sequence_key);
 	free(counter);
 	free(latest_card);
+	free(channel_time);
+	free(spass);
 	return ret;
 }
 
@@ -618,6 +648,9 @@ int state_init(state *s, const char *username, const char *configfile)
 	mpz_init(s->sequence_key);
 	mpz_init(s->latest_card);
 	mpz_init(s->current_card);
+	mpz_init(s->spass);
+	mpz_init(s->channel_time);
+
 	mpz_init(s->max_card);
 	mpz_init(s->max_code);
 
@@ -626,6 +659,7 @@ int state_init(state *s, const char *username, const char *configfile)
 	ret = mpz_init_set_str(s->code_mask, code_mask, 16);
 	assert(ret == 0);
 
+	s->spass_set = 0;
 	s->code_length = 4;
 	s->flags = FLAG_SHOW;
 	s->failures = 0;
@@ -660,6 +694,8 @@ void state_fini(state *s)
 	num_dispose(s->sequence_key);
 	num_dispose(s->latest_card);
 	num_dispose(s->current_card);
+	num_dispose(s->spass);
+	num_dispose(s->channel_time);
 	num_dispose(s->salt_mask);
 	num_dispose(s->code_mask);
 	num_dispose(s->max_card);
