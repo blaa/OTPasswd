@@ -140,7 +140,7 @@ int print(int level, const char *fmt, ...)
 	/* syslog */
 	if (log_state.use_syslog) {
 		openlog("otpasswd", LOG_CONS | LOG_PID, LOG_AUTHPRIV);
-		syslog(syslog_level, "%s:%s", intro, buff); /* FIXME; is intro needed? */
+		syslog(syslog_level, "(otpasswd) %s:%s", intro, buff); /* FIXME; is intro needed? */
 		closelog();
 	}
 

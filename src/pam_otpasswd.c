@@ -122,6 +122,115 @@ static struct pam_response *pam_query_user(pam_handle_t *pamh, int flags, int sh
 	return resp;
 }
 
+typedef struct {
+	/* Enforced makes any user without an .otpasswd config
+	 * fail to login */
+	int enforced;
+
+	/* Do we allow dont-skip? 0 - yes */
+	int secure;
+
+	/* Turns on increased debugging (into syslog) */
+	int debug;		
+
+	/* 0 - no retry 
+	 * 1 - retry with new passcode
+	 * 2 - retry with the same passcode
+	 * Will always retry 3 times...
+	 */
+	int retry;
+
+	/* Shall we echo entered passcode?
+	 * 1 - user selected
+	 * 0 - (noshow) echo disabled
+	 * 2 - (show) echo enabled
+	 */
+	int show;
+} options;
+
+static int _parse_options(options *opt, int argc, const char **argv)
+{
+	/* Default values */
+	opt->retry = opt->enforced = opt->secure = opt->debug = 0;
+	opt->show = 1;
+
+	for (; argc-- > 0; argv++) {
+		if (strcmp("enforced", *argv) == 0)
+			opt->enforced = 1;
+		else if (strcmp("secure", *argv) == 0)
+			opt->secure = 1;
+		else if (strcmp("show", *argv) == 0)
+			opt->show = 2;
+		else if (strcmp("noshow", *argv) == 0)
+			opt->show = 0;
+		else if (strcmp("debug", *argv) == 0)
+			opt->debug = 1;
+		else if (sscanf(*argv, "retry=%d", &opt->retry) == 1) {
+			if (opt->retry < 0 || opt->retry > 2) {
+				print(PRINT_ERROR, "Invalid retry parameter (valid values = 0, 1, 2)");
+				return PAM_AUTH_ERR;
+			}
+		} else {
+			print(PRINT_ERROR, "Invalid parameter %s\n", *argv);
+			return PAM_AUTH_ERR;
+		}
+	}
+	if (opt->debug) {
+		print(PRINT_NOTICE, "otpasswd config: enforced=%d show=%d secure=%d retry=%d\n",
+		      opt->enforced, opt->show, opt->secure, opt->retry);
+	}
+	return 0;
+}
+
+/* Initialization stuff */
+static int _init(pam_handle_t *pamh, int argc, const char **argv, options *opt, state **s)
+{
+	/* User info from PAM */
+	const char *user = NULL;
+	
+	int retval;
+
+	/* Bootstrap logging */
+	print_init(PRINT_NOTICE, 0, 1, NULL);
+
+	/* Parse options */
+	retval = _parse_options(opt, argc, argv);
+	print_fini(); /* Close bootstrapped logging */
+	if (retval != 0) {
+		return retval;
+	}
+
+	/* Initialize internal debugging */
+	if (opt->debug) {
+		print_init(PRINT_NOTICE, 0, 1, "/tmp/otpasswd_dbg");
+		print(PRINT_NOTICE, "otpasswd started\n");
+	} else
+		print_init(PRINT_ERROR, 0, 1, NULL);
+
+	/* We must know where to look for state file */
+	retval = pam_get_user(pamh, &user, NULL);
+	if (retval != PAM_SUCCESS && user) {
+		print(PRINT_ERROR, "pam_get_user %s", pam_strerror(pamh,retval));
+		goto error;
+	}
+
+	if (user == NULL || *user == '\0') {
+		print(PRINT_ERROR, "empty_username", pam_strerror(pamh,retval));
+		goto error;
+	}
+
+	/* Initialize state with given username */
+	if (ppp_init(s, user) != 0) {
+		/* This will fail if we're unable to locate home directory */
+		goto error;
+	}
+
+	/* All ok */
+	return 0;
+error:
+	print_fini();
+	return PAM_USER_UNKNOWN;
+}
 
 /* PAM_AUTH_ERR, PAM_CRED_INSUFFICIENT PAM_AUTHINFO_UNAVAIL PAM_USER_UNKNOWN PAM_MAXTRIES */
 /* PAM_TEXT_INFO PAM_ERROR_MSG PAM_PROMPT_ECHO_ON PAM_RPOMPT_ECHO_OFF */
@@ -129,9 +238,6 @@ PAM_EXTERN int pam_sm_authenticate(
 	pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
 	int retval;
-
-	/* User info from PAM */
-	const char *user = NULL;
 
 	/* Prompt to ask user */
 	const char *prompt = NULL;
@@ -142,74 +248,22 @@ PAM_EXTERN int pam_sm_authenticate(
 	/* Required for communication with user */
 	struct pam_response *resp = NULL;
 
-	/* Module options */
+	/* Parameters */
+	options opt;
 
-	/* Enforced makes any user without an .otpasswd config
-	 * fail to login */
-	int enforced = 0;	/* Do we enforce OTP logons? */
-	int secure = 0;		/* Do we allow dont-skip? 0 - yes */
-	int debug = 0;		/* Turns on increased debugging (into syslog) */
-	int retry = 0;		/* 0 - no retry 
-				 * 1 - retry with new passcode
-				 * 2 - retry with the same passcode
-				 * Will always retry 3 times...
-				 */
-	int show = 1;		/* Shall we echo entered passcode?
-				 * 1 - user selected
-				 * 0 - (noshow) echo disabled
-				 * 2 - (show) echo enabled
-				 */
-	for (; argc-- > 0; argv++) {
-		if (strcmp("enforced", *argv) == 0)
-			enforced = 1;
-		else if (strcmp("secure", *argv) == 0)
-			secure = 1;
-		else if (strcmp("show", *argv) == 0)
-			show = 2;
-		else if (strcmp("noshow", *argv) == 0)
-			show = 0;
-		else if (strcmp("debug", *argv) == 0)
-			debug = 1;
-		else if (sscanf(*argv, "retry=%d", &retry) == 1) {
-			if (retry < 0 || retry > 2) {
-				D(("invalid retry parameter (valid values = 0, 1, 2)"));
-				return PAM_AUTH_ERR;
-			}
-		}
-	}
-
-	/* Initialize internal debugging */
-	if (debug) {
-		print_init(PRINT_NOTICE, 0, 1, "/tmp/otpasswd_dbg");
-		print(PRINT_NOTICE, "LOG FILE OPENED FROM PAM\n");
-	} else
-		print_init(PRINT_ERROR, 0, 1, NULL);
-
-	/* We must know where to look for state file */
-	retval = pam_get_user(pamh, &user, NULL);
-	if (retval != PAM_SUCCESS && user) {
-		D(("pam_get_user %s", pam_strerror(pamh,retval)));
-		pam_syslog(pamh, LOG_ERR, "bad username [%s]", user);
-		return PAM_USER_UNKNOWN;
-	}
-
-	if (user == NULL || *user == '\0') {
-		pam_syslog(pamh, LOG_ERR, "empty username");
-		return PAM_USER_UNKNOWN;
-	}
-
-	/* Initialize state with given username */
-	if (ppp_init(&s, user) != 0) {
-		/* This will fail if we're unable to locate home directory */
-		return PAM_USER_UNKNOWN;
-	}
-
+	/* Perform initialization:
+	 * parse options, start logging, initialize state
+	 */
+	retval = _init(pamh, argc, argv, &opt, &s);
+	if (retval != 0)
+		return retval;
+     
 	/* Retry = 0 - do not retry, 1 - with changing passcodes */
 	int tries;
-	for (tries = 0; tries < (retry == 0 ? 1 : 3); tries++) {
-		if (tries == 0 || retry == 1) {
+	for (tries = 0; tries < (opt.retry == 0 ? 1 : 3); tries++) {
+		if (tries == 0 || opt.retry == 1) {
 			/* First time or we are retrying while changing the password */
-			retval = _handle_load(pamh, flags, enforced, s);
+			retval = _handle_load(pamh, flags, opt.enforced, s);
 			if (retval != 0)
 				goto cleanup;
 
@@ -223,7 +277,7 @@ PAM_EXTERN int pam_sm_authenticate(
 			}
 		}
 
-		resp = pam_query_user(pamh, flags, show, prompt, s);
+		resp = pam_query_user(pamh, flags, opt.show, prompt, s);
 
 		retval = PAM_AUTH_ERR; 
 		if (!resp) {
@@ -240,8 +294,7 @@ PAM_EXTERN int pam_sm_authenticate(
 		}
 
 		/* Error during authentication */
-		print(PRINT_NOTICE, "secure %d retry %d\n", secure, retry);
-		if (retry == 0 && secure == 0 && ppp_is_flag(s, FLAG_SKIP) == 0) {
+		if (opt.retry == 0 && opt.secure == 0 && ppp_is_flag(s, FLAG_SKIP) == 0) {
 			/* Decrement counter */
 			retval = ppp_decrement(s);
 			if (retval != 0) {
@@ -250,7 +303,6 @@ PAM_EXTERN int pam_sm_authenticate(
 				goto cleanup;
 			}
 		}
-
 		retval = PAM_AUTH_ERR;
 	}
 
