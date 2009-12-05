@@ -290,6 +290,9 @@ int ppp_verify_range(const state *s)
 	/* First verify two conditions that should never happen
 	 * then check something theoretically possible */
 
+	/* ppp_calculate must've been called before */
+	assert(s->codes_on_card > 0);
+
 	/* Verify key size */
 	const char max_key_hex[] = 
 		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
@@ -328,9 +331,6 @@ int ppp_verify_range(const state *s)
 		mpz_and(just_counter, s->counter, s->code_mask);
 	}
 
-	/* ppp_calculate must've been called before */
-	assert(s->codes_on_card > 0);
-
 	/* Equal is too big because max_code is calculated starting from 1
 	 * whereas counter starts from 0 */
 	if (mpz_cmp(just_counter, s->max_code) >= 0) {
@@ -341,6 +341,40 @@ int ppp_verify_range(const state *s)
 
 	num_dispose(just_counter);
 	return 0;
+}
+
+/******************
+ * Warning support
+ ******************/
+enum ppp_warning ppp_get_warning_condition(const state *s)
+{
+	assert(s->codes_on_card > 0);
+
+	int tmp = mpz_cmp(s->current_card, s->latest_card);
+	if (tmp == 0)
+		return PPP_WARN_LAST_CARD;
+	if (tmp > 0)
+		return PPP_WARN_NOTHING_LEFT;
+
+	return PPP_WARN_OK;
+}
+
+const char *ppp_get_warning_message(enum ppp_warning warning)
+{
+	const char *nothing_left = "You have no passcodes left!";
+	const char *last_card = "You are on your last passcard!";
+
+	switch (warning) {
+	case PPP_WARN_OK:
+		return NULL;
+	case PPP_WARN_LAST_CARD:
+		return last_card;
+	case PPP_WARN_NOTHING_LEFT:
+		return nothing_left;
+	default:
+		assert(0);
+		return 0;
+	}
 }
 
 /****************************************

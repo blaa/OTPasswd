@@ -30,27 +30,44 @@ extern int ppp_get_passcode_number(
 	mpz_t passcode, char column, char row);
 
 /* Adds a salt to given passcode if salt is used */
+/* In other words: converts from user supplied passcode
+ * into system passcode number */
 extern void ppp_add_salt(const state *s, mpz_t passcode);
 
-/* Calculate a single passcode of given number using specified key */
+/* Calculate a single passcode of the given number using state key */
 extern int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode);
 
-/* Calculate card parameters and save them in state */
+/* Calculate card parameters and save them in state.  Required by many 
+ * (ppp_get_prompt, ppp_verify_range) functions to work. */
 extern void ppp_calculate(state *s);
-
-/* Generate prompt used for authentication; free returned value */
-extern const char *ppp_get_prompt(state *s);
-
-/* Clear and free prompt */
-extern void ppp_dispose_prompt(state *s);
-
-/* Try to authenticate user; returns 0 on successful authentication */
-extern int ppp_authenticate(const state *s, const char *passcode);
 
 /* Verify that counter (and key) is in correct range 
  * done usually after reading from the state file, when 
  * the data could be maliciously changed */
 extern int ppp_verify_range(const state *s);
+
+/* Generate prompt used for authentication
+ * Do not free returned value. It's stored in state
+ * and freed in state_fini.
+ */
+extern const char *ppp_get_prompt(state *s);
+
+/* Clear and free prompt */
+extern void ppp_dispose_prompt(state *s);
+
+enum ppp_warning{
+	PPP_WARN_OK = 0,		/* No warning condition */
+	PPP_WARN_LAST_CARD = 1,		/* User on last printed card */
+	PPP_WARN_NOTHING_LEFT = 2	/* Used up all passcodes */
+};
+extern enum ppp_warning ppp_get_warning_condition(const state *s);
+
+/* Return warning message for a warning condition */
+extern const char *ppp_get_warning_message(enum ppp_warning warning);
+
+
+/* Try to authenticate user; returns 0 on successful authentication */
+extern int ppp_authenticate(const state *s, const char *passcode);
 
 /* High level function used during authentication.
  * 1. Lock file

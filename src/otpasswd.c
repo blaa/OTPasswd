@@ -64,6 +64,8 @@ static void _usage(int argc, const char **argv)
 		"               Display authentication prompt for given passcode\n"
 		"  -a, --authenticate <passcode>\n"
 		"               Try to authenticate with given passcode\n"
+		"  -w, --warning\n"
+		"               Display warnings (ex. user on last passcard)\n"
 		"\n"
 		"Where <which> might be one of:\n"
 		"  number      - specify a passcode with a decimal number\n"
@@ -140,6 +142,7 @@ int process_cmd_line(int argc, char **argv)
 		{"latex",		required_argument,	0, 'l'},
 		{"prompt",		required_argument,	0, 'p'},
 		{"authenticate",	required_argument,	0, 'a'},
+		{"warning",		no_argument,		0, 'w'},
 
 		/* Flags */
 		{"flags",		required_argument,	0, 'f'},
@@ -156,14 +159,17 @@ int process_cmd_line(int argc, char **argv)
 	while (1) {
 		int option_index = 0;
 
-		int c = getopt_long(argc, argv, "ks:t:l:p:a:f:d:c:nv", long_options, &option_index);
+		int c = getopt_long(argc, argv, "ks:t:l:p:a:wf:d:c:nv", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1)
 			break;
 
 		switch (c) {
+			/* Argument-less actions */
+		case 'w':
 		case 'k':
+		case 'x':
 			if (options.action != 0) {
 				printf("Only one action can be specified on the command line\n");
 				exit(-1);
@@ -171,10 +177,15 @@ int process_cmd_line(int argc, char **argv)
 			options.action = c;
 			break;
 
+			/* Actions with argument */
 		case 's':
 		case 't':
 		case 'l':
 		case 'p':
+		case 'a':
+		case 'Q':
+		case 'd':
+		case 'c':
 			if (options.action != 0) {
 				printf("Only one action can be specified on the command line\n");
 				exit(-1);
@@ -182,24 +193,6 @@ int process_cmd_line(int argc, char **argv)
 			options.action = c;
 			options.action_arg = strdup(optarg);
 			/* Parse argument */
-			break;
-
-		case 'a':
-			if (options.action != 0) {
-				printf("Only one action can be specified on the command line\n");
-				exit(-1);
-			}
-			options.action = c;
-			options.action_arg = strdup(optarg);
-			break;
-
-		case 'Q':
-			if (options.action != 0) {
-				printf("Only one action can be specified on the command line\n");
-				exit(-1);
-			}
-
-			options.action = 'Q';
 			break;
 
 		case 'n':
@@ -212,17 +205,17 @@ int process_cmd_line(int argc, char **argv)
 			break;
 
 		case 'f':
-			if (options.action != 0) {
+			if (options.action != 0 && options.action != 'f') {
 				printf("Only one action can be specified on the command line\n");
 				exit(-1);
 			}
 
-			if (options.flag_set_mask) {
+			if (options.flag_set_mask & FLAG_NOT_SALTED) {
 				printf("-n option can only be passed during key creation!\n");
 				exit(-1);
 			}
 
-			options.action = 'f';
+
 			if (strcmp(optarg, "skip") == 0)
 				options.flag_set_mask |= FLAG_SKIP;
 			else if (strcmp(optarg, "dont-skip") == 0)
@@ -236,7 +229,12 @@ int process_cmd_line(int argc, char **argv)
 			else if (strcmp(optarg, "alphabet-extended") == 0)
 				options.flag_set_mask |= FLAG_ALPHABET_EXTENDED;
 			else if (strcmp(optarg, "list") == 0) {
-				/* Nothing */
+				if (options.action != 0) {
+					printf("Only one action can be specified on the command line\n"
+						"and you can't mix 'list' flag with other flags.\n");
+					exit(-1);
+				}
+
 				options.action = 'L'; /* List! Instead of changing flags */
 			} else {
 				int tmp;
@@ -248,30 +246,15 @@ int process_cmd_line(int argc, char **argv)
 					exit(1);
 				}
 			}
-			break;
 
-		case 'd':
-		case 'c':
-			if (options.action != 0) {
-				printf("Only one action can be specified on the command line\n");
-				exit(-1);
-			}
-			options.action = c;
-			options.action_arg = strdup(optarg);
+			if (options.action != 'L')
+				options.action = 'f';
 			break;
 
 		case '?':
 			/* getopt_long already printed an error message. */
 			_usage(argc, (const char **)argv);
 			exit(-1);
-			break;
-
-		case 'x':
-			if (options.action != 0) {
-				printf("Only one action can be specified on the command line\n");
-				exit(-1);
-			}
-			options.action = 'x';
 			break;
 
 		case 'v':
@@ -315,6 +298,7 @@ int process_cmd_line(int argc, char **argv)
 		action_license(&options);
 		break;
 
+	case 'w': /* Warning */
 	case 's':
 	case 't':
 	case 'l':

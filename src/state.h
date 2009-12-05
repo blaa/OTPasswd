@@ -93,14 +93,17 @@ typedef struct {
 	/*** Temporary / not-saved data ***/
 	char *prompt; /* Keep it here so we can safely dispose of it */
 
-	/* Salt helper. counter & salt_mask = salt while
-	 * counter & code_mask = passcode number 
+	/* Salt helper. Initialized in state_init.
+	 * counter & salt_mask = salt 
+	 * counter & code_mask = user passcode number 
 	 */
 	mpz_t salt_mask;
 	mpz_t code_mask;
 
 	/* Card information, calculated once for
 	 * simplicity by ppp_calculate and stored here.
+	 * (codes_on_card>0) can be checked to ensure this values
+	 * are correct.
 	 */
 	mpz_t current_card;		/* Card with current code */
 	mpz_t max_card;			/* Last available passcard (from 1) */
@@ -110,15 +113,16 @@ typedef struct {
 	unsigned char current_row;	/* 1 - 10 */
 	unsigned char current_column;	/* A ... */
 
+
 	/* Not necessarily part of a user state,
 	 * this is data used for storing/restoring
-	 * state information
+	 * state information.
 	 */
-
-	char *username;
+	char *username; /* User name  */
 	char *filename;	/* Path to state file    */
 	int fd;		/* State file descriptor */
-	int lock_fd;	/* Is the file locked?   */
+	int lock_fd;	/* Descriptor of state lock
+			 * will be < 0 if file not locked */
 	char *lockname; /* Name of lock filename, 
 			 * allocated/deallocated during locking */
 } state;

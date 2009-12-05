@@ -80,7 +80,7 @@ static int _enforced_yes_or_no(const char *msg)
 	return ret;
 }
 
-static int is_passcard_in_range(const state *s, const mpz_t passcard)
+static int _is_passcard_in_range(const state *s, const mpz_t passcard)
 {
 	/* 1..max_passcode/codes_on_passcard */
 	if (mpz_cmp_ui(passcard, 1) < 0) {
@@ -96,7 +96,7 @@ static int is_passcard_in_range(const state *s, const mpz_t passcard)
 	return 1;
 }
 
-static int is_passcode_in_range(const state *s, const mpz_t passcard)
+static int _is_passcode_in_range(const state *s, const mpz_t passcard)
 {
 	/* 1..max_which_depends_on_salt and passcard configuration */
 	if (mpz_cmp_ui(passcard, 1) < 0)
@@ -149,9 +149,26 @@ static void _show_flags(const state *s)
 
 static void _show_keys(const state *s)
 {
-	gmp_printf("Key         = %064ZX\n", s->sequence_key);
-	gmp_printf("Counter     = %032ZX\n", s->counter);
-	gmp_printf("Latest card = %Zd\n", s->latest_card);
+	assert(s->codes_on_card > 0);
+
+	mpz_t unsalted_counter;
+	mpz_init_set(unsalted_counter, s->counter);
+	if (!(s->flags & FLAG_NOT_SALTED)) {
+		mpz_and(unsalted_counter, unsalted_counter, s->code_mask);
+	} 
+	/* Convert to user numbering */
+	mpz_add_ui(unsalted_counter, unsalted_counter, 1); 
+
+	gmp_printf("Key     = %064ZX\n", s->sequence_key);
+	gmp_printf("Counter = %032ZX\n", s->counter);
+	gmp_printf("Current card        = %Zd\n", s->current_card);
+	gmp_printf("Current code        = %Zd\n", unsalted_counter);
+	gmp_printf("Latest printed card = %Zd\n", s->latest_card);
+	gmp_printf("Max card            = %Zd\n", s->max_card);
+	gmp_printf("Max code            = %Zd\n", s->max_code);
+
+	num_dispose(unsalted_counter);
+
 }
 
 /* Authenticate; returns boolean; 1 - authenticated */
@@ -342,6 +359,9 @@ void action_flags(options_t *options)
 		goto no_key_file;
 	}
 
+	/* Calculate additional passcard info */
+	ppp_calculate(&s);
+
 	switch(options->action) {
 	case 'f':
 		/* Change flags */
@@ -475,6 +495,22 @@ void action_print(options_t *options)
 	if (ret != 0)
 		counter_correct = 0;
 
+	/* Do we have to just show any warnings? */
+	if (options->action == 'w') {
+		int e = ppp_get_warning_condition(&s);
+		const char *warn = ppp_get_warning_message(e);
+		if (warn) {
+			const char *format = "* OTP WARNING: %s *\n";
+			/* Calculate length */
+			int a, c = snprintf(NULL, 0, format, warn);
+			/* Print boxed */
+			a = c; while (--a) putchar('*'); putchar('\n');
+			printf(format, warn);
+			a = c; while (--a) putchar('*'); putchar('\n');
+		}
+		goto cleanup;
+	}
+
 	/* Parse argument, we need card number + passcode number */
 	int code_selected = 0;
 	mpz_t passcard_num;
@@ -494,7 +530,7 @@ void action_print(options_t *options)
 		mpz_set(passcode_num, s.counter);
 
 	} else if (strcasecmp(options->action_arg, "next") == 0) {
-		/* Next passcard */
+		/* Next passcard. */
 		if (counter_correct == 0) {
 			printf( 
 			      "Passcode counter overflowed. "
@@ -504,12 +540,28 @@ void action_print(options_t *options)
 
 		code_selected = 0;
 
-		/* By 1 or by 6 for LaTeX */
-		mpz_add_ui(
-			s.latest_card,
-			s.latest_card,
-			options->action == 't' ? 1 : 6);
-		mpz_set(passcard_num, s.latest_card);
+		/* If current code is further than s->latest_card
+		 * Then ignore this setting and start printing 
+		 * from current_card */
+		if (mpz_cmp(s.current_card, s.latest_card) > 0) {
+			mpz_set(passcard_num, s.current_card);
+
+			/* Increment by 1 or by 6 for LaTeX */
+			if (options->action == 'l') {
+				mpz_add_ui(s.latest_card, s.current_card, 5);
+			} else {
+				mpz_set(s.latest_card, s.current_card);
+			}
+		} else {
+			mpz_add_ui(passcard_num, s.latest_card, 1);
+
+			/* Increment by 1 or by 6 for LaTeX */
+			mpz_add_ui(
+				s.latest_card,
+				s.latest_card,
+				options->action == 't' ? 1 : 6);
+		}
+
 		state_changed = 1;
 	} else if (isalpha(options->action_arg[0])) {
 		/* Format: CRR[number] */
@@ -529,7 +581,7 @@ void action_print(options_t *options)
 			goto cleanup1;
 		}
 
-		if (!is_passcard_in_range(&s, passcard_num)) {
+		if (!_is_passcard_in_range(&s, passcard_num)) {
 			printf(
 			      "Passcard number out of range. "
 			      "First passcard has number 1.\n");
@@ -564,7 +616,7 @@ void action_print(options_t *options)
 			goto cleanup1;
 		}
 
-		if (!is_passcode_in_range(&s, passcode_num)) {
+		if (!_is_passcode_in_range(&s, passcode_num)) {
 			printf("Passcode number out of range.\n");
 			goto cleanup1;
 		}
@@ -584,7 +636,7 @@ void action_print(options_t *options)
 			goto cleanup1;
 		}
 
-		if (!is_passcard_in_range(&s, passcard_num)) {
+		if (!_is_passcard_in_range(&s, passcard_num)) {
 			printf("Passcard out of accessible range.\n");
 			goto cleanup1;
 		}

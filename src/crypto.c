@@ -133,7 +133,7 @@ void crypto_print_hex(const unsigned char *data, const unsigned int length)
 
 int crypto_testcase(void)
 {
-	int failed;
+	int failed = 0;
 	int i;
 
 	unsigned char plain[] = 
