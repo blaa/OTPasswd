@@ -31,8 +31,9 @@
 #include "print.h"
 #include "crypto.h"
 #include "num.h"
+
+#define PPP_INTERNAL
 #include "ppp.h"
-#include "state.h"
 #include "passcards.h"
 
 #include "otpasswd_actions.h"
@@ -186,7 +187,7 @@ int action_authenticate(options_t *options)
 	}
 
 	/* Using locking load state, increment counter, and store new state */
-	retval = ppp_load_increment(&s);
+	retval = ppp_increment(&s);
 	switch (retval) {
 	case 0:
 		/* Everything fine */
@@ -769,8 +770,8 @@ cleanup:
 			}
 		}
 	}
-	state_fini(&s);
 	state_unlock(&s);
+	state_fini(&s);
 }
 
 

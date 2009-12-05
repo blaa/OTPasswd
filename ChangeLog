@@ -18,9 +18,15 @@ Trying to sort tasks according to their priority.
 	* [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
 		Seems ok. pam_unix defines pam_syslog as openlog, vsyslog,
 		closelog.
-	* [-] Warnings when on last passcard
+	* [+] Warnings when on last passcard
 	* [-] Calling external script for mailing/sms
 	* [%] GMP might leak information with reallocs of it's mpz_t
+	* [?] Cleanup PPP interface. This should look like follows.
+	      "State" is class implementing some basic features of 
+	      state management. From this 'class' ppp is derived.
+	      ppp implements high-level functions which should be used
+	      explicitly to manage state information unless something
+	      more fine-grained is necessary.
 	* [-] Keeping track of failures.
 	      Started (place in state files created)
 	* [-] Add information to state files about last usage of second

@@ -16,10 +16,12 @@
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
  **********************************************************************/
 
+#define PPP_INTERNAL 1
+
 #include "num.h"
 #include "crypto.h"
+
 #include "ppp.h"
-#include "state.h"
 #include "print.h"
 
 /* 64 characters -> 16 777 216 passcodes for length 4 */
@@ -303,7 +305,7 @@ int ppp_verify_range(const state *s)
 	if (mpz_cmp(s->sequence_key, max_key) > 0) {
 		print(PRINT_ERROR, "State file corrupted. Key number too big\n");
 		num_dispose(max_key);
-		return 2;
+		return STATE_RANGE;
 	}
 	num_dispose(max_key);
 
@@ -316,7 +318,7 @@ int ppp_verify_range(const state *s)
 	if (mpz_cmp(s->counter, max_counter) > 0) {
 		print(PRINT_ERROR, "State file corrupted. Counter number too big\n");
 		num_dispose(max_counter);
-		return 2;
+		return STATE_RANGE;
 	}
 	num_dispose(max_counter);
 
@@ -336,7 +338,7 @@ int ppp_verify_range(const state *s)
 	if (mpz_cmp(just_counter, s->max_code) >= 0) {
 		/* Whoops */
 		num_dispose(just_counter);
-		return 1;
+		return STATE_NUMSPACE;
 	}
 
 	num_dispose(just_counter);
@@ -346,7 +348,7 @@ int ppp_verify_range(const state *s)
 /******************
  * Warning support
  ******************/
-enum ppp_warning ppp_get_warning_condition(const state *s)
+int ppp_get_warning_condition(const state *s)
 {
 	assert(s->codes_on_card > 0);
 
@@ -380,98 +382,148 @@ const char *ppp_get_warning_message(enum ppp_warning warning)
 /****************************************
  * High-level state management functions
  ****************************************/
-int ppp_load_increment(state *s)
+int ppp_init(state **s, const char *user)
+{
+	int ret;
+	*s = malloc(sizeof(**s));
+	if (!*s)
+		return PPP_NOMEM;
+	ret = state_init(*s, user, NULL);
+
+	if (ret == 0)
+		return 0;
+
+	free(*s);
+	*s = NULL;
+
+	return ret;
+}
+
+void ppp_fini(state *s)
+{
+	if (s->lock_fd > 0)
+		state_unlock(s);
+	state_fini(s);
+}
+
+
+int ppp_load(state *s)
+{
+	int retval = 1;
+
+	/* Locking */
+	retval = state_lock(s);
+	if (retval != 0)
+		return retval;
+
+	/* Loading... */
+	retval = state_load(s);
+	if (retval != 0)
+		goto cleanup1;
+
+	/* Calculation and validation */
+	ppp_calculate(s);
+	
+	retval = ppp_verify_range(s);
+	if (retval != 0) {
+		goto cleanup1;
+	}
+	
+	/* Everything fine */
+	return 0;
+
+cleanup1:
+	state_unlock(s);
+	return retval;
+}
+
+int ppp_is_flag(const state *s, int flag)
+{
+	return s->flags & flag;
+}
+
+int ppp_release(state *s, int store, int unlock)
+{
+	int retval = 0;
+
+	if (store && state_store(s) != 0) {
+		print(PRINT_ERROR, "Error while storing state file\n");
+		retval++;
+	}
+
+	if (unlock && state_unlock(s) != 0) {
+		print(PRINT_ERROR, "Error while unlocking state file\n");
+		retval++;
+	}
+
+	return retval;
+}
+
+int ppp_increment(state *s)
 {
 	int ret;
 
-	if (state_lock(s) != 0)
-		return STATE_LOCK_ERROR;
+	/* Load user state */
+	ret = ppp_load(s);
+	if (ret != 0) 
+		return ret;
 
-	ret = state_load(s);
-	if (ret != 0)
-		goto cleanup1;
-
-	/* At this point we must know whether
-	 * we still have any passcodes. Counter might 
-	 * be set to 2^128 or 2^32 and after incrementing 
-	 * it will modify salt or overflow 
-	 */
-	ppp_calculate(s);
-	
-	if (ppp_verify_range(s) != 0) {
-		ret = STATE_NUMSPACE;
-		goto cleanup1;
-	}
-
-	/* Store current counter */
+	/* Hold temporarily current counter */
 	mpz_t tmp;
-	mpz_init(tmp);
-	mpz_set(tmp, s->counter);
+	mpz_init_set(tmp, s->counter);
 
 	/* Increment and save state */
 	mpz_add_ui(s->counter, s->counter, 1);
 
-	ret = state_store(s);
-	if (ret != 0) {
-		goto cleanup2;
-	}
+	/* We will return it's return value if anything failed */
+	ret = ppp_release(s, 1, 1);
 
 	/* Restore current counter */
 	mpz_set(s->counter, tmp);
 
 
-cleanup2:
 	num_dispose(tmp);
-
-cleanup1:
-	state_unlock(s);
 	return ret;
 }
 
-int ppp_load_decrement(state *s)
+int ppp_decrement(state *s)
 {
-	state s_tmp; /* Second state, so we won't clobber current one */
+	state *s_tmp; /* Second state, so we won't clobber current one */
 	int ret = 1;
 
-	if (state_init(&s_tmp, s->username, NULL) != 0)
+	if (ppp_init(&s_tmp, s->username) != 0)
 		return 1;
 
-	/* It doesn't matter which state we will lock */
-	if (state_lock(&s_tmp) != 0) {
-		ret = STATE_LOCK_ERROR;
-		goto cleanup0;
-	}
+	/* Load state from disk */
+	ret = ppp_load(s_tmp);
+	if (ret != 0)
+		goto cleanup;
 
-	/* Read state file */
-	if (state_load(&s_tmp) != 0)
-		goto cleanup1;
-
-	/* freshly read counter must be bigger by 1
+	/* Freshly read counter must be bigger by 1
 	 * to continue, so decrement it and compare... */
-	mpz_sub_ui(s_tmp.counter, s_tmp.counter, 1);
+	mpz_sub_ui(s_tmp->counter, s_tmp->counter, 1);
 
-	if (mpz_cmp(s_tmp.counter, s->counter) != 0) {
+	if (mpz_cmp(s_tmp->counter, s->counter) != 0) {
 		/* Whoops, in the meantime somebody else
 		 * tried to authenticate! */
 		print(PRINT_NOTICE,
-		      "load_decrement failed, file "
+		      "Load/decrement failed, file "
 		      "modified in the meantime!\n");
 		ret = 2;
-		goto cleanup1;
+		goto cleanup;
 	}
 
-	/* Didn't changed, store */
-	if (state_store(s) != 0) {
+	/* Didn't changed, store state with decremented counter */
+	ret = ppp_release(s_tmp, 1, 1);
+	if (ret != 0) {
 		print(PRINT_WARN, "Unable to save decremented state\n");
-		goto cleanup1;
+		goto cleanup;
 	}
 	
 	ret = 0; /* Everything ok */
 
-cleanup1: 
-	state_unlock(&s_tmp);
-cleanup0:
-	state_fini(&s_tmp);
+cleanup:
+	ppp_fini(s_tmp);
 
 	return ret;
 }
@@ -633,7 +685,7 @@ static int _ppp_testcase_authenticate(const char *passcode)
 	}
 
 	/* Using locking load state, increment counter, and store new state */
-	retval = ppp_load_increment(&s);
+	retval = ppp_increment(&s);
 	switch (retval) {
 	case 0:
 		printf("LOAD_INC_STORE=OK\n");

@@ -29,14 +29,10 @@
 
 #include <syslog.h>
 
-
-#include "state.h"
-
 #include "print.h"
-#include "state.h"
 #include "ppp.h"
 
-static void pam_show_message(pam_handle_t *pamh, int flags, const char *msg)
+static void _show_message(pam_handle_t *pamh, int flags, const char *msg)
 {
 	/* Required for communication with user */
 	struct pam_conv *conversation;
@@ -61,7 +57,7 @@ static void pam_show_message(pam_handle_t *pamh, int flags, const char *msg)
 
 }
 
-static int pam_handle_load(pam_handle_t *pamh, int flags, int enforced, state *s)
+static int _handle_load(pam_handle_t *pamh, int flags, int enforced, state *s)
 {
 	const char enforced_msg[] = "otpasswd: Key not generated, unable to login.";
 	const char lock_msg[] = "otpasswd: Unable to lock user state file.";
@@ -69,18 +65,18 @@ static int pam_handle_load(pam_handle_t *pamh, int flags, int enforced, state *s
 		"otpasswd: Passcode counter overflowed or state "
 		"file corrupted. Regenerate key.";
 
-	switch (ppp_load_increment(s)) {
+	switch (ppp_increment(s)) {
 	case 0:
 		/* Everything fine */
 		return 0;
 		
 	case STATE_NUMSPACE:
 		/* Strange error, might happen, but, huh! */
-		pam_show_message(pamh, flags, numspace_msg);
+		_show_message(pamh, flags, numspace_msg);
 		return PAM_AUTH_ERR;
 		
 	case STATE_LOCK_ERROR:
-		pam_show_message(pamh, flags, lock_msg);
+		_show_message(pamh, flags, lock_msg);
 		return PAM_AUTH_ERR;
 
 	case STATE_DOESNT_EXISTS:
@@ -88,7 +84,7 @@ static int pam_handle_load(pam_handle_t *pamh, int flags, int enforced, state *s
 			/* Not enforced - ignore */
 			return PAM_IGNORE;
 		} else {
-			pam_show_message(pamh, flags, enforced_msg);
+			_show_message(pamh, flags, enforced_msg);
 		}
 		
 		/* Fall-throught */
@@ -113,7 +109,7 @@ static struct pam_response *pam_query_user(pam_handle_t *pamh, int flags, int sh
 	/* Echo on if enforced by "show" option or enabled by user
 	 * and not disabled by "noshow" option 
 	 */
-	if ((show == 2) || (show == 1 && (s->flags & FLAG_SHOW))) {
+	if ((show == 2) || (show == 1 && (ppp_is_flag(s, FLAG_SHOW)))) {
 		message.msg_style = PAM_PROMPT_ECHO_ON;
 	} else {
 		message.msg_style = PAM_PROMPT_ECHO_OFF;
@@ -141,7 +137,7 @@ PAM_EXTERN int pam_sm_authenticate(
 	const char *prompt = NULL;
 
 	/* OTP State */
-	state s;
+	state *s;
 
 	/* Required for communication with user */
 	struct pam_response *resp = NULL;
@@ -202,8 +198,8 @@ PAM_EXTERN int pam_sm_authenticate(
 		return PAM_USER_UNKNOWN;
 	}
 
-	/* Initialize state with given username, and default config file */
-	if (state_init(&s, user, NULL) != 0) {
+	/* Initialize state with given username */
+	if (ppp_init(&s, user) != 0) {
 		/* This will fail if we're unable to locate home directory */
 		return PAM_USER_UNKNOWN;
 	}
@@ -213,13 +209,13 @@ PAM_EXTERN int pam_sm_authenticate(
 	for (tries = 0; tries < (retry == 0 ? 1 : 3); tries++) {
 		if (tries == 0 || retry == 1) {
 			/* First time or we are retrying while changing the password */
-			retval = pam_handle_load(pamh, flags, enforced, &s);
+			retval = _handle_load(pamh, flags, enforced, s);
 			if (retval != 0)
 				goto cleanup;
 
 			/* Generate prompt */
-			ppp_calculate(&s);
-			prompt = ppp_get_prompt(&s);
+			ppp_calculate(s);
+			prompt = ppp_get_prompt(s);
 			if (!prompt) {
 				print(PRINT_ERROR, "Error while generating prompt\n");
 				retval = PAM_AUTH_ERR;
@@ -227,7 +223,7 @@ PAM_EXTERN int pam_sm_authenticate(
 			}
 		}
 
-		resp = pam_query_user(pamh, flags, show, prompt, &s);
+		resp = pam_query_user(pamh, flags, show, prompt, s);
 
 		retval = PAM_AUTH_ERR; 
 		if (!resp) {
@@ -235,7 +231,7 @@ PAM_EXTERN int pam_sm_authenticate(
 			goto cleanup;
 		}
 
-		if (ppp_authenticate(&s, resp[0].resp) == 0) {
+		if (ppp_authenticate(s, resp[0].resp) == 0) {
 			_pam_drop_reply(resp, 1);
 			
 			/* Correctly authenticated */
@@ -244,10 +240,10 @@ PAM_EXTERN int pam_sm_authenticate(
 		}
 
 		/* Error during authentication */
-		print(PRINT_NOTICE, "secure %d retry %d flags %d\n", secure, retry, s.flags);
-		if (retry == 0 && secure == 0 && !(s.flags & FLAG_SKIP)) {
+		print(PRINT_NOTICE, "secure %d retry %d\n", secure, retry);
+		if (retry == 0 && secure == 0 && ppp_is_flag(s, FLAG_SKIP) == 0) {
 			/* Decrement counter */
-			retval = ppp_load_decrement(&s);
+			retval = ppp_decrement(s);
 			if (retval != 0) {
 				retval = PAM_AUTH_ERR;
 				print(PRINT_WARN, "Error while decrementing\n");
@@ -259,7 +255,7 @@ PAM_EXTERN int pam_sm_authenticate(
 	}
 
 cleanup:
-	state_fini(&s);
+	ppp_fini(s);
 	print_fini();
 	return retval;
 }
@@ -267,8 +263,7 @@ cleanup:
 PAM_EXTERN int pam_sm_open_session(
 	pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-	int retval = PAM_IGNORE;
-	return retval;
+	return PAM_IGNORE;
 }
 
 

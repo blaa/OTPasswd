@@ -22,11 +22,11 @@
 #include <unistd.h>
 #include <gmp.h>
 
+#define PPP_INTERNAL 1
 #include "print.h"
 #include "num.h"
 #include "crypto.h"
 #include "ppp.h"
-#include "state.h"
 #include "passcards.h"
 
 char *card_ascii(const state *s, const mpz_t passcard)

@@ -20,7 +20,14 @@
 #define _PPP_H_
 
 #include <gmp.h>
-#include "state.h"
+#include "ppp_common.h"
+
+#ifdef PPP_INTERNAL
+#	include "state.h"
+#else
+typedef struct state state;
+
+#endif
 
 /* Decode external card number and XY code position into a counter 
  * This function decreases passcard by one.
@@ -55,12 +62,13 @@ extern const char *ppp_get_prompt(state *s);
 /* Clear and free prompt */
 extern void ppp_dispose_prompt(state *s);
 
+
 enum ppp_warning{
 	PPP_WARN_OK = 0,		/* No warning condition */
 	PPP_WARN_LAST_CARD = 1,		/* User on last printed card */
 	PPP_WARN_NOTHING_LEFT = 2	/* Used up all passcodes */
 };
-extern enum ppp_warning ppp_get_warning_condition(const state *s);
+extern int ppp_get_warning_condition(const state *s);
 
 /* Return warning message for a warning condition */
 extern const char *ppp_get_warning_message(enum ppp_warning warning);
@@ -69,7 +77,31 @@ extern const char *ppp_get_warning_message(enum ppp_warning warning);
 /* Try to authenticate user; returns 0 on successful authentication */
 extern int ppp_authenticate(const state *s, const char *passcode);
 
-/* High level function used during authentication.
+/*******************************************
+ * High level functions for state management
+ *******************************************/
+
+/* Currently just call low-level interface */
+extern int ppp_init(state **s, const char *user);
+extern void ppp_fini(state *s);
+
+extern int ppp_is_flag(const state *s, int flag);
+
+/*
+ * Lock state
+ * Load state 
+ * Calculate PPP data (passcard sizes etc.)
+ */
+extern int ppp_load(state *s);
+
+/*
+ * Assert lock
+ * Store file if requested
+ * Unlock if requested
+ */
+extern int ppp_release(state *s, int store, int unlock);
+
+/*
  * 1. Lock file
  * 2a. Open it
  * 2b. Verify that we still can perform authentication
@@ -79,12 +111,15 @@ extern int ppp_authenticate(const state *s, const char *passcode);
  *
  * It also calls ppp_calculate();
  */
-extern int ppp_load_increment(state *s);
+extern int ppp_increment(state *s);
 
-/* Locked read, compare and decrement
- *
+/* Locked
+ * Read
+ * Decrement counter
+ * Compare with current
+ * Store decremented if nobody tried to authenticate in the meantime
  */
-extern int ppp_load_decrement(state *s);
+extern int ppp_decrement(state *s);
 
 extern int ppp_testcase(void);
 

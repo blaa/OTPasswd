@@ -28,9 +28,11 @@
 #include "print.h"
 #include "crypto.h"
 #include "num.h"
-#include "ppp.h"
-#include "state.h"
+
 #include "passcards.h"
+
+#define PPP_INTERNAL
+#include "ppp.h"
 
 #include "otpasswd_actions.h"
 
