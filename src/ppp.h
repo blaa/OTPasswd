@@ -62,6 +62,11 @@ extern const char *ppp_get_prompt(state *s);
 /* Clear and free prompt */
 extern void ppp_dispose_prompt(state *s);
 
+/* Return current passcode */
+extern int ppp_get_current(const state *s, char *passcode);
+
+/* Get contact info */
+const char *ppp_get_contact(const state *s);
 
 enum ppp_warning{
 	PPP_WARN_OK = 0,		/* No warning condition */

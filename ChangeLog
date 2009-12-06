@@ -50,6 +50,12 @@ Trying to sort tasks according to their priority.
 	* [?] Use locales for user messages [_("")? ]
 	* [?] Improve LaTeX output (some colors, borders?)
         * [?] Incorporate SSH key fingerprints on passcards?
+	* [?] Config file in /etc/security
+	      pam_access parses this file itself; samba(winbind) uses
+	      iniparser library (on MIT license)
+	* [%] Ensure that PAM session can display warning in three calls
+	      to conversation function. If not, we must build a buffer
+	      (See for example how winscp shows that warning)
 
 	To be removed:
 	* [-] Single-authentication/locking per user option to prevent DoS

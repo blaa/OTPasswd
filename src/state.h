@@ -28,13 +28,6 @@
 /* Base for storing big numbers inside STATE_FILENAME */
 #define STATE_BASE	62
 
-/* Size of fields */
-#define STATE_LABEL_SIZE 30
-#define STATE_CONTACT_SIZE 60
-#define STATE_STATIC_SIZE 32 /* binary SHA256 of static password */
-#define STATE_ENTRY_SIZE 512 /* Maximal size of a valid state entry (single line) */
-#define ROWS_PER_CARD 10
-
 
 /*** State ***/
 typedef struct {

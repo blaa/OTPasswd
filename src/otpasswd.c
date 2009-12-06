@@ -169,6 +169,7 @@ int process_cmd_line(int argc, char **argv)
 
 		switch (c) {
 			/* Argument-less actions */
+		case 'Q':
 		case 'w':
 		case 'k':
 		case 'x':
@@ -185,7 +186,6 @@ int process_cmd_line(int argc, char **argv)
 		case 'l':
 		case 'p':
 		case 'a':
-		case 'Q':
 		case 'd':
 		case 'c':
 			if (options.action != 0) {
@@ -193,8 +193,11 @@ int process_cmd_line(int argc, char **argv)
 				exit(-1);
 			}
 			options.action = c;
-			options.action_arg = strdup(optarg);
-			/* Parse argument */
+
+			if (optarg) 
+				options.action_arg = strdup(optarg);
+			else
+				options.action_arg = NULL;
 			break;
 
 		case 'n':
@@ -217,6 +220,7 @@ int process_cmd_line(int argc, char **argv)
 				exit(-1);
 			}
 
+			assert(optarg != NULL);
 
 			if (strcmp(optarg, "skip") == 0)
 				options.flag_set_mask |= FLAG_SKIP;

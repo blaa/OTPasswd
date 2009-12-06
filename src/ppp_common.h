@@ -1,6 +1,13 @@
 #ifndef _PPP_COMMON_H_
 #define _PPP_COMMON_H_
 
+/* Size of fields */
+#define STATE_LABEL_SIZE 30
+#define STATE_CONTACT_SIZE 60
+#define STATE_STATIC_SIZE 32 /* binary SHA256 of static password */
+#define STATE_ENTRY_SIZE 512 /* Maximal size of a valid state entry (single line) */
+#define ROWS_PER_CARD 10
+
 /* We must distinguish between locking problems (critical)
  * and non-existant state file (usually not critical) */
 enum errors {

@@ -34,7 +34,6 @@
  * Helper functions for managing state files
  *
  ********************************************/
-
 int state_validate_str(const char *str)
 {
 	const int len = strlen(str);

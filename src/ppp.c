@@ -35,7 +35,7 @@ const char alphabet_extended[] =
 	"!\"#$%&'()*+,-./23456789:;<=>?@ABCDEFGHJKLMNO"
 	"PRSTUVWXYZ[\\]^_abcdefghijkmnopqrstuvwxyz{|}~";
 
-void ppp_add_salt(const state *s, mpz_t passcode) 
+void ppp_add_salt(const state *s, mpz_t passcode)
 {
 	if (!(s->flags & FLAG_NOT_SALTED)) {
 		mpz_t salt;
@@ -171,7 +171,7 @@ const char *ppp_get_prompt(state *s)
 
 	int ret = sprintf(s->prompt, "%s%2d%c [%s]: ", intro, s->current_row, s->current_column, num);
 
-	memset(num, 0, strlen(num)); 
+	memset(num, 0, strlen(num));
 	free(num);
 	num = NULL;
 
@@ -186,7 +186,23 @@ const char *ppp_get_prompt(state *s)
 	return s->prompt;
 }
 
-int ppp_authenticate(const state *s, const char *passcode) 
+int ppp_get_current(const state *s, char *passcode)
+{
+	if (passcode == NULL)
+		return 1;
+
+	if (ppp_get_passcode(s, s->counter, passcode) != 0)
+		return 2;
+
+	return 0;
+}
+
+const char *ppp_get_contact(const state *s)
+{
+	return s->contact;
+}
+
+int ppp_authenticate(const state *s, const char *passcode)
 {
 	char current_passcode[17];
 
@@ -244,7 +260,7 @@ void ppp_calculate(state *s)
 	mpz_init_set(unsalted_counter, s->counter);
 	if (!(s->flags & FLAG_NOT_SALTED)) {
 		mpz_and(unsalted_counter, unsalted_counter, s->code_mask);
-	} 
+	}
 
 	unsigned long int r = mpz_fdiv_q_ui(s->current_card, unsalted_counter, s->codes_on_card);
 	mpz_add_ui(s->current_card, s->current_card, 1);
@@ -269,9 +285,9 @@ void ppp_calculate(state *s)
 
 	mpz_div_ui(s->max_card, s->max_card, s->codes_on_card);
 
-	/* s->max_card is now technically correct, but 
-	 * we must be sure, that the last passcode is not 
-	 * the last from number namespace, like 2^128-1 when 
+	/* s->max_card is now technically correct, but
+	 * we must be sure, that the last passcode is not
+	 * the last from number namespace, like 2^128-1 when
 	 * using not-salted key.
 	 * This should not happen... but, just for the sake
 	 * of simplicity.
@@ -296,7 +312,7 @@ int ppp_verify_range(const state *s)
 	assert(s->codes_on_card > 0);
 
 	/* Verify key size */
-	const char max_key_hex[] = 
+	const char max_key_hex[] =
 		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
 		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
 	mpz_t max_key;
@@ -310,7 +326,7 @@ int ppp_verify_range(const state *s)
 	num_dispose(max_key);
 
 	/* Verify counter size */
-	const char max_counter_hex[] = 
+	const char max_counter_hex[] =
 		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
 	mpz_t max_counter;
 	mpz_init_set_str(max_counter, max_counter_hex, 16);
@@ -325,7 +341,7 @@ int ppp_verify_range(const state *s)
 	/* Check if we have runned out of available passcodes */
 
 	/* Retrieve current counter without salt */
-	mpz_t just_counter; 
+	mpz_t just_counter;
 	mpz_init(just_counter);
 	if (s->flags & FLAG_NOT_SALTED) {
 		mpz_set(just_counter, s->counter);
@@ -363,8 +379,8 @@ int ppp_get_warning_condition(const state *s)
 
 const char *ppp_get_warning_message(enum ppp_warning warning)
 {
-	const char *nothing_left = "You have no passcodes left!";
-	const char *last_card = "You are on your last passcard!";
+	const char *nothing_left = "You have no printed passcodes left!";
+	const char *last_card = "You are on your last printed passcard!";
 
 	switch (warning) {
 	case PPP_WARN_OK:
@@ -423,12 +439,12 @@ int ppp_load(state *s)
 
 	/* Calculation and validation */
 	ppp_calculate(s);
-	
+
 	retval = ppp_verify_range(s);
 	if (retval != 0) {
 		goto cleanup1;
 	}
-	
+
 	/* Everything fine */
 	return 0;
 
@@ -465,7 +481,7 @@ int ppp_increment(state *s)
 
 	/* Load user state */
 	ret = ppp_load(s);
-	if (ret != 0) 
+	if (ret != 0)
 		return ret;
 
 	/* Hold temporarily current counter */
@@ -519,7 +535,7 @@ int ppp_decrement(state *s)
 		print(PRINT_WARN, "Unable to save decremented state\n");
 		goto cleanup;
 	}
-	
+
 	ret = 0; /* Everything ok */
 
 cleanup:
@@ -535,8 +551,8 @@ cleanup:
 
 static int _ppp_testcase_statistical(const state *s, const int alphabet_len, const int code_length, const int tests)
 {
-	/* Calculate distribution of 1s and 0s in 
-	 * generated passcodes for specified state key 
+	/* Calculate distribution of 1s and 0s in
+	 * generated passcodes for specified state key
 	 */
 	int bits_to_test;
 	int bits_in_character;
@@ -551,7 +567,7 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 	unsigned long zeroes[130] = {0};
 	unsigned long ones[130] = {0};
 
-	/* 6 is number of bits in a 
+	/* 6 is number of bits in a
 	 * character of 64-letter alphabet */
 
 	unsigned char key_bin[32];
@@ -592,10 +608,10 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 		for (i=0; i<code_length; i++) {
 			unsigned long int r = mpz_fdiv_q_ui(quotient, cipher, alphabet_len);
 			mpz_set(cipher, quotient);
-			
+
 			// calculate things in r
 			for (y=0; y<bits_in_character; y++) {
-				if (r & (1<<y)) 
+				if (r & (1<<y))
 					ones[bit]++;
 				else
 					zeroes[bit]++;
@@ -635,7 +651,7 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 	double rel_err0 = average0 / perfect;
 	printf("Absolute error: 1/0: %.10f %.10f\n", abs_err1, abs_err0);
 	printf("Relative error: 1/0: %.10f %.10f\n", rel_err1, rel_err0);
-	
+
 	if (rel_err1 > 1.001 || rel_err1 < 0.999 || rel_err0 > 1.001 || rel_err0 < 0.999) {
 		printf("ppp_testcase_stat: FAILED. Too big average relative errors!\n");
 		failed++;
@@ -675,7 +691,7 @@ static int _ppp_testcase_authenticate(const char *passcode)
 
 	printf("*** Authenticate testcase\n");
 	print_init(PRINT_NOTICE, 1, 1, "/tmp/otpasswd_dbg");
-	
+
 	/* Initialize state with given username, and default config file */
 	if (state_init(&s, NULL, ".otpasswd_testcase") != 0) {
 		/* This will fail if we're unable to locate home directory */
@@ -702,7 +718,7 @@ static int _ppp_testcase_authenticate(const char *passcode)
 			goto cleanup;
 		}
 
-		
+
 	default: /* Any other problem - error */
 		printf("STATE_LOAD_INC_STORE FAILED\n");
 		goto cleanup;
@@ -718,7 +734,7 @@ static int _ppp_testcase_authenticate(const char *passcode)
 	}
 
 	if (ppp_authenticate(&s, passcode) == 0) {
-			
+
 		/* Correctly authenticated */
 		printf("AUTHENTICATION SUCCESSFULL\n");
 		retval = 1;
@@ -838,7 +854,7 @@ int ppp_testcase(void)
 	}
 	state_store(&s);
 	state_fini(&s);
-	
+
 	printf("Should succeed:\n");
 	if (_ppp_testcase_authenticate("NH7j") == 0) { /* Check if returned true */
 		failed++;

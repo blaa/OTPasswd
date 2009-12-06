@@ -196,16 +196,18 @@ retry=X  - This configures retry behaviour during single authentication:
 
 
 and few more are proposed and _might_be_ implemented in future:
-usechannel=X  - Configures a 'second-channel' (for example an email or sms)
+oob=X         - Configures a 'out-of-band' communication over a
+                secure 'second-channel' (for example an email or sms)
                 used for sending user current passcode.
                 X:  Behaviour:
                 0Don't use other channel (default)
                 1Always use channel
                 2Use if requested
                 Enabling channel also requires second option:
-channel=X     - X is full-path to script or a program which will be given
+oob_path=X    - X is full-path to script or a program which will be given
                 two parameters on input. User contact information and
                 current prompt + correct passcode.
+		Script should be owned by nobody and only by nobody executable.
                 This program operates this 'second-channel' so he might for
                 example send a SMS to the user.
 
