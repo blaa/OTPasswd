@@ -110,7 +110,8 @@ feasible, it still can be used to hijack authenticated sessions.
 
 To securely log into a system with SSH you still must have a trusted
 ssh client software (from pendrive?) and validate server key
-fingerprint. 
+fingerprint. Beware also man-from-behind attacks when you're banged in the head
+after authenticating.
 
 b. Contact
 ----------

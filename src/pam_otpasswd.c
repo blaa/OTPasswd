@@ -95,7 +95,7 @@ static int _handle_load(pam_handle_t *pamh, int flags, int enforced, state *s)
 
 }
 
-static struct pam_response *pam_query_user(pam_handle_t *pamh, int flags, int show, const char *prompt, const state *s)
+static struct pam_response *_query_user(pam_handle_t *pamh, int flags, int show, const char *prompt, const state *s)
 {
 	/* Required for communication with user */
 	struct pam_conv *conversation;
@@ -175,10 +175,6 @@ static int _parse_options(options *opt, int argc, const char **argv)
 			return PAM_AUTH_ERR;
 		}
 	}
-	if (opt->debug) {
-		print(PRINT_NOTICE, "otpasswd config: enforced=%d show=%d secure=%d retry=%d\n",
-		      opt->enforced, opt->show, opt->secure, opt->retry);
-	}
 	return 0;
 }
 
@@ -195,7 +191,10 @@ static int _init(pam_handle_t *pamh, int argc, const char **argv, options *opt, 
 
 	/* Parse options */
 	retval = _parse_options(opt, argc, argv);
-	print_fini(); /* Close bootstrapped logging */
+
+	/* Close bootstrapped logging */
+	print_fini(); 
+
 	if (retval != 0) {
 		return retval;
 	}
@@ -277,11 +276,12 @@ PAM_EXTERN int pam_sm_authenticate(
 			}
 		}
 
-		resp = pam_query_user(pamh, flags, opt.show, prompt, s);
+		resp = _query_user(pamh, flags, opt.show, prompt, s);
 
 		retval = PAM_AUTH_ERR; 
 		if (!resp) {
 			/* No response? */
+			print(PRINT_NOTICE, "No response from user during auth.\n");
 			goto cleanup;
 		}
 
@@ -290,6 +290,7 @@ PAM_EXTERN int pam_sm_authenticate(
 			
 			/* Correctly authenticated */
 			retval = PAM_SUCCESS;
+			print(PRINT_NOTICE, "Authentication succeded\n");
 			goto cleanup;
 		}
 
@@ -306,8 +307,11 @@ PAM_EXTERN int pam_sm_authenticate(
 		retval = PAM_AUTH_ERR;
 	}
 
+	print(PRINT_NOTICE, "Authentication failed\n");
+
 cleanup:
 	ppp_fini(s);
+	print(PRINT_NOTICE, "otpasswd finished\n");
 	print_fini();
 	return retval;
 }
@@ -315,7 +319,68 @@ cleanup:
 PAM_EXTERN int pam_sm_open_session(
 	pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-	return PAM_IGNORE;
+	int retval;
+
+	/* OTP State */
+	state *s;
+
+	/* Parameters */
+	options opt;
+
+	/* Initialize */
+	retval = _init(pamh, argc, argv, &opt, &s);
+	if (retval != 0)
+		return retval;
+
+	print(PRINT_NOTICE, "(session) entrance\n");
+
+	if (ppp_load(s) != 0)
+		goto exit;
+
+	print(PRINT_NOTICE, "(session) state loaded\n");
+
+	int err = ppp_get_warning_condition(s);
+	if (err == 0) {
+		/* No warnings! */
+		print(PRINT_NOTICE, "(session) no warning to be printed\n");
+		goto cleanup;
+	}
+
+	const char *msg = ppp_get_warning_message(err);
+
+	if (!msg) {
+		/* Should never happen */
+		print(PRINT_NOTICE, "(session) no warning returned\n");
+		goto cleanup;
+	}
+
+	/* Generate message */
+	char buff_msg[200], buff_ast[200];
+	int len, i;
+
+	len = snprintf(buff_msg, sizeof(buff_msg), "* WARNING: %s *", msg);
+	if (len < 10) {
+		print(PRINT_ERROR, "(session) sprintf error\n");
+		goto cleanup;
+	}
+
+	for (i=0; i<len && i < sizeof(buff_ast)-1; i++)
+		buff_ast[i] = '*';
+	buff_ast[i] = '\0';
+	_show_message(pamh, flags, buff_ast);
+	_show_message(pamh, flags, buff_msg);
+	_show_message(pamh, flags, buff_ast);
+
+cleanup:
+	ppp_release(s, 0, 1); /* Unlock, do not store */
+exit:
+	ppp_fini(s);
+
+	print(PRINT_NOTICE, "otpasswd finished\n");
+	print_fini();
+
+	/* Ignore us, even if we fail. */
+	return PAM_SUCCESS; 
 }
 
 

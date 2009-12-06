@@ -19,6 +19,9 @@ Trying to sort tasks according to their priority.
 		Seems ok. pam_unix defines pam_syslog as openlog, vsyslog,
 		closelog.
 	* [+] Warnings when on last passcard
+	* [+] Add information to state files about last usage of second
+              channel. Important to limit number of e.g. sent sms.
+	      Second-channel itself still not implemented
 	* [-] Calling external script for mailing/sms
 	* [%] GMP might leak information with reallocs of it's mpz_t
 	* [?] Cleanup PPP interface. This should look like follows.
@@ -29,8 +32,6 @@ Trying to sort tasks according to their priority.
 	      more fine-grained is necessary.
 	* [-] Keeping track of failures.
 	      Started (place in state files created)
-	* [-] Add information to state files about last usage of second
-              channel. Important to limit number of e.g. sent sms.
 	* [-] Implement static passwords;
 		They might be required always or just to perform some commands
 		like second-channel usage.
