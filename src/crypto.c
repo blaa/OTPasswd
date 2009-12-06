@@ -29,6 +29,8 @@ int crypto_rng(unsigned char *buff, const int size, int secure)
 	const int seed_size = 20;
 	int ret;
 
+	// ret = RAND_load_file("/etc/passwd", -1);
+
 	if (secure) 
 		ret = RAND_load_file("/dev/random", seed_size);
 	else 
@@ -36,6 +38,8 @@ int crypto_rng(unsigned char *buff, const int size, int secure)
 
 	if (ret != seed_size)
 		return 1;
+
+	assert(RAND_status() == 1);
 
 	if (RAND_bytes(buff, size) != 1) {
 		RAND_cleanup();

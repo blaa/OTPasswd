@@ -274,13 +274,9 @@ static int _rng_read(const char *device, const char *msg, unsigned char *buf, co
 		return 1;
 	}
 
-	puts(
-		"Hint: Move your mouse, cause some disc activity (`find /` is good)\n"
-		"or type on keyboard to make the progress faster.\n");
-
 	for (i=0; i<count; i++) {
 		buf[i] = fgetc(f);
-		if (msg && i%11 == 0) {
+		if (msg && i%8 == 0) {
 			printf("\r%s %3d%%  %c ", msg, i*100 / count, spinner[i/11 % size]);
 			fflush(stdout);
 		}
@@ -716,33 +712,41 @@ void state_fini(state *s)
 
 int state_key_generate(state *s, const int salt)
 {
-	unsigned char entropy_pool[64]; /* 512 bits */
+	unsigned char entropy_pool[1024]; /* 160 + 8032 bits */
 	unsigned char key_bin[32];
 
-	print(PRINT_NOTICE, "Generating new %s key.\n", salt ? "salted" : "not salted");
+	const int real_random = 20;
+	const int pseudo_random = sizeof(entropy_pool) - real_random;
+
+	printf("Generating new %s key.\n\n", salt ? "salted" : "not salted");
+	puts(
+		"Hint: Move your mouse, cause some disc activity (`find /` is good)\n"
+		"or type on keyboard to make the progress faster.\n");
+
+/*
+  Openssl rng:
+	if (crypto_rng(entropy_pool, pseudo_random, 1) != 0) {
+		print(PRINT_ERROR, "Unable to get enough pseudo random bytes\n");
+		return 1;
+	}
+*/
 
 	/* Gather entropy from random, then fallback to urandom... */
-	if (_rng_read(
-		    "/dev/random",
-		    "Gathering entropy...",
-		    entropy_pool, sizeof(entropy_pool)) != 0)
+	printf("Gathering entropy...");
+	if (_rng_read("/dev/random", NULL,
+		    entropy_pool, real_random) != 0)
 	{
-		print_perror(PRINT_WARN, "Unable to open /dev/random");
-		print(PRINT_NOTICE,
-		      "Trying /dev/urandom device\n");
-
-		if (_rng_read(
-			    "/dev/urandom",
-			    "Gathering entropy...",
-			    entropy_pool,
-			    sizeof(entropy_pool)) != 0)
-		{
-			print(PRINT_ERROR,
-			      "Unable to use neither"
-			      " /dev/random nor urandom.\n");
-			return 1;
-		}
+		print_perror(PRINT_ERROR, "Unable to open /dev/random");
+		return 1;
 	}
+
+	if (_rng_read("/dev/urandom", NULL,
+		    entropy_pool+real_random, pseudo_random) != 0)
+	{
+		print_perror(PRINT_ERROR, "Unable to open /dev/random");
+		return 1;
+	}
+	printf("DONE\n");
 
 	if (salt == 0) {
 		crypto_sha256(entropy_pool, sizeof(entropy_pool), key_bin);
@@ -771,7 +775,6 @@ int state_key_generate(state *s, const int salt)
 		s->flags &= ~(FLAG_NOT_SALTED); 
 	return 0;
 }
-
 
 /******************************************
  * Miscellaneous functions

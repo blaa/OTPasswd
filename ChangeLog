@@ -15,14 +15,23 @@ Trying to sort tasks according to their priority.
 	* [!] Ensure state loaded correctly when label/caption full
         * [+] Improve testcases so when they fail it's clearly visible.
 	* [+] Fixed licensing so the project can be hosted on Savannah
-	* [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
+	* [+] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
 		Seems ok. pam_unix defines pam_syslog as openlog, vsyslog,
 		closelog.
 	* [+] Warnings when on last passcard
 	* [+] Add information to state files about last usage of second
               channel. Important to limit number of e.g. sent sms.
 	      Second-channel itself still not implemented
-	* [-] Calling external script for mailing/sms
+	* [+] Calling external script for mailing/sms
+	* [+] Key generation might be to slow on systems without mouse...
+	      Maybe use openssl prng and initialize it from urandom?
+	      Also is there any reason to use SHA256 on RANDOM data?
+	      Maybe few bytes from rng + some from prng and SHA out of it?
+	* [-] Keeping track of failures.
+	      Started (place in state files created)
+	* [-] Implement static passwords;
+		They might be required always or just to perform some commands
+		like second-channel usage.
 	* [%] GMP might leak information with reallocs of it's mpz_t
 	* [?] Cleanup PPP interface. This should look like follows.
 	      "State" is class implementing some basic features of 
@@ -30,32 +39,25 @@ Trying to sort tasks according to their priority.
 	      ppp implements high-level functions which should be used
 	      explicitly to manage state information unless something
 	      more fine-grained is necessary.
-	* [-] Keeping track of failures.
-	      Started (place in state files created)
-	* [-] Implement static passwords;
-		They might be required always or just to perform some commands
-		like second-channel usage.
 	* [-] Scan all FIXME/TODO entries
-	* [-] Keep lines below 75 columns? Or 80?
-	* [-] off-by-one testcases; a bit tests done.
 	* [-] Manuals
 	* [-] Check bit distribution for alphabets not divisible by 2
 	* [-] Improve error messages when state file is not found.
-	* [-] Key generation might be to slow on systems without mouse...
-	      Maybe use openssl prng and initialize it from urandom?
-	      Also is there any reason to use SHA256 on RANDOM data?
-	      Maybe few bytes from rng + some from prng and SHA out of it?
 	* [?] Place common functions inside a shared library       
         * [?] Big thing - Move state files to /etc + SUID.
 	* [?] Use locales for user messages [_("")? ]
-	* [?] Improve LaTeX output (some colors, borders?)
-        * [?] Incorporate SSH key fingerprints on passcards?
 	* [?] Config file in /etc/security
 	      pam_access parses this file itself; samba(winbind) uses
 	      iniparser library (on MIT license)
 	* [%] Ensure that PAM session can display warning in three calls
 	      to conversation function. If not, we must build a buffer
 	      (See for example how winscp shows that warning)
+
+	Low-priority:
+	* [?] Improve LaTeX output (some colors, borders?)
+        * [?] Incorporate SSH key fingerprints on passcards?
+	* [-] Keep lines below 75 columns? Or 80?
+	* [-] off-by-one testcases; a bit tests done.
 
 	To be removed:
 	* [-] Single-authentication/locking per user option to prevent DoS

@@ -49,6 +49,13 @@
 /* Username used to drop root */
 #define SECURE_USERNAME "nobody"
 
+enum {
+	OOB_DISABLED = 0,
+	OOB_REQUEST = 1,
+	OOB_SECURE_REQUEST = 2,
+	OOB_ALWAYS = 3
+};
+
 typedef struct {
 	/* Enforced makes any user without an .otpasswd config
 	 * fail to login */
@@ -84,7 +91,6 @@ typedef struct {
 	 * 3 - OOB sent during all authentication sessions
 	 */
 	int oob;
-
 
 	/* Parameters determined from the environment and
 	 * not options themselves  */
@@ -477,6 +483,12 @@ PAM_EXTERN int pam_sm_authenticate(
 			}
 		}
 
+		/* If user configurated OOB to be send
+		 * all the time - sent it */
+		if (opt.oob == OOB_ALWAYS) {
+			_out_of_band(&opt, s);
+		}
+
 		resp = _query_user(pamh, flags, opt.show, prompt, s);
 
 		retval = PAM_AUTH_ERR;
@@ -486,9 +498,19 @@ PAM_EXTERN int pam_sm_authenticate(
 			goto cleanup;
 		}
 
-		/* Hook up OOB. FIXME: This is only for tests */
+		/* Hook up OOB request */
 		if (strlen(resp[0].resp) == 1 && resp[0].resp[0] == '.') {
-			_out_of_band(&opt, s);
+			switch (opt.oob) {
+			case OOB_REQUEST:
+				_out_of_band(&opt, s);
+				/* Restate question about passcode */
+				_pam_drop_reply(resp, 1);
+				resp = _query_user(pamh, flags, opt.show, prompt, s);				
+				break;
+			case OOB_SECURE_REQUEST:
+				/* TODO: To be implemented */
+				break;
+			}
 		}
 
 		if (ppp_authenticate(s, resp[0].resp) == 0) {

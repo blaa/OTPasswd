@@ -19,7 +19,9 @@
 #ifndef _CRYPTO_H_
 #define _CRYPTO_H_
 
-/* Get some random data and store in a buff */
+/* Get some fast pseudo random data and store in a buff
+ * With secure=1 uses real random seed.
+ */
 extern int crypto_rng(
 	unsigned char *buff,
 	const int size, 
