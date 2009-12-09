@@ -58,6 +58,4 @@ static inline void num_print(const mpz_t num, const int base)
 	free(result);
 }
 
-extern int num_testcase(void);
-
 #endif

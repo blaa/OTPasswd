@@ -137,7 +137,4 @@ extern int state_store(state *s);
 /* Validate contact / label data */
 extern int state_validate_str(const char *str);
 
-/* Do some tests (may overwrite your key file!) */
-extern int state_testcase(void);
-
 #endif

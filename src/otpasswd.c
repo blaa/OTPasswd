@@ -35,7 +35,7 @@
 #include "ppp.h"
 
 #include "otpasswd_actions.h"
-
+#include "testcases.h"
 
 static const char *_program_name(const char *argv0)
 {
@@ -295,7 +295,6 @@ int process_cmd_line(int argc, char **argv)
 
 	case 'a':
 		ret = action_authenticate(&options);
-		free(options.action_arg);
 		print_fini();
 		if (ret == 0)
 			retval = 1;
@@ -340,7 +339,8 @@ int process_cmd_line(int argc, char **argv)
 		}
 	}
 
-	free(options.action_arg);
+	if (options.action_arg)
+		free(options.action_arg);
 	print_fini();
 	return retval;
 }
