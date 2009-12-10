@@ -25,20 +25,20 @@
 #include <gmp.h>
 #include <assert.h>
 
-static inline void num_from_bin(mpz_t num, const unsigned char *data, const int length)
+static inline void num_from_bin(mpz_t num, const unsigned char *data, const size_t length)
 {
 	/* Store data as LSB - to match pppv3 */
 	mpz_import(num, 1, 1, length, -1 /* LSB to match ppp behaviour */ , 0, data);
 }
 
-static inline void num_to_bin(const mpz_t num, unsigned char *data, const int length)
+static inline void num_to_bin(const mpz_t num, unsigned char *data, const size_t length)
 {
 	size_t size = 1;
 	/* Handle 0 numbers; otherwise nothing would be written to data */
 	if (mpz_cmp_si(num, 0) == 0)
 		memset(data, 0, length);
 	else 
-		mpz_export(data, &size, 1, length, -1, 0, num);
+		(void) mpz_export(data, &size, 1, length, -1, 0, num);
 	assert(size == 1);
 }
 
@@ -54,7 +54,7 @@ static inline void num_dispose(mpz_t num)
 static inline void num_print(const mpz_t num, const int base)
 {
 	char *result = mpz_get_str(NULL, base, num);
-	puts(result);
+	(void) puts(result);
 	free(result);
 }
 

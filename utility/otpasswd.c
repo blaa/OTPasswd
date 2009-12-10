@@ -175,7 +175,7 @@ int process_cmd_line(int argc, char **argv)
 		case 'x':
 			if (options.action != 0) {
 				printf("Only one action can be specified on the command line\n");
-				exit(-1);
+				exit(EXIT_FAILURE);
 			}
 			options.action = c;
 			break;
@@ -190,7 +190,7 @@ int process_cmd_line(int argc, char **argv)
 		case 'c':
 			if (options.action != 0) {
 				printf("Only one action can be specified on the command line\n");
-				exit(-1);
+				exit(EXIT_FAILURE);
 			}
 			options.action = c;
 
@@ -201,9 +201,9 @@ int process_cmd_line(int argc, char **argv)
 			break;
 
 		case 'n':
-			if (options.flag_set_mask) {
+			if (options.flag_set_mask != 0) {
 				printf("-n option can only be passed during key creation!\n");
-				exit(-1);
+				exit(EXIT_FAILURE);
 			}
 
 			options.flag_set_mask |= FLAG_NOT_SALTED;
@@ -212,12 +212,12 @@ int process_cmd_line(int argc, char **argv)
 		case 'f':
 			if (options.action != 0 && options.action != 'f') {
 				printf("Only one action can be specified on the command line\n");
-				exit(-1);
+				exit(EXIT_FAILURE);
 			}
 
 			if (options.flag_set_mask & FLAG_NOT_SALTED) {
 				printf("-n option can only be passed during key creation!\n");
-				exit(-1);
+				exit(EXIT_FAILURE);
 			}
 
 			assert(optarg != NULL);
@@ -238,7 +238,7 @@ int process_cmd_line(int argc, char **argv)
 				if (options.action != 0) {
 					printf("Only one action can be specified on the command line\n"
 						"and you can't mix 'list' flag with other flags.\n");
-					exit(-1);
+					exit(EXIT_FAILURE);
 				}
 
 				options.action = 'L'; /* List! Instead of changing flags */
@@ -249,7 +249,7 @@ int process_cmd_line(int argc, char **argv)
 				} else {
 					/* Illegal flag */
 					printf("No such flag %s\n", optarg);
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
 			}
 
@@ -260,7 +260,7 @@ int process_cmd_line(int argc, char **argv)
 		case '?':
 			/* getopt_long already printed an error message. */
 			_usage(argc, (const char **)argv);
-			exit(-1);
+			exit(EXIT_FAILURE);
 			break;
 
 		case 'v':
@@ -274,7 +274,9 @@ int process_cmd_line(int argc, char **argv)
 	}
 
 	/* Perform action */
-	print_init(options.log_level, 1, 0, NULL);
+	if (print_init(options.log_level, 1, 0, NULL) != 0) {
+		printf("Unable to start debugging\n");
+	}
 	int ret;
 	switch (options.action) {
 	case 0:

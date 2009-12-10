@@ -52,6 +52,7 @@ Trying to sort tasks according to their priority.
 	* [%] Ensure that PAM session can display warning in three calls
 	      to conversation function. If not, we must build a buffer
 	      (See for example how winscp shows that warning)
+	* [?] Use PAM_SERVICE_ERR
 
 	Low-priority:
 	* [?] Improve LaTeX output (some colors, borders?)
