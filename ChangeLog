@@ -43,7 +43,7 @@ Trying to sort tasks according to their priority.
 	* [-] Manuals
 	* [-] Check bit distribution for alphabets not divisible by 2
 	* [-] Improve error messages when state file is not found.
-	* [?] Place common functions inside a shared library       
+	* [?] Place common functions inside a shared library
         * [?] Big thing - Move state files to /etc + SUID.
 	* [?] Use locales for user messages [_("")? ]
 	* [?] Config file in /etc/security
@@ -52,6 +52,7 @@ Trying to sort tasks according to their priority.
 	* [%] Ensure that PAM session can display warning in three calls
 	      to conversation function. If not, we must build a buffer
 	      (See for example how winscp shows that warning)
+	* [?] Use PAM_SERVICE_ERR
 
 	Low-priority:
 	* [?] Improve LaTeX output (some colors, borders?)

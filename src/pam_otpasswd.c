@@ -27,7 +27,7 @@
 #include <pam_misc.h>
 #include <pam_ext.h>
 
-#include <syslog.h>
+//#include <syslog.h>
 
 /* getpwnam */
 #include <sys/types.h>
@@ -112,7 +112,7 @@ static int _parse_options(options *opt, int argc, const char **argv)
 	 * in /etc/passwd */
 	pwd = getpwnam(SECURE_USERNAME);
 	if (pwd == NULL) {
-		print(PRINT_ERROR,
+		(void) print(PRINT_ERROR,
 		      "otpasswd requires user "SECURE_USERNAME
 		      " to exists.\n");
 		goto error;
@@ -133,30 +133,30 @@ static int _parse_options(options *opt, int argc, const char **argv)
 			opt->debug = 1;
 		else if (sscanf(*argv, "retry=%d", &opt->retry) == 1) {
 			if (opt->retry < 0 || opt->retry > 2) {
-				print(PRINT_ERROR, "Invalid retry parameter (valid values = 0, 1, 2)");
+				(void) print(PRINT_ERROR, "Invalid retry parameter (valid values = 0, 1, 2)");
 				goto error;
 			}
 		} else if (sscanf(*argv, "oob=%d", &opt->oob) == 1) {
 			if (opt->oob < 0 || opt->oob > 3) {
-				print(PRINT_ERROR, "Invalid OOB parameter (valid values = 0, 1, 2, 3)");
+				(void)print(PRINT_ERROR, "Invalid OOB parameter (valid values = 0, 1, 2, 3)");
 				goto error;
 			}
 		} else if (sscanf(*argv, "oob_path=%199s", opt->oob_path) == 1) {
 			/* Ensure path is correct */
 			struct stat st;
 			if (stat(opt->oob_path, &st) != 0) {
-				print(PRINT_ERROR, "Unable to access oob sender. Check oob_path parameter\n");
+				(void)print(PRINT_ERROR, "Unable to access oob sender. Check oob_path parameter\n");
 				goto error;
 			}
 
 			if (!S_ISREG(st.st_mode)) {
-				print(PRINT_ERROR, "oob_path is not a file!\n");
+				(void)print(PRINT_ERROR, "oob_path is not a file!\n");
 				goto error;
 			}
 
 			/* Check permissions */
 			if (st.st_mode & S_IXOTH) {
-				print(PRINT_WARN, "Others can execute OOB utility\n");
+				(void)print(PRINT_WARN, "Others can execute OOB utility\n");
 			} else {
 				/* That's cool, but can we execute it? */
 				const int can_owner = ((st.st_mode & S_IXUSR) && st.st_uid == opt->uid);
@@ -164,21 +164,21 @@ static int _parse_options(options *opt, int argc, const char **argv)
 				if (! (can_owner || can_group) ) {
 					/* Neither from group nor from owner mode */
 					/* TODO: testcase this */
-						print(PRINT_ERROR,
+						(void)print(PRINT_ERROR,
 						      SECURE_USERNAME " is unable to execute OOB utility!\n");
 						goto error;
 				}
 			}
 
 		} else {
-			print(PRINT_ERROR, "Invalid parameter %s\n", *argv);
+			(void)print(PRINT_ERROR, "Invalid parameter %s\n", *argv);
 			goto error;
 		}
 	}
 	return 0;
 
 error:
-	print(PRINT_ERROR, "Error while parsing parameters\n");
+	(void)print(PRINT_ERROR, "Error while parsing parameters\n");
 	return PAM_AUTH_ERR;
 }
 
@@ -188,12 +188,12 @@ error:
 static int _out_of_band(const options *opt, state *s)
 {
 	int retval;
-	char current_passcode[17];
+	char current_passcode[17] = {0};
 	char contact[STATE_CONTACT_SIZE];
 
 	/* Check if OOB enabled */
-	if (!opt->oob_path || opt->oob == 0) {
-		print(PRINT_WARN, "Trying OOB when it's not enabled\n");
+	if (opt->oob_path == NULL || opt->oob == 0) {
+		(void)print(PRINT_WARN, "Trying OOB when it's not enabled\n");
 		return 1;
 	}
 
@@ -204,7 +204,7 @@ static int _out_of_band(const options *opt, state *s)
 
 	const char *c = ppp_get_contact(s);
 	if (!c || strlen(c) == 0) {
-		print(PRINT_WARN, "User without contact data required OOB transmission\n");
+		(void)print(PRINT_WARN, "User without contact data required OOB transmission\n");
 		return 2;
 	}
 	/* Copy, as releasing state will remove this data from RAM */
@@ -213,20 +213,20 @@ static int _out_of_band(const options *opt, state *s)
 	pid_t new_pid;
 	new_pid = fork();
 	if (new_pid == -1) {
-		print(PRINT_ERROR, "Unable to fork and call OOB utility\n");
+		(void)print(PRINT_ERROR, "Unable to fork and call OOB utility\n");
 		return 1;
 	}
 
 	if (new_pid == 0) {
 		// dangerous print, remove it 
-		print(PRINT_NOTICE, "Executing OOB transmission of %s to %s\n", 
+		(void)print(PRINT_NOTICE, "Executing OOB transmission of %s to %s\n", 
 		      current_passcode, contact);
 
 		/* We don't want to leave state in memory! */
 		/* TODO/FIXME: What with the locks? */
 		retval = ppp_release(s, 0, 0);
 		if (retval != 0) {
-			print(PRINT_ERROR, "RELEASE FAILED IN CHILD!");
+			(void)print(PRINT_ERROR, "RELEASE FAILED IN CHILD!");
 			exit(10);
 		}
 
@@ -268,7 +268,7 @@ static int _out_of_band(const options *opt, state *s)
 			return 1;
 		}
 		if (retval == 0) {
-			print(PRINT_NOTICE,  "Waiting for  OOB return\n");
+			(void)print(PRINT_NOTICE,  "Waiting for  OOB return\n");
 			continue;
 		}
 	}
@@ -280,16 +280,16 @@ static int _out_of_band(const options *opt, state *s)
 		/* waitpid should return immediately now, but just wait to be sure */
 		usleep(100);
 		(void) waitpid(new_pid, NULL, WNOHANG);
-		print(PRINT_ERROR, "Timed out while waiting for OOB utility to die. Fix it!\n");
+		(void)print(PRINT_ERROR, "Timed out while waiting for OOB utility to die. Fix it!\n");
 		return 2;
 	}
 
-	print(PRINT_NOTICE, "OOB child returned fast\n");
+	(void)print(PRINT_NOTICE, "OOB child returned fast\n");
 
 	if (WEXITSTATUS(status) == 0)
-		print(PRINT_NOTICE, "OOB utility successful\n");
+		(void)print(PRINT_NOTICE, "OOB utility successful\n");
 	else {
-		print(PRINT_WARN, "OOB utility returned %d\n", WEXITSTATUS(status));
+		(void)print(PRINT_WARN, "OOB utility returned %d\n", WEXITSTATUS(status));
 	}
 
 	return 0;
@@ -410,19 +410,19 @@ static int _init(pam_handle_t *pamh, int argc, const char **argv, options *opt, 
 	/* Initialize internal debugging */
 	if (opt->debug) {
 		print_init(PRINT_NOTICE, 0, 1, "/tmp/otpasswd_dbg");
-		print(PRINT_NOTICE, "otpasswd started\n");
+		(void)print(PRINT_NOTICE, "otpasswd started\n");
 	} else
 		print_init(PRINT_ERROR, 0, 1, NULL);
 
 	/* We must know where to look for state file */
 	retval = pam_get_user(pamh, &user, NULL);
 	if (retval != PAM_SUCCESS && user) {
-		print(PRINT_ERROR, "pam_get_user %s", pam_strerror(pamh,retval));
+		(void)print(PRINT_ERROR, "pam_get_user %s", pam_strerror(pamh,retval));
 		goto error;
 	}
 
 	if (user == NULL || *user == '\0') {
-		print(PRINT_ERROR, "empty_username", pam_strerror(pamh,retval));
+		(void)print(PRINT_ERROR, "empty_username", pam_strerror(pamh,retval));
 		goto error;
 	}
 
@@ -477,7 +477,7 @@ PAM_EXTERN int pam_sm_authenticate(
 			ppp_calculate(s);
 			prompt = ppp_get_prompt(s);
 			if (!prompt) {
-				print(PRINT_ERROR, "Error while generating prompt\n");
+				(void)print(PRINT_ERROR, "Error while generating prompt\n");
 				retval = PAM_AUTH_ERR;
 				goto cleanup;
 			}
@@ -494,7 +494,7 @@ PAM_EXTERN int pam_sm_authenticate(
 		retval = PAM_AUTH_ERR;
 		if (!resp) {
 			/* No response? */
-			print(PRINT_NOTICE, "No response from user during auth.\n");
+			(void)print(PRINT_NOTICE, "No response from user during auth.\n");
 			goto cleanup;
 		}
 
@@ -518,7 +518,7 @@ PAM_EXTERN int pam_sm_authenticate(
 
 			/* Correctly authenticated */
 			retval = PAM_SUCCESS;
-			print(PRINT_NOTICE, "Authentication succeded\n");
+			(void)print(PRINT_NOTICE, "Authentication succeded\n");
 			goto cleanup;
 		}
 
@@ -528,18 +528,18 @@ PAM_EXTERN int pam_sm_authenticate(
 			retval = ppp_decrement(s);
 			if (retval != 0) {
 				retval = PAM_AUTH_ERR;
-				print(PRINT_WARN, "Error while decrementing\n");
+				(void)print(PRINT_WARN, "Error while decrementing\n");
 				goto cleanup;
 			}
 		}
 		retval = PAM_AUTH_ERR;
 	}
 
-	print(PRINT_NOTICE, "Authentication failed\n");
+	(void)print(PRINT_NOTICE, "Authentication failed\n");
 
 cleanup:
 	ppp_fini(s);
-	print(PRINT_NOTICE, "otpasswd finished\n");
+	(void)print(PRINT_NOTICE, "otpasswd finished\n");
 	print_fini();
 	return retval;
 }
@@ -560,17 +560,17 @@ PAM_EXTERN int pam_sm_open_session(
 	if (retval != 0)
 		return retval;
 
-	print(PRINT_NOTICE, "(session) entrance\n");
+	(void)print(PRINT_NOTICE, "(session) entrance\n");
 
 	if (ppp_load(s) != 0)
 		goto exit;
 
-	print(PRINT_NOTICE, "(session) state loaded\n");
+	(void)print(PRINT_NOTICE, "(session) state loaded\n");
 
 	int err = ppp_get_warning_condition(s);
 	if (err == 0) {
 		/* No warnings! */
-		print(PRINT_NOTICE, "(session) no warning to be printed\n");
+		(void)print(PRINT_NOTICE, "(session) no warning to be printed\n");
 		goto cleanup;
 	}
 
@@ -578,7 +578,7 @@ PAM_EXTERN int pam_sm_open_session(
 
 	if (!msg) {
 		/* Should never happen */
-		print(PRINT_NOTICE, "(session) no warning returned\n");
+		(void)print(PRINT_NOTICE, "(session) no warning returned\n");
 		goto cleanup;
 	}
 
@@ -588,7 +588,7 @@ PAM_EXTERN int pam_sm_open_session(
 
 	len = snprintf(buff_msg, sizeof(buff_msg), "* WARNING: %s *", msg);
 	if (len < 10) {
-		print(PRINT_ERROR, "(session) sprintf error\n");
+		(void)print(PRINT_ERROR, "(session) sprintf error\n");
 		goto cleanup;
 	}
 
@@ -605,7 +605,7 @@ cleanup:
 exit:
 	ppp_fini(s);
 
-	print(PRINT_NOTICE, "otpasswd finished\n");
+	(void)print(PRINT_NOTICE, "otpasswd finished\n");
 	print_fini();
 
 	/* Ignore us, even if we fail. */

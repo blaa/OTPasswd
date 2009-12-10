@@ -41,6 +41,10 @@ tests. Think of this as a beta software.
 
 a. Security concerns
 --------------------
+TODO: Active / Passive methods of attacks. Why we're just trying to make
+attack as impossible as possible. What can be used to circumvent our
+inventions.
+
 There are certain security related issues you should be aware of.
 
 I. This program is not intended to replace normal passwords, it's
