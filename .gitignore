@@ -1,5 +1,6 @@
 otpasswd
 pam_otpasswd.so
+libotp.so
 CMakeFiles
 Makefile
 CMakeCache.txt

@@ -27,6 +27,7 @@ Trying to sort tasks according to their priority.
 	      Maybe use openssl prng and initialize it from urandom?
 	      Also is there any reason to use SHA256 on RANDOM data?
 	      Maybe few bytes from rng + some from prng and SHA out of it?
+	* [+] Place common functions inside a shared library       
 	* [-] Keeping track of failures.
 	      Started (place in state files created)
 	* [-] Implement static passwords;
@@ -43,7 +44,6 @@ Trying to sort tasks according to their priority.
 	* [-] Manuals
 	* [-] Check bit distribution for alphabets not divisible by 2
 	* [-] Improve error messages when state file is not found.
-	* [?] Place common functions inside a shared library       
         * [?] Big thing - Move state files to /etc + SUID.
 	* [?] Use locales for user messages [_("")? ]
 	* [?] Config file in /etc/security
