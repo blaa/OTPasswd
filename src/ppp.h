@@ -126,6 +126,4 @@ extern int ppp_increment(state *s);
  */
 extern int ppp_decrement(state *s);
 
-extern int ppp_testcase(void);
-
 #endif

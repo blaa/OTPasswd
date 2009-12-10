@@ -58,9 +58,12 @@ int state_validate_str(const char *str)
 
 static char *_strtok(char *input, const char *delim)
 {
-	static char *position;
+	static char *position = NULL;
+
 	if (input != NULL)
 		position = input;
+
+	/* FIXME: valgrind doesn't like following line: */
 	char *token = strsep(&position, delim); /* Non C99 function */
 
 	/* Cut token at any \n found */
@@ -774,51 +777,4 @@ int state_key_generate(state *s, const int salt)
 	if (salt)
 		s->flags &= ~(FLAG_NOT_SALTED); 
 	return 0;
-}
-
-/******************************************
- * Miscellaneous functions
- ******************************************/
-int state_testcase(void)
-{
-	state s1, s2;
-	int failed = 0;
-	int test = 0;
-
-	if (state_init(&s1, NULL, ".otpasswd_testcase") != 0)
-		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
-
-	test++; if (state_init(&s2, NULL, ".otpasswd_testcase") != 0)
-		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
-
-	test++; if (state_key_generate(&s1, 0) != 0)
-		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
-	mpz_set_ui(s1.counter, 321323211UL);
-
-	test++; if (state_store(&s1) != 0)
-		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
-
-	test++; if (state_load(&s2) != 0)
-		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
-
-	/* Compare */
-	test++; if (mpz_cmp(s1.sequence_key, s2.sequence_key) != 0)
-		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
-
-	test++; if (mpz_cmp(s1.counter, s2.counter) != 0)
-		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
-
-	test++; if (mpz_cmp(s1.latest_card, s2.latest_card) != 0)
-		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
-
-	test++; if (s1.flags != s2.flags || s1.code_length != s2.code_length)
-		print(PRINT_WARN, "state_testcase[%2d] failed\n", test, failed++);
-
-
-	print(PRINT_NOTICE, "state_testcases %d FAILED %d PASSED\n", failed, test-failed);
-
-	state_fini(&s1);
-	state_fini(&s2);
-
-	return failed;
 }

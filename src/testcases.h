@@ -16,17 +16,15 @@
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
  **********************************************************************/
 
-#ifndef _PASSCARDS_H_
-#define _PASSCARDS_H_
+#ifndef _TESTCASES_H_
+#define _TESTCASES_H_
 
-#include "state.h"
+/* Testcases used in utility */
 
-/* Returns allocated memory with one passcard
- * "Number" is a passcard number. These functions 
- * add salt when needed. */
-extern char *card_ascii(const state *s, const mpz_t number);
-
-/* Returns allocated memory with LaTeX document with 6 passcards */
-extern char *card_latex(const state *s, const mpz_t number);
+extern int crypto_testcase(void);
+extern int num_testcase(void);
+extern int card_testcase(void);
+extern int state_testcase(void);
+extern int ppp_testcase(void);
 
 #endif

@@ -53,7 +53,7 @@ ADD_LIBRARY(pam_otpasswd SHARED src/pam_otpasswd.c ${FILES})
 TARGET_LINK_LIBRARIES(pam_otpasswd gmp ssl pam)
 
 # Password management target
-ADD_EXECUTABLE(otpasswd src/otpasswd.c src/otpasswd_actions.c ${FILES})
+ADD_EXECUTABLE(otpasswd src/otpasswd.c src/otpasswd_actions.c src/testcases.c ${FILES})
 TARGET_LINK_LIBRARIES(otpasswd gmp ssl)
 
 # Install target
