@@ -402,7 +402,7 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 		average0 += zeroes[bit];
 		double tmp1= (double)ones[bit] / perfect;
 		double tmp0 = (double)zeroes[bit] / perfect;
-		if (tmp1 > 1.004 || tmp1 < 0.993 || tmp0 < 0.993 || tmp0 > 1.004) {
+		if (tmp1 > 1.04 || tmp1 < 0.93 || tmp0 < 0.93 || tmp0 > 1.04) {
 			printf("ppp_testcase_stat: FAILED. Bit %d has too big error (%0.10f, %0.10f)\n",
 			       bit, tmp1, tmp0);
 			failed = 1; /* Count each fail as one */
@@ -420,7 +420,7 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 	printf("Absolute error: 1/0: %.10f %.10f\n", abs_err1, abs_err0);
 	printf("Relative error: 1/0: %.10f %.10f\n", rel_err1, rel_err0);
 
-	if (rel_err1 > 1.001 || rel_err1 < 0.999 || rel_err0 > 1.001 || rel_err0 < 0.999) {
+	if (rel_err1 > 1.01 || rel_err1 < 0.99 || rel_err0 > 1.01 || rel_err0 < 0.99) {
 		printf("ppp_testcase_stat: FAILED. Too big average relative errors!\n");
 		failed++;
 	} else {
@@ -544,7 +544,7 @@ int ppp_testcase(void)
 
 	/* Statistical tests using key = 0 */
 	mpz_set_ui(s.sequence_key, 1345126463UL);
-	failed += _ppp_testcase_statistical(&s, 64, 16, 5000);
+	failed += _ppp_testcase_statistical(&s, 64, 16, 200000);
 
 	/* Following test should fail using norms from first test */
 	// failed += _ppp_testcase_statistical(&s, 88, 16, 500000);

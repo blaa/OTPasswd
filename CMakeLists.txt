@@ -44,17 +44,20 @@ INCLUDE_DIRECTORIES(${PAM_INCLUDE_DIR})
 ##
 # Targets
 ##
-SET(FILES src/crypto.c src/num.c src/ppp.c 
+#SET(FILES src/crypto.c src/num.c src/ppp.c 
+#	src/state.c src/print.c src/passcards.c)
+
+ADD_LIBRARY(libotp SHARED src/crypto.c src/num.c src/ppp.c 
 	src/state.c src/print.c src/passcards.c)
 
 # Pam module target
 SET(CMAKE_SHARED_LIBRARY_PREFIX "")
-ADD_LIBRARY(pam_otpasswd SHARED src/pam_otpasswd.c ${FILES}) 
-TARGET_LINK_LIBRARIES(pam_otpasswd gmp ssl pam)
+ADD_LIBRARY(pam_otpasswd SHARED src/pam_otpasswd.c) 
+TARGET_LINK_LIBRARIES(pam_otpasswd libotp gmp ssl pam)
 
 # Password management target
-ADD_EXECUTABLE(otpasswd src/otpasswd.c src/otpasswd_actions.c src/testcases.c ${FILES})
-TARGET_LINK_LIBRARIES(otpasswd gmp ssl)
+ADD_EXECUTABLE(otpasswd src/otpasswd.c src/otpasswd_actions.c src/testcases.c)
+TARGET_LINK_LIBRARIES(otpasswd libotp gmp ssl)
 
 # Install target
 SET(CMAKE_INSTALL_PREFIX /usr)
