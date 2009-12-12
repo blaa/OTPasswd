@@ -62,10 +62,10 @@ static void _usage(int argc, const char **argv)
 		"  -l, --latex <which>\n"
 		"               Generate a LaTeX output with 6 passcards\n"
 		"               starting with the specified one\n"
-		"  -p, --prompt <which>\n"
-		"               Display authentication prompt for given passcode\n"
 		"  -a, --authenticate <passcode>\n"
 		"               Try to authenticate with given passcode\n"
+		"  -P, --prompt <which>\n"
+		"               Display authentication prompt for given passcode\n"
 		"  -w, --warning\n"
 		"               Display warnings (ex. user on last passcard)\n"
 		"\n"
@@ -89,6 +89,8 @@ static void _usage(int argc, const char **argv)
 		"               codelenght-X      sets passcodes length, X is a number\n"
 		"                                 from 2 to 16 (default: codelength-4)\n"
 		"               list              print current state data\n"
+		"  -p, --password <pass>\n"
+		"               Set static password.\n"
 		"  -c, --contact <arg>\n"
 		"               Set a contact info (e.g. phone number) with which\n"
 		"               you want to receive current passcode during authentication.\n"
@@ -142,12 +144,13 @@ int process_cmd_line(int argc, char **argv)
 		{"skip",		required_argument,	0, 's'},
 		{"text",		required_argument,	0, 't'},
 		{"latex",		required_argument,	0, 'l'},
-		{"prompt",		required_argument,	0, 'p'},
+		{"prompt",		required_argument,	0, 'P'},
 		{"authenticate",	required_argument,	0, 'a'},
 		{"warning",		no_argument,		0, 'w'},
 
 		/* Flags */
 		{"flags",		required_argument,	0, 'f'},
+		{"password",		required_argument,	0, 'p'},
 		{"label",		required_argument,	0, 'd'},
 		{"contact",		required_argument,	0, 'c'},
 		{"no-salt",		no_argument,		0, 'n'},
@@ -161,7 +164,7 @@ int process_cmd_line(int argc, char **argv)
 	while (1) {
 		int option_index = 0;
 
-		int c = getopt_long(argc, argv, "ks:t:l:p:a:wf:d:c:nv", long_options, &option_index);
+		int c = getopt_long(argc, argv, "ks:t:l:P:a:wf:p:d:c:nv", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1)
@@ -184,8 +187,9 @@ int process_cmd_line(int argc, char **argv)
 		case 's':
 		case 't':
 		case 'l':
-		case 'p':
+		case 'P':
 		case 'a':
+		case 'p':
 		case 'd':
 		case 'c':
 			if (options.action != 0) {
@@ -292,6 +296,7 @@ int process_cmd_line(int argc, char **argv)
 	case 'f':
 	case 'd':
 	case 'c':
+	case 'p':
 		action_flags(&options);
 		break;
 
@@ -309,7 +314,6 @@ int process_cmd_line(int argc, char **argv)
 	case 's':
 	case 't':
 	case 'l':
-	case 'p':
 	case 'P':
 		action_print(&options);
 		break;

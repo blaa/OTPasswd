@@ -567,7 +567,7 @@ int state_store(state *s)
 	counter = mpz_get_str(NULL, STATE_BASE, s->counter);
 	latest_card = mpz_get_str(NULL, STATE_BASE, s->latest_card);
 
-	if (s->spass) 
+	if (s->spass_set) 
 		spass = mpz_get_str(NULL, STATE_BASE, s->spass);
 	else
 		spass = strdup("");
