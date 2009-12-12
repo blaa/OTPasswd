@@ -348,6 +348,7 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 	unsigned int cnt;
 
 	int ret;
+	int failed = 0;
 
 	mpz_init(counter);
 	mpz_init(quotient);
@@ -389,7 +390,6 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 
 	}
 	int bit;
-	int failed = 0;
 	/* Perfect distribution */
 	const double perfect = tests / 2.0;
 
