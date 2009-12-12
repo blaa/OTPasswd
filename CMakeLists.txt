@@ -64,8 +64,11 @@ TARGET_LINK_LIBRARIES(otpasswd libotp gmp ssl)
 
 # Install target
 SET(CMAKE_INSTALL_PREFIX /usr)
-INSTALL(TARGETS pam_otpasswd otpasswd 
+INSTALL(TARGETS pam_otpasswd otpasswd
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION /lib/security)
+
+INSTALL(TARGETS libotp
+  LIBRARY DESTINATION /lib)
 
 INSTALL(FILES examples/otpasswd-login DESTINATION /etc/pam.d)

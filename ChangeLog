@@ -28,6 +28,10 @@ Trying to sort tasks according to their priority.
 	      Also is there any reason to use SHA256 on RANDOM data?
 	      Maybe few bytes from rng + some from prng and SHA out of it?
 	* [+] Place common functions inside a shared library       
+	* [+] Check bit distribution for alphabets not divisible by 2
+              Added separate testcase evaluating character distribution
+              instead of bits. This testcase shows that distribution
+              is in correct range. 
 	* [-] Keeping track of failures.
 	      Started (place in state files created)
 	* [-] Implement static passwords;
@@ -42,7 +46,6 @@ Trying to sort tasks according to their priority.
 	      more fine-grained is necessary.
 	* [-] Scan all FIXME/TODO entries
 	* [-] Manuals
-	* [-] Check bit distribution for alphabets not divisible by 2
 	* [-] Improve error messages when state file is not found.
         * [?] Big thing - Move state files to /etc + SUID.
 	* [?] Use locales for user messages [_("")? ]
