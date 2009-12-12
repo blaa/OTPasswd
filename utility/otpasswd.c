@@ -90,7 +90,7 @@ static void _usage(int argc, const char **argv)
 		"                                 from 2 to 16 (default: codelength-4)\n"
 		"               list              print current state data\n"
 		"  -p, --password <pass>\n"
-		"               Set static password.\n"
+		"               Set static password. Use empty (i.e. "") to unset.\n"
 		"  -c, --contact <arg>\n"
 		"               Set a contact info (e.g. phone number) with which\n"
 		"               you want to receive current passcode during authentication.\n"
