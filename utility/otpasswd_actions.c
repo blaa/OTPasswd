@@ -146,6 +146,12 @@ static void _show_flags(const state *s)
 	} else {
 		printf("no contact information.\n");
 	}
+
+	if (s->spass_set) {
+		printf("Static password is set.\n");
+	} else {
+		printf("Static password is not set.\n");
+	}
 }
 
 static void _show_keys(const state *s)
@@ -381,7 +387,26 @@ void action_flags(options_t *options)
 			goto cleanup;
 		}
 		break;
+	case 'p':
+	{
+		const int len = strlen(options->action_arg);
+		unsigned char sha_buf[32];
+		if (len == 0) {
+			s.spass_set = 0;
+			mpz_set_ui(s.spass, 0);
+			printf("Turning off static password.\n\n");
+		} else {
+			/* Change static password */
+			/* TODO: Ensure its length/difficulty */
+			crypto_sha256((unsigned char *)options->action_arg, len, sha_buf);
+			num_from_bin(s.spass, sha_buf, sizeof(sha_buf));
+			s.spass_set = 1;
+			printf("Static password set.\n\n");
+		}
 
+		state_changed = 1;
+		break;
+	}
 	case 'd':
 		/* Change label */
 		if (strlen(options->action_arg) + 1 > sizeof(s.label)) {
@@ -701,7 +726,7 @@ void action_print(options_t *options)
 			state_changed = 1;
 			break;
 			
-		case 'p':
+		case 'P':
 			print(PRINT_ERROR, "Option requires passcode as argument\n");
 			break;
 		}
@@ -744,7 +769,7 @@ void action_print(options_t *options)
 			state_changed = 1;
 			break;
 			
-		case 'p':
+		case 'P':
 			/* Don't save state after this operation */
 			mpz_set(s.counter, passcode_num);
 			ppp_calculate(&s);

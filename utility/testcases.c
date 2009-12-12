@@ -441,6 +441,115 @@ clear:
 	return failed;
 }
 
+static int _ppp_testcase_stat_2(const state *s,
+				const int alphabet_len,
+				const int code_length, 
+				const int tests)
+{
+	/* Calculate passcode character distribution
+	 * (not bit distribution) */
+
+	/* char_count[i] - how many character[i]
+	 * happened */
+	/* 130 >= alphabet_length */
+	unsigned long char_count[130] = {0};
+
+	unsigned char key_bin[32];
+	unsigned char cnt_bin[16];
+	unsigned char cipher_bin[16];
+	mpz_t counter;
+	mpz_t cipher;
+	mpz_t quotient;
+
+	int i;
+	unsigned int cnt;
+
+	int ret;
+
+	mpz_init(counter);
+	mpz_init(quotient);
+	mpz_init(cipher);
+
+	/* Convert numbers to binary */
+	num_to_bin(s->sequence_key, key_bin, 32);
+
+	printf("ppp_testcase_stat: Evaluating character distribution in %u passcodes\n", tests);
+	for (cnt = 0; cnt < tests; cnt++) {
+		/* Increment counter */
+		mpz_add_ui(counter, counter, 119);
+
+		/* Convert to binary for encryption */
+		num_to_bin(counter, cnt_bin, 16);
+
+		/* Encrypt counter with key */
+		ret = crypto_aes_encrypt(key_bin, cnt_bin, cipher_bin);
+		if (ret != 0) {
+			printf("AES ERROR\n");
+			goto clear;
+		}
+
+		/* Convert result back to number */
+		num_from_bin(cipher, cipher_bin, 16);
+
+		for (i=0; i<code_length; i++) {
+			unsigned long int r = mpz_fdiv_q_ui(quotient, cipher, alphabet_len);
+			mpz_set(cipher, quotient);
+
+			/* r selects passcode */
+			char_count[r]++;
+		}
+	}
+
+
+	int failed = 0;
+	/* Perfect distribution */
+	const double perfect = tests * code_length / alphabet_len;
+
+	/* Calculate distribution */
+	double average = 0.0;
+	printf("ppp_testcase_stat2: Results:\n");
+
+	int pos;
+	for (pos=0; pos < alphabet_len; pos++) {
+		average += char_count[pos];
+		double tmp = (double)char_count[pos] / perfect;
+		if (tmp > 1.02 || tmp < 0.85) {
+			printf("ppp_testcase_stat2: FAILED. Code %d has too big error (%0.10f)\n",
+			       pos, tmp);
+			failed = 1; /* Count each fail as one */
+		}
+	}
+	average /= alphabet_len;
+
+	printf("Perfect distribution is %.2f\n", perfect);
+	printf("Average distribution: %.10f\n", average);
+	double abs_err = average > perfect ? average - perfect : perfect - average;
+	double rel_err = average / perfect;
+	printf("Absolute error: 1/0: %.10f\n", abs_err);
+	printf("Relative error: 1/0: %.10f\n", rel_err);
+
+	if (rel_err > 1.0001 || rel_err < 0.9999) {
+		printf("ppp_testcase_stat2: FAILED. Too big average relative errors!\n");
+		failed++;
+	} else {
+		printf("ppp_testcase_stat2: PASSED!\n");
+	}
+
+	printf("\n");
+
+clear:
+	memset(key_bin, 0, sizeof(key_bin));
+	memset(cnt_bin, 0, sizeof(cnt_bin));
+	memset(cipher_bin, 0, sizeof(cipher_bin));
+
+	num_dispose(quotient);
+	num_dispose(cipher);
+	num_dispose(counter);
+
+	return failed;
+}
+
+
 
 static int _ppp_testcase_authenticate(const char *passcode)
 {
@@ -542,14 +651,24 @@ int ppp_testcase(void)
 	state s;
 	state_init(&s, NULL, NULL);
 
+	if (state_load(&s) == 0) {
+		printf("*** Performing statistical tests with your key\n");
+	} else {
+		printf("*** Performing statistical tests with generated key\n");
+		mpz_set_ui(s.sequence_key, 1345126463UL);
+	}
+
 	/* Statistical tests using key = 0 */
 	mpz_set_ui(s.sequence_key, 1345126463UL);
 	failed += _ppp_testcase_statistical(&s, 64, 16, 200000);
-
 	/* Following test should fail using norms from first test */
 	// failed += _ppp_testcase_statistical(&s, 88, 16, 500000);
 
-	printf("*** Sequence key = 0.\n");
+	printf("Character count stats:\n");
+	failed += _ppp_testcase_stat_2(&s, 88, 16, 200000);
+
+	printf("*** PPPv3 compatibility tests\n");
+	printf("* Sequence key = 0.\n");
 	mpz_set_ui(s.sequence_key, 0UL);
 	_PPP_TEST(0, 4, 'A', 1, "NH7j");
 	_PPP_TEST(34, 4, 'G', 5, "EXh5");
@@ -629,6 +748,8 @@ int ppp_testcase(void)
 	if (_ppp_testcase_authenticate("aSsD") != 0) {
 		failed++;
 	}
+
+
 
 	return failed;
 }

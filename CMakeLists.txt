@@ -48,7 +48,8 @@ INCLUDE_DIRECTORIES(${PAM_INCLUDE_DIR})
 #	src/state.c src/print.c src/passcards.c)
 
 ADD_LIBRARY(libotp SHARED libotp/crypto.c libotp/num.c libotp/ppp.c 
-	libotp/state.c libotp/print.c libotp/passcards.c)
+	libotp/state.c libotp/print.c libotp/passcards.c
+	libotp/config.c)
 
 # As other targets require this include directory...
 INCLUDE_DIRECTORIES(libotp/)
