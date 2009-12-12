@@ -10,7 +10,40 @@ ChangeLog / TODO
 
 Trying to sort tasks according to their priority.
 
-2009-12-05 v0.4
+2009-12-13 v0.5
+	* [-] Keeping track of failures.
+	      Started (place in state files created)
+	* [-] Implement static passwords;
+		They might be required always or just to perform some commands
+		like second-channel usage.
+	* [%] GMP might leak information with reallocs of it's mpz_t
+	* [?] Cleanup PPP interface. This should look like follows.
+	      "State" is class implementing some basic features of 
+	      state management. From this 'class' ppp is derived.
+	      ppp implements high-level functions which should be used
+	      explicitly to manage state information unless something
+	      more fine-grained is necessary.
+	* [-] Scan all FIXME/TODO entries
+	* [-] Manuals
+	* [-] Check bit distribution for alphabets not divisible by 2
+	* [-] Improve error messages when state file is not found.
+        * [?] Big thing - Move state files to /etc + SUID.
+	* [?] Use locales for user messages [_("")? ]
+	* [?] Config file in /etc/security
+	      pam_access parses this file itself; samba(winbind) uses
+	      iniparser library (on MIT license)
+	* [%] Ensure that PAM session can display warning in three calls
+	      to conversation function. If not, we must build a buffer
+	      (See for example how winscp shows that warning)
+	* [?] Use PAM_SERVICE_ERR
+
+	Low-priority:
+	* [?] Improve LaTeX output (some colors, borders?)
+        * [?] Incorporate SSH key fingerprints on passcards?
+	* [-] Keep lines below 75 columns? Or 80?
+	* [-] off-by-one testcases; a bit tests done.
+
+2009-12-13 v0.4
 	* [!] Fixed some memory leaks.
 	* [!] Ensure state loaded correctly when label/caption full
         * [+] Improve testcases so when they fail it's clearly visible.

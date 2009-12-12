@@ -204,10 +204,11 @@ oob=X         - Configures a 'out-of-band' communication over a
                 secure 'second-channel' (for example an email or sms)
                 used for sending user current passcode.
                 X:  Behaviour:
-                0Don't use other channel (default)
-                1Always use channel
-                2Use if requested
-                Enabling channel also requires second option:
+		0 - OOB disabled (default)
+		1 - OOB on request ('.' as passcode given)
+		2 - OOB on request; request requires password (not implemented)
+		3 - OOB sent during all authentication sessions
+                Enabling a channel also requires second option:
 oob_path=X    - X is full-path to script or a program which will be given
                 two parameters on input. User contact information and
                 current prompt + correct passcode.
