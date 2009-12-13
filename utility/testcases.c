@@ -26,6 +26,7 @@
 #include "state.h"
 #include "ppp.h"
 #include "passcards.h"
+#include "config.h"
 
 /***************************
  * Crypto/NUM Testcases
@@ -748,8 +749,20 @@ int ppp_testcase(void)
 	if (_ppp_testcase_authenticate("aSsD") != 0) {
 		failed++;
 	}
+	return failed;
+}
 
+int config_testcase(void)
+{
+	int failed = 0;
+	int ret;
+	options opt;
+	
 
+	ret = config_parse(&opt, NULL);
+	if (ret != 0)
+		failed++;
+	
 
 	return failed;
 }

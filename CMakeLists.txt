@@ -56,7 +56,7 @@ INCLUDE_DIRECTORIES(libotp/)
 
 # Pam module target
 SET(CMAKE_SHARED_LIBRARY_PREFIX "")
-ADD_LIBRARY(pam_otpasswd SHARED pam/pam_otpasswd.c) 
+ADD_LIBRARY(pam_otpasswd SHARED pam/pam_helpers.c pam/pam_otpasswd.c) 
 TARGET_LINK_LIBRARIES(pam_otpasswd libotp gmp ssl pam)
 
 # Password management target

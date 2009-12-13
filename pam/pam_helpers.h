@@ -16,17 +16,31 @@
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
  **********************************************************************/
 
-#ifndef _TESTCASES_H_
-#define _TESTCASES_H_
+#ifndef _PAM_HELPERS_
+#define _PAM_HELPERS_
 
-/* Testcases used in utility */
+#include "config.h"
 
-extern int crypto_testcase(void);
-extern int num_testcase(void);
-extern int card_testcase(void);
-extern int state_testcase(void);
-extern int ppp_testcase(void);
-extern int config_testcase(void);
+enum {
+	OOB_DISABLED = 0,
+	OOB_REQUEST = 1,
+	OOB_SECURE_REQUEST = 2,
+	OOB_ALWAYS = 3
+};
 
+extern int ph_parse_module_options(options *opt, int argc, const char **argv);
+
+extern int ph_out_of_band(const options *opt, state *s);
+
+extern void ph_show_message(pam_handle_t *pamh, int flags, const char *msg);
+
+extern int ph_handle_load(pam_handle_t *pamh, int flags, int enforced, state *s);
+
+extern struct pam_response *ph_query_user(
+	pam_handle_t *pamh, int flags, int show,
+	const char *prompt, const state *s);
+
+/* initialization stuff */
+extern int ph_init(pam_handle_t *pamh, int argc, const char **argv, options *opt, state **s);
 
 #endif

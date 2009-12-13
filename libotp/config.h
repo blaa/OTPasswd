@@ -20,23 +20,38 @@
 #define _CONFIG_H_
 
 #define CONFIG_PATH		"/etc/security/otpasswd.conf"
-#define CONFIG_MAX_LINE_LEN	260
+#define CONFIG_MAX_LINE_LEN	200
 #define CONFIG_DEF_DB_GLOBAL	"/etc/otshadow"
 #define CONFIG_DEF_DB_USER	".otpasswd"
-#define CONFIG_PATH_LEN		200
+#define CONFIG_PATH_LEN		100
+#define CONFIG_SQL_LEN		50
+
+enum CONFIG_DB_TYPE {
+	CONFIG_DB_GLOBAL = 0,
+	CONFIG_DB_USER = 1,
+	/* Feature database backends */
+	CONFIG_DB_MYSQL = 2,
+	CONFIG_DB_LDAP = 3,
+};
 
 typedef struct {
 	/*** 
 	 * General configuration 
 	 ***/
 
-	int use_global_db;
+	int db;
 
 	/* Location of global database file */
 	char global_db_path[CONFIG_PATH_LEN];
 
 	/* Location of user database file */
 	char user_db_path[CONFIG_PATH_LEN];
+
+	/* Not implemented sql data */
+	char sql_host[CONFIG_SQL_LEN];
+	char sql_database[CONFIG_SQL_LEN];
+	char sql_user[CONFIG_SQL_LEN];
+	char sql_pass[CONFIG_SQL_LEN];
 
 	/***
 	 * PAM Configuration
@@ -91,11 +106,13 @@ typedef struct {
 	int allow_skipping;
 	int allow_passcode_print;
 	int allow_key_print;
+	int def_passcode_length;
 	int min_passcode_length;
 	int max_passcode_length;
+	int def_alphabet_length;
 	int min_alphabet_length;
 	int max_alphabet_length;
-	int salt;
+	int allow_salt;
 } options;
 
 /* Set all fields to default values */
@@ -103,7 +120,7 @@ extern void config_defaults(options *opt);
 
 /* Parse config file and set fields in struct 
  * config_path might be NULL to read default config.
- */ppp
+ */
 extern int config_parse(options *opt, const char *config_path);
 
 

@@ -11,6 +11,7 @@ ChangeLog / TODO
 Trying to sort tasks according to their priority.
 
 2009-12-13 v0.5
+	* [-] Remove dont-skip option.
 	* [-] Keeping track of failures.
 	      Started (place in state files created)
 	* [-] Implement static passwords;

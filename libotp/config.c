@@ -19,6 +19,10 @@
 #include <stdio.h>
 #include <string.h>
 
+/* getpwnam */
+#include <sys/types.h>
+#include <pwd.h>
+
 #include "print.h"
 #include "config.h"
 
@@ -41,21 +45,27 @@ int config_parse(options *opt, const char *config_path)
 		return 1;
 	}
 
+	config_defaults(opt);
+
 	do {
-		char *last_char = line_buf + sizeof(line_buf) - 2;
-		/* Mark the end of line */
-		*last_char = '\0';
+		int line_length;
 
 		/* Read line */
 		if (fgets(line_buf, sizeof(line_buf), f) == NULL)
 			break;
 
 		/* Check line too long condition */
-		if (*last_char != '\n' || *last_char != '\0') {
-			print(PRINT_ERROR, "Line in config file to long");
+		line_length = strlen(line_buf);
+		if (line_length == sizeof(line_buf) - 1 && 
+		    line_buf[line_length-1] != '\n') {
+			print(PRINT_ERROR, "Line in config file to long.\n");
 			goto error;
 		}
 
+		/* Remove trailing \n */
+		line_length--;
+		line_buf[line_length] = '\0';
+		
 		line_count++;
 
 		/* Omit comments */
@@ -64,8 +74,7 @@ int config_parse(options *opt, const char *config_path)
 
 		/* Omit all-whitespace */
 		char *ptr = line_buf;
-		for (; *ptr != '\0' && *ptr == '\n' && *ptr != ' ' &&
-			*ptr != '\t'; ptr++);
+		for (; *ptr == ' ' || *ptr == '\t'; ptr++);
 
 		if (*ptr == '\0') {
 			/* We got to the end of line - it's all whitespace.
@@ -114,65 +123,129 @@ int config_parse(options *opt, const char *config_path)
 		}						\
 	} while (0)
 
+		/* Check equality */
+#define _EQ(A, B) (strcasecmp((A), (B)) == 0)
 
-		if (strcasecmp(line_buf, "show") == 0) {
+		/* Check length, copy and secure with \0 */
+#define _COPY(to, from)						\
+	do {							\
+		if (strlen(from) > sizeof(to)-1) {		\
+			print(PRINT_ERROR,			\
+			      "Value too long at line %d "	\
+			      "of config file.\n", line_count);	\
+			goto error;				\
+		}						\
+		strncpy(to, from, sizeof(to)-1);		\
+	} while (0) 
+
+		/* Parsing general configuration */
+		if (_EQ(line_buf, "db")) {
+			if (_EQ(equality, "global")) 
+				opt->db = CONFIG_DB_GLOBAL;
+			else if (_EQ(equality, "user")) 
+				opt->db = CONFIG_DB_USER;
+			else if (_EQ(equality, "mysql")) 
+				opt->db = CONFIG_DB_MYSQL;
+			else if (_EQ(equality, "ldap")) 
+				opt->db = CONFIG_DB_LDAP;
+			else {
+				print(PRINT_ERROR,
+				      "Illegal db parameter at line"
+				      " %d in config file\n", line_count);
+				goto error;
+			}
+
+		} else if (_EQ(line_buf, "global_db")) {
+			_COPY(opt->global_db_path, equality);
+		} else if (_EQ(line_buf, "user_db")) {
+			_COPY(opt->user_db_path, equality);
+
+		/* Ignore for now */
+		} else if (_EQ(line_buf, "sql_host")) {
+			_COPY(opt->sql_host, equality);
+		} else if (_EQ(line_buf, "sql_database")) {
+			_COPY(opt->sql_database, equality);
+		} else if (_EQ(line_buf, "sql_user")) {
+			_COPY(opt->sql_user, equality);
+		} else if (_EQ(line_buf, "sql_pass")) {
+			_COPY(opt->sql_pass, equality);
+
+		/* Parsing PAM configuration */
+		} else if (_EQ(line_buf, "show")) {
 			REQUIRE_ARG(1,3);
 			opt->show = arg;
-		} else if (strcasecmp(line_buf, "enforce") == 0) {
+		} else if (_EQ(line_buf, "enforce")) {
 			REQUIRE_ARG(0, 1);
 			opt->enforce = arg;
-		} else if (strcasecmp(line_buf, "retry") == 0) {
+		} else if (_EQ(line_buf, "retry")) {
 			REQUIRE_ARG(0, 3);
 			opt->retry = arg;
-		} else if (strcasecmp(line_buf, "debug") == 0) {
+		} else if (_EQ(line_buf, "retries")) {
+			REQUIRE_ARG(2, 5);
+			opt->retry = arg;
+		} else if (_EQ(line_buf, "debug")) {
 			REQUIRE_ARG(0, 1);
 			opt->debug = arg;
-		} else if (strcasecmp(line_buf, "oob") == 0) {
+		} else if (_EQ(line_buf, "oob")) {
 			REQUIRE_ARG(0, 2);
 			opt->oob = arg;
-		} else if (strcasecmp(line_buf, "oob_path") == 0) {
-		} else if (strcasecmp(line_buf, "uid") == 0) {
-			REQUIRE_ARG(0, 9999999);
-			opt->uid = arg;
-		} else if (strcasecmp(line_buf, "gid") == 0) {
-			REQUIRE_ARG(0, 9999999);
-			opt->gid = arg;
-		} else if (strcasecmp(line_buf, "use_global_db") == 0) {
-			REQUIRE_ARG(0, 1);
-			opt->use_global_db = arg;
-		} else if (strcasecmp(line_buf, "global_db") == 0) {
-		} else if (strcasecmp(line_buf, "user_db") == 0) {
-		} else if (strcasecmp(line_buf, "allow_skipping") == 0) {
+		} else if (_EQ(line_buf, "oob_user")) {
+			struct passwd *pwd;
+			pwd = getpwnam(equality);
+			if (pwd == NULL) {
+				print(PRINT_ERROR,
+				      "Illegal user specified in config "
+				      "at line %d.\n", line_count);
+				goto error;
+			}
+			opt->uid = pwd->pw_uid;
+			opt->gid = pwd->pw_gid;
+		} else if (_EQ(line_buf, "oob_path")) {
+
+			// DO
+
+		/* Parsing POLICY configuration */
+		} else if (_EQ(line_buf, "allow_skipping")) {
 			REQUIRE_ARG(0, 1);
 			opt->allow_skipping = arg;
-		} else if (strcasecmp(line_buf, "allow_passode_print") == 0) {
+		} else if (_EQ(line_buf, "allow_passcode_print")) {
 			REQUIRE_ARG(0, 1);
 			opt->allow_passcode_print = arg;
-		} else if (strcasecmp(line_buf, "allow_key_print") == 0) {
+		} else if (_EQ(line_buf, "allow_key_print")) {
 			REQUIRE_ARG(0, 1);
 			opt->allow_key_print = arg;
-		} else if (strcasecmp(line_buf, "allow_key_generation") == 0) {
+		} else if (_EQ(line_buf, "allow_key_generation")) {
 			REQUIRE_ARG(0, 1);
 			opt->allow_key_generation = arg;
-		} else if (strcasecmp(line_buf, "min_passcode_length") == 0) {
+		} else if (_EQ(line_buf, "allow_salt")) {
+			REQUIRE_ARG(0, 2);
+			opt->allow_salt = arg;
+
+		} else if (_EQ(line_buf, "def_passcode_length")) {
+			REQUIRE_ARG(2, 16);
+			opt->def_passcode_length = arg;
+		} else if (_EQ(line_buf, "min_passcode_length")) {
 			REQUIRE_ARG(2, 16);
 			opt->min_passcode_length = arg;
-		} else if (strcasecmp(line_buf, "max_passcode_length") == 0) {
+
+		} else if (_EQ(line_buf, "max_passcode_length")) {
 			REQUIRE_ARG(2, 16);
 			opt->max_passcode_length = arg;
-		} else if (strcasecmp(line_buf, "min_alphabet_length") == 0) {
+
+		} else if (_EQ(line_buf, "def_alphabet_length")) {
+			REQUIRE_ARG(64, 88);
+			opt->def_alphabet_length = arg;
+		} else if (_EQ(line_buf, "min_alphabet_length")) {
 			REQUIRE_ARG(64, 88);
 			opt->min_alphabet_length = arg;
-		} else if (strcasecmp(line_buf, "max_alphabet_length") == 0) {
+		} else if (_EQ(line_buf, "max_alphabet_length")) {
 			REQUIRE_ARG(64, 88);
 			opt->max_alphabet_length = arg;
-		} else if (strcasecmp(line_buf, "salt") == 0) {
-			REQUIRE_ARG(0, 2);
-			opt->salt = arg;
 		} else {
 			/* Error */
-			print(PRINT_ERROR, "Unrecognized variable on line %d in config file\n",
-			      line_count);
+			print(PRINT_ERROR, "Unrecognized variable '%s' on line %d in config file\n",
+			      line_buf, line_count);
+			goto error;
 		}
 
 	} while (!feof(f));
@@ -185,3 +258,35 @@ error:
 }
 
 
+void config_defaults(options *opt)
+{
+	const options o = {
+		/* General configuration */
+		.db = CONFIG_DB_GLOBAL,
+		.global_db_path = "/etc/otshadow",
+		.user_db_path = ".otpasswd",
+
+		/* PAM Configuration */
+		.enforce = 0,
+		.secure = 1,
+		.debug = 0,
+		.retry = 0,
+		.show = 1,
+		.oob = 0,
+		.oob_path = "",
+
+		.allow_key_generation = 1,
+		.allow_skipping = 1,
+		.allow_passcode_print = 1,
+		.allow_key_print = 1,
+		.def_passcode_length = 4,
+		.min_passcode_length = 2,
+		.max_passcode_length = 16,
+		.def_alphabet_length = 64,
+		.min_alphabet_length = 64,
+		.max_alphabet_length = 88,
+		.allow_salt = 1,
+	};
+
+	*opt = o;
+}
