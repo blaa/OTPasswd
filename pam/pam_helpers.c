@@ -42,62 +42,24 @@
 #include "ppp.h"
 #include "pam_helpers.h"
 
-int ph_parse_module_options(options *opt, int argc, const char **argv)
+int ph_parse_module_options(options *opt, int flags, int argc, const char **argv)
 {
 	for (; argc-- > 0; argv++) {
 		if (strcmp("debug", *argv) == 0)
 			opt->debug = 1;
 		else if (strcmp("silent", *argv) == 0)
-			opt->debug = 1;
-
-#if 0
-		} else if (sscanf(*argv, "oob_path=%199s", 
-				  opt->oob_path) == 1) {
-			/* Ensure path is correct */
-			struct stat st;
-			if (stat(opt->oob_path, &st) != 0) {
-				(void) print(PRINT_ERROR,
-					"Unable to access oob sender. "
-					"Check oob_path parameter\n");
-				goto error;
-			}
-
-			if (!S_ISREG(st.st_mode)) {
-				(void)print(PRINT_ERROR,
-					"oob_path is not a file!\n");
-				goto error;
-			}
-
-			/* Check permissions */
-			if (st.st_mode & S_IXOTH) {
-				(void)print(PRINT_WARN, 
-					"Others can execute OOB utility\n");
-			} else {
-				/* That's cool, but can we execute it? */
-				const int can_owner = 
-					((st.st_mode & S_IXUSR) &&
-					 st.st_uid == opt->uid);
-				const int can_group =
-					((st.st_mode & S_IXGRP) &&
-					 st.st_gid == opt->gid);
-				if (! (can_owner || can_group) ) {
-					/* Neither from group nor from 
-					 * owner mode */
-					/* TODO: testcase this */
-					(void)print(PRINT_ERROR,
-						    SECURE_USERNAME 
-						    " is unable to execute "
-						    "OOB utility!\n");
-					goto error;
-				}
-			}
-#endif
+			opt->debug = 0;
 		else {
 			(void)print(PRINT_ERROR, 
 				"Invalid parameter %s\n", *argv);
 			goto error;
 		}
 	}
+
+	if (flags & PAM_SILENT) {
+		opt->debug = 0;
+	}
+
 	return 0;
 
 error:
@@ -120,6 +82,48 @@ int ph_out_of_band(const options *opt, state *s)
 			    "Trying OOB when it's not enabled\n");
 		return 1;
 	}
+
+	/* Ensure path is correct */
+	{
+		struct stat st;
+		if (stat(opt->oob_path, &st) != 0) {
+			(void) print(PRINT_ERROR,
+				     "Unable to access oob sender. "
+				     "Check oob_path parameter\n");
+			return 2;
+		}
+		
+		if (!S_ISREG(st.st_mode)) {
+			(void)print(PRINT_ERROR,
+				    "oob_path is not a file!\n");
+			return 2;
+		}
+		
+		/* Check permissions */
+		if (st.st_mode & S_IXOTH) {
+			(void)print(PRINT_WARN, 
+				    "Others can execute OOB utility\n");
+		} else {
+			/* That's cool, but can we execute it? */
+			const int can_owner = 
+				((st.st_mode & S_IXUSR) &&
+				 st.st_uid == opt->uid);
+			const int can_group =
+				((st.st_mode & S_IXGRP) &&
+				 st.st_gid == opt->gid);
+			if (! (can_owner || can_group) ) {
+				/* Neither from group nor from 
+				 * owner mode */
+				/* TODO: testcase this */
+				(void)print(PRINT_ERROR,
+					    "UID %d is unable to execute "
+					    "OOB utility!\n", opt->uid);
+				return 2;
+			}
+		}
+	}
+
+
 
 	/* Gather required data */
 	retval = ppp_get_current(s, current_passcode);
@@ -324,7 +328,7 @@ struct pam_response *ph_query_user(
 }
 
 /* Initialization stuff */
-int ph_init(pam_handle_t *pamh, int argc, const char **argv, options *opt, state **s)
+int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, options *opt, state **s)
 {
 	/* User info from PAM */
 	const char *user = NULL;
@@ -335,7 +339,7 @@ int ph_init(pam_handle_t *pamh, int argc, const char **argv, options *opt, state
 	print_init(PRINT_NOTICE, 0, 1, NULL);
 
 	/* Parse options */
-	retval = ph_parse_module_options(opt, argc, argv);
+	retval = ph_parse_module_options(opt, flags, argc, argv);
 
 	/* Close bootstrapped logging */
 	print_fini();

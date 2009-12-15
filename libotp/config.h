@@ -26,6 +26,7 @@
 #define CONFIG_PATH_LEN		100
 #define CONFIG_SQL_LEN		50
 
+/* DB types */
 enum CONFIG_DB_TYPE {
 	CONFIG_DB_GLOBAL = 0,
 	CONFIG_DB_USER = 1,
@@ -34,11 +35,18 @@ enum CONFIG_DB_TYPE {
 	CONFIG_DB_LDAP = 3,
 };
 
+/* Fields */
+enum {
+	OOB_DISABLED = 0,
+	OOB_REQUEST = 1,
+	OOB_SECURE_REQUEST = 2,
+	OOB_ALWAYS = 3
+};
+
 typedef struct {
 	/*** 
 	 * General configuration 
 	 ***/
-
 	int db;
 
 	/* Location of global database file */
@@ -98,31 +106,40 @@ typedef struct {
 
 	/***
 	 * Policy configuration
+	 * 1 - enable, 0 - disable
 	 ***/
 	/* Implemented */
 
 	/* Not-implemented */
+
+	/* User can start key generation */
 	int allow_key_generation;
+	/* User can skip further in passcodes */
 	int allow_skipping;
+	/* User can print passcards/passcodes */
 	int allow_passcode_print;
+	/* User can see his key/counter */
 	int allow_key_print;
+
+	/* Passcode configuration. Default, minimal and maximal */
 	int def_passcode_length;
 	int min_passcode_length;
 	int max_passcode_length;
+
+	/* Alphabet configuration. Default, minimal and maximal */
 	int def_alphabet_length;
 	int min_alphabet_length;
 	int max_alphabet_length;
+
+	/* Disallow (0), allow (1) or enforce (2) salt */
 	int allow_salt;
 } options;
 
-/* Set all fields to default values */
-extern void config_defaults(options *opt);
+/* Initialize config */
+extern int config_init(const char *config_path);
 
-/* Parse config file and set fields in struct 
- * config_path might be NULL to read default config.
- */
-extern int config_parse(options *opt, const char *config_path);
-
+/* Is guaranteed to succeed if config_init succeeded before */
+extern options *config_get(void);
 
 
 

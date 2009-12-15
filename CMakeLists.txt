@@ -73,3 +73,4 @@ INSTALL(TARGETS libotp
   LIBRARY DESTINATION /lib)
 
 INSTALL(FILES examples/otpasswd-login DESTINATION /etc/pam.d)
+INSTALL(FILES examples/otpasswd.conf DESTINATION /etc/security)

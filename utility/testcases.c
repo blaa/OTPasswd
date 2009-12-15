@@ -756,13 +756,13 @@ int config_testcase(void)
 {
 	int failed = 0;
 	int ret;
-	options opt;
+	options *opt;
 	
-
-	ret = config_parse(&opt, NULL);
+	ret = config_init(NULL);
 	if (ret != 0)
 		failed++;
 	
+	opt = config_get();
 
 	return failed;
 }

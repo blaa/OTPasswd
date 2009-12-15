@@ -21,14 +21,7 @@
 
 #include "config.h"
 
-enum {
-	OOB_DISABLED = 0,
-	OOB_REQUEST = 1,
-	OOB_SECURE_REQUEST = 2,
-	OOB_ALWAYS = 3
-};
-
-extern int ph_parse_module_options(options *opt, int argc, const char **argv);
+extern int ph_parse_module_options(options *opt, int flags, int argc, const char **argv);
 
 extern int ph_out_of_band(const options *opt, state *s);
 
@@ -41,6 +34,6 @@ extern struct pam_response *ph_query_user(
 	const char *prompt, const state *s);
 
 /* initialization stuff */
-extern int ph_init(pam_handle_t *pamh, int argc, const char **argv, options *opt, state **s);
+extern int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, options *opt, state **s);
 
 #endif

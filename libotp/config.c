@@ -26,7 +26,47 @@
 #include "print.h"
 #include "config.h"
 
-int config_parse(options *opt, const char *config_path)
+/* Program options */
+static options _opt;
+
+/* Set all fields to default values */
+static void _config_defaults(options *opt)
+{
+	const options o = {
+		/* General configuration */
+		.db = CONFIG_DB_GLOBAL,
+		.global_db_path = "/etc/otshadow",
+		.user_db_path = ".otpasswd",
+
+		/* PAM Configuration */
+		.enforce = 0,
+		.secure = 1,
+		.debug = 0,
+		.retry = 0,
+		.show = 1,
+		.oob = 0,
+		.oob_path = "",
+
+		.allow_key_generation = 1,
+		.allow_skipping = 1,
+		.allow_passcode_print = 1,
+		.allow_key_print = 1,
+		.def_passcode_length = 4,
+		.min_passcode_length = 2,
+		.max_passcode_length = 16,
+		.def_alphabet_length = 64,
+		.min_alphabet_length = 64,
+		.max_alphabet_length = 88,
+		.allow_salt = 1,
+	};
+
+	*opt = o;
+}
+
+/* Parse config file and set fields in struct 
+ * config_path might be NULL to read default config.
+ */
+static int _config_parse(options *opt, const char *config_path)
 {
 	int retval = 1;
 	int line_count = 0;
@@ -44,8 +84,6 @@ int config_parse(options *opt, const char *config_path)
 		print_perror(PRINT_ERROR, "Unable to open config file!\n");
 		return 1;
 	}
-
-	config_defaults(opt);
 
 	do {
 		int line_length;
@@ -201,8 +239,7 @@ int config_parse(options *opt, const char *config_path)
 			opt->uid = pwd->pw_uid;
 			opt->gid = pwd->pw_gid;
 		} else if (_EQ(line_buf, "oob_path")) {
-
-			// DO
+			_COPY(opt->oob_path, equality);
 
 		/* Parsing POLICY configuration */
 		} else if (_EQ(line_buf, "allow_skipping")) {
@@ -257,36 +294,21 @@ error:
 	return retval;
 }
 
-
-void config_defaults(options *opt)
+int config_init(const char *config_path)
 {
-	const options o = {
-		/* General configuration */
-		.db = CONFIG_DB_GLOBAL,
-		.global_db_path = "/etc/otshadow",
-		.user_db_path = ".otpasswd",
+	int retval;
+	_config_defaults(&_opt);
+	retval = _config_parse(&_opt, config_path);
 
-		/* PAM Configuration */
-		.enforce = 0,
-		.secure = 1,
-		.debug = 0,
-		.retry = 0,
-		.show = 1,
-		.oob = 0,
-		.oob_path = "",
+	if (retval != 0) {
+		_config_defaults(&_opt);
+	}
 
-		.allow_key_generation = 1,
-		.allow_skipping = 1,
-		.allow_passcode_print = 1,
-		.allow_key_print = 1,
-		.def_passcode_length = 4,
-		.min_passcode_length = 2,
-		.max_passcode_length = 16,
-		.def_alphabet_length = 64,
-		.min_alphabet_length = 64,
-		.max_alphabet_length = 88,
-		.allow_salt = 1,
-	};
-
-	*opt = o;
+	return retval;
 }
+
+options *config_get(void)
+{
+	return &_opt;
+}
+

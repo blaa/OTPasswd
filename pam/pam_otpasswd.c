@@ -53,7 +53,7 @@ PAM_EXTERN int pam_sm_authenticate(
 	/* Perform initialization:
 	 * parse options, start logging, initialize state
 	 */
-	retval = ph_init(pamh, argc, argv, &opt, &s);
+	retval = ph_init(pamh, flags, argc, argv, &opt, &s);
 	if (retval != 0)
 		return retval;
 
@@ -149,7 +149,7 @@ PAM_EXTERN int pam_sm_open_session(
 	options opt;
 
 	/* Initialize */
-	retval = ph_init(pamh, argc, argv, &opt, &s);
+	retval = ph_init(pamh, flags, argc, argv, &opt, &s);
 	if (retval != 0)
 		return retval;
 
