@@ -16,16 +16,8 @@
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
  **********************************************************************/
 
-#define PAM_SM_AUTH
-#define PAM_SM_SESSION
-//#define PAM_SM_ACCOUNT
-//#define PAM_SM_PASSWORD
-#define _PAM_EXTERN_FUNCTIONS
-
-#include <_pam_macros.h>
-#include <pam_modules.h>
-#include <pam_misc.h>
-#include <pam_ext.h>
+#include <string.h>
+#include <stdlib.h>
 
 /* stat() */
 #include <sys/stat.h>
@@ -36,6 +28,22 @@
 
 /* kill() */
 #include <signal.h>
+
+
+
+#define PAM_SM_AUTH
+#define PAM_SM_SESSION
+//#define PAM_SM_ACCOUNT
+//#define PAM_SM_PASSWORD
+#define _PAM_EXTERN_FUNCTIONS
+
+#include <pam_modules.h>
+
+/* FreeBSD */
+#include <pam_appl.h>
+
+#include "pam_macros.h"
+
 
 
 #include "print.h"

@@ -28,6 +28,15 @@ SET(${PROJECT_NAME}_MINOR_VERSION 1)
 
 ADD_DEFINITIONS("-Wall -ggdb")
 
+# Detect include dirs
+FIND_PATH(GMP_INCLUDE_DIR gmp.h /usr/include/gmp /usr/local/include/gmp)
+FIND_PATH(PAM_INCLUDE_DIR pam_modules.h /usr/include/security /usr/include/pam)
+FIND_PATH(GMP_LIBRARY_DIR libgmp.so /lib /usr/lib /usr/local/lib)
+
+INCLUDE_DIRECTORIES(${GMP_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${PAM_INCLUDE_DIR})
+LINK_DIRECTORIES(${GMP_LIBRARY_DIR})
+
 # Dependencies
 INCLUDE(CheckLibraryExists)
 
@@ -36,14 +45,9 @@ CHECK_LIBRARY_EXISTS(ssl SHA256 "" HAVE_OPENSSL)
 FIND_PACKAGE(OpenSSL REQUIRED)
 
 ##
-# PAM Thingies
-##
-FIND_PATH(PAM_INCLUDE_DIR pam_modules.h /usr/include/security /usr/include/pam)
-INCLUDE_DIRECTORIES(${PAM_INCLUDE_DIR})
-
-##
 # Targets
 ##
+
 #SET(FILES src/crypto.c src/num.c src/ppp.c 
 #	src/state.c src/print.c src/passcards.c)
 

@@ -22,10 +22,12 @@
 //#define PAM_SM_PASSWORD
 #define _PAM_EXTERN_FUNCTIONS
 
-#include <_pam_macros.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include <pam_modules.h>
-#include <pam_misc.h>
-#include <pam_ext.h>
+#include "pam_macros.h"
 
 #include "print.h"
 #include "ppp.h"

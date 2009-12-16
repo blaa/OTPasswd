@@ -323,13 +323,11 @@ int process_cmd_line(int argc, char **argv)
 		{
 			int failed = 0;
 			failed += config_testcase();
-/*
 			failed += state_testcase();
 			failed += num_testcase();
 			failed += crypto_testcase();
 			failed += card_testcase();
 			failed += ppp_testcase();
-*/
 			if (failed) {
 				printf(
 					"***********************************************\n"
