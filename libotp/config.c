@@ -26,22 +26,19 @@
 #include "print.h"
 #include "config.h"
 
-/* Program options */
-static options _opt;
-
 /* Set all fields to default values */
 static void _config_defaults(options *opt)
 {
 	const options o = {
-		/* General configuration */
+		/* Field description near options struct declaration */
 		.db = CONFIG_DB_GLOBAL,
 		.global_db_path = "/etc/otshadow",
 		.user_db_path = ".otpasswd",
 
-		/* PAM Configuration */
 		.enforce = 0,
 		.secure = 1,
-		.debug = 0,
+		.logging = 1,
+		.silent = 0,
 		.retry = 0,
 		.show = 1,
 		.oob = 0,
@@ -51,6 +48,7 @@ static void _config_defaults(options *opt)
 		.allow_skipping = 1,
 		.allow_passcode_print = 1,
 		.allow_key_print = 1,
+		
 		.def_passcode_length = 4,
 		.min_passcode_length = 2,
 		.max_passcode_length = 16,
@@ -59,7 +57,6 @@ static void _config_defaults(options *opt)
 		.max_alphabet_length = 88,
 		.allow_salt = 1,
 	};
-
 	*opt = o;
 }
 
@@ -221,9 +218,12 @@ static int _config_parse(options *opt, const char *config_path)
 		} else if (_EQ(line_buf, "retries")) {
 			REQUIRE_ARG(2, 5);
 			opt->retry = arg;
-		} else if (_EQ(line_buf, "debug")) {
+		} else if (_EQ(line_buf, "logging")) {
+			REQUIRE_ARG(0, 2);
+			opt->logging = arg;
+		} else if (_EQ(line_buf, "silent")) {
 			REQUIRE_ARG(0, 1);
-			opt->debug = arg;
+			opt->silent = arg;
 		} else if (_EQ(line_buf, "oob")) {
 			REQUIRE_ARG(0, 2);
 			opt->oob = arg;
@@ -294,14 +294,14 @@ error:
 	return retval;
 }
 
-int config_init(const char *config_path)
+static int _config_init(options *opt, const char *config_path)
 {
 	int retval;
-	_config_defaults(&_opt);
-	retval = _config_parse(&_opt, config_path);
+	_config_defaults(opt);
+	retval = _config_parse(opt, config_path);
 
 	if (retval != 0) {
-		_config_defaults(&_opt);
+		_config_defaults(opt);
 	}
 
 	return retval;
@@ -309,6 +309,21 @@ int config_init(const char *config_path)
 
 options *config_get(void)
 {
-	return &_opt;
+	/* Here is stored our global structure */
+	static options opt;
+	static options *opt_init = NULL;
+
+	int retval;
+
+	if (opt_init)
+		return opt_init;
+
+	retval = _config_init(&opt, CONFIG_PATH);
+	if (retval != 0)
+		return NULL;
+	
+	opt_init = &opt;
+
+	return opt_init;
 }
 

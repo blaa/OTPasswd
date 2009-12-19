@@ -21,19 +21,30 @@
 
 #include "config.h"
 
-extern int ph_parse_module_options(options *opt, int flags, int argc, const char **argv);
+/* Parse module options and modify options accordingly */
+extern int ph_parse_module_options(int flags, int argc, const char **argv, options *opt);
 
+/* Send out of band message by calling external script.
+ * s parameter is generally const, but child will 
+ * clean it up */
 extern int ph_out_of_band(const options *opt, state *s);
 
-extern void ph_show_message(pam_handle_t *pamh, int flags, const char *msg);
+/* Display user a message; disabled if in "silent mode" */
+extern void ph_show_message(pam_handle_t *pamh, const options *opt, const char *msg);
 
-extern int ph_handle_load(pam_handle_t *pamh, int flags, int enforced, state *s);
+/* Load state, increment save, handle errors if any */
+extern int ph_state_increment(pam_handle_t *pamh, int flags, int enforced, 
+			      const options *opt, state *s);
 
+/* Function which automates a bit talking with user */
 extern struct pam_response *ph_query_user(
 	pam_handle_t *pamh, int flags, int show,
 	const char *prompt, const state *s);
 
-/* initialization stuff */
-extern int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, options *opt, state **s);
+/* Function performing PAM initialization */
+extern int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, options **opt, state **s);
+
+/* Deinitialize whatever ph_init initialized */
+extern void ph_fini(state *s);
 
 #endif

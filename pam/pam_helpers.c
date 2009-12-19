@@ -50,34 +50,31 @@
 #include "ppp.h"
 #include "pam_helpers.h"
 
-int ph_parse_module_options(options *opt, int flags, int argc, const char **argv)
+int ph_parse_module_options(int flags, int argc, const char **argv, options *opt)
 {
 	for (; argc-- > 0; argv++) {
 		if (strcmp("debug", *argv) == 0)
-			opt->debug = 1;
+			opt->logging = 2;
 		else if (strcmp("silent", *argv) == 0)
-			opt->debug = 0;
+			opt->silent = 1;
 		else {
-			(void)print(PRINT_ERROR, 
+			print(PRINT_ERROR, 
 				"Invalid parameter %s\n", *argv);
 			goto error;
 		}
 	}
 
 	if (flags & PAM_SILENT) {
-		opt->debug = 0;
+		opt->silent = 1;
 	}
 
 	return 0;
 
 error:
-	(void)print(PRINT_ERROR, "Error while parsing parameters\n");
+	print(PRINT_ERROR, "Error while parsing parameters\n");
 	return PAM_AUTH_ERR;
 }
 
-/* Send out of band message by calling external script 
- * state parameter is generally const, but child will 
- * clean it up */
 int ph_out_of_band(const options *opt, state *s)
 {
 	int retval;
@@ -243,8 +240,7 @@ int ph_out_of_band(const options *opt, state *s)
 	return 0;
 }
 
-
-void ph_show_message(pam_handle_t *pamh, int flags, const char *msg)
+void ph_show_message(pam_handle_t *pamh, const options *opt, const char *msg)
 {
 	/* Required for communication with user */
 	struct pam_conv *conversation;
@@ -252,24 +248,28 @@ void ph_show_message(pam_handle_t *pamh, int flags, const char *msg)
 	struct pam_message *pmessage = &message;
 	struct pam_response *resp = NULL;
 
+	/* If silent enabled - don't print any messages */
+	if (opt->silent)
+		return;
+
+
 	/* Initialize conversation function */
 	pam_get_item(pamh, PAM_CONV, (const void **)&conversation);
 
-	if (!(flags & PAM_SILENT)) {
-		/* Tell why */
-		message.msg_style = PAM_TEXT_INFO;
-		message.msg = msg;
-		conversation->conv(
-			1,
-			(const struct pam_message**)&pmessage,
-			&resp, conversation->appdata_ptr);
-		if (resp)
-			_pam_drop_reply(resp, 1);
-	}
+	/* Set message config, and show it. */
+	message.msg_style = PAM_TEXT_INFO;
+	message.msg = msg;
+	conversation->conv(
+		1,
+		(const struct pam_message**)&pmessage,
+		&resp, conversation->appdata_ptr);
 
+	/* Drop any reply */
+	if (resp)
+		_pam_drop_reply(resp, 1);
 }
 
-int ph_handle_load(pam_handle_t *pamh, int flags, int enforced, state *s)
+int ph_state_increment(pam_handle_t *pamh, int flags, int enforced, const options *opt, state *s)
 {
 	const char enforced_msg[] = "otpasswd: Key not generated, unable to login.";
 	const char lock_msg[] = "otpasswd: Unable to lock user state file.";
@@ -284,11 +284,11 @@ int ph_handle_load(pam_handle_t *pamh, int flags, int enforced, state *s)
 
 	case STATE_NUMSPACE:
 		/* Strange error, might happen, but, huh! */
-		ph_show_message(pamh, flags, numspace_msg);
+		ph_show_message(pamh, opt, numspace_msg);
 		return PAM_AUTH_ERR;
 
 	case STATE_LOCK_ERROR:
-		ph_show_message(pamh, flags, lock_msg);
+		ph_show_message(pamh, opt, lock_msg);
 		return PAM_AUTH_ERR;
 
 	case STATE_DOESNT_EXISTS:
@@ -296,7 +296,7 @@ int ph_handle_load(pam_handle_t *pamh, int flags, int enforced, state *s)
 			/* Not enforced - ignore */
 			return PAM_IGNORE;
 		} else {
-			ph_show_message(pamh, flags, enforced_msg);
+			ph_show_message(pamh, opt, enforced_msg);
 		}
 
 		/* Fall-throught */
@@ -335,8 +335,7 @@ struct pam_response *ph_query_user(
 	return resp;
 }
 
-/* Initialization stuff */
-int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, options *opt, state **s)
+int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, options **opt, state **s)
 {
 	/* User info from PAM */
 	const char *user = NULL;
@@ -346,32 +345,52 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, options 
 	/* Bootstrap logging */
 	print_init(PRINT_NOTICE, 0, 1, NULL);
 
-	/* Parse options */
-	retval = ph_parse_module_options(opt, flags, argc, argv);
+	/* Load default options + ones defined in config file */
+	*opt = config_get();
+
+	if (!*opt) {
+		print(PRINT_ERROR, "Unable to read config file\n");
+		retval = PAM_SERVICE_ERR;
+		goto error;
+	}
+
+	/* Parse additional options passed to module */
+	retval = ph_parse_module_options(flags, argc, argv, *opt);
+
+	if (retval != 0) {
+		goto error;
+	}
+
+
+	/* Initialize correctly internal debugging */
+	int log_level = PRINT_NOTICE;
+	switch ((*opt)->logging) {
+	case 0: log_level = PRINT_ERROR; break;
+	case 1: log_level = PRINT_WARN; break;
+	case 2: log_level = PRINT_NOTICE; break;
+	default:
+		print(PRINT_ERROR,
+		      "This should never happen. "
+		      "Illegal opt->logging value\n");
+	}
 
 	/* Close bootstrapped logging */
 	print_fini();
 
-	if (retval != 0) {
-		return retval;
-	}
-
-	/* Initialize internal debugging */
-	if (opt->debug) {
-		print_init(PRINT_NOTICE, 0, 1, "/tmp/otpasswd_dbg");
-		(void)print(PRINT_NOTICE, "otpasswd started\n");
-	} else
-		print_init(PRINT_ERROR, 0, 1, NULL);
+	print_init(log_level, 0, 1, NULL);
+	print(PRINT_NOTICE, "otpasswd started\n");
 
 	/* We must know where to look for state file */
 	retval = pam_get_user(pamh, &user, NULL);
 	if (retval != PAM_SUCCESS && user) {
-		(void)print(PRINT_ERROR, "pam_get_user %s", pam_strerror(pamh,retval));
+		print(PRINT_ERROR, "pam_get_user %s", pam_strerror(pamh,retval));
+		retval = PAM_USER_UNKNOWN;
 		goto error;
 	}
 
 	if (user == NULL || *user == '\0') {
-		(void)print(PRINT_ERROR, "empty_username", pam_strerror(pamh,retval));
+		print(PRINT_ERROR, "empty_username", pam_strerror(pamh,retval));
+		retval = PAM_USER_UNKNOWN;
 		goto error;
 	}
 
@@ -385,5 +404,12 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, options 
 	return 0;
 error:
 	print_fini();
-	return PAM_USER_UNKNOWN;
+	return retval;
+}
+
+void ph_fini(state *s)
+{
+	ppp_fini(s);
+	print(PRINT_NOTICE, "otpasswd finished\n");
+	print_fini();
 }

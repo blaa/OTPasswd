@@ -72,8 +72,16 @@ typedef struct {
 	/* Do we allow dont-skip? 0 - yes */
 	int secure;
 
-	/* Turns on increased debugging (into syslog) */
-	int debug;
+	/* Turns on increased debugging
+	 * 0 - Only Errors
+	 * 1 - Errors, Warnings
+	 * 2 - Errors, Warnings, Notices
+	 */
+	int logging;
+
+	/* Silent flag. 1 - Be silent. Can be set in 
+	 * config or as an module option */
+	int silent;
 
 	/* 0 - no retry
 	 * 1 - retry with new passcode
@@ -135,10 +143,7 @@ typedef struct {
 	int allow_salt;
 } options;
 
-/* Initialize config */
-extern int config_init(const char *config_path);
-
-/* Is guaranteed to succeed if config_init succeeded before */
+/* Get options structure or NULL if error happens */
 extern options *config_get(void);
 
 
