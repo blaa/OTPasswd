@@ -122,6 +122,15 @@ extern void state_fini(state *s);
 /* Generate new key */
 extern int state_key_generate(state *s, const int salt);
 
+/* Validate contact / label data */
+extern int state_validate_str(const char *str);
+
+
+
+/******************************************************
+ * Following functions work on physical
+ * state data located in global/local file or database
+ ******************************************************/
 
 /* Lock state file */
 extern int state_lock(state *s);
@@ -134,7 +143,5 @@ extern int state_load(state *s);
 /* Store state into file */
 extern int state_store(state *s);
 
-/* Validate contact / label data */
-extern int state_validate_str(const char *str);
 
 #endif

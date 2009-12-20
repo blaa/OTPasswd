@@ -141,10 +141,10 @@ typedef struct {
 
 	/* Disallow (0), allow (1) or enforce (2) salt */
 	int allow_salt;
-} options;
+} cfg_t;
 
 /* Get options structure or NULL if error happens */
-extern options *config_get(void);
+extern cfg_t *cfg_get(void);
 
 
 

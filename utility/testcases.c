@@ -755,9 +755,9 @@ int ppp_testcase(void)
 int config_testcase(void)
 {
 	int failed = 0;
-	options *opt;
+	cfg_t *cfg;
 	
-	opt = config_get();
+	cfg = cfg_get();
 
 	return failed;
 }

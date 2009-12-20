@@ -50,13 +50,13 @@
 #include "ppp.h"
 #include "pam_helpers.h"
 
-int ph_parse_module_options(int flags, int argc, const char **argv, options *opt)
+int ph_parse_module_options(int flags, int argc, const char **argv, cfg_t *cfg)
 {
 	for (; argc-- > 0; argv++) {
 		if (strcmp("debug", *argv) == 0)
-			opt->logging = 2;
+			cfg->logging = 2;
 		else if (strcmp("silent", *argv) == 0)
-			opt->silent = 1;
+			cfg->silent = 1;
 		else {
 			print(PRINT_ERROR, 
 				"Invalid parameter %s\n", *argv);
@@ -65,7 +65,7 @@ int ph_parse_module_options(int flags, int argc, const char **argv, options *opt
 	}
 
 	if (flags & PAM_SILENT) {
-		opt->silent = 1;
+		cfg->silent = 1;
 	}
 
 	return 0;
@@ -75,14 +75,14 @@ error:
 	return PAM_AUTH_ERR;
 }
 
-int ph_out_of_band(const options *opt, state *s)
+int ph_out_of_band(const cfg_t *cfg, state *s)
 {
 	int retval;
 	char current_passcode[17] = {0};
 	char contact[STATE_CONTACT_SIZE];
 
 	/* Check if OOB enabled */
-	if (opt->oob_path == NULL || opt->oob == 0) {
+	if (cfg->oob_path == NULL || cfg->oob == 0) {
 		(void)print(PRINT_WARN,
 			    "Trying OOB when it's not enabled\n");
 		return 1;
@@ -91,7 +91,7 @@ int ph_out_of_band(const options *opt, state *s)
 	/* Ensure path is correct */
 	{
 		struct stat st;
-		if (stat(opt->oob_path, &st) != 0) {
+		if (stat(cfg->oob_path, &st) != 0) {
 			(void) print(PRINT_ERROR,
 				     "Unable to access oob sender. "
 				     "Check oob_path parameter\n");
@@ -112,17 +112,17 @@ int ph_out_of_band(const options *opt, state *s)
 			/* That's cool, but can we execute it? */
 			const int can_owner = 
 				((st.st_mode & S_IXUSR) &&
-				 st.st_uid == opt->uid);
+				 st.st_uid == cfg->uid);
 			const int can_group =
 				((st.st_mode & S_IXGRP) &&
-				 st.st_gid == opt->gid);
+				 st.st_gid == cfg->gid);
 			if (! (can_owner || can_group) ) {
 				/* Neither from group nor from 
 				 * owner mode */
 				/* TODO: testcase this */
 				(void)print(PRINT_ERROR,
 					    "UID %d is unable to execute "
-					    "OOB utility!\n", opt->uid);
+					    "OOB utility!\n", cfg->uid);
 				return 2;
 			}
 		}
@@ -168,21 +168,21 @@ int ph_out_of_band(const options *opt, state *s)
 		}
 
 		/* Drop root */
-		retval = setgid(opt->gid);
+		retval = setgid(cfg->gid);
 		if (retval != 0) {
 			print_perror(PRINT_ERROR,
-				     "UNABLE TO CHANGE GID TO %d\n", opt->gid);
+				     "UNABLE TO CHANGE GID TO %d\n", cfg->gid);
 			exit(11);
 		}
 
-		retval = setuid(opt->uid);
+		retval = setuid(cfg->uid);
 		if (retval != 0) {
 			print_perror(PRINT_ERROR, 
-				     "UNABLE TO CHANGE UID TO %d\n", opt->uid);
+				     "UNABLE TO CHANGE UID TO %d\n", cfg->uid);
 			exit(12);
 		}
 
-		execl(opt->oob_path, opt->oob_path,
+		execl(cfg->oob_path, cfg->oob_path,
 		      contact, current_passcode, NULL);
 
 		/* Whoops */
@@ -240,7 +240,7 @@ int ph_out_of_band(const options *opt, state *s)
 	return 0;
 }
 
-void ph_show_message(pam_handle_t *pamh, const options *opt, const char *msg)
+void ph_show_message(pam_handle_t *pamh, const cfg_t *cfg, const char *msg)
 {
 	/* Required for communication with user */
 	struct pam_conv *conversation;
@@ -249,7 +249,7 @@ void ph_show_message(pam_handle_t *pamh, const options *opt, const char *msg)
 	struct pam_response *resp = NULL;
 
 	/* If silent enabled - don't print any messages */
-	if (opt->silent)
+	if (cfg->silent)
 		return;
 
 
@@ -269,7 +269,7 @@ void ph_show_message(pam_handle_t *pamh, const options *opt, const char *msg)
 		_pam_drop_reply(resp, 1);
 }
 
-int ph_increment(pam_handle_t *pamh, const options *opt, state *s)
+int ph_increment(pam_handle_t *pamh, const cfg_t *cfg, state *s)
 {
 	const char enforced_msg[] = "otpasswd: Key not generated, unable to login.";
 	const char lock_msg[] = "otpasswd: Unable to lock user state file.";
@@ -284,19 +284,19 @@ int ph_increment(pam_handle_t *pamh, const options *opt, state *s)
 
 	case STATE_NUMSPACE:
 		/* Strange error, might happen, but, huh! */
-		ph_show_message(pamh, opt, numspace_msg);
+		ph_show_message(pamh, cfg, numspace_msg);
 		return PAM_AUTH_ERR;
 
 	case STATE_LOCK_ERROR:
-		ph_show_message(pamh, opt, lock_msg);
+		ph_show_message(pamh, cfg, lock_msg);
 		return PAM_AUTH_ERR;
 
 	case STATE_DOESNT_EXISTS:
-		if (opt->enforce == 0) {
+		if (cfg->enforce == 0) {
 			/* Not enforced - ignore */
 			return PAM_IGNORE;
 		} else {
-			ph_show_message(pamh, opt, enforced_msg);
+			ph_show_message(pamh, cfg, enforced_msg);
 		}
 
 		/* Fall-throught */
@@ -335,7 +335,7 @@ struct pam_response *ph_query_user(
 	return resp;
 }
 
-int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, options **opt, state **s)
+int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, cfg_t **cfg, state **s)
 {
 	/* User info from PAM */
 	const char *user = NULL;
@@ -346,16 +346,16 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, options 
 	print_init(PRINT_NOTICE, 0, 1, NULL);
 
 	/* Load default options + ones defined in config file */
-	*opt = config_get();
+	*cfg = cfg_get();
 
-	if (!*opt) {
+	if (!*cfg) {
 		print(PRINT_ERROR, "Unable to read config file\n");
 		retval = PAM_SERVICE_ERR;
 		goto error;
 	}
 
 	/* Parse additional options passed to module */
-	retval = ph_parse_module_options(flags, argc, argv, *opt);
+	retval = ph_parse_module_options(flags, argc, argv, *cfg);
 
 	if (retval != 0) {
 		goto error;
@@ -364,14 +364,14 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, options 
 
 	/* Initialize correctly internal debugging */
 	int log_level = PRINT_NOTICE;
-	switch ((*opt)->logging) {
+	switch ((*cfg)->logging) {
 	case 0: log_level = PRINT_ERROR; break;
 	case 1: log_level = PRINT_WARN; break;
 	case 2: log_level = PRINT_NOTICE; break;
 	default:
 		print(PRINT_ERROR,
 		      "This should never happen. "
-		      "Illegal opt->logging value\n");
+		      "Illegal cfg->logging value\n");
 	}
 
 	/* Close bootstrapped logging */

@@ -27,10 +27,10 @@
 #include "config.h"
 
 /* Set all fields to default values */
-static void _config_defaults(options *opt)
+static void _config_defaults(cfg_t *cfg)
 {
-	const options o = {
-		/* Field description near options struct declaration */
+	const cfg_t o = {
+		/* Field description near cfg struct declaration */
 		.db = CONFIG_DB_GLOBAL,
 		.global_db_path = "/etc/otshadow",
 		.user_db_path = ".otpasswd",
@@ -57,13 +57,13 @@ static void _config_defaults(options *opt)
 		.max_alphabet_length = 88,
 		.allow_salt = 1,
 	};
-	*opt = o;
+	*cfg = o;
 }
 
 /* Parse config file and set fields in struct 
  * config_path might be NULL to read default config.
  */
-static int _config_parse(options *opt, const char *config_path)
+static int _config_parse(cfg_t *cfg, const char *config_path)
 {
 	int retval = 1;
 	int line_count = 0;
@@ -176,13 +176,13 @@ static int _config_parse(options *opt, const char *config_path)
 		/* Parsing general configuration */
 		if (_EQ(line_buf, "db")) {
 			if (_EQ(equality, "global")) 
-				opt->db = CONFIG_DB_GLOBAL;
+				cfg->db = CONFIG_DB_GLOBAL;
 			else if (_EQ(equality, "user")) 
-				opt->db = CONFIG_DB_USER;
+				cfg->db = CONFIG_DB_USER;
 			else if (_EQ(equality, "mysql")) 
-				opt->db = CONFIG_DB_MYSQL;
+				cfg->db = CONFIG_DB_MYSQL;
 			else if (_EQ(equality, "ldap")) 
-				opt->db = CONFIG_DB_LDAP;
+				cfg->db = CONFIG_DB_LDAP;
 			else {
 				print(PRINT_ERROR,
 				      "Illegal db parameter at line"
@@ -191,42 +191,42 @@ static int _config_parse(options *opt, const char *config_path)
 			}
 
 		} else if (_EQ(line_buf, "global_db")) {
-			_COPY(opt->global_db_path, equality);
+			_COPY(cfg->global_db_path, equality);
 		} else if (_EQ(line_buf, "user_db")) {
-			_COPY(opt->user_db_path, equality);
+			_COPY(cfg->user_db_path, equality);
 
 		/* Ignore for now */
 		} else if (_EQ(line_buf, "sql_host")) {
-			_COPY(opt->sql_host, equality);
+			_COPY(cfg->sql_host, equality);
 		} else if (_EQ(line_buf, "sql_database")) {
-			_COPY(opt->sql_database, equality);
+			_COPY(cfg->sql_database, equality);
 		} else if (_EQ(line_buf, "sql_user")) {
-			_COPY(opt->sql_user, equality);
+			_COPY(cfg->sql_user, equality);
 		} else if (_EQ(line_buf, "sql_pass")) {
-			_COPY(opt->sql_pass, equality);
+			_COPY(cfg->sql_pass, equality);
 
 		/* Parsing PAM configuration */
 		} else if (_EQ(line_buf, "show")) {
 			REQUIRE_ARG(1,3);
-			opt->show = arg;
+			cfg->show = arg;
 		} else if (_EQ(line_buf, "enforce")) {
 			REQUIRE_ARG(0, 1);
-			opt->enforce = arg;
+			cfg->enforce = arg;
 		} else if (_EQ(line_buf, "retry")) {
 			REQUIRE_ARG(0, 3);
-			opt->retry = arg;
+			cfg->retry = arg;
 		} else if (_EQ(line_buf, "retries")) {
 			REQUIRE_ARG(2, 5);
-			opt->retry = arg;
+			cfg->retry = arg;
 		} else if (_EQ(line_buf, "logging")) {
 			REQUIRE_ARG(0, 2);
-			opt->logging = arg;
+			cfg->logging = arg;
 		} else if (_EQ(line_buf, "silent")) {
 			REQUIRE_ARG(0, 1);
-			opt->silent = arg;
+			cfg->silent = arg;
 		} else if (_EQ(line_buf, "oob")) {
 			REQUIRE_ARG(0, 2);
-			opt->oob = arg;
+			cfg->oob = arg;
 		} else if (_EQ(line_buf, "oob_user")) {
 			struct passwd *pwd;
 			pwd = getpwnam(equality);
@@ -236,48 +236,48 @@ static int _config_parse(options *opt, const char *config_path)
 				      "at line %d.\n", line_count);
 				goto error;
 			}
-			opt->uid = pwd->pw_uid;
-			opt->gid = pwd->pw_gid;
+			cfg->uid = pwd->pw_uid;
+			cfg->gid = pwd->pw_gid;
 		} else if (_EQ(line_buf, "oob_path")) {
-			_COPY(opt->oob_path, equality);
+			_COPY(cfg->oob_path, equality);
 
 		/* Parsing POLICY configuration */
 		} else if (_EQ(line_buf, "allow_skipping")) {
 			REQUIRE_ARG(0, 1);
-			opt->allow_skipping = arg;
+			cfg->allow_skipping = arg;
 		} else if (_EQ(line_buf, "allow_passcode_print")) {
 			REQUIRE_ARG(0, 1);
-			opt->allow_passcode_print = arg;
+			cfg->allow_passcode_print = arg;
 		} else if (_EQ(line_buf, "allow_key_print")) {
 			REQUIRE_ARG(0, 1);
-			opt->allow_key_print = arg;
+			cfg->allow_key_print = arg;
 		} else if (_EQ(line_buf, "allow_key_generation")) {
 			REQUIRE_ARG(0, 1);
-			opt->allow_key_generation = arg;
+			cfg->allow_key_generation = arg;
 		} else if (_EQ(line_buf, "allow_salt")) {
 			REQUIRE_ARG(0, 2);
-			opt->allow_salt = arg;
+			cfg->allow_salt = arg;
 
 		} else if (_EQ(line_buf, "def_passcode_length")) {
 			REQUIRE_ARG(2, 16);
-			opt->def_passcode_length = arg;
+			cfg->def_passcode_length = arg;
 		} else if (_EQ(line_buf, "min_passcode_length")) {
 			REQUIRE_ARG(2, 16);
-			opt->min_passcode_length = arg;
+			cfg->min_passcode_length = arg;
 
 		} else if (_EQ(line_buf, "max_passcode_length")) {
 			REQUIRE_ARG(2, 16);
-			opt->max_passcode_length = arg;
+			cfg->max_passcode_length = arg;
 
 		} else if (_EQ(line_buf, "def_alphabet_length")) {
 			REQUIRE_ARG(64, 88);
-			opt->def_alphabet_length = arg;
+			cfg->def_alphabet_length = arg;
 		} else if (_EQ(line_buf, "min_alphabet_length")) {
 			REQUIRE_ARG(64, 88);
-			opt->min_alphabet_length = arg;
+			cfg->min_alphabet_length = arg;
 		} else if (_EQ(line_buf, "max_alphabet_length")) {
 			REQUIRE_ARG(64, 88);
-			opt->max_alphabet_length = arg;
+			cfg->max_alphabet_length = arg;
 		} else {
 			/* Error */
 			print(PRINT_ERROR, "Unrecognized variable '%s' on line %d in config file\n",
@@ -294,36 +294,36 @@ error:
 	return retval;
 }
 
-static int _config_init(options *opt, const char *config_path)
+static int _config_init(cfg_t *cfg, const char *config_path)
 {
 	int retval;
-	_config_defaults(opt);
-	retval = _config_parse(opt, config_path);
+	_config_defaults(cfg);
+	retval = _config_parse(cfg, config_path);
 
 	if (retval != 0) {
-		_config_defaults(opt);
+		_config_defaults(cfg);
 	}
 
 	return retval;
 }
 
-options *config_get(void)
+cfg_t *cfg_get(void)
 {
 	/* Here is stored our global structure */
-	static options opt;
-	static options *opt_init = NULL;
+	static cfg_t cfg;
+	static cfg_t *cfg_init = NULL;
 
 	int retval;
 
-	if (opt_init)
-		return opt_init;
+	if (cfg_init)
+		return cfg_init;
 
-	retval = _config_init(&opt, CONFIG_PATH);
+	retval = _config_init(&cfg, CONFIG_PATH);
 	if (retval != 0)
 		return NULL;
 	
-	opt_init = &opt;
+	cfg_init = &cfg;
 
-	return opt_init;
+	return cfg_init;
 }
 

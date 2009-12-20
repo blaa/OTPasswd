@@ -67,7 +67,9 @@ TARGET_LINK_LIBRARIES(pam_otpasswd libotp gmp ssl pam)
 ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/otpasswd_actions.c utility/testcases.c)
 TARGET_LINK_LIBRARIES(otpasswd libotp gmp ssl)
 
+##
 # Install target
+##
 SET(CMAKE_INSTALL_PREFIX /usr)
 INSTALL(TARGETS pam_otpasswd otpasswd
   RUNTIME DESTINATION bin
