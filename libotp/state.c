@@ -29,6 +29,7 @@
 #include "state.h"
 #include "crypto.h"
 #include "num.h"
+#include "config.h"
 
 /********************************************
  * Helper functions for managing state files
@@ -76,11 +77,12 @@ static char *_strtok(char *input, const char *delim)
 }
 
 /* Returns name to user state file */
-static char *_state_file(const char *username, const char *filename)
+static char *_state_user_db_file(const char *username)
 {
 	static struct passwd *pwdata = NULL;
 	char *home = NULL;
 	char *name = NULL;
+	cfg_t *cfg = cfg_get();
 	int length;
 
 
@@ -115,21 +117,15 @@ static char *_state_file(const char *username, const char *filename)
 	}
 
 	/* Append a filename */
-	const char *configfile;
-	if (filename)
-		configfile = filename;
-	else
-		configfile = STATE_FILENAME;
-
 	length = strlen(home);
-	length += strlen(configfile);
+	length += strlen(cfg->user_db_path);
 	length += 2;
 
 	name = malloc(length);
 	if (!name) 
 		goto error;
 
-	int ret = snprintf(name, length, "%s/%s", home, configfile);
+	int ret = snprintf(name, length, "%s/%s", home, cfg->user_db_path);
 
 	assert( ret == length - 1 );
 
@@ -630,46 +626,66 @@ error:
 /******************************************
  * Functions for managing state information
  ******************************************/
-int state_init(state *s, const char *username, const char *configfile)
+int state_init(state *s, const char *username)
 {
 	const char salt_mask[] =
 		"FFFFFFFFFFFFFFFFFFFFFFFF00000000";
 	const char code_mask[] =
 		"000000000000000000000000FFFFFFFF";
 
+	assert(sizeof(salt_mask) == 33);
+
 	int ret;
 
+	/* This will ensure that all further state_ calls requiring
+	 * a cfg might not check the return value as state_init is called
+	 * first */
+	cfg_t *cfg = cfg_get();
+	if (cfg == NULL) {
+		print(PRINT_ERROR, "Unable to read config file\n");
+		return 2;
+	}
 
-	assert(sizeof(salt_mask) == 33);
+	assert(cfg->def_passcode_length >= 2 &&
+	       cfg->def_passcode_length <= 16);
+
+	assert(cfg->def_alphabet_length == 64 ||
+	       cfg->def_alphabet_length == 88);
 
 	mpz_init(s->counter);
 	mpz_init(s->sequence_key);
 	mpz_init(s->latest_card);
 	mpz_init(s->current_card);
-	mpz_init(s->spass);
 	mpz_init(s->channel_time);
 
 	mpz_init(s->max_card);
 	mpz_init(s->max_code);
+
+	mpz_init(s->spass);
+	s->spass_set = 0;
 
 	ret = mpz_init_set_str(s->salt_mask, salt_mask, 16);
 	assert(ret == 0);
 	ret = mpz_init_set_str(s->code_mask, code_mask, 16);
 	assert(ret == 0);
 
-	s->spass_set = 0;
-	s->code_length = 4;
-	s->flags = FLAG_SHOW;
-	s->failures = 0;
-	s->recent_failures = 0;
+	/* Default values */
 	memset(s->label, 0x00, sizeof(s->label));
 	memset(s->contact, 0x00, sizeof(s->contact));
 
-	s->prompt = NULL;
+	s->code_length = cfg->def_passcode_length;
+	if (cfg->show != 0)
+		s->flags = FLAG_SHOW;
+	if (cfg->def_alphabet_length == 88)
+		s->flags |= FLAG_ALPHABET_EXTENDED;
 
+	s->failures = 0;
+	s->recent_failures = 0;
+
+	s->prompt = NULL;
 	s->fd = -1;
 	s->lock_fd = -1;
-	s->filename = _state_file(username, configfile);
+	s->filename = _state_user_db_file(username);
 	s->lockname = NULL;
 	if (username)
 		s->username = strdup(username);
@@ -681,6 +697,7 @@ int state_init(state *s, const char *username, const char *configfile)
 		return 1;
 	}
 
+	/* This will be calculated later */
 	s->codes_on_card = s->codes_in_row = s->current_row =
 		s->current_column = 0;
 	return 0;
@@ -688,16 +705,16 @@ int state_init(state *s, const char *username, const char *configfile)
 
 void state_fini(state *s)
 {
-	num_dispose(s->counter);
-	num_dispose(s->sequence_key);
-	num_dispose(s->latest_card);
-	num_dispose(s->current_card);
-	num_dispose(s->spass);
-	num_dispose(s->channel_time);
-	num_dispose(s->salt_mask);
-	num_dispose(s->code_mask);
-	num_dispose(s->max_card);
-	num_dispose(s->max_code);
+	mpz_clear(s->counter);
+	mpz_clear(s->sequence_key);
+	mpz_clear(s->latest_card);
+	mpz_clear(s->current_card);
+	mpz_clear(s->spass);
+	mpz_clear(s->channel_time);
+	mpz_clear(s->salt_mask);
+	mpz_clear(s->code_mask);
+	mpz_clear(s->max_card);
+	mpz_clear(s->max_code);
 
 	if (s->prompt) {
 		const int length = strlen(s->prompt);

@@ -13,12 +13,14 @@ Trying to sort tasks according to their priority.
 2009-12-13 v0.5
 	* [+] Check bit distribution for alphabets not divisible by 2
 	* [+] Remove dont-skip option.
+	* [+] GMP might leak information with reallocs of it's mpz_t
+	      Fixed by substituting alloc functions. num_init() must
+	      be called before any other gmp functions.
 	* [-] Keeping track of failures.
 	      Started (place in state files created)
 	* [-] Implement static passwords;
 		They might be required always or just to perform some commands
 		like second-channel usage.
-	* [%] GMP might leak information with reallocs of it's mpz_t
 	* [?] Cleanup PPP interface. This should look like follows.
 	      "State" is class implementing some basic features of 
 	      state management. From this 'class' ppp is derived.
@@ -37,6 +39,7 @@ Trying to sort tasks according to their priority.
 	      to conversation function. If not, we must build a buffer
 	      (See for example how winscp shows that warning)
 	* [?] Use PAM_SERVICE_ERR
+	* [-] right trim values from config?
 
 	Low-priority:
 	* [?] Improve LaTeX output (some colors, borders?)

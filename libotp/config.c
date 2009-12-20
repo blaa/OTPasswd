@@ -287,6 +287,10 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 
 	} while (!feof(f));
 
+
+	/* TODO Check obvious errors like default value
+	 * out of max/min values */
+
 	/* All ok */
 	retval = 0;
 error:

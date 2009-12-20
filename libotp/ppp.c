@@ -42,7 +42,7 @@ void ppp_add_salt(const state *s, mpz_t passcode)
 		mpz_init_set(salt, s->counter);
 		mpz_and(salt, salt, s->salt_mask);
 		mpz_add(passcode, passcode, salt);
-		num_dispose(salt);
+		mpz_clear(salt);
 	}
 }
 
@@ -133,8 +133,8 @@ clear:
 	memset(cnt_bin, 0, sizeof(cnt_bin));
 	memset(cipher_bin, 0, sizeof(cipher_bin));
 
-	num_dispose(quotient);
-	num_dispose(cipher);
+	mpz_clear(quotient);
+	mpz_clear(cipher);
 	return ret;
 }
 
@@ -265,7 +265,7 @@ void ppp_calculate(state *s)
 	unsigned long int r = mpz_fdiv_q_ui(s->current_card, unsalted_counter, s->codes_on_card);
 	mpz_add_ui(s->current_card, s->current_card, 1);
 
-	num_dispose(unsalted_counter);
+	mpz_clear(unsalted_counter);
 
 	/* Calculate column/row using rest from division */
 	int current_column = r % s->codes_in_row;
@@ -320,10 +320,10 @@ int ppp_verify_range(const state *s)
 
 	if (mpz_cmp(s->sequence_key, max_key) > 0) {
 		print(PRINT_ERROR, "State file corrupted. Key number too big\n");
-		num_dispose(max_key);
+		mpz_clear(max_key);
 		return STATE_RANGE;
 	}
-	num_dispose(max_key);
+	mpz_clear(max_key);
 
 	/* Verify counter size */
 	const char max_counter_hex[] =
@@ -333,10 +333,10 @@ int ppp_verify_range(const state *s)
 
 	if (mpz_cmp(s->counter, max_counter) > 0) {
 		print(PRINT_ERROR, "State file corrupted. Counter number too big\n");
-		num_dispose(max_counter);
+		mpz_clear(max_counter);
 		return STATE_RANGE;
 	}
-	num_dispose(max_counter);
+	mpz_clear(max_counter);
 
 	/* Check if we have runned out of available passcodes */
 
@@ -353,11 +353,11 @@ int ppp_verify_range(const state *s)
 	 * whereas counter starts from 0 */
 	if (mpz_cmp(just_counter, s->max_code) >= 0) {
 		/* Whoops */
-		num_dispose(just_counter);
+		mpz_clear(just_counter);
 		return STATE_NUMSPACE;
 	}
 
-	num_dispose(just_counter);
+	mpz_clear(just_counter);
 	return 0;
 }
 
@@ -404,7 +404,7 @@ int ppp_init(state **s, const char *user)
 	*s = malloc(sizeof(**s));
 	if (!*s)
 		return PPP_NOMEM;
-	ret = state_init(*s, user, NULL);
+	ret = state_init(*s, user);
 
 	if (ret == 0)
 		return 0;
@@ -498,7 +498,7 @@ int ppp_increment(state *s)
 	mpz_set(s->counter, tmp);
 
 
-	num_dispose(tmp);
+	mpz_clear(tmp);
 	return ret;
 }
 

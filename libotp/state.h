@@ -113,7 +113,7 @@ typedef struct {
  * If username is given we determine user home directory
  * using specified username, if it's NULL - we lookup environment
  */
-extern int state_init(state *s, const char *username, const char *configfile);
+extern int state_init(state *s, const char *username);
 
 /* Deinitializes state struct; should clear
  * any secure-relevant data and free the memory */

@@ -42,20 +42,15 @@ static inline void num_to_bin(const mpz_t num, unsigned char *data, const size_t
 	assert(size == 1);
 }
 
-static inline void num_dispose(mpz_t num)
-{
-	/* Clear up the internals */
-	const int size = num->_mp_alloc > 0 ? num->_mp_alloc : - num->_mp_alloc;
-	memset(num->_mp_d, 0, size * sizeof(*num->_mp_d));
-
-	mpz_clear(num);
-}
-
 static inline void num_print(const mpz_t num, const int base)
 {
 	char *result = mpz_get_str(NULL, base, num);
 	(void) puts(result);
 	free(result);
 }
+
+/* This function set's GMP memory allocation routines 
+ * to safer versions which cleanup deallocated memory */
+extern void num_init(void);
 
 #endif

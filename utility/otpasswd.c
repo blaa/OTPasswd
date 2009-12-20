@@ -28,6 +28,7 @@
 #include "print.h"
 #include "crypto.h"
 #include "num.h"
+#include "config.h"
 
 #include "passcards.h"
 
@@ -125,8 +126,9 @@ static void _usage(int argc, const char **argv)
 int process_cmd_line(int argc, char **argv)
 {
 	int retval = 0;
+
+	/* Options passed to utility with command line */
 	options_t options = {
-		.log_level = PRINT_WARN,
 		.action = 0,
 		.action_arg = NULL,
 
@@ -134,6 +136,28 @@ int process_cmd_line(int argc, char **argv)
 		.flag_clear_mask = 0,
 		.set_codelength = 0
 	};
+
+	/* This will cause GMP to free memory safely */
+	num_init();
+
+	/* Get global config */
+	if (print_init(PRINT_ERROR, 1, 0, NULL) != 0) {
+		printf("ERROR: Unable to start log subsystem\n");
+		return 1;
+	}
+
+	cfg_t *cfg = cfg_get();
+
+	print_fini();
+
+	if (!cfg) {
+		printf("Unable to read global config file\n");
+		return 2;
+	}
+
+	/* Default logging */
+	cfg->logging = 1;
+
 
 	static struct option long_options[] = {
 		/* Action selection */
@@ -227,11 +251,21 @@ int process_cmd_line(int argc, char **argv)
 				options.flag_set_mask |= FLAG_SHOW;
 			else if (strcmp(optarg, "dont-show") == 0)
 				options.flag_clear_mask |= FLAG_SHOW;
-			else if (strcmp(optarg, "alphabet-simple") == 0)
+			else if (strcmp(optarg, "alphabet-simple") == 0) {
+				if (cfg->min_alphabet_length > 64) {
+					/* TODO: Check also max */
+					printf("Alphabet length disallowed by configuration\n");
+					exit(EXIT_FAILURE);
+				}
 				options.flag_clear_mask |= FLAG_ALPHABET_EXTENDED;
-			else if (strcmp(optarg, "alphabet-extended") == 0)
+			} else if (strcmp(optarg, "alphabet-extended") == 0) {
+				if (cfg->max_alphabet_length < 88) {
+					/* TODO: Check also min */
+					printf("Alphabet length disallowed by configuration\n");
+					exit(EXIT_FAILURE);
+				}
 				options.flag_set_mask |= FLAG_ALPHABET_EXTENDED;
-			else if (strcmp(optarg, "list") == 0) {
+			} else if (strcmp(optarg, "list") == 0) {
 				if (options.action != 0) {
 					printf("Only one action can be specified on the command line\n"
 						"and you can't mix 'list' flag with other flags.\n");
@@ -261,7 +295,7 @@ int process_cmd_line(int argc, char **argv)
 			break;
 
 		case 'v':
-			options.log_level = PRINT_NOTICE;
+			cfg->logging = 2;
 			break;
 
 		default:
@@ -270,11 +304,15 @@ int process_cmd_line(int argc, char **argv)
 		}
 	}
 
-	/* Perform action */
-	if (print_init(options.log_level, 1, 0, NULL) != 0) {
+
+	/* Initialize logging subsystem */
+	if (print_init(cfg->logging == 1 ? PRINT_WARN : PRINT_NOTICE, 
+		       1, 0, NULL) != 0) {
 		printf("Unable to start debugging\n");
 	}
+
 	int ret;
+	/* Perform action */
 	switch (options.action) {
 	case 0:
 		print(PRINT_ERROR, "No action specified. Try passing -k, -s, -t or -l\n\n");
@@ -282,7 +320,7 @@ int process_cmd_line(int argc, char **argv)
 		exit(1);
 
 	case 'k':
-		action_key(&options);
+		action_key(&options, cfg);
 		break;
 
 	case 'L': /* list action */
@@ -290,17 +328,17 @@ int process_cmd_line(int argc, char **argv)
 	case 'd':
 	case 'c':
 	case 'p':
-		action_flags(&options);
+		action_flags(&options, cfg);
 		break;
 
 	case 'a':
-		ret = action_authenticate(&options);
+		ret = action_authenticate(&options, cfg);
 		print_fini();
 		if (ret == 0)
 			retval = 1;
 		break;
 	case 'Q':
-		action_license(&options);
+		action_license(&options, cfg);
 		break;
 
 	case 'w': /* Warning */
@@ -308,13 +346,20 @@ int process_cmd_line(int argc, char **argv)
 	case 't':
 	case 'l':
 	case 'P':
-		action_print(&options);
+		action_print(&options, cfg);
 		break;
 
 	case 'x':
 		printf("*** Running testcases\n");
 		{
 			int failed = 0;
+			
+			/* Change DB info so we won't overwrite anything
+			 * important */
+			strcpy(cfg->user_db_path, ".otpasswd_testcase");
+			strcpy(cfg->global_db_path, "/tmp/otshadow_testcase");
+			cfg->db = CONFIG_DB_USER;
+
 			failed += config_testcase();
 			failed += state_testcase();
 			failed += num_testcase();

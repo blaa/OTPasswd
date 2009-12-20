@@ -31,6 +31,7 @@
 #include "print.h"
 #include "crypto.h"
 #include "num.h"
+#include "config.h"
 
 #define PPP_INTERNAL
 #include "ppp.h"
@@ -169,19 +170,19 @@ static void _show_keys(const state *s)
 	gmp_printf("Max card            = %Zd\n", s->max_card);
 	gmp_printf("Max code            = %Zd\n", s->max_code);
 
-	num_dispose(unsalted_counter);
+	mpz_clear(unsalted_counter);
 
 }
 
 /* Authenticate; returns boolean; 1 - authenticated */
-int action_authenticate(options_t *options)
+int action_authenticate(options_t *options, const cfg_t *cfg)
 {
 	int retval = 0;
 
 	/* OTP State */
 	state s;
 
-	if (state_init(&s, NULL, NULL) != 0) {
+	if (state_init(&s, NULL) != 0) {
 		/* This will fail if we're unable to locate home directory */
 		print(PRINT_ERROR, "Unable to load state! Have you used -k option?\n");
 		return 0; /* False - not authenticated */
@@ -228,11 +229,17 @@ cleanup:
 }
 
 /* Generate new key */
-void action_key(options_t *options)
+void action_key(options_t *options, const cfg_t *cfg)
 {
+	if (cfg->allow_key_generation == 0) {
+		// TODO; check if we can write to global db
+		// if yes - ok, if not - diee.
+	}
+
+
 	int ret;
 	state s;
-	if (state_init(&s, NULL, NULL) != 0) {
+	if (state_init(&s, NULL) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
 		exit(1);
 	}
@@ -258,17 +265,30 @@ void action_key(options_t *options)
 			    "Do you want to keep them?") == QUERY_NO) {
 			printf("Reverting to defaults.\n");
 			state_fini(&s);
-			state_init(&s, NULL, NULL);
+			state_init(&s, NULL);
 		}
 	} else {
 		/* Failed load might have changed something in struct */
 		state_fini(&s);
-		state_init(&s, NULL, NULL);
+		state_init(&s, NULL);
 	}
 
-	int salted = options->flag_set_mask & FLAG_NOT_SALTED ? 0 : 1;
 	s.flags |= options->flag_set_mask;
 
+	int salted = 1;
+	switch (cfg->allow_salt) {
+	case 0: 
+		salted = 0;
+		break;
+	case 2:
+		salted = 1;
+		break;
+	default:
+	case 1: 
+		salted = options->flag_set_mask & FLAG_NOT_SALTED ? 0 : 1;
+		break;
+	}
+	
 	if (state_key_generate(&s, salted) != 0) {
 		print(PRINT_ERROR, "Unable to generate new key\n");
 		goto cleanup;
@@ -312,7 +332,7 @@ cleanup:
 	state_fini(&s);
 }
 
-void action_license(options_t *options)
+void action_license(options_t *options, const cfg_t *cfg)
 {
 	printf(
 		"otpasswd -- One-time password manager and PAM module.\n"
@@ -335,12 +355,12 @@ void action_license(options_t *options)
 }
 
 /* Update flags based on mask which are stored in options struct */
-void action_flags(options_t *options)
+void action_flags(options_t *options, const cfg_t *cfg)
 {
 	int ret, state_locked;
 	int state_changed = 0;
 	state s;
-	if (state_init(&s, NULL, NULL) != 0) {
+	if (state_init(&s, NULL) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
 		exit(1);
 	}
@@ -374,7 +394,8 @@ void action_flags(options_t *options)
 			state_changed = 1;
 		}
 
-		if (options->set_codelength >= 2 && options->set_codelength <= 16) {
+		if (options->set_codelength >= cfg->min_passcode_length &&
+		    options->set_codelength <= cfg->max_passcode_length) {
 			s.code_length = options->set_codelength;
 			state_changed = 1;
 		} else if (options->set_codelength) {
@@ -475,7 +496,7 @@ no_key_file:
 	exit(1);
 }
 
-void action_print(options_t *options)
+void action_print(options_t *options, const cfg_t *cfg)
 {
 	int ret;
 
@@ -483,7 +504,7 @@ void action_print(options_t *options)
 	state s;
 	int state_locked = 1;
 	int state_changed = 0;
-	if (state_init(&s, NULL, NULL) != 0) {
+	if (state_init(&s, NULL) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
 		exit(1);
 	}
@@ -776,8 +797,8 @@ void action_print(options_t *options)
 	}
 
 cleanup1:
-	num_dispose(passcode_num);
-	num_dispose(passcard_num);
+	mpz_clear(passcode_num);
+	mpz_clear(passcard_num);
 
 cleanup:
 	if (state_changed) {

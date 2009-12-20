@@ -193,7 +193,7 @@ int card_testcase(void)
 	int failed = 0;
 
 	mpz_init(cnt);
-	state_init(&s, NULL, ".otpasswd_testcase");
+	state_init(&s, NULL);
 	strcpy(s.label, "hostname long");
 
 	const unsigned char hash1[] =
@@ -276,10 +276,10 @@ int state_testcase(void)
 	int failed = 0;
 	int test = 0;
 
-	if (state_init(&s1, NULL, ".otpasswd_testcase") != 0)
+	if (state_init(&s1, NULL) != 0)
 		printf("state_testcase[%2d] failed (%d)\n", test, failed++);
 
-	test++; if (state_init(&s2, NULL, ".otpasswd_testcase") != 0)
+	test++; if (state_init(&s2, NULL) != 0)
 		printf("state_testcase[%2d] failed(%d)\n", test, failed++);
 
 	test++; if (state_key_generate(&s1, 0) != 0)
@@ -435,9 +435,9 @@ clear:
 	memset(cnt_bin, 0, sizeof(cnt_bin));
 	memset(cipher_bin, 0, sizeof(cipher_bin));
 
-	num_dispose(quotient);
-	num_dispose(cipher);
-	num_dispose(counter);
+	mpz_clear(quotient);
+	mpz_clear(cipher);
+	mpz_clear(counter);
 
 	return failed;
 }
@@ -543,9 +543,9 @@ clear:
 	memset(cnt_bin, 0, sizeof(cnt_bin));
 	memset(cipher_bin, 0, sizeof(cipher_bin));
 
-	num_dispose(quotient);
-	num_dispose(cipher);
-	num_dispose(counter);
+	mpz_clear(quotient);
+	mpz_clear(cipher);
+	mpz_clear(counter);
 
 	return failed;
 }
@@ -570,7 +570,7 @@ static int _ppp_testcase_authenticate(const char *passcode)
 	printf("*** Authenticate testcase\n");
 
 	/* Initialize state with given username, and default config file */
-	if (state_init(&s, NULL, ".otpasswd_testcase") != 0) {
+	if (state_init(&s, NULL) != 0) {
 		/* This will fail if we're unable to locate home directory */
 		printf("STATE_INIT FAILED\n");
 		return retval;
@@ -650,7 +650,7 @@ int ppp_testcase(void)
 
 	/* Check calculations */
 	state s;
-	state_init(&s, NULL, NULL);
+	state_init(&s, NULL);
 
 	if (state_load(&s) == 0) {
 		printf("*** Performing statistical tests with your key\n");
@@ -727,13 +727,11 @@ int ppp_testcase(void)
 	_PPP_TEST(70+34, 7, 'A', 7, "Ao_\"e82");
 	_PPP_TEST(70+36, 7, 'C', 7, "(&JV?E_");
 
-	/* TODO: do some get_passcode_number testcases */
-
 	state_fini(&s);
 
 	/* Authenticate testcase */
 	/* Create file with empty key */
-	if (state_init(&s, NULL, ".otpasswd_testcase") != 0) {
+	if (state_init(&s, NULL) != 0) {
 		printf("ERROR WHILE CREATING TEST KEY\n");
 		failed++;
 		return failed;

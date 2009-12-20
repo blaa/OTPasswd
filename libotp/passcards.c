@@ -77,7 +77,7 @@ char *card_ascii(const state *s, const mpz_t passcard)
 	mpz_init_set(tmp, passcard);
 
 	whole_card_num = mpz_get_str(NULL, 10, tmp);
-	num_dispose(tmp);
+	mpz_clear(tmp);
 	printed_card_num = whole_card_num;
 
 	card_num_len = strlen(whole_card_num);
@@ -145,7 +145,7 @@ char *card_ascii(const state *s, const mpz_t passcard)
 			mpz_add_ui(code_num, code_num, 1);
 		}
 	}
-	num_dispose(code_num);
+	mpz_clear(code_num);
 
 	free(label);
 	free(whole_card_num);
@@ -226,7 +226,7 @@ char *card_latex(const state *s, const mpz_t number)
 		}
 	}
 
-	num_dispose(n);
+	mpz_clear(n);
 
 	memcpy(card_pos, block_stop, sizeof(block_stop) - 1);
 	card_pos += sizeof(block_stop) - 1;

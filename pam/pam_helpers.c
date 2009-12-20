@@ -47,6 +47,7 @@
 
 
 #include "print.h"
+#include "num.h"
 #include "ppp.h"
 #include "pam_helpers.h"
 
@@ -344,6 +345,9 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, cfg_t **
 
 	/* Bootstrap logging */
 	print_init(PRINT_NOTICE, 0, 1, NULL);
+
+	/* Ensure GMP frees memory safely */
+	num_init();
 
 	/* Load default options + ones defined in config file */
 	*cfg = cfg_get();

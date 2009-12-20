@@ -20,7 +20,39 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "print.h"
 #include "num.h"
 
 /* All functions are inline currently and testcase
  * was moved away to testcases.c */
+
+static void *allocate_function(size_t alloc_size)
+{
+	void *tmp = malloc(alloc_size);
+	if (!tmp) {
+		print(PRINT_ERROR, "Not enough memory!\n");
+		exit(EXIT_FAILURE);
+	}
+	return tmp;
+}
+
+static void free_function(void *ptr, size_t size)
+{
+	memset(ptr, 0, size);
+	free(ptr);
+}
+
+static void *reallocate_function(void *ptr, size_t old_size, size_t new_size)
+{
+	void *new_ptr = allocate_function(new_size);
+	memcpy(new_ptr, ptr, old_size);
+	free_function(ptr, old_size);
+	return new_ptr;
+}
+
+void num_init(void)
+{
+	mp_set_memory_functions(allocate_function,
+				reallocate_function,
+				free_function);
+}
