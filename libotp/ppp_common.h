@@ -23,7 +23,7 @@ enum errors {
 
 enum flags {
 	FLAG_SHOW = 1,
-	FLAG_SKIP = 2,
+	/* FLAG_SKIP removed */
 	FLAG_ALPHABET_EXTENDED = 4,
 	FLAG_NOT_SALTED = 8,
 };

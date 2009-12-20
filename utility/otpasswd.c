@@ -80,8 +80,6 @@ static void _usage(int argc, const char **argv)
 		"\nConfiguration:\n"
 		"  -f, --flag <arg>\n"
 		"               Manages various user-selectable flags:\n"
-		"               skip              skip passcode on failure (default)\n"
-		"               dont-skip         do not skip passcodes on failure\n"
 		"               show              show passcode while authenticating (default)\n"
 		"               dont-show         do not show passcode\n"
 		"               alphabet-simple   64-character alphabet (default)\n"
@@ -110,7 +108,6 @@ static void _usage(int argc, const char **argv)
 		"  --check       Run all testcases.\n"
 
 		"\nNotes:\n"
-		"  \"dont-skip\" flag might introduce a security hole.\n"
 		"  Both --text and --latex can get \"next\" as a parameter which\n"
 		"  will print the first not-yet printed passcard\n"
 		"\nExamples:\n"
@@ -226,11 +223,7 @@ int process_cmd_line(int argc, char **argv)
 
 			assert(optarg != NULL);
 
-			if (strcmp(optarg, "skip") == 0)
-				options.flag_set_mask |= FLAG_SKIP;
-			else if (strcmp(optarg, "dont-skip") == 0)
-				options.flag_clear_mask |= FLAG_SKIP;
-			else if (strcmp(optarg, "show") == 0)
+			if (strcmp(optarg, "show") == 0)
 				options.flag_set_mask |= FLAG_SHOW;
 			else if (strcmp(optarg, "dont-show") == 0)
 				options.flag_clear_mask |= FLAG_SHOW;

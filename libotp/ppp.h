@@ -118,7 +118,8 @@ extern int ppp_release(state *s, int store, int unlock);
  */
 extern int ppp_increment(state *s);
 
-/* Locked
+/* THIS WAS USED FOR SKIPPING. NOT USED NOW.
+ * Lock
  * Read
  * Decrement counter
  * Compare with current

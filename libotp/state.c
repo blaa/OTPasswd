@@ -497,7 +497,7 @@ int state_load(state *s)
 		goto error;
 	}
 
-	if (s->flags > (FLAG_SHOW|FLAG_SKIP|FLAG_ALPHABET_EXTENDED|FLAG_NOT_SALTED)) {
+	if (s->flags > (FLAG_SHOW|FLAG_ALPHABET_EXTENDED|FLAG_NOT_SALTED)) {
 		print(PRINT_ERROR, "Unsupported set of flags. %s is invalid\n", 
 		      s->filename);
 		goto error;

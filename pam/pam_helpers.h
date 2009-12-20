@@ -33,10 +33,9 @@ extern int ph_out_of_band(const options *opt, state *s);
 extern void ph_show_message(pam_handle_t *pamh, const options *opt, const char *msg);
 
 /* Load state, increment save, handle errors if any */
-extern int ph_state_increment(pam_handle_t *pamh, int flags, int enforced, 
-			      const options *opt, state *s);
+extern int ph_increment(pam_handle_t *pamh, const options *opt, state *s);
 
-/* Function which automates a bit talking with user */
+/* Function which automates a bit talking with a user */
 extern struct pam_response *ph_query_user(
 	pam_handle_t *pamh, int flags, int show,
 	const char *prompt, const state *s);

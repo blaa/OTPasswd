@@ -118,11 +118,6 @@ static void _show_flags(const state *s)
 	else
 		printf("dont-show ");
 
-	if (s->flags & FLAG_SKIP)
-		printf("skip ");
-	else
-		printf("dont-skip ");
-
 	if (s->flags & FLAG_ALPHABET_EXTENDED)
 		printf("alphabet-extended ");
 	else

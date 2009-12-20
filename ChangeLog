@@ -11,7 +11,8 @@ ChangeLog / TODO
 Trying to sort tasks according to their priority.
 
 2009-12-13 v0.5
-	* [-] Remove dont-skip option.
+	* [+] Check bit distribution for alphabets not divisible by 2
+	* [+] Remove dont-skip option.
 	* [-] Keeping track of failures.
 	      Started (place in state files created)
 	* [-] Implement static passwords;
@@ -26,7 +27,6 @@ Trying to sort tasks according to their priority.
 	      more fine-grained is necessary.
 	* [-] Scan all FIXME/TODO entries
 	* [-] Manuals
-	* [-] Check bit distribution for alphabets not divisible by 2
 	* [-] Improve error messages when state file is not found.
         * [?] Big thing - Move state files to /etc + SUID.
 	* [?] Use locales for user messages [_("")? ]

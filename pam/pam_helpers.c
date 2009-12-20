@@ -269,7 +269,7 @@ void ph_show_message(pam_handle_t *pamh, const options *opt, const char *msg)
 		_pam_drop_reply(resp, 1);
 }
 
-int ph_state_increment(pam_handle_t *pamh, int flags, int enforced, const options *opt, state *s)
+int ph_increment(pam_handle_t *pamh, const options *opt, state *s)
 {
 	const char enforced_msg[] = "otpasswd: Key not generated, unable to login.";
 	const char lock_msg[] = "otpasswd: Unable to lock user state file.";
@@ -292,7 +292,7 @@ int ph_state_increment(pam_handle_t *pamh, int flags, int enforced, const option
 		return PAM_AUTH_ERR;
 
 	case STATE_DOESNT_EXISTS:
-		if (enforced == 0) {
+		if (opt->enforce == 0) {
 			/* Not enforced - ignore */
 			return PAM_IGNORE;
 		} else {

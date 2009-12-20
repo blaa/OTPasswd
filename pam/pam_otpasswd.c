@@ -64,7 +64,7 @@ PAM_EXTERN int pam_sm_authenticate(
 	for (tries = 0; tries < (opt->retry == 0 ? 1 : 3); tries++) {
 		if (tries == 0 || opt->retry == 1) {
 			/* First time or we are retrying while changing the password */
-			retval = ph_state_increment(pamh, flags, opt->enforce, opt, s);
+			retval = ph_increment(pamh, opt, s);
 			if (retval != 0)
 				goto cleanup;
 
@@ -118,15 +118,6 @@ PAM_EXTERN int pam_sm_authenticate(
 		}
 
 		/* Error during authentication */
-		if (opt->retry == 0 && opt->secure == 0 && ppp_is_flag(s, FLAG_SKIP) == 0) {
-			/* Decrement counter */
-			retval = ppp_decrement(s);
-			if (retval != 0) {
-				retval = PAM_AUTH_ERR;
-				print(PRINT_WARN, "Error while decrementing\n");
-				goto cleanup;
-			}
-		}
 		retval = PAM_AUTH_ERR;
 	}
 
