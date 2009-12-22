@@ -29,22 +29,12 @@
 /* kill() */
 #include <signal.h>
 
-
-
-#define PAM_SM_AUTH
-#define PAM_SM_SESSION
-//#define PAM_SM_ACCOUNT
-//#define PAM_SM_PASSWORD
-#define _PAM_EXTERN_FUNCTIONS
-
 #include <pam_modules.h>
 
 /* FreeBSD */
 #include <pam_appl.h>
 
 #include "pam_macros.h"
-
-
 
 #include "print.h"
 #include "num.h"

@@ -52,7 +52,7 @@ static void _config_defaults(cfg_t *cfg)
 		.def_passcode_length = 4,
 		.min_passcode_length = 2,
 		.max_passcode_length = 16,
-		.def_alphabet_length = 64,
+		.def_alphabet = 0,
 		.min_alphabet_length = 64,
 		.max_alphabet_length = 88,
 		.allow_salt = 1,
@@ -207,7 +207,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 
 		/* Parsing PAM configuration */
 		} else if (_EQ(line_buf, "show")) {
-			REQUIRE_ARG(1,3);
+			REQUIRE_ARG(0,2);
 			cfg->show = arg;
 		} else if (_EQ(line_buf, "enforce")) {
 			REQUIRE_ARG(0, 1);
@@ -217,7 +217,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			cfg->retry = arg;
 		} else if (_EQ(line_buf, "retries")) {
 			REQUIRE_ARG(2, 5);
-			cfg->retry = arg;
+			cfg->retries_count = arg;
 		} else if (_EQ(line_buf, "logging")) {
 			REQUIRE_ARG(0, 2);
 			cfg->logging = arg;
@@ -269,9 +269,9 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			REQUIRE_ARG(2, 16);
 			cfg->max_passcode_length = arg;
 
-		} else if (_EQ(line_buf, "def_alphabet_length")) {
-			REQUIRE_ARG(64, 88);
-			cfg->def_alphabet_length = arg;
+		} else if (_EQ(line_buf, "def_alphabet")) {
+			REQUIRE_ARG(0, 1);
+			cfg->def_alphabet = arg;
 		} else if (_EQ(line_buf, "min_alphabet_length")) {
 			REQUIRE_ARG(64, 88);
 			cfg->min_alphabet_length = arg;

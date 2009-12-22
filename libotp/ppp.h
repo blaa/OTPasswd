@@ -106,6 +106,8 @@ extern int ppp_load(state *s);
  */
 extern int ppp_release(state *s, int store, int unlock);
 
+extern const char *ppp_get_username(const state *s);
+
 /*
  * 1. Lock file
  * 2a. Open it

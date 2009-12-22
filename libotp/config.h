@@ -90,6 +90,9 @@ typedef struct {
 	 */
 	int retry;
 
+	/* How many retries are allowed */
+	int retries_count;
+
 	/* Shall we echo entered passcode?
 	 * 1 - user selected
 	 * 0 - (noshow) echo disabled
@@ -135,7 +138,10 @@ typedef struct {
 	int max_passcode_length;
 
 	/* Alphabet configuration. Default, minimal and maximal */
-	int def_alphabet_length;
+	/* def=0 - 64 long alphabet 
+	 * def=1 - 88 long alphabet 
+	 */
+	int def_alphabet;
 	int min_alphabet_length;
 	int max_alphabet_length;
 

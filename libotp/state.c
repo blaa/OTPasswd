@@ -649,9 +649,6 @@ int state_init(state *s, const char *username)
 	assert(cfg->def_passcode_length >= 2 &&
 	       cfg->def_passcode_length <= 16);
 
-	assert(cfg->def_alphabet_length == 64 ||
-	       cfg->def_alphabet_length == 88);
-
 	mpz_init(s->counter);
 	mpz_init(s->sequence_key);
 	mpz_init(s->latest_card);
@@ -676,7 +673,7 @@ int state_init(state *s, const char *username)
 	s->code_length = cfg->def_passcode_length;
 	if (cfg->show != 0)
 		s->flags = FLAG_SHOW;
-	if (cfg->def_alphabet_length == 88)
+	if (cfg->def_alphabet == 1)
 		s->flags |= FLAG_ALPHABET_EXTENDED;
 
 	s->failures = 0;

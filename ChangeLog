@@ -27,6 +27,7 @@ Trying to sort tasks according to their priority.
 	      ppp implements high-level functions which should be used
 	      explicitly to manage state information unless something
 	      more fine-grained is necessary.
+	* [-] Passing -f, -d, -c along with the -k.
 	* [-] Scan all FIXME/TODO entries
 	* [-] Manuals
 	* [-] Improve error messages when state file is not found.

@@ -475,6 +475,17 @@ int ppp_release(state *s, int store, int unlock)
 	return retval;
 }
 
+/********************
+ * Accessors 
+ *******************/
+const char *ppp_get_username(const state *s)
+{
+	return s->username;
+}
+
+/*******************
+ * Atomic combos 
+ *******************/
 int ppp_increment(state *s)
 {
 	int ret;

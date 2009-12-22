@@ -61,7 +61,7 @@ PAM_EXTERN int pam_sm_authenticate(
 
 	/* Retry = 0 - do not retry, 1 - with changing passcodes */
 	int tries;
-	for (tries = 0; tries < (cfg->retry == 0 ? 1 : 3); tries++) {
+	for (tries = 0; tries < (cfg->retry == 0 ? 1 : cfg->retries_count); tries++) {
 		if (tries == 0 || cfg->retry == 1) {
 			/* First time or we are retrying while changing the password */
 			retval = ph_increment(pamh, cfg, s);
@@ -113,15 +113,19 @@ PAM_EXTERN int pam_sm_authenticate(
 
 			/* Correctly authenticated */
 			retval = PAM_SUCCESS;
-			print(PRINT_NOTICE, "Authentication succeded\n");
+			print(PRINT_WARN,
+			      "Accepted otp authentication for user %s\n",
+			      ppp_get_username(s));
 			goto cleanup;
 		}
 
 		/* Error during authentication */
 		retval = PAM_AUTH_ERR;
-	}
 
-	print(PRINT_NOTICE, "Authentication failed\n");
+		print(PRINT_WARN, 
+		      "Authentication failure; user=%s; try=%d/%d\n",
+		      ppp_get_username(s), tries+1, cfg->retries_count);
+	}
 
 cleanup:
 	ph_fini(s);

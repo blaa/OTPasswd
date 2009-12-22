@@ -3,9 +3,8 @@ auth            required        pam_shells.so
 auth            required        pam_nologin.so
 auth            required        pam_env.so
 auth            requisite       pam_unix.so try_first_pass likeauth nullok
-# Without OOB
-auth            required        pam_otpasswd.so retry=2
-# Example with OOB
-# auth            required        pam_otpasswd.so retry=2 debug oob=1 oob_path=/etc/security/otpasswd_oob.sh
 
+# You can pass 'debug' or 'silent' options here.
+# Rest of the configuration is done in /etc/security/otpasswd.conf
+auth            required        pam_otpasswd.so 
 session		optional	pam_otpasswd.so
