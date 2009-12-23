@@ -448,8 +448,8 @@ int main(int argc, char **argv)
 	
 	/* If database is not global we can drop permissions now */
 	if (cfg->db != CONFIG_DB_GLOBAL) {
-		ret = setgid(uid);
-		ret += setuid(gid);
+		ret = setgid(gid);
+		ret += setuid(uid);
 		if (ret != 0) {
 			printf("Strange error while dropping permissions\n");
 			exit(EXIT_FAILURE);

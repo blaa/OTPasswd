@@ -56,6 +56,7 @@ static char *_strtok(char *input, const char *delim)
 static int _db_file_permissions(const state *s)
 {
 	struct stat st;
+
 	if (stat(s->db_path, &st) != 0) {
 		/* Does not exists */
 		return STATE_DOESNT_EXISTS;
@@ -76,45 +77,145 @@ static int _db_file_permissions(const state *s)
 	return 0;
 }
 
+/* State files constants */
+static const int _version = 5;
+static const char *_delim = ":";
+
+static const int fields = 13;
+
+enum {
+	FIELD_USER = 0,
+	FIELD_VERSION,
+	FIELD_KEY,
+	FIELD_COUNTER,
+	FIELD_LATEST_CARD,
+	FIELD_FAILURES,
+	FIELD_RECENT_FAILURES,
+	FIELD_CHANNEL_TIME,
+	FIELD_CODE_LENGTH,
+	FIELD_FLAGS,
+	FIELD_SPASS,
+	FIELD_LABEL,
+	FIELD_CONTACT,
+};
+
+/* Find entry in database for username. Unmodified line
+ * is left in buffer.
+ * 
+ * If out is given each line we pass without a match 
+ * is written into this file.
+ */
+static int _db_find_user_entry(
+	const char *username, FILE *f, FILE *out,
+	char *buff, size_t buff_size)
+{
+	size_t line_length;
+	size_t username_length;
+
+	assert(username);
+	assert(f);
+	assert(buff);
+
+	username_length = strlen(username);
+
+	while (!feof(f)) {
+		/* Read all file into a buffer */
+		if (fgets(buff, buff_size, f) == NULL) {
+			if (feof(f))
+				return 1; /* Not found */
+			else
+				return 2; /* Error */
+		}
+		
+		line_length = strlen(buff);
+		
+		if (buff[line_length-1] != '\n') {
+			print(PRINT_NOTICE, 
+			      "Line too long inside the state file\n");
+			return 3;
+		} 
+		
+		if (line_length < 10) {
+			/* This can't hold correct state */
+			print(PRINT_NOTICE, 
+			      "State file is invalid. Line too short.\n");
+			return 3;
+		}
+		
+		/* Check the username without modyfing buffer. */
+		if (strncmp(buff, username, username_length) == 0) {
+			/* Found */
+			return 0;
+		}
+
+		if (out) {
+			if (fputs(buff, out) < 0) {
+				print(PRINT_NOTICE, 
+				      "Error while writting data to file!\n");
+				return 4;
+			}
+		}
+	}
+
+	/* Not found */
+	return 1;
+}
+
+static int _db_parse_user_entry(char *buff, char **field)
+{
+	int i, ret;
+
+	/* Parse entry - split into fields, verify version */
+	for (i=0; i<fields; i++) {
+		field[i] = _strtok(i == 0 ? buff : NULL, _delim);
+		if (field[i] == NULL) {
+			print(PRINT_ERROR,
+			      "State file invalid. Not enough fields.\n");
+			return 1;
+		}
+
+		/* If we parsed field version, check it immediately */
+		if (i == FIELD_VERSION) {
+			if (sscanf(field[i], "%u", &ret) != 1) {
+				print(PRINT_ERROR,
+				      "Error while parsing state file "
+				      "version.\n");
+				return 1;
+			}
+
+			if (ret != _version) {
+				print(PRINT_ERROR,
+				      "State file version is incompatible. "
+				      "Recreate key.\n");
+				return 1;
+			}
+		}
+	}
+
+	if (_strtok(NULL, _delim) != NULL) {
+		print(PRINT_ERROR, "State file invalid. Too much fields.\n");
+		return 1;
+	}
+
+	return 0;
+}
+
+
 
 
 /**********************************************
  * Interface functions for managing state files
  **********************************************/
-static const int _version = 5;
-static const char *_delim = ":";
-
 int db_file_load(state *s)
 {
-	const int fields = 13;
-
-	enum {
-		FIELD_VERSION = 0,
-		FIELD_USER,
-		FIELD_KEY,
-		FIELD_COUNTER,
-		FIELD_LATEST_CARD,
-		FIELD_FAILURES,
-		FIELD_RECENT_FAILURES,
-		FIELD_CHANNEL_TIME,
-		FIELD_CODE_LENGTH,
-		FIELD_FLAGS,
-		FIELD_SPASS,
-		FIELD_LABEL,
-		FIELD_CONTACT,
-	};
-
 	/* State file should never be larger than 160 bytes */
 	char buff[STATE_ENTRY_SIZE];
-	/* How many bytes are in buff? */
-	unsigned int buff_size = 0; 
 
 	/* Did we lock it here? */
 	int locked = 0;
 
-	char *field[fields]; /* Fields in file */
+	char *field[fields]; /* Pointers to fields in file */
 
-	int i;
 	int ret = 0;
 	FILE *f = NULL;
 
@@ -127,6 +228,9 @@ int db_file_load(state *s)
 		return STATE_DOESNT_EXISTS;
 	}
 
+	/* DB file should always be locked before changing 
+	 * Here we just detect that it's not locked and lock it then
+	 * This generally shouldn't happen */
 	if (s->lock_fd <= 0) {
 		print(PRINT_NOTICE, 
 		      "State file not locked while reading from it\n");
@@ -146,39 +250,15 @@ int db_file_load(state *s)
 	}
 
 	/* Read all file into a buffer */
-	buff_size = fread(buff, 1, sizeof(buff), f);
-	if (buff_size < 10) {
-		/* This can't hold correct state */
-		print(PRINT_NOTICE, 
-		      "State file %s is invalid\n", s->db_path);
+	ret = _db_find_user_entry(s->username, f, NULL, buff, sizeof(buff));
+	if (ret != 0)
 		goto error;
-	}
 
-	/* Split into fields */
-	for (i=0; i<fields; i++) {
-		field[i] = _strtok(i == 0 ? buff : NULL, _delim);
-		if (field[i] == NULL) {
-			print(PRINT_ERROR, "State file invalid. Not enough fields.\n");
-			goto error;
-		}
-	}
-
-	if (_strtok(NULL, _delim) != NULL) {
-		print(PRINT_ERROR, "State file invalid. Too much fields.\n");
+	ret = _db_parse_user_entry(buff, field);
+	if (ret != 0)
 		goto error;
-	}
 
 	/* Parse fields */
-	if (sscanf(field[FIELD_VERSION], "%u", &ret) != 1) {
-		print(PRINT_ERROR, "Error while parsing state file version.\n");
-		goto error;
-	}
-
-	if (ret != _version) {
-		print(PRINT_ERROR, "State file version is incompatible. Recreate key.\n");
-		goto error;		
-	}
-
 	if (mpz_set_str(s->sequence_key, field[FIELD_KEY], 62) != 0) {
 		print(PRINT_ERROR, "Error while parsing sequence key.\n");
 		goto error;
@@ -329,6 +409,7 @@ int db_file_store(state *s)
 	int tmp;
 
 	assert(s->db_path != NULL);
+	assert(s->username != NULL);
 
 	if (s->lock_fd <= 0) {
 		print(PRINT_NOTICE, 
@@ -370,12 +451,12 @@ int db_file_store(state *s)
 
 	const char d = _delim[0];
 	tmp = fprintf(f, 
-		      "%d%c"
+		      "%s%c%d%c"
 		      "%s%c%s%c%s%c" /* Key, counter, latest_card */
 		      "%u%c%u%c%s%c" /* Failures, recent fails, channel time */
 		      "%u%c%u%c%s%c" /* Codelength, flags, spass */
 		      "%s%c%s\n",
-		      _version, d,
+		      s->username, d, _version, d,
 		      sequence_key, d, counter, d, latest_card, d,
 		      s->failures, d, s->recent_failures, d, channel_time, d,
 		      s->code_length, d, s->flags, d, spass, d,
