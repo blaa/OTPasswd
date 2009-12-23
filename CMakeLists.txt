@@ -28,6 +28,15 @@ SET(${PROJECT_NAME}_MINOR_VERSION 1)
 
 ADD_DEFINITIONS("-Wall -ggdb")
 
+# Detect system
+IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+  ADD_DEFINITIONS("-DOS_LINUX")
+ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+
+IF(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+  ADD_DEFINITIONS("-OS_FREEBSD")
+ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+
 # Detect include dirs
 FIND_PATH(GMP_INCLUDE_DIR gmp.h /usr/include/gmp /usr/local/include/gmp)
 FIND_PATH(PAM_INCLUDE_DIR pam_modules.h /usr/include/security /usr/include/pam)
@@ -60,7 +69,7 @@ ADD_LIBRARY(pam_otpasswd SHARED pam/pam_helpers.c pam/pam_otpasswd.c)
 TARGET_LINK_LIBRARIES(pam_otpasswd libotp gmp ssl pam)
 
 # Password management target
-ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/otpasswd_actions.c utility/testcases.c)
+ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/otpasswd_actions.c utility/testcases.c utility/security.c)
 TARGET_LINK_LIBRARIES(otpasswd libotp gmp ssl)
 
 ##

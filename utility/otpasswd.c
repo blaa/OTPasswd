@@ -24,9 +24,7 @@
 #include <assert.h>
 #include <unistd.h> /* chdir, environ */
 
-/* umask */
-#include <sys/types.h>
-#include <sys/stat.h>
+#include "security.h"
 
 #include "print.h"
 #include "crypto.h"
@@ -398,37 +396,8 @@ int main(int argc, char **argv)
 {
 	int ret;
 	cfg_t *cfg = NULL;
-	int uid = getuid(), gid = getgid();
 
-	/* As we might be SUID/SGID binary. Clear environment. */
-	ret = clearenv();
-	if (ret != 0) {
-		printf("Unable to clear environment\n");
-		exit(EXIT_FAILURE);
-	}
-
-	ret = chdir("/");
-	if (ret != 0) {
-		printf("Unable to change directory to /\n");
-		exit(EXIT_FAILURE);
-	}
-
-	if (environ != NULL || (environ && *environ != NULL)) {
-		printf("Environment not clear!\n");
-		exit(EXIT_FAILURE);
-	}
-
-	putenv("PATH=/bin:/usr/bin");
-
-	/* Set umask so others won't read our files */
-	if (gid != getegid()) {
-		/* We are SGID. Don't remove bits from group... */
-		umask(S_IWOTH | S_IROTH | S_IXOTH);
-	}
-	else {
-		/* Normal or SUID */
-		umask(S_IWOTH | S_IROTH | S_IXOTH | S_IWGRP | S_IRGRP | S_IXGRP);
-	}
+	security_init();
 
 	/* Bootstrap logging subsystem. */
 	if (print_init(PRINT_ERROR, 1, 0, NULL) != 0) {
@@ -446,15 +415,21 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	
-	/* If database is not global we can drop permissions now */
+	/* If database is not global we can drop _pernamently_ permissions now */
 	if (cfg->db != CONFIG_DB_GLOBAL) {
-		ret = setgid(gid);
-		ret += setuid(uid);
-		if (ret != 0) {
-			printf("Strange error while dropping permissions\n");
-			exit(EXIT_FAILURE);
-		}
+		security_permanent_drop();
+	} else {
+		/* Otherwise - drop them temporarily */
+		security_temporal_drop();
 	}
+	
+	/* TODO/FIXME: If we are SGID and not SUID is there a problem with
+	 * receiving a signal at stupid point of time? */
+
+#ifdef OS_LINUX
+	/* Drop all permissions except for fsuid? Is it possible? */
+#endif
+
 	ret = process_cmd_line(argc, argv);
 	return ret;
 }

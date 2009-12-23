@@ -40,6 +40,7 @@ Trying to sort tasks according to their priority.
 	      to conversation function. If not, we must build a buffer
 	      (See for example how winscp shows that warning)
 	* [?] Use PAM_SERVICE_ERR
+	* [?] Check if OOB script is not SUID?
 	* [-] right trim values from config?
 
 	Low-priority:
