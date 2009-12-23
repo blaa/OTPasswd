@@ -322,7 +322,7 @@ void action_key(options_t *options, const cfg_t *cfg)
 	}
 
 	if (state_store(&s) != 0) {
-		print(PRINT_ERROR, "Unable to save state to %s file\n", s.filename);
+		print(PRINT_ERROR, "Unable to save state to %s file\n", s.db_path);
 		goto cleanup;
 	}
 

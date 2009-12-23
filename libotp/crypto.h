@@ -19,13 +19,23 @@
 #ifndef _CRYPTO_H_
 #define _CRYPTO_H_
 
-/* Get some fast pseudo random data and store in a buff
- * With secure=1 uses real random seed.
+/* Get some fast cryptographically-secure pseudo-random data
+ * and store in a buff. With secure=1 uses real random seed.
  */
-extern int crypto_rng(
+extern int crypto_ossl_rng(
 	unsigned char *buff,
 	const int size, 
 	int secure);
+
+/* Read count of random data from device (urandom or random usually)
+ * into buf. Print message before you start and show progress
+ */
+extern int crypto_file_rng(
+	const char *device, 
+	const char *msg, 
+	unsigned char *buf, 
+	const int count);
+
 
 /* Encrypt 128 bits with 256 bit key */
 extern int crypto_aes_encrypt(

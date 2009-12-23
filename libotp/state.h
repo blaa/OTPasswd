@@ -63,10 +63,10 @@ typedef struct {
 
 	/* Number of all failures */
 	unsigned int failures;
-	
+
 	/* Failures since last correct login */
-	unsigned int recent_failures; 
-	
+	unsigned int recent_failures;
+
 	/* UNIX timestamp of latest channel usage */
 	mpz_t channel_time;
 
@@ -74,8 +74,8 @@ typedef struct {
 	char *prompt; /* Keep it here so we can safely dispose of it */
 
 	/* Salt helper. Initialized in state_init.
-	 * counter & salt_mask = salt 
-	 * counter & code_mask = user passcode number 
+	 * counter & salt_mask = salt
+	 * counter & code_mask = user passcode number
 	 */
 	mpz_t salt_mask;
 	mpz_t code_mask;
@@ -98,18 +98,18 @@ typedef struct {
 	 * this is data used for storing/restoring
 	 * state information.
 	 */
-	char *username; /* User name  */
-	char *filename;	/* Path to state file    */
-	int fd;		/* State file descriptor */
-	int lock_fd;	/* Descriptor of state lock
-			 * will be < 0 if file not locked */
-	char *lockname; /* Name of lock filename, 
-			 * allocated/deallocated during locking */
+	char *username;		/* User name  */
+	char *db_path;		/* Path to state file    */
+	int fd;			/* State file descriptor */
+	int lock_fd;		/* Descriptor of state lock
+				 * will be < 0 if file not locked */
+	char *lockname;		/* Name of lock filename,
+				 * allocated/deallocated during locking */
 } state;
 
 
 /* Initializes state structure. Must be called before
- * any else function from this set 
+ * any else function from this set
  * If username is given we determine user home directory
  * using specified username, if it's NULL - we lookup environment
  */
@@ -126,22 +126,19 @@ extern int state_key_generate(state *s, const int salt);
 extern int state_validate_str(const char *str);
 
 
+/************************************
+ * Following functions are just
+ * interfaces to db_* family
+ ************************************/
 
-/******************************************************
- * Following functions work on physical
- * state data located in global/local file or database
- ******************************************************/
-
-/* Lock state file */
+/* Locking state file */
 extern int state_lock(state *s);
-/* Unlock state file */
 extern int state_unlock(state *s);
 
-
-/* Load state file. */
+/* Load/Store state from/to file database. */
 extern int state_load(state *s);
-/* Store state into file */
 extern int state_store(state *s);
+
 
 
 #endif

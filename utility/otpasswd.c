@@ -21,9 +21,12 @@
 #include <string.h>
 #include <ctype.h>
 #include <getopt.h>
-#include <gmp.h>
-
 #include <assert.h>
+#include <unistd.h> /* chdir, environ */
+
+/* umask */
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "print.h"
 #include "crypto.h"
@@ -390,8 +393,68 @@ int process_cmd_line(int argc, char **argv)
 	return retval;
 }
 
-
+extern char **environ;
 int main(int argc, char **argv)
 {
-	return process_cmd_line(argc, argv);
+	int ret;
+	cfg_t *cfg = NULL;
+	int uid = getuid(), gid = getgid();
+
+	/* As we might be SUID/SGID binary. Clear environment. */
+	ret = clearenv();
+	if (ret != 0) {
+		printf("Unable to clear environment\n");
+		exit(EXIT_FAILURE);
+	}
+
+	ret = chdir("/");
+	if (ret != 0) {
+		printf("Unable to change directory to /\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if (environ != NULL || (environ && *environ != NULL)) {
+		printf("Environment not clear!\n");
+		exit(EXIT_FAILURE);
+	}
+
+	putenv("PATH=/bin:/usr/bin");
+
+	/* Set umask so others won't read our files */
+	if (gid != getegid()) {
+		/* We are SGID. Don't remove bits from group... */
+		umask(S_IWOTH | S_IROTH | S_IXOTH);
+	}
+	else {
+		/* Normal or SUID */
+		umask(S_IWOTH | S_IROTH | S_IXOTH | S_IWGRP | S_IRGRP | S_IXGRP);
+	}
+
+	/* Bootstrap logging subsystem. */
+	if (print_init(PRINT_ERROR, 1, 0, NULL) != 0) {
+		printf("ERROR: Unable to start log subsystem\n");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Get global config */
+	cfg = cfg_get();
+
+	print_fini();
+
+	if (!cfg) {
+		printf("Unable to read global config file\n");
+		exit(EXIT_FAILURE);
+	}
+	
+	/* If database is not global we can drop permissions now */
+	if (cfg->db != CONFIG_DB_GLOBAL) {
+		ret = setgid(uid);
+		ret += setuid(gid);
+		if (ret != 0) {
+			printf("Strange error while dropping permissions\n");
+			exit(EXIT_FAILURE);
+		}
+	}
+	ret = process_cmd_line(argc, argv);
+	return ret;
 }

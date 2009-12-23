@@ -65,7 +65,7 @@ int crypto_testcase(void)
 
 	printf("crypto_aes_test [ 2]: ");
 	for (i = 0; i < 10; i++) {
-		crypto_rng(plain, 16, 0);
+		crypto_ossl_rng(plain, 16, 0);
 		crypto_aes_encrypt(key, plain, encrypted);
 		crypto_aes_decrypt(key, encrypted, decrypted);
 		

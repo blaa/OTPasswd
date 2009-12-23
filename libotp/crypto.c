@@ -24,7 +24,7 @@
 #include <openssl/rand.h>
 #include <openssl/sha.h>
 
-int crypto_rng(unsigned char *buff, const int size, int secure)
+int crypto_ossl_rng(unsigned char *buff, const int size, int secure)
 {
 	const int seed_size = 20;
 	int ret;
@@ -49,6 +49,33 @@ int crypto_rng(unsigned char *buff, const int size, int secure)
 	RAND_cleanup();
 	return 0;
 }
+
+
+int crypto_file_rng(const char *device, const char *msg, unsigned char *buf, const int count)
+{
+	const char spinner[] = "|/-\\"; // ".oO0Oo. ";
+	const int size = strlen(spinner);
+	int i;
+	FILE *f;
+	f= fopen(device, "r");
+	if (!f) {
+		return 1;
+	}
+
+	for (i=0; i<count; i++) {
+		buf[i] = fgetc(f);
+		if (msg && i%8 == 0) {
+			printf("\r%s %3d%%  %c ", msg, i*100 / count, spinner[i/11 % size]);
+			fflush(stdout);
+		}
+	}
+	fclose(f);
+	if (msg)
+		printf("\r%s OK!       \n", msg);
+	return 0;
+}
+
+
 
 int crypto_aes_encrypt(const unsigned char *key,
 		     const unsigned char *plain,
