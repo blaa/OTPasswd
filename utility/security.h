@@ -31,4 +31,16 @@ extern void security_permanent_drop(void);
 /* Restore rights which were dropped temporarily */
 extern void security_restore(void);
 
+/* Are we SGID or SUID? Check ones defined in argument. */
+extern int security_privileged(int check_suid, int check_sgid);
+
+/* Are we root? */
+extern int security_is_root();
+
+/* Parse user specification (name or UID) ensure it exists */
+extern char *security_parse_user(const char *spec);
+
+/* Get username of the user who runned current process */
+extern char *security_get_current_user(void);
+
 #endif

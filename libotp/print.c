@@ -75,6 +75,8 @@ int print(int level, const char *fmt, ...)
 	char *intro;
 	int syslog_level = LOG_INFO;
 
+	assert(log_state.initialized == 1);
+
 	if (log_state.print_level == 0) {
 		printf("Attempted to use print subsystem without initialization\n");
 		assert(0);

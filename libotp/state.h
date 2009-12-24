@@ -100,7 +100,6 @@ typedef struct {
 	 */
 	char *username;		/* User name  */
 	char *db_path;		/* Path to state file    */
-	int fd;			/* State file descriptor */
 	int lock_fd;		/* Descriptor of state lock
 				 * will be < 0 if file not locked */
 	char *lockname;		/* Name of lock filename,

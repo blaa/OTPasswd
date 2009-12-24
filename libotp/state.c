@@ -63,36 +63,14 @@ static char *_state_user_db_file(const char *username)
 	cfg_t *cfg = cfg_get();
 	int length;
 
+	assert(username);
 
-	if (username == NULL) {
-		if (getenv("HOME"))
-			home = strdup(getenv("HOME"));
-
-		if (!home) {
-			/* No env? Get home dir for current UID */
-			uid_t uid = geteuid();
-			pwdata = getpwuid(uid);
-			
-			if (pwdata) {
-				home = strdup(pwdata->pw_dir);
-			} else
-				return NULL; /* Unable to locate home directory */
-		}
-	} else {
-		const struct passwd *pwent;
-		while ((pwent = getpwent()) != NULL) {
-			if (strcmp(pwent->pw_name, username) == 0) {
-				home = strdup(pwent->pw_dir);
-				endpwent();
-				break;
-			}
-		}
-		if (!home) {
-			endpwent();
-			return NULL;
-		}
-		
-	}
+	/* Get home */
+	pwdata = getpwnam(username);
+	if (pwdata && pwdata->pw_dir)
+		home = pwdata->pw_dir;
+	else
+		return NULL;
 
 	/* Append a filename */
 	length = strlen(home);
@@ -107,15 +85,13 @@ static char *_state_user_db_file(const char *username)
 
 	assert( ret == length - 1 );
 
-	if (ret != length -1) {
+	if (ret != length - 1) {
 		goto error;
 	}
 
-	free(home);
 	return name;
 
 error:
-	free(home);
 	free(name);
 	return NULL;
 }
@@ -131,15 +107,19 @@ int state_init(state *s, const char *username)
 	const char code_mask[] =
 		"000000000000000000000000FFFFFFFF";
 
-	assert(sizeof(salt_mask) == 33);
-	printf("state_init username = %s\n", username);
-
 	int ret;
+	cfg_t *cfg = NULL;
 
-	/* This will ensure that all further state_ calls requiring
+	assert(sizeof(salt_mask) == 33);
+
+	assert(s);
+	assert(username);
+
+	/* Initialize logging subsystem */
+	/** This will ensure that all further state_ calls requiring
 	 * a cfg might not check the return value as state_init is called
 	 * first */
-	cfg_t *cfg = cfg_get();
+	cfg = cfg_get();
 	if (cfg == NULL) {
 		print(PRINT_ERROR, "Unable to read config file\n");
 		return 2;
@@ -148,6 +128,62 @@ int state_init(state *s, const char *username)
 	assert(cfg->def_passcode_length >= 2 &&
 	       cfg->def_passcode_length <= 16);
 
+	/** Non-allocating initialization of state variables */
+	s->failures = 0;
+	s->recent_failures = 0;
+	s->spass_set = 0;
+	s->lock_fd = -1;
+
+	s->prompt = NULL;
+	s->db_path = NULL;
+	s->lockname = NULL;
+
+	memset(s->label, 0x00, sizeof(s->label));
+	memset(s->contact, 0x00, sizeof(s->contact));
+
+	s->code_length = cfg->def_passcode_length;
+	if (cfg->show != 0)
+		s->flags = FLAG_SHOW;
+	if (cfg->def_alphabet == 1)
+		s->flags |= FLAG_ALPHABET_EXTENDED;
+
+	/* This will be calculated later by ppp.c */
+	s->codes_on_card = s->codes_in_row = s->current_row =
+		s->current_column = 0;
+
+	/** Determine state file position */
+	switch (cfg->db) {
+	case CONFIG_DB_USER:
+		s->db_path = _state_user_db_file(username);
+
+		if (s->db_path == NULL) {
+			print(PRINT_ERROR, "Unable to determine home directory of user\n");
+			return 4;
+		}
+
+		/* Create lock filename; normal file + .lck */
+		s->lockname = malloc(strlen(s->db_path) + 5 + 1);
+		if (!s->lockname) {
+			free(s->db_path);
+			return 1; 
+		}
+		
+		ret = sprintf(s->lockname, "%s.lck", s->db_path);
+		assert(ret > 0);
+		
+		break;
+
+	case CONFIG_DB_GLOBAL:
+	case CONFIG_DB_MYSQL:
+	case CONFIG_DB_LDAP:
+		print(PRINT_ERROR, "Database type not implemented.\n");
+		return 1; /* FIXME MEMLEAK */
+	}
+
+	/* Save user name in state */
+	s->username = strdup(username);
+
+	/** GMP numbers initialization */
 	mpz_init(s->counter);
 	mpz_init(s->sequence_key);
 	mpz_init(s->latest_card);
@@ -158,58 +194,13 @@ int state_init(state *s, const char *username)
 	mpz_init(s->max_code);
 
 	mpz_init(s->spass);
-	s->spass_set = 0;
 
 	ret = mpz_init_set_str(s->salt_mask, salt_mask, 16);
 	assert(ret == 0);
 	ret = mpz_init_set_str(s->code_mask, code_mask, 16);
 	assert(ret == 0);
 
-	/* Default values */
-	memset(s->label, 0x00, sizeof(s->label));
-	memset(s->contact, 0x00, sizeof(s->contact));
 
-	s->code_length = cfg->def_passcode_length;
-	if (cfg->show != 0)
-		s->flags = FLAG_SHOW;
-	if (cfg->def_alphabet == 1)
-		s->flags |= FLAG_ALPHABET_EXTENDED;
-
-	s->failures = 0;
-	s->recent_failures = 0;
-
-	s->prompt = NULL;
-	s->fd = -1;
-	s->lock_fd = -1;
-
-	/* Determine state file position */
-	switch (cfg->db) {
-	case CONFIG_DB_USER:
-		s->db_path = _state_user_db_file(username);
-		s->lockname = NULL;
-		if (username)
-			s->username = strdup(username);
-		else 
-			s->username = NULL;
-		break;
-
-	case CONFIG_DB_GLOBAL:
-	case CONFIG_DB_MYSQL:
-	case CONFIG_DB_LDAP:
-		print(PRINT_ERROR, "Database type not implemented.\n");
-		return 1; /* FIXME MEMLEAK */
-
-
-	}
-	if (s->db_path == NULL) {
-		print(PRINT_CRITICAL, 
-		      "Unable to locate user home directory\n");
-		return 1;
-	}
-
-	/* This will be calculated later */
-	s->codes_on_card = s->codes_in_row = s->current_row =
-		s->current_column = 0;
 	return 0;
 }
 
@@ -234,6 +225,7 @@ void state_fini(state *s)
 	}
 
 	free(s->db_path);
+	free(s->lockname);
 	free(s->username);
 
 	/* Clear the rest of memory */
@@ -311,6 +303,9 @@ int state_lock(state *s)
 {
 	cfg_t *cfg = cfg_get();
 	assert(cfg);
+
+	assert(s->db_path != NULL);
+
 	switch (cfg->db) {
 	case CONFIG_DB_USER:
 	case CONFIG_DB_GLOBAL:
@@ -351,6 +346,7 @@ int state_load(state *s)
 {
 	cfg_t *cfg = cfg_get();
 	assert(cfg);
+
 	switch (cfg->db) {
 	case CONFIG_DB_USER:
 	case CONFIG_DB_GLOBAL:

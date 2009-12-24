@@ -25,6 +25,8 @@ typedef struct {
 	char action;
 	char *action_arg;
 
+	char *username;
+
 	unsigned int flag_set_mask;
 	unsigned int flag_clear_mask;
 	int set_codelength;

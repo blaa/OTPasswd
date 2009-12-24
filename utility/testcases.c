@@ -28,6 +28,8 @@
 #include "passcards.h"
 #include "config.h"
 
+#include "security.h"
+
 /***************************
  * Crypto/NUM Testcases
  **************************/
@@ -193,7 +195,7 @@ int card_testcase(void)
 	int failed = 0;
 
 	mpz_init(cnt);
-	state_init(&s, NULL);
+	state_init(&s, security_get_current_user());
 	strcpy(s.label, "hostname long");
 
 	const unsigned char hash1[] =
@@ -276,10 +278,10 @@ int state_testcase(void)
 	int failed = 0;
 	int test = 0;
 
-	if (state_init(&s1, NULL) != 0)
+	if (state_init(&s1, security_get_current_user()) != 0)
 		printf("state_testcase[%2d] failed (%d)\n", test, failed++);
 
-	test++; if (state_init(&s2, NULL) != 0)
+	test++; if (state_init(&s2, security_get_current_user()) != 0)
 		printf("state_testcase[%2d] failed(%d)\n", test, failed++);
 
 	test++; if (state_key_generate(&s1, 0) != 0)
@@ -570,7 +572,7 @@ static int _ppp_testcase_authenticate(const char *passcode)
 	printf("*** Authenticate testcase\n");
 
 	/* Initialize state with given username, and default config file */
-	if (state_init(&s, NULL) != 0) {
+	if (state_init(&s, security_get_current_user()) != 0) {
 		/* This will fail if we're unable to locate home directory */
 		printf("STATE_INIT FAILED\n");
 		return retval;
@@ -650,7 +652,7 @@ int ppp_testcase(void)
 
 	/* Check calculations */
 	state s;
-	state_init(&s, NULL);
+	state_init(&s, security_get_current_user());
 
 	if (state_load(&s) == 0) {
 		printf("*** Performing statistical tests with your key\n");
@@ -731,7 +733,7 @@ int ppp_testcase(void)
 
 	/* Authenticate testcase */
 	/* Create file with empty key */
-	if (state_init(&s, NULL) != 0) {
+	if (state_init(&s, security_get_current_user()) != 0) {
 		printf("ERROR WHILE CREATING TEST KEY\n");
 		failed++;
 		return failed;

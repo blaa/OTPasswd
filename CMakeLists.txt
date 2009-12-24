@@ -26,7 +26,7 @@ PROJECT(otpam)
 SET(${PROJECT_NAME}_MAJOR_VERSION 0)
 SET(${PROJECT_NAME}_MINOR_VERSION 1)
 
-ADD_DEFINITIONS("-Wall -ggdb")
+ADD_DEFINITIONS("-Wall -ggdb -fPIC")
 
 # Detect system
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -56,7 +56,7 @@ FIND_PACKAGE(OpenSSL REQUIRED)
 ##
 # Targets
 ##
-ADD_LIBRARY(libotp SHARED libotp/crypto.c libotp/num.c libotp/ppp.c 
+ADD_LIBRARY(libotp STATIC libotp/crypto.c libotp/num.c libotp/ppp.c 
 	libotp/state.c libotp/db.c libotp/print.c libotp/passcards.c
 	libotp/config.c)
 
@@ -80,8 +80,8 @@ INSTALL(TARGETS pam_otpasswd otpasswd
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION /lib/security)
 
-INSTALL(TARGETS libotp
-  LIBRARY DESTINATION /lib)
+#INSTALL(TARGETS libotp
+#  LIBRARY DESTINATION /lib)
 
 INSTALL(FILES examples/otpasswd-login DESTINATION /etc/pam.d)
 INSTALL(FILES examples/otpasswd.conf DESTINATION /etc/security)

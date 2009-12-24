@@ -182,7 +182,7 @@ int action_authenticate(options_t *options, const cfg_t *cfg)
 	/* OTP State */
 	state s;
 
-	if (state_init(&s, NULL) != 0) {
+	if (state_init(&s, options->username) != 0) {
 		/* This will fail if we're unable to locate home directory */
 		print(PRINT_ERROR, "Unable to load state! Have you used -k option?\n");
 		return 0; /* False - not authenticated */
@@ -239,7 +239,7 @@ void action_key(options_t *options, const cfg_t *cfg)
 
 	int ret;
 	state s;
-	if (state_init(&s, NULL) != 0) {
+	if (state_init(&s, options->username) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
 		exit(1);
 	}
@@ -265,12 +265,12 @@ void action_key(options_t *options, const cfg_t *cfg)
 			    "Do you want to keep them?") == QUERY_NO) {
 			printf("Reverting to defaults.\n");
 			state_fini(&s);
-			state_init(&s, NULL);
+			state_init(&s, options->username);
 		}
 	} else {
 		/* Failed load might have changed something in struct */
 		state_fini(&s);
-		state_init(&s, NULL);
+		state_init(&s, options->username);
 	}
 
 	s.flags |= options->flag_set_mask;
@@ -360,7 +360,7 @@ void action_flags(options_t *options, const cfg_t *cfg)
 	int ret, state_locked;
 	int state_changed = 0;
 	state s;
-	if (state_init(&s, NULL) != 0) {
+	if (state_init(&s, options->username) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
 		exit(1);
 	}
@@ -380,6 +380,8 @@ void action_flags(options_t *options, const cfg_t *cfg)
 		/* Unable to load state */
 		goto no_key_file;
 	}
+
+
 
 	/* Calculate additional passcard info */
 	ppp_calculate(&s);

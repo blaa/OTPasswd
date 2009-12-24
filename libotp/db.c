@@ -28,6 +28,7 @@
 
 #include "print.h"
 #include "state.h"
+#include "db.h"
 
 /******************
  * Static helpers 
@@ -164,7 +165,6 @@ static int _db_find_user_entry(
 static int _db_parse_user_entry(char *buff, char **field)
 {
 	int i, ret;
-
 	/* Parse entry - split into fields, verify version */
 	for (i=0; i<fields; i++) {
 		field[i] = _strtok(i == 0 ? buff : NULL, _delim);
@@ -219,8 +219,6 @@ int db_file_load(state *s)
 	int ret = 0;
 	FILE *f = NULL;
 
-	assert(s->db_path != NULL);
-
 	if (_db_file_permissions(s) != 0) {
 		print(PRINT_NOTICE,
 		      "Unable to load state file. "
@@ -234,7 +232,7 @@ int db_file_load(state *s)
 	if (s->lock_fd <= 0) {
 		print(PRINT_NOTICE, 
 		      "State file not locked while reading from it\n");
-		if (state_lock(s) != 0) {
+		if (db_file_lock(s) != 0) {
 			print(PRINT_ERROR, "Unable to lock file for reading!\n");
 			return 1;
 		}
@@ -373,7 +371,7 @@ int db_file_load(state *s)
 
 	}
 
-	if (locked && state_unlock(s) != 0) {
+	if (locked && db_file_unlock(s) != 0) {
 		print(PRINT_ERROR, "Error while unlocking state file!\n");
 	}
 	fclose(f);
@@ -381,7 +379,7 @@ int db_file_load(state *s)
 
 error:
 	memset(buff, 0, sizeof(buff));
-	if (locked && state_unlock(s) != 0) {
+	if (locked && db_file_unlock(s) != 0) {
 		print(PRINT_ERROR, "Error while unlocking state file!\n");
 	}
 	fclose(f);
@@ -414,7 +412,7 @@ int db_file_store(state *s)
 	if (s->lock_fd <= 0) {
 		print(PRINT_NOTICE, 
 		      "State file not locked while writing to it\n");
-		if (state_lock(s) != 0) {
+		if (db_file_lock(s) != 0) {
 			print(PRINT_ERROR, "Unable to lock file for reading!\n");
 			return 1;
 		}
@@ -428,7 +426,7 @@ int db_file_store(state *s)
 			     s->db_path);
 
 		if (locked)
-			state_unlock(s);
+			db_file_unlock(s);
 		return STATE_PERMISSIONS;
 	}
 
@@ -485,7 +483,7 @@ int db_file_store(state *s)
 	ret = 0; /* More less fine */
 
 error:
-	if (locked && state_unlock(s) != 0) {
+	if (locked && db_file_unlock(s) != 0) {
 		print(PRINT_ERROR, "Error while unlocking state file!\n");
 	}
 
@@ -496,7 +494,6 @@ error:
 	free(spass);
 	return ret;
 }
-
 
 int db_file_lock(state *s)
 {
@@ -509,13 +506,6 @@ int db_file_lock(state *s)
 	fl.l_whence = SEEK_SET;
 	fl.l_start = fl.l_len = 0;
 
-	/* Create lock filename; normal file + .lck */
-	s->lockname = malloc(strlen(s->db_path) + 4 + 1);
-	if (!s->lockname)
-		return 1;
-
-	ret = sprintf(s->lockname, "%s.lck", s->db_path);
-	assert(ret > 0);
 
 	/* Open/create lock file */
 	fd = open(s->lockname, O_WRONLY|O_CREAT, S_IWUSR|S_IRUSR);
@@ -556,8 +546,6 @@ int db_file_lock(state *s)
 
 	return 0; /* Got lock */
 error:
-	free(s->lockname);
-	s->lockname = NULL;
 	return STATE_LOCK_ERROR;
 }
 

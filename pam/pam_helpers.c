@@ -374,7 +374,7 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, cfg_t **
 	print_init(log_level, 0, 1, NULL);
 	print(PRINT_NOTICE, "otpasswd started\n");
 
-	/* We must know where to look for state file */
+	/* We must know the user of whom we must find state data */
 	retval = pam_get_user(pamh, &user, NULL);
 	if (retval != PAM_SUCCESS && user) {
 		print(PRINT_ERROR, "pam_get_user %s", pam_strerror(pamh,retval));

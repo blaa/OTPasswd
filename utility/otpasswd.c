@@ -105,6 +105,8 @@ static void _usage(int argc, const char **argv)
 		"               compatible with PPPv3 and will increase available passcard number\n"
 		"               at the cost of (theoretically) less security.\n"
 		"\n"
+		"  -u, --user <username|UID>\n"
+		"                Operate on state of specified user. Administrator-only option.\n"
 		"  -v, --verbose Display more information about what is happening.\n"
 		"  --license     Display license, warranty, version and author information.\n"
 		"  --check       Run all testcases.\n"
@@ -133,28 +135,18 @@ int process_cmd_line(int argc, char **argv)
 		.action = 0,
 		.action_arg = NULL,
 
+		.username = NULL,
+
 		.flag_set_mask = 0,
 		.flag_clear_mask = 0,
 		.set_codelength = 0
 	};
 
+	cfg_t *cfg = cfg_get();
+	assert(cfg);
+
 	/* This will cause GMP to free memory safely */
 	num_init();
-
-	/* Get global config */
-	if (print_init(PRINT_ERROR, 1, 0, NULL) != 0) {
-		printf("ERROR: Unable to start log subsystem\n");
-		return 1;
-	}
-
-	cfg_t *cfg = cfg_get();
-
-	print_fini();
-
-	if (!cfg) {
-		printf("Unable to read global config file\n");
-		return 2;
-	}
 
 	/* Default logging */
 	cfg->logging = 1;
@@ -176,7 +168,8 @@ int process_cmd_line(int argc, char **argv)
 		{"label",		required_argument,	0, 'd'},
 		{"contact",		required_argument,	0, 'c'},
 		{"no-salt",		no_argument,		0, 'n'},
-		{"verbose",		required_argument,	0, 'v'},
+		{"user",		required_argument,	0, 'u'},
+		{"verbose",		no_argument,		0, 'v'},
 		{"check",		no_argument,		0, 'x'},
 		{"license",		no_argument,		0, 'Q'},
 
@@ -186,7 +179,7 @@ int process_cmd_line(int argc, char **argv)
 	while (1) {
 		int option_index = 0;
 
-		int c = getopt_long(argc, argv, "ks:t:l:P:a:wf:p:d:c:nv", long_options, &option_index);
+		int c = getopt_long(argc, argv, "ks:t:l:P:a:wf:p:d:c:nvu:", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1)
@@ -295,6 +288,24 @@ int process_cmd_line(int argc, char **argv)
 			exit(EXIT_FAILURE);
 			break;
 
+		case 'u':
+			assert(optarg);
+			if (security_is_root() == 0) {
+				printf("Only root can use the '--user' option\n");
+				exit(EXIT_SUCCESS);
+			}
+
+			if (options.username) {
+				printf("Multiple '--user' options passed\n");
+				exit(EXIT_SUCCESS);
+			}
+
+			options.username = security_parse_user(optarg);
+			if (!options.username) {
+				printf("Illegal user specified on command prompt\n");
+				exit(EXIT_SUCCESS);
+			}
+			break;
 		case 'v':
 			cfg->logging = 2;
 			break;
@@ -305,6 +316,14 @@ int process_cmd_line(int argc, char **argv)
 		}
 	}
 
+	if (!options.username) {
+		/* User not specified, use the one who has ran us */
+		options.username = security_get_current_user();
+		if (!options.username) {
+			printf("Unable to determine current username!\n");
+			exit(EXIT_SUCCESS);
+		}
+	}
 
 	/* Initialize logging subsystem */
 	if (print_init(cfg->logging == 1 ? PRINT_WARN : PRINT_NOTICE, 
@@ -385,8 +404,8 @@ int process_cmd_line(int argc, char **argv)
 		}
 	}
 
-	if (options.action_arg)
-		free(options.action_arg);
+	free(options.action_arg);
+	free(options.username);
 	print_fini();
 	return retval;
 }
@@ -397,6 +416,7 @@ int main(int argc, char **argv)
 	int ret;
 	cfg_t *cfg = NULL;
 
+	/* Init environment, store uids, etc. */
 	security_init();
 
 	/* Bootstrap logging subsystem. */
@@ -404,6 +424,9 @@ int main(int argc, char **argv)
 		printf("ERROR: Unable to start log subsystem\n");
 		exit(EXIT_FAILURE);
 	}
+
+	/* TODO: Check if config is readable only by group or user if LDAP or MySQL enabled
+	 * and print error message if it is. */
 
 	/* Get global config */
 	cfg = cfg_get();
@@ -414,8 +437,22 @@ int main(int argc, char **argv)
 		printf("Unable to read global config file\n");
 		exit(EXIT_FAILURE);
 	}
-	
-	/* If database is not global we can drop _pernamently_ permissions now */
+
+	/* If DB is global, mysql or ldap we should be SGID/SUID */
+	if (cfg->db != CONFIG_DB_USER && 
+	    security_privileged(1, 1) == 0) {
+		/* Something is wrong. We are not SGID nor SUID
+		 */
+		printf("Database type set to global/MySQL/LDAP, yet program "
+		       "has no privileges to use it.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	/* If database is not global we can drop _pernamently_ permissions now.
+	 *
+	 * And well. We have to. Because SUID/SGID user might not be able
+	 * to read user state file from his home.
+	 */
 	if (cfg->db != CONFIG_DB_GLOBAL) {
 		security_permanent_drop();
 	} else {
@@ -425,10 +462,6 @@ int main(int argc, char **argv)
 	
 	/* TODO/FIXME: If we are SGID and not SUID is there a problem with
 	 * receiving a signal at stupid point of time? */
-
-#ifdef OS_LINUX
-	/* Drop all permissions except for fsuid? Is it possible? */
-#endif
 
 	ret = process_cmd_line(argc, argv);
 	return ret;
