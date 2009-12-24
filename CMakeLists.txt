@@ -26,7 +26,19 @@ PROJECT(otpam)
 SET(${PROJECT_NAME}_MAJOR_VERSION 0)
 SET(${PROJECT_NAME}_MINOR_VERSION 1)
 
+# -fPIC is required for .a library on x64 only!
+# How to add it only to this target?
 ADD_DEFINITIONS("-Wall -ggdb -fPIC")
+
+option(PROFILE "Unable coverage tests" OFF)
+
+# If Debug option given - enable coverage tests
+IF (PROFILE)
+  ADD_DEFINITIONS("-static -fprofile-arcs -ftest-coverage")
+  LINK_LIBRARIES(gcov)
+
+#  SET(ADDITIONAL_LIBS gcov -fprofile-arcs)
+ENDIF (PROFILE)
 
 # Detect system
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
@@ -53,24 +65,30 @@ CHECK_LIBRARY_EXISTS(gmp mpz_init "" HAVE_GMP)
 CHECK_LIBRARY_EXISTS(ssl SHA256 "" HAVE_OPENSSL)
 FIND_PACKAGE(OpenSSL REQUIRED)
 
+# Module and PAM uses libotp, so add it's include to path...
+INCLUDE_DIRECTORIES(libotp/)
+
+# option( MYSQL "Generate code for MySQL database" OFF )
+
 ##
 # Targets
 ##
-ADD_LIBRARY(libotp STATIC libotp/crypto.c libotp/num.c libotp/ppp.c 
+
+# Library containing common functions
+ADD_LIBRARY(otp STATIC libotp/crypto.c libotp/num.c libotp/ppp.c 
 	libotp/state.c libotp/db.c libotp/print.c libotp/passcards.c
 	libotp/config.c)
-
-# As other targets require this include directory...
-INCLUDE_DIRECTORIES(libotp/)
 
 # Pam module target
 SET(CMAKE_SHARED_LIBRARY_PREFIX "")
 ADD_LIBRARY(pam_otpasswd SHARED pam/pam_helpers.c pam/pam_otpasswd.c) 
-TARGET_LINK_LIBRARIES(pam_otpasswd libotp gmp ssl pam)
 
 # Password management target
 ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/otpasswd_actions.c utility/testcases.c utility/security.c)
-TARGET_LINK_LIBRARIES(otpasswd libotp gmp ssl)
+
+# Linking targets
+TARGET_LINK_LIBRARIES(pam_otpasswd otp gmp ssl pam ${ADDITIONAL_LIBS})
+TARGET_LINK_LIBRARIES(otpasswd otp gmp ssl ${ADDITIONAL_LIBS})
 
 ##
 # Install target
@@ -85,3 +103,32 @@ INSTALL(TARGETS pam_otpasswd otpasswd
 
 INSTALL(FILES examples/otpasswd-login DESTINATION /etc/pam.d)
 INSTALL(FILES examples/otpasswd.conf DESTINATION /etc/security)
+
+##
+# Tests / Coverage
+##
+ENABLE_TESTING()
+ADD_TEST(internal_check ./otpasswd --check)
+# This may fail if user does not have state file!
+# This tests are used mostly to have some rationale
+# coverage test results
+ADD_TEST(state_print1 ./otpasswd -t 'G10[123]')
+ADD_TEST(state_print2 ./otpasswd -t '[123]')
+ADD_TEST(state_print3 ./otpasswd -t '123')
+ADD_TEST(state_print4 ./otpasswd -l '[123]')
+
+ADD_TEST(state_skip1 ./otpasswd -s '[3]')
+ADD_TEST(state_prompt ./otpasswd -p 'current')
+ADD_TEST(state_flag1 ./otpasswd -f dont-show)
+ADD_TEST(state_flag2 ./otpasswd -f codelength-12)
+ADD_TEST(state_flag3 ./otpasswd -f alphabet-extended)
+
+
+# Tests which should fail (but won't return incorrect status)
+ADD_TEST(fail_ok1 ./otpasswd -l '[0]')
+ADD_TEST(fail_ok2 ./otpasswd -l '0')
+ADD_TEST(fail_ok3 ./otpasswd -t '340282366920938463463374607431768211457')
+ADD_TEST(fail_ok4 ./otpasswd -s '-5')
+ADD_TEST(should_fail1 ./otpasswd -a '___')
+
+

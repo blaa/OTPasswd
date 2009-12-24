@@ -337,7 +337,7 @@ int process_cmd_line(int argc, char **argv)
 	case 0:
 		print(PRINT_ERROR, "No action specified. Try passing -k, -s, -t or -l\n\n");
 		_usage(argc, (const char **) argv);
-		exit(1);
+		exit(EXIT_FAILURE);
 
 	case 'k':
 		action_key(&options, cfg);

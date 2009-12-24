@@ -506,7 +506,7 @@ void action_print(options_t *options, const cfg_t *cfg)
 	state s;
 	int state_locked = 1;
 	int state_changed = 0;
-	if (state_init(&s, NULL) != 0) {
+	if (state_init(&s, options->username) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
 		exit(1);
 	}
