@@ -7,5 +7,8 @@ suid: suid.c
 	gcc -o $@ -Wall -O0 -ggdb $<
 	chmod u+s $@
 
+pam_test: pam_test.c
+	gcc -o $@ -Wall -lpam -O0 -ggdb $<
+
 clean:
 	rm -f lock suid test_lck *.o

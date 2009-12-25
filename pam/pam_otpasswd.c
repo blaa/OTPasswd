@@ -51,7 +51,6 @@ PAM_EXTERN int pam_sm_authenticate(
 	/* Parameters */
 	cfg_t *cfg = NULL;
 
-
 	/* Perform initialization:
 	 * parse options, start logging, initialize state
 	 */
@@ -84,6 +83,7 @@ PAM_EXTERN int pam_sm_authenticate(
 			ph_out_of_band(cfg, s);
 		}
 
+
 		resp = ph_query_user(pamh, flags, cfg->show, prompt, s);
 
 		retval = PAM_AUTH_ERR;
@@ -92,6 +92,8 @@ PAM_EXTERN int pam_sm_authenticate(
 			print(PRINT_NOTICE, "No response from user during auth.\n");
 			goto cleanup;
 		}
+
+		/* We must free resp after this point ourselves. */
 
 		/* Hook up OOB request */
 		if (strlen(resp[0].resp) == 1 && resp[0].resp[0] == '.') {
@@ -118,6 +120,8 @@ PAM_EXTERN int pam_sm_authenticate(
 			      ppp_get_username(s));
 			goto cleanup;
 		}
+
+		_pam_drop_reply(resp, 1);
 
 		/* Error during authentication */
 		retval = PAM_AUTH_ERR;

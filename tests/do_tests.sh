@@ -1,32 +1,34 @@
 #!/bin/bash
 
+if [ ! -e CMakeLists.txt ]; then
+	echo "Run this script from main project directory: ./tests/do_tests.sh"
+	exit 2
+fi
+
 echo "This command can modify your state! We will move your"
 echo '~/.otpasswd file into ~/.otpasswd_copy and then move it back.'
 echo "But we can't help if you have configured global state."
 echo 'We will also remove two directories: ./lcov and ./gcov.'
 echo
 echo 'Starting in 10 seconds'
-sleep 10
+sleep 9
+echo Starting...
+sleep 1
 
 mv ~/.otpasswd ~/.otpasswd_copy
 rm -rf lcov gcov
 
-echo "Rebuilding the project. Will remove 'gcov'/'lcov' directories also in 3 seconds"
-sleep 3
-
-if [ ! -e CMakeLists.txt ]; then
-	echo "Run this script from main project directory: ./tests/coverage.sh"
-	exit 2
-fi
-
+make clean
 rm -rf CMakeFiles CMakeCache.txt 
 cmake -DPROFILE=1 . || (echo "Config failed"; exit 1)
 make || (echo "Build failed"; exit 1)
 
+echo "Failed create testcase...\n"
+yes no | ./otpasswd -v -k && (echo "*** WARNING Test which should failed succedded!")
+yes yes | ./otpasswd -v -k || (echo "*** KEY CREATE TEST FAILED")
 
 # This should run --check atleast once
 make test 
-
 
 # GCOV version:
 

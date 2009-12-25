@@ -320,6 +320,7 @@ struct pam_response *ph_query_user(
 	}
 
 	message.msg = prompt;
+
 	conversation->conv(1, (const struct pam_message **)&pmessage,
 			   &resp, conversation->appdata_ptr);
 

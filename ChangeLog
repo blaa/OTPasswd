@@ -18,6 +18,10 @@ Trying to sort tasks according to their priority.
 	      be called before any other gmp functions.
         * [+] Testcases added into make, with coverage measurement.
 	      They will modify your state data though so beware!
+              PAM testcase added! Including coverage support, whoa!
+        * [!] Bug in num.c/reallocate fixed. Did not exist in 0.4
+        * [!] New testcase allowed to detect some memory leaks.
+              Possibly exist in 0.4
 	* [-] Keeping track of failures.
 	      Started (place in state files created)
 	* [-] Implement static passwords;

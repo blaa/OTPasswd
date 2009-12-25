@@ -195,7 +195,9 @@ int card_testcase(void)
 	int failed = 0;
 
 	mpz_init(cnt);
-	state_init(&s, security_get_current_user());
+	char *current_user = security_get_current_user();
+	state_init(&s, current_user);
+	free(current_user), current_user = NULL;
 	strcpy(s.label, "hostname long");
 
 	const unsigned char hash1[] =
@@ -277,11 +279,12 @@ int state_testcase(void)
 	state s1, s2;
 	int failed = 0;
 	int test = 0;
+	char *current_user = security_get_current_user();
 
-	if (state_init(&s1, security_get_current_user()) != 0)
+	if (state_init(&s1, current_user) != 0)
 		printf("state_testcase[%2d] failed (%d)\n", test, failed++);
 
-	test++; if (state_init(&s2, security_get_current_user()) != 0)
+	test++; if (state_init(&s2, current_user) != 0)
 		printf("state_testcase[%2d] failed(%d)\n", test, failed++);
 
 	test++; if (state_key_generate(&s1, 0) != 0)
@@ -313,6 +316,7 @@ int state_testcase(void)
 	state_fini(&s1);
 	state_fini(&s2);
 
+	free(current_user);
 	return failed;
 }
 
@@ -559,6 +563,7 @@ static int _ppp_testcase_authenticate(const char *passcode)
 	int retval = 0;
 
 	const char *prompt = NULL;
+	char *current_user = security_get_current_user();
 
 	/* OTP State */
 	state s;
@@ -572,7 +577,7 @@ static int _ppp_testcase_authenticate(const char *passcode)
 	printf("*** Authenticate testcase\n");
 
 	/* Initialize state with given username, and default config file */
-	if (state_init(&s, security_get_current_user()) != 0) {
+	if (state_init(&s, current_user) != 0) {
 		/* This will fail if we're unable to locate home directory */
 		printf("STATE_INIT FAILED\n");
 		return retval;
@@ -622,6 +627,7 @@ static int _ppp_testcase_authenticate(const char *passcode)
 	printf("AUTHENTICATION NOT SUCCESSFULL\n");
 	retval = 0;
 cleanup:
+	free(current_user);
 	state_fini(&s);
 	return retval;
 }
@@ -649,10 +655,11 @@ int ppp_testcase(void)
 	char *buf1, *buf2;
 	int test = 1;
 	char passcode[17] = {0};
+	char *current_user = security_get_current_user();
 
 	/* Check calculations */
 	state s;
-	state_init(&s, security_get_current_user());
+	state_init(&s, current_user);
 
 	if (state_load(&s) == 0) {
 		printf("*** Performing statistical tests with your key\n");
@@ -663,12 +670,12 @@ int ppp_testcase(void)
 
 	/* Statistical tests using key = 0 */
 	mpz_set_ui(s.sequence_key, 1345126463UL);
-	failed += _ppp_testcase_statistical(&s, 64, 16, 200000);
+	failed += _ppp_testcase_statistical(&s, 64, 16, 2000);
 	/* Following test should fail using norms from first test */
 	// failed += _ppp_testcase_statistical(&s, 88, 16, 500000);
 
 	printf("Character count stats:\n");
-	failed += _ppp_testcase_stat_2(&s, 88, 16, 200000);
+	failed += _ppp_testcase_stat_2(&s, 88, 16, 2000);
 
 	printf("*** PPPv3 compatibility tests\n");
 	printf("* Sequence key = 0.\n");
@@ -733,9 +740,10 @@ int ppp_testcase(void)
 
 	/* Authenticate testcase */
 	/* Create file with empty key */
-	if (state_init(&s, security_get_current_user()) != 0) {
+	if (state_init(&s, current_user) != 0) {
 		printf("ERROR WHILE CREATING TEST KEY\n");
 		failed++;
+		free(current_user);
 		return failed;
 	}
 	state_store(&s);
@@ -749,6 +757,8 @@ int ppp_testcase(void)
 	if (_ppp_testcase_authenticate("aSsD") != 0) {
 		failed++;
 	}
+
+	free(current_user);
 	return failed;
 }
 

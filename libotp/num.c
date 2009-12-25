@@ -44,8 +44,9 @@ static void free_function(void *ptr, size_t size)
 
 static void *reallocate_function(void *ptr, size_t old_size, size_t new_size)
 {
+	const size_t copy_size = old_size < new_size ? old_size : new_size;
 	void *new_ptr = allocate_function(new_size);
-	memcpy(new_ptr, ptr, old_size);
+	memcpy(new_ptr, ptr, copy_size);
 	free_function(ptr, old_size);
 	return new_ptr;
 }

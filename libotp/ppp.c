@@ -420,6 +420,7 @@ void ppp_fini(state *s)
 	if (s->lock_fd > 0)
 		state_unlock(s);
 	state_fini(s);
+	free(s);
 }
 
 
