@@ -16,6 +16,8 @@ Trying to sort tasks according to their priority.
 	* [+] GMP might leak information with reallocs of it's mpz_t
 	      Fixed by substituting alloc functions. num_init() must
 	      be called before any other gmp functions.
+        * [+] Testcases added into make, with coverage measurement.
+	      They will modify your state data though so beware!
 	* [-] Keeping track of failures.
 	      Started (place in state files created)
 	* [-] Implement static passwords;
@@ -26,7 +28,8 @@ Trying to sort tasks according to their priority.
 	      state management. From this 'class' ppp is derived.
 	      ppp implements high-level functions which should be used
 	      explicitly to manage state information unless something
-	      more fine-grained is necessary.
+	      more fine-grained is necessary. State on the other hand
+	      uses 'db' backend for operating on files/databases.
 	* [-] Passing -f, -d, -c along with the -k.
 	* [-] Scan all FIXME/TODO entries
 	* [-] Manuals

@@ -107,12 +107,14 @@ INSTALL(FILES examples/otpasswd.conf DESTINATION /etc/security)
 
 ##
 # Tests / Coverage
+# WARNING: THIS TESTS MODIFY USER STATE!
 ##
 ENABLE_TESTING()
 ADD_TEST(internal_check ./otpasswd --check)
 # This may fail if user does not have state file!
 # This tests are used mostly to have some rationale
 # coverage test results
+# ADD_TEST(state_key0 "/bin/yes no | ./otpasswd -v -k")
 ADD_TEST(state_flag0 ./otpasswd -v -f codelength-4)
 ADD_TEST(state_print1 ./otpasswd -v -t "D10[123]")
 ADD_TEST(state_print2 ./otpasswd -v -t "[123]")
@@ -133,7 +135,7 @@ ADD_TEST(state_label ./otpasswd -v -d "Set label")
 ADD_TEST(state_warnings ./otpasswd -v -w)
 ADD_TEST(state_contact ./otpasswd -v -c "123456")
 
-# Tests which should fail (but won't return incorrect status)
+# Tests which should fail
 ADD_TEST(fail_ok1 ./otpasswd -v -l "[0]")
 ADD_TEST(fail_ok2 ./otpasswd -v -l "0")
 ADD_TEST(fail_ok3 ./otpasswd -v -t "340282366920938463463374607431768211457")
