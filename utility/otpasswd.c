@@ -128,7 +128,7 @@ static void _usage(int argc, const char **argv)
 
 int process_cmd_line(int argc, char **argv)
 {
-	int retval = 0;
+	int retval = 1;
 
 	/* Options passed to utility with command line */
 	options_t options = {
@@ -340,7 +340,7 @@ int process_cmd_line(int argc, char **argv)
 		exit(EXIT_FAILURE);
 
 	case 'k':
-		action_key(&options, cfg);
+		retval = action_key(&options, cfg);
 		break;
 
 	case 'L': /* list action */
@@ -348,7 +348,7 @@ int process_cmd_line(int argc, char **argv)
 	case 'd':
 	case 'c':
 	case 'p':
-		action_flags(&options, cfg);
+		retval = action_flags(&options, cfg);
 		break;
 
 	case 'a':
@@ -358,7 +358,7 @@ int process_cmd_line(int argc, char **argv)
 			retval = 1;
 		break;
 	case 'Q':
-		action_license(&options, cfg);
+		retval = action_license(&options, cfg);
 		break;
 
 	case 'w': /* Warning */
@@ -366,7 +366,7 @@ int process_cmd_line(int argc, char **argv)
 	case 't':
 	case 'l':
 	case 'P':
-		action_print(&options, cfg);
+		retval = action_print(&options, cfg);
 		break;
 
 	case 'x':

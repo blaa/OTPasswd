@@ -229,8 +229,10 @@ cleanup:
 }
 
 /* Generate new key */
-void action_key(options_t *options, const cfg_t *cfg)
+int action_key(options_t *options, const cfg_t *cfg)
 {
+	int retval = 1;
+
 	if (cfg->allow_key_generation == 0) {
 		// TODO; check if we can write to global db
 		// if yes - ok, if not - diee.
@@ -327,12 +329,14 @@ void action_key(options_t *options, const cfg_t *cfg)
 	}
 
 	printf("Key stored! One-time passwords enabled for this account.\n");
-
+	retval = 0;
+	
 cleanup:
 	state_fini(&s);
+	return retval;
 }
 
-void action_license(options_t *options, const cfg_t *cfg)
+int action_license(options_t *options, const cfg_t *cfg)
 {
 	printf(
 		"otpasswd -- One-time password manager and PAM module.\n"
@@ -352,11 +356,13 @@ void action_license(options_t *options, const cfg_t *cfg)
 		"You should have received a copy of the GNU General Public License\n"
 		"along with this program in a LICENSE file.\n"
 	);
+	return 0;
 }
 
 /* Update flags based on mask which are stored in options struct */
-void action_flags(options_t *options, const cfg_t *cfg)
+int action_flags(options_t *options, const cfg_t *cfg)
 {
+	int retval = 1;
 	int ret, state_locked;
 	int state_changed = 0;
 	state s;
@@ -465,6 +471,7 @@ void action_flags(options_t *options, const cfg_t *cfg)
 		printf("\nFlags:\n");
 		_show_flags(&s);
 		/* Omit saving */
+		retval = 0;
 		goto cleanup;
 
 	default:
@@ -485,21 +492,25 @@ void action_flags(options_t *options, const cfg_t *cfg)
 	}
 	
 	_show_flags(&s);
-
+	retval = 0;
+	
 cleanup:
-	if (state_unlock(&s) != 0)
+	if (state_unlock(&s) != 0) {
 		print(PRINT_ERROR, "Error while releasing lock!\n");
+		retval = 1;
+	}
 
 	state_fini(&s);
-	return;
+	return retval;
 
 no_key_file:
 	print(PRINT_ERROR, "Error while reading state, have you created a key with -k option?\n");
-	exit(1);
+	return 2;
 }
 
-void action_print(options_t *options, const cfg_t *cfg)
+int action_print(options_t *options, const cfg_t *cfg)
 {
+	int retval = 1;
 	int ret;
 
 	/* This action requires a created key */
@@ -508,7 +519,7 @@ void action_print(options_t *options, const cfg_t *cfg)
 	int state_changed = 0;
 	if (state_init(&s, options->username) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
-		exit(1);
+		return 1;
 	}
 
 	ret = state_lock(&s);
@@ -552,6 +563,7 @@ void action_print(options_t *options, const cfg_t *cfg)
 			printf(format, warn);
 			a = c; while (--a) putchar('*'); putchar('\n');
 		}
+		retval = 0;
 		goto cleanup;
 	}
 
@@ -798,6 +810,7 @@ void action_print(options_t *options, const cfg_t *cfg)
 		}
 	}
 
+	retval = 0;
 cleanup1:
 	mpz_clear(passcode_num);
 	mpz_clear(passcard_num);
@@ -805,16 +818,20 @@ cleanup1:
 cleanup:
 	if (state_changed) {
 		if (state_locked == 0)  {
-			print(PRINT_NOTICE,  "NOT saving any changes since file is locked\n");
+			print(PRINT_NOTICE,  "NOT saving any changes since file is not locked\n");
+			retval = 1;
 		} else {
 			print(PRINT_NOTICE, "Saving changes to state file\n");
 			if (state_store(&s) != 0) {
 				print(PRINT_ERROR, "Error while saving changes!\n");
+				retval = 1;
 			}
+			state_unlock(&s);
 		}
 	}
-	state_unlock(&s);
+
 	state_fini(&s);
+	return retval;
 }
 
 

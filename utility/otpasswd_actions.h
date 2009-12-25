@@ -33,10 +33,10 @@ typedef struct {
 
 } options_t;
 
-extern void action_flags(options_t *options, const cfg_t *cfg);
-extern void action_license(options_t *options, const cfg_t *cfg);
-extern void action_key(options_t *options, const cfg_t *cfg);
+extern int action_flags(options_t *options, const cfg_t *cfg);
+extern int action_license(options_t *options, const cfg_t *cfg);
+extern int action_key(options_t *options, const cfg_t *cfg);
 extern int action_authenticate(options_t *options, const cfg_t *cfg);
-extern void action_print(options_t *options, const cfg_t *cfg);
+extern int action_print(options_t *options, const cfg_t *cfg);
 
 #endif
