@@ -1,4 +1,6 @@
-.PHONY: clean
+.PHONY: clean all
+
+all: lock suid pam_test
 
 lock: lock.c
 	gcc -o $@ -Wall -O0 -ggdb $<

@@ -2,3 +2,4 @@ do_pam_tests
 suid
 lock
 test_lck
+pam_test

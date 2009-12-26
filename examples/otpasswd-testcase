@@ -1,0 +1,15 @@
+# This file is a PAM stack used ONLY for testcasing
+# otpasswd while it's installed in the system and
+# accessible via system PAM. This allows us to test
+# functions which can't be tested otherwise.
+
+# For this tests to work this file has to be copied into
+# /etc/pam.d/  but after tests better remove it.
+
+# It's rather supposed to work with default configuration.
+# Will easily fail if something tricky happens.
+
+auth            sufficient	pam_otpasswd.so debug
+auth		required	pam_deny.so
+
+session		optional	pam_otpasswd.so debug
