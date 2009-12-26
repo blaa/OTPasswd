@@ -117,7 +117,10 @@ static int _db_find_user_entry(
 	assert(f);
 	assert(buff);
 
-	username_length = strlen(username);
+	if (username)
+		username_length = strlen(username);
+	else 
+		username_length = 0;
 
 	while (!feof(f)) {
 		/* Read all file into a buffer */
@@ -142,11 +145,20 @@ static int _db_find_user_entry(
 			      "State file is invalid. Line too short.\n");
 			return 3;
 		}
-		
-		/* Check the username without modyfing buffer. */
-		if (strncmp(buff, username, username_length) == 0) {
-			/* Found */
-			return 0;
+
+		/* Temporary change first separator into \0 */
+		char *first_sep = index(buff, _delim[0]);
+		if (first_sep) {
+			*first_sep = '\0';
+			
+			/* Check the username */
+			if (username && (strcmp(buff, username) == 0)) {
+				/* Found */
+				*first_sep = _delim[0];
+				return 0;
+			}
+
+			*first_sep = _delim[0];
 		}
 
 		if (out) {
@@ -200,9 +212,6 @@ static int _db_parse_user_entry(char *buff, char **field)
 	return 0;
 }
 
-
-
-
 /**********************************************
  * Interface functions for managing state files
  **********************************************/
@@ -220,15 +229,16 @@ int db_file_load(state *s)
 	FILE *f = NULL;
 
 	if (_db_file_permissions(s) != 0) {
-		print(PRINT_NOTICE,
-		      "Unable to load state file. "
-		      "Have you created key with -k option?\n");
+		print(PRINT_NOTICE, "Unable to load state file.\n");
 		return STATE_DOESNT_EXISTS;
 	}
 
-	/* DB file should always be locked before changing 
-	 * Here we just detect that it's not locked and lock it then
-	 * This generally shouldn't happen */
+	/* DB file should always be locked before changing.
+	 * Locking can only be omitted when we want to discard 
+	 * any changes or that we don't bother if somebody changes 
+	 * them at the same time.
+	 * Here we just detect that it's not locked and lock it then 
+	 */
 	if (s->lock_fd <= 0) {
 		print(PRINT_NOTICE, 
 		      "State file not locked while reading from it\n");
@@ -257,18 +267,18 @@ int db_file_load(state *s)
 		goto error;
 
 	/* Parse fields */
-	if (mpz_set_str(s->sequence_key, field[FIELD_KEY], 62) != 0) {
+	if (mpz_set_str(s->sequence_key, field[FIELD_KEY], STATE_BASE) != 0) {
 		print(PRINT_ERROR, "Error while parsing sequence key.\n");
 		goto error;
 	}
 
-	if (mpz_set_str(s->counter, field[FIELD_COUNTER], 62) != 0) {
+	if (mpz_set_str(s->counter, field[FIELD_COUNTER], STATE_BASE) != 0) {
 		print(PRINT_ERROR, "Error while parsing counter.\n");
 		goto error;
 	}
 
 	if (mpz_set_str(s->latest_card, 
-			field[FIELD_LATEST_CARD], 62) != 0) {	
+			field[FIELD_LATEST_CARD], STATE_BASE) != 0) {	
 		print(PRINT_ERROR,
 		      "Error while parsing number "
 		      "of latest printed passcard\n");
@@ -285,7 +295,7 @@ int db_file_load(state *s)
 		goto error;
 	}
 
-	if (mpz_set_str(s->channel_time, field[FIELD_CHANNEL_TIME], 62) != 0) {
+	if (mpz_set_str(s->channel_time, field[FIELD_CHANNEL_TIME], STATE_BASE) != 0) {
 		print(PRINT_ERROR, "Error while parsing channel use time.\n");
 		goto error;
 		s->spass_set = 0;
@@ -305,7 +315,7 @@ int db_file_load(state *s)
 	if (strlen(field[FIELD_SPASS]) == 0) {
 		s->spass_set = 0;
 	} else {
-		if (mpz_set_str(s->spass, field[FIELD_SPASS], 62) != 0) {
+		if (mpz_set_str(s->spass, field[FIELD_SPASS], STATE_BASE) != 0) {
 			print(PRINT_ERROR, "Error while parsing static password.\n");
 			goto error;
 		}
@@ -386,16 +396,9 @@ error:
 	return 1;
 }
 
-int db_file_store(state *s)
+static int _db_generate_user_entry(const state *s, char *buffer, int buff_length)
 {
-	/* Return value, by default return error */
-	int ret = 1;
-
-	/* State file */
-	FILE *f;
-
-	/* Did we lock the file? */
-	int locked = 0;
+	int tmp;
 
 	/* Converted state parts */
 	char *sequence_key = NULL;
@@ -404,31 +407,6 @@ int db_file_store(state *s)
 	char *spass = NULL;
 	char *channel_time = NULL;
 
-	int tmp;
-
-	assert(s->db_path != NULL);
-	assert(s->username != NULL);
-
-	if (s->lock_fd <= 0) {
-		print(PRINT_NOTICE, 
-		      "State file not locked while writing to it\n");
-		if (db_file_lock(s) != 0) {
-			print(PRINT_ERROR, "Unable to lock file for reading!\n");
-			return 1;
-		}
-		locked = 1;
-	}
-
-	f = fopen(s->db_path, "w");
-	if (!f) {
-		print_perror(PRINT_ERROR,
-			     "Unable to open %s for writting",
-			     s->db_path);
-
-		if (locked)
-			db_file_unlock(s);
-		return STATE_PERMISSIONS;
-	}
 
 	/* Write using ascii-safe approach */
 	sequence_key = mpz_get_str(NULL, STATE_BASE, s->sequence_key);
@@ -442,13 +420,13 @@ int db_file_store(state *s)
 
 	channel_time = mpz_get_str(NULL, STATE_BASE, s->channel_time);
 
-	if (!sequence_key || !counter || !latest_card) {
+	if (!sequence_key || !counter || !latest_card || !channel_time || !spass) {
 		print(PRINT_ERROR, "Error while converting numbers\n");
 		goto error;
 	}
 
 	const char d = _delim[0];
-	tmp = fprintf(f, 
+	tmp = snprintf(buffer, buff_length, 
 		      "%s%c%d%c"
 		      "%s%c%s%c%s%c" /* Key, counter, latest_card */
 		      "%u%c%u%c%s%c" /* Failures, recent fails, channel time */
@@ -459,39 +437,146 @@ int db_file_store(state *s)
 		      s->failures, d, s->recent_failures, d, channel_time, d,
 		      s->code_length, d, s->flags, d, spass, d,
 		      s->label, d, s->contact);
-	if (tmp <= 10) {
+	if (tmp < 10 || tmp == buff_length) {
 		print(PRINT_ERROR, "Error while writing data to state file.");
 		goto error;
 	}
-	
-	tmp = fflush(f);
-	tmp += fclose(f);
-	if (tmp != 0)
-		print_perror(PRINT_ERROR, "Error while flushing/closing state file");
-	else
-		print(PRINT_NOTICE, "State file written\n");
 
-	/* It might fail, but shouldn't
-	 * Also we just want to ensure others 
-	 * can't read this file */
-	if (_db_file_permissions(s) != 0) {
-		print(PRINT_WARN, 
-		      "Unable to set state file permissions. "
-		      "Key might be world-readable!\n");
-	}
-
-	ret = 0; /* More less fine */
-
+	return 0;
 error:
-	if (locked && db_file_unlock(s) != 0) {
-		print(PRINT_ERROR, "Error while unlocking state file!\n");
-	}
-
 	free(sequence_key);
 	free(counter);
 	free(latest_card);
 	free(channel_time);
 	free(spass);
+	return 1;
+}
+
+int db_file_store(state *s)
+{
+	/* Return value, by default return error */
+	int ret = 1;
+
+	/* State file */
+	FILE *in = NULL, *out = NULL;
+
+	/* Did we lock the file? */
+	int locked = 0;
+
+	char user_entry_buff[STATE_ENTRY_SIZE];
+
+	int tmp;
+
+	assert(s->db_path != NULL);
+	assert(s->username != NULL);
+
+	if (s->lock_fd <= 0) {
+		print(PRINT_NOTICE, 
+		      "State file not locked while writing to it\n");
+		if (db_file_lock(s) != 0) {
+			print(PRINT_ERROR, "Unable to lock file for writing!\n");
+			return 1;
+		}
+		locked = 1;
+	}
+
+	in = fopen(s->db_path, "r");
+	if (!in) {
+		print_perror(PRINT_ERROR,
+			     "Unable to open %s for reading",
+			     s->db_path);
+
+		ret = STATE_PERMISSIONS;
+		goto cleanup;
+	}
+
+	out = fopen(s->db_tmp_path, "w");
+	if (!out) {
+		print_perror(PRINT_ERROR,
+			     "Unable to open %s for writing",
+			     s->db_tmp_path);
+
+		ret = STATE_PERMISSIONS;
+		goto cleanup;
+
+	}
+
+	/* 1) Copy entries before our username */
+	tmp = _db_find_user_entry(s->username, in, out,	user_entry_buff, sizeof(user_entry_buff));
+	if (tmp != 1 && tmp != 0) {
+		/* Error happened. */
+		goto cleanup;
+	}
+
+	/* 2) Generate our new entry and store it into file */
+	tmp = _db_generate_user_entry(s, user_entry_buff, sizeof(user_entry_buff));
+	if (tmp != 0) {
+		print(PRINT_ERROR, "Strange error while generating new user entry line\n");
+		goto cleanup;
+	}
+
+	if (fputs(user_entry_buff, out) < 0) {
+		print(PRINT_ERROR, "Error while writing user entry to database\n");
+		goto cleanup;
+	}
+
+	/* 3) Copy rest of the file */
+	tmp = _db_find_user_entry(s->username, in, out,	user_entry_buff, sizeof(user_entry_buff));
+	if (tmp == 0) {
+		print(PRINT_ERROR, "Duplicate entry for user %s in state file\n", s->username);
+		goto cleanup;
+	}
+
+	if (tmp != 1) {
+		/* Error happened. */
+		goto cleanup;
+	}
+
+	/* 4) Flush, save... then rename in cleanup part */
+	tmp = fflush(out);
+	tmp += fclose(out);
+	out = NULL;
+	if (tmp != 0) {
+		print_perror(PRINT_ERROR, "Error while flushing/closing state file");
+		goto cleanup;
+	}
+
+	ret = 0; /* We are fine! */
+
+
+cleanup:
+	if (in)
+		fclose(in);
+	if (out)
+		fclose(out);
+
+	if (ret == 0) {
+		/* If everything went fine, rename tmp to normal file */
+		if (rename(s->db_tmp_path, s->db_path) != 0) {
+			print_perror(PRINT_WARN, 
+				     "Unable to rename temporary state "
+				     "file and save state\n");
+			ret = 1;
+		} else {
+			/* It might fail, but shouldn't
+			 * Also we just want to ensure others 
+			 * can't read this file */
+			if (_db_file_permissions(s) != 0) {
+				print(PRINT_WARN, 
+				      "Unable to set state file permissions. "
+				      "Key might be world-readable!\n");
+			}
+			print(PRINT_NOTICE, "State file written correctly\n");
+		}
+	} else if (unlink(s->db_tmp_path) != 0) {
+		print_perror(PRINT_WARN, "Unable to unlink temporary state file %s\n", 
+			     s->db_tmp_path);
+	}
+
+	if (locked && db_file_unlock(s) != 0) {
+		print(PRINT_ERROR, "Error while unlocking state file!\n");
+	}
+
 	return ret;
 }
 
@@ -502,7 +587,7 @@ int db_file_lock(state *s)
 	int cnt;
 	int fd;
 
-	assert(s->lockname);
+	assert(s->db_lck_path);
 	assert(s->db_path);
 	assert(s->lock_fd == -1);
 
@@ -511,7 +596,7 @@ int db_file_lock(state *s)
 	fl.l_start = fl.l_len = 0;
 
 	/* Open/create lock file */
-	fd = open(s->lockname, O_WRONLY|O_CREAT, S_IWUSR|S_IRUSR);
+	fd = open(s->db_lck_path, O_WRONLY|O_CREAT, S_IWUSR|S_IRUSR);
 
 	if (fd == -1) {
 		/* Unable to create file, therefore unable to obtain lock */
@@ -572,7 +657,7 @@ int db_file_unlock(state *s)
 	close(s->lock_fd);
 	s->lock_fd = -1;
 
-	unlink(s->lockname);
+	unlink(s->db_lck_path);
 
 	if (ret != 0) {
 		print(PRINT_NOTICE, "Strange error while releasing lock\n");

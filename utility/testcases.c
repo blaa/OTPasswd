@@ -670,12 +670,12 @@ int ppp_testcase(void)
 
 	/* Statistical tests using key = 0 */
 	mpz_set_ui(s.sequence_key, 1345126463UL);
-	failed += _ppp_testcase_statistical(&s, 64, 16, 2000);
+	failed += _ppp_testcase_statistical(&s, 64, 16, 200000);
 	/* Following test should fail using norms from first test */
 	// failed += _ppp_testcase_statistical(&s, 88, 16, 500000);
 
 	printf("Character count stats:\n");
-	failed += _ppp_testcase_stat_2(&s, 88, 16, 2000);
+	failed += _ppp_testcase_stat_2(&s, 88, 16, 200000);
 
 	printf("*** PPPv3 compatibility tests\n");
 	printf("* Sequence key = 0.\n");

@@ -184,7 +184,7 @@ int action_authenticate(options_t *options, const cfg_t *cfg)
 
 	if (state_init(&s, options->username) != 0) {
 		/* This will fail if we're unable to locate home directory */
-		print(PRINT_ERROR, "Unable to load state! Have you used -k option?\n");
+		print(PRINT_ERROR, "Unable to initialize state.\n");
 		return 0; /* False - not authenticated */
 	}
 
@@ -196,15 +196,17 @@ int action_authenticate(options_t *options, const cfg_t *cfg)
 		break;
 
 	case STATE_NUMSPACE:
-		printf("Counter overflowed. Regenerate key.\n");
+		printf("Authentication failed (Counter overflowed, regenerate key).\n");
 		retval = 0;
 		goto cleanup;
 
 	case STATE_DOESNT_EXISTS:
+		printf("Authentication failed (user doesn't have a key).\n");
 		retval = 0;
 		goto cleanup;
 		
 	default: /* Any other problem - error */
+		printf("Authentication failed (error).\n");
 		retval = 0;
 		goto cleanup;
 	}
@@ -214,16 +216,12 @@ int action_authenticate(options_t *options, const cfg_t *cfg)
 
 	if (ppp_authenticate(&s, options->action_arg) == 0) {
 		/* Correctly authenticated */
+		printf("Authentication successful.\n");
 		retval = 1;
 		goto cleanup;
 	}
 
 cleanup:
-	if (retval)
-		printf("Authentication successful.\n");
-	else 
-		printf("Authentication failed.\n");
-		
 	state_fini(&s);
 	return retval;
 }
@@ -364,7 +362,7 @@ int action_license(options_t *options, const cfg_t *cfg)
 int action_flags(options_t *options, const cfg_t *cfg)
 {
 	int retval = 1;
-	int ret, state_locked;
+	int ret, state_locked = 0;
 	int state_changed = 0;
 	state s;
 	if (state_init(&s, options->username) != 0) {
@@ -372,23 +370,29 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		exit(1);
 	}
 
-	state_locked = 1;
+
+	/* FIXME, TODO: Remove behaviour when locking fails
+	 * but state_load is ok. It's rare, and state_load will fail
+	 * also because it tries to lock */
+
 	ret = state_lock(&s);
-	if (ret != 0 && ret != STATE_DOESNT_EXISTS) {
+	if (ret != 0) {
 		/* whoops! */
 		print(PRINT_ERROR, "Unable to lock file! Unable to save"
 		      " any changes back to file!\n");
-		state_locked = 0;
-	} else if (ret == STATE_DOESNT_EXISTS)
-		goto no_key_file;
+	} else {
+		state_locked = 1;
+	}
 
 	/* Load our state */
-	if (state_load(&s) != 0) {
+	ret = state_load(&s);
+	if (ret == STATE_DOESNT_EXISTS) {
 		/* Unable to load state */
 		goto no_key_file;
 	}
 
-
+	if (ret != 0)
+		goto cleanup;
 
 	/* Calculate additional passcard info */
 	ppp_calculate(&s);
@@ -496,16 +500,18 @@ int action_flags(options_t *options, const cfg_t *cfg)
 	retval = 0;
 	
 cleanup:
-	if (state_unlock(&s) != 0) {
-		print(PRINT_ERROR, "Error while releasing lock!\n");
-		retval = 1;
+	if (state_locked) {
+		if (state_unlock(&s) != 0) {
+			print(PRINT_ERROR, "Error while releasing lock!\n");
+			retval = 1;
+		}
 	}
 
 	state_fini(&s);
 	return retval;
 
 no_key_file:
-	print(PRINT_ERROR, "Error while reading state, have you created a key with -k option?\n");
+	printf("Error while reading state, have you created a key with -k option?\n");
 	return 2;
 }
 
@@ -516,7 +522,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 
 	/* This action requires a created key */
 	state s;
-	int state_locked = 1;
+	int state_locked = 0;
 	int state_changed = 0;
 	if (state_init(&s, options->username) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
@@ -524,16 +530,21 @@ int action_print(options_t *options, const cfg_t *cfg)
 	}
 
 	ret = state_lock(&s);
-	if (ret != 0 && ret != STATE_DOESNT_EXISTS) {
+	if (ret != 0) {
 		/* whoops! */
 		print(PRINT_ERROR, "Unable to lock file! Unable to save"
 		      " any changes back to file!\n");
-		state_locked = 0;
+	} else {
+		state_locked = 1;
 	}
 
 	/* Load our state */
-	if (state_load(&s) != 0) {
-		print(PRINT_ERROR, "Unable to load state file. Have you tried -k option?\n");
+	ret = state_load(&s);
+	if (ret == STATE_DOESNT_EXISTS) {
+		printf("Unable to load state file. Have you tried -k option?\n");
+		goto cleanup;
+	} else if (ret != 0) {
+		printf("Error while reading state file!\n");
 		goto cleanup;
 	}
 

@@ -136,7 +136,7 @@ int state_init(state *s, const char *username)
 
 	s->prompt = NULL;
 	s->db_path = NULL;
-	s->lockname = NULL;
+	s->db_lck_path = NULL;
 
 	memset(s->label, 0x00, sizeof(s->label));
 	memset(s->contact, 0x00, sizeof(s->contact));
@@ -162,15 +162,25 @@ int state_init(state *s, const char *username)
 		}
 
 		/* Create lock filename; normal file + .lck */
-		s->lockname = malloc(strlen(s->db_path) + 5 + 1);
-		if (!s->lockname) {
+		s->db_lck_path = malloc(strlen(s->db_path) + 5 + 1);
+
+		if (!s->db_lck_path) {
 			free(s->db_path);
 			return 1; 
 		}
-		
-		ret = sprintf(s->lockname, "%s.lck", s->db_path);
+
+		s->db_tmp_path = malloc(strlen(s->db_path) + 5 + 1);
+		if (!s->db_tmp_path) {
+			free(s->db_path);
+			free(s->db_lck_path);
+			return 1; 
+		}
+
+		ret = sprintf(s->db_lck_path, "%s.lck", s->db_path);
 		assert(ret > 0);
-		
+
+		ret = sprintf(s->db_tmp_path, "%s.tmp", s->db_path);
+		assert(ret > 0);
 		break;
 
 	case CONFIG_DB_GLOBAL:
@@ -225,7 +235,8 @@ void state_fini(state *s)
 	}
 
 	free(s->db_path);
-	free(s->lockname);
+	free(s->db_lck_path);
+	free(s->db_tmp_path);
 	free(s->username);
 
 	/* Clear the rest of memory */

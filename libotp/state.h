@@ -26,7 +26,7 @@
 #define STATE_FILENAME ".otpasswd"
 
 /* Base for storing big numbers inside STATE_FILENAME */
-#define STATE_BASE	62
+#define STATE_BASE	16
 
 
 /*** State ***/
@@ -98,12 +98,12 @@ typedef struct {
 	 * this is data used for storing/restoring
 	 * state information.
 	 */
-	char *username;		/* User name  */
+	char *username;		/* user who called utility or does auth */
 	char *db_path;		/* Path to state file    */
+	char *db_lck_path;		/* Name of lock filename */
+	char *db_tmp_path;	/* Temporary state file location */
 	int lock_fd;		/* Descriptor of state lock
 				 * will be < 0 if file not locked */
-	char *lockname;		/* Name of lock filename,
-				 * allocated/deallocated during locking */
 } state;
 
 

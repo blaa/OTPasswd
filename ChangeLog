@@ -22,6 +22,12 @@ Trying to sort tasks according to their priority.
         * [!] Bug in num.c/reallocate fixed. Did not exist in 0.4
         * [!] New testcase allowed to detect some memory leaks.
               Possibly exist in 0.4
+	* [+] Improve error messages when state file is not found.
+	* [?] Import/export of ascii state lines...
+	* [-] See how functions in otpasswd_actions initialize and
+              deinitialize state, see if they can use ppp_, if not
+	      make them so they can. Or write some local static functions
+	      to handle errors during lock&load.
 	* [-] Keeping track of failures.
 	      Started (place in state files created)
 	* [-] Implement static passwords;
@@ -37,7 +43,6 @@ Trying to sort tasks according to their priority.
 	* [-] Passing -f, -d, -c along with the -k.
 	* [-] Scan all FIXME/TODO entries
 	* [-] Manuals
-	* [-] Improve error messages when state file is not found.
         * [?] Big thing - Move state files to /etc + SUID.
 	* [?] Use locales for user messages [_("")? ]
 	* [?] Config file in /etc/security
@@ -54,7 +59,6 @@ Trying to sort tasks according to their priority.
 	* [?] Improve LaTeX output (some colors, borders?)
         * [?] Incorporate SSH key fingerprints on passcards?
 	* [-] Keep lines below 75 columns? Or 80?
-	* [-] off-by-one testcases; a bit tests done.
 
 2009-12-13 v0.4
 	* [!] Fixed some memory leaks.
