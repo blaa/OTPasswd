@@ -129,10 +129,10 @@ c. History
 The creation of this program was inspired by the ppp-pam project
 (http://code.google.com/p/ppp-pam/). Idea is basically the same. I started
 development by contributing to ppp-pam, but there was plenty of things to
-fix, author didn't answer and I just decided I'll be better off rewriting
-everything from scratch. Projects share some of my code, like locking
-functions but nothing more. You can kind of thing about otpasswd as a fork
-of ppp-pam.
+fix, author didn't answer (during first month) and I just decided I'll be
+better off rewritingeverything from scratch. Projects share some of my
+code, like locking functions but nothing more. You can kind of thing about
+otpasswd as a fork of ppp-pam.
 
 
 
@@ -144,27 +144,32 @@ To install otpasswd and configure it to work with ssh you have to:
 2. Enable its use in /etc/pam.d
 3. Configure ssh to use PAM.
 4. Generate keys for user (and print at least one password card)
-5. Tweak PAM module configuration
+5. Tweak otpasswd configuration
 
 So.
 
 0) Package required openssl and gmp libraries and cmake tool (with their
    -dev packages!). All of these should be available in the repository of
-   your distribution.
+   your distribution. In future it's possible that MySQL and LDAP databases 
+   could be used optionally.
 
 1) Check if the package is not in your distribution package manager. If it
 is - install it as any other software. Otherwise fallback to compilation:
 $ cd otpasswd
-$ cmake .      # This will generate makefiles
+$ cmake .      # This will generate makefiles (You can add -DDEBUG=1)
 $ make         # This should compile anything
-$ make install # This should install binaries into system.
+$ make install # This should install otpasswd into system.
 
-Instead of using make install you can also copy two files, PAM module into
-/lib/security and otpasswd password manager to /usr/bin. There's also
-exemplary pam configuration in example/otpasswd-login this can be copied to
-/etc/pam.d (which itself won't change anything in your PAM config).
+Instead of using make install you can also copy following files:
+a) PAM module 'pam_otpasswd.so' -> /lib/security/
+b) Utility 'otpasswd' -> /usr/bin/
+c) Exemplary PAM configuration example/otpasswd-login -> /etc/pam.d/
+d) otpasswd configuration example/otpasswd.conf -> /etc/security/
 
-2) See last chapter for detailed information. In short install
+Depending on DB option (see point 5) otpasswd utility can require a SGID
+flag and separate group.
+
+2) See last chapter for detailed information. In short, install
 example/otpasswd-login in /etc/pam.d and change a line in /etc/pam.d/sshd
 from:
 auth       include        system-remote-login
@@ -181,42 +186,25 @@ you won't loose ability to login in case you're configuring OTP
 remotely) you can use:
 $ otpasswd -k
 
-5) Last line of /etc/pam.d/otpasswd-login has form:
-auth            required        pam_otpasswd.so <PARAMETERS>
+5) OTPasswd is configured via the /etc/security/otpasswd.conf file which
+has all possible options included and commented.
 
-There's a certain set of parameters you can define here:
-enforced - disallow logon if user doesn't have generated key.
-	   (default is to ignore OTP.)
-secure   - disallow dont-skip flag
-show     - always show entered passcodes (ignore user options)
-noshow   - never show passcodes (ignore user options)
-debug    - increase debugging (don't leave this option there for long!
-	   as it may leak some passcode information.)
-retry=X  - This configures retry behaviour during single authentication:
-	   X:  Behaviour:
-	   0   do not retry passcode question (default)
-	   1   retry, but use next passcode from card
-	   2   retry, use the same passcode.
-
-
-and few more are proposed and _might_be_ implemented in future:
-oob=X         - Configures a 'out-of-band' communication over a
-                secure 'second-channel' (for example an email or sms)
-                used for sending user current passcode.
-                X:  Behaviour:
-		0 - OOB disabled (default)
-		1 - OOB on request ('.' as passcode given)
-		2 - OOB on request; request requires password (not implemented)
-		3 - OOB sent during all authentication sessions
-                Enabling a channel also requires second option:
-oob_path=X    - X is full-path to script or a program which will be given
-                two parameters on input. User contact information and
-                current prompt + correct passcode.
-		Script should be owned by nobody and only by nobody executable.
-                This program operates this 'second-channel' so he might for
-                example send a SMS to the user.
-
-
+The most important setting there is "DB" option. If DB is set to:
+user:
+  utility doesn't need to be SGID/SUID as state is stored inside user home
+  directories. Nevertheless policies can't be enforced then.
+  It don't hurt much if DB=user and utility is SGID as otpasswd will drop
+  it's permissions right after reading config file.
+global:
+  Keys are stored in /etc (usually /etc/otshadow). Policies can be
+  enforced, but otpasswd utility must be SGID to the group owned by
+  otshadow, and users must not be able to read this file. You should create
+  separate group (otpasswd proposed) for this task.
+mysql/ldap:
+  Not yet implemented. Still as passwords to DB will be stored inside
+  /etc/security/otpasswd.conf you should make this file readable only by
+  special group, and make otpasswd utility SGID to this group.
+  Just after reading a state file group permissions are dropped.
 
 3. Passcode generation algorithm
 ================================

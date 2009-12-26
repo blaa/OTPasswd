@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 
 #include <unistd.h>	/* usleep, open, close, unlink */
 #include <sys/types.h>
@@ -510,12 +511,16 @@ int db_file_store(state *s)
 
 	in = fopen(s->db_path, "r");
 	if (!in) {
-		print_perror(PRINT_ERROR,
-			     "Unable to open %s for reading",
-			     s->db_path);
-
-		ret = STATE_IO_ERROR;
-		goto cleanup;
+		/* Probably doesn't exists, if not... */
+		if (errno != ENOENT) {
+			/* FIXME, better rewrite to use stat */
+			print_perror(PRINT_ERROR,
+				     "Unable to open %s for reading",
+				     s->db_path);
+			
+			ret = STATE_IO_ERROR;
+			goto cleanup;
+		}
 	}
 
 	out = fopen(s->db_tmp_path, "w");
@@ -529,11 +534,13 @@ int db_file_store(state *s)
 
 	}
 
-	/* 1) Copy entries before our username */
-	ret = _db_find_user_entry(s->username, in, out,	user_entry_buff, sizeof(user_entry_buff));
-	if (ret != 1 && ret != 0) {
-		/* Error happened. */
-		goto cleanup;
+	if (in) {
+		/* 1) Copy entries before our username */
+		ret = _db_find_user_entry(s->username, in, out,	user_entry_buff, sizeof(user_entry_buff));
+		if (ret != 1 && ret != 0) {
+			/* Error happened. */
+			goto cleanup;
+		}
 	}
 
 	/* 2) Generate our new entry and store it into file */
@@ -550,17 +557,19 @@ int db_file_store(state *s)
 	}
 
 	/* 3) Copy rest of the file */
-	ret = _db_find_user_entry(s->username, in, out,	user_entry_buff, sizeof(user_entry_buff));
-	if (ret == 0) {
-		print(PRINT_ERROR, "Duplicate entry for user %s in state file\n", s->username);
-		goto cleanup;
-	}
+	if (in) {
+		ret = _db_find_user_entry(s->username, in, out,	user_entry_buff, sizeof(user_entry_buff));
+		if (ret == 0) {
+			print(PRINT_ERROR, "Duplicate entry for user %s in state file\n", s->username);
+			goto cleanup;
+		}
 
-	if (ret != STATE_NO_USER_ENTRY) {
-		/* Double user entry. */
-		print(PRINT_NOTICE, "Double user entry in state file.\n");
-		ret = STATE_PARSE_ERROR;
-		goto cleanup;
+		if (ret != STATE_NO_USER_ENTRY) {
+			/* Double user entry. */
+			print(PRINT_NOTICE, "Double user entry in state file.\n");
+			ret = STATE_PARSE_ERROR;
+			goto cleanup;
+		}
 	}
 
 	/* 4) Flush, save... then rename in cleanup part */
@@ -574,6 +583,7 @@ int db_file_store(state *s)
 	}
 
 	ret = 0; /* We are fine! */
+
 cleanup:
 	if (in)
 		fclose(in);
@@ -585,7 +595,7 @@ cleanup:
 		if (rename(s->db_tmp_path, s->db_path) != 0) {
 			print_perror(PRINT_WARN, 
 				     "Unable to rename temporary state "
-				     "file and save state\n");
+				     "file and save state.");
 			ret = STATE_IO_ERROR;
 		} else {
 			/* It might fail, but shouldn't
@@ -599,7 +609,7 @@ cleanup:
 			print(PRINT_NOTICE, "State file written correctly\n");
 		}
 	} else if (unlink(s->db_tmp_path) != 0) {
-		print_perror(PRINT_WARN, "Unable to unlink temporary state file %s\n", 
+		print_perror(PRINT_WARN, "Unable to unlink temporary state file %s", 
 			     s->db_tmp_path);
 	}
 

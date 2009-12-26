@@ -505,15 +505,17 @@ int action_key(options_t *options, const cfg_t *cfg)
 			printf("Please answer 'yes' or 'no'.\n");
 			continue;
 		}
-	} while(ret != 0 && ret != 2);
+	} while (ret != 0 && ret != 2);
 
 	if (ret != 0) {
 		printf("Wiping out key. One-time passwords not enabled.\n");
 		goto cleanup;
 	}
 
-	if (state_store(&s) != 0) {
+	ret = state_store(&s);
+	if (ret != 0) {
 		print(PRINT_ERROR, "Unable to save state to %s file\n", s.db_path);
+		print(PRINT_NOTICE, "(%s)\n", ppp_get_error_desc(ret));
 		goto cleanup;
 	}
 
