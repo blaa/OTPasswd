@@ -241,6 +241,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 
 	int ret;
 	state s;
+
 	if (state_init(&s, options->username) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
 		exit(1);

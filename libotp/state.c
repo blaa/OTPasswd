@@ -177,7 +177,7 @@ int state_init(state *s, const char *username)
 	case CONFIG_DB_MYSQL:
 	case CONFIG_DB_LDAP:
 		print(PRINT_ERROR, "Database type not implemented.\n");
-		return 1; /* FIXME MEMLEAK */
+		return 1; 
 	}
 
 	/* Save user name in state */

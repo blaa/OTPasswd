@@ -502,10 +502,13 @@ int db_file_lock(state *s)
 	int cnt;
 	int fd;
 
+	assert(s->lockname);
+	assert(s->db_path);
+	assert(s->lock_fd == -1);
+
 	fl.l_type = F_WRLCK;
 	fl.l_whence = SEEK_SET;
 	fl.l_start = fl.l_len = 0;
-
 
 	/* Open/create lock file */
 	fd = open(s->lockname, O_WRONLY|O_CREAT, S_IWUSR|S_IRUSR);
@@ -570,8 +573,6 @@ int db_file_unlock(state *s)
 	s->lock_fd = -1;
 
 	unlink(s->lockname);
-	free(s->lockname);
-	s->lockname = NULL;
 
 	if (ret != 0) {
 		print(PRINT_NOTICE, "Strange error while releasing lock\n");
