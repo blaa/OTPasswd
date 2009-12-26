@@ -417,8 +417,6 @@ int ppp_init(state **s, const char *user)
 
 void ppp_fini(state *s)
 {
-	if (s->lock_fd > 0)
-		state_unlock(s);
 	state_fini(s);
 	free(s);
 }
@@ -487,6 +485,8 @@ const char *ppp_get_username(const state *s)
 /*******************
  * Atomic combos 
  *******************/
+
+/* Lock, load, increment, save, unlock */
 int ppp_increment(state *s)
 {
 	int ret;
@@ -508,7 +508,6 @@ int ppp_increment(state *s)
 
 	/* Restore current counter */
 	mpz_set(s->counter, tmp);
-
 
 	mpz_clear(tmp);
 	return ret;

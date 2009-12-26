@@ -17,7 +17,7 @@
  **********************************************************************/
 
 #ifndef PROG_VERSION
-#define PROG_VERSION "v0.5b"
+#define PROG_VERSION "v0.5pre1"
 #endif
 
 #include <stdio.h>
@@ -44,6 +44,88 @@ enum {
 	QUERY_NO=2,
 	QUERY_OBSCURE=1
 };
+
+/* Secure init/load state. Should be used everywhere
+ * when state would be locked anyway (we can't block execution
+ * after this function). */
+static int _init_state(state **s, const options_t *options, int load)
+{
+	int ret;
+	ret = ppp_init(s, options->username);
+	if (ret != 0) {
+		return ret;
+	}
+
+	if (load == 0) {
+		/* Just initialize */
+		return 0;
+	}
+
+	ret = ppp_load(*s);
+	switch (ret) {
+	case 0:
+		/* All right */
+		break;
+
+	case PPP_NOMEM:
+		printf("Out of memory while reading state.\n");
+		goto error;
+
+	case STATE_LOCK_ERROR:
+		printf("Unable to lock state file!\n");
+		goto error;
+
+	case STATE_DOESNT_EXISTS:
+		printf("Have you created key with --key option?\n");
+		goto error;
+
+	case STATE_PERMISSIONS:
+		printf("Insufficient permissions to read state.\n");
+		goto error;
+
+	case STATE_NUMSPACE:
+		printf("You've used up all available passcodes! Regenerate key.\n");
+		goto error;
+
+	case STATE_RANGE:
+		printf("State file invalid (Key/counter range invalid).\n");
+		goto error;
+
+	case STATE_INVALID:
+		printf("State file invalid.\n");
+		goto error;
+
+	default:
+		printf("Error occured while reading state. Use -v to determine which.\n");
+		goto error;
+	}
+
+	return ret;
+error:
+	ppp_fini(*s);
+	return 1;
+}
+
+/* Finish anything started by "_load_state" */
+static int _fini_state(state **s, int store)
+{
+	int ret;
+
+	/* We store changes into the file
+	 * We don't need to unlock just yet - ppp_fini
+	 * will unlock state if it was locked
+	 */
+	ret = ppp_release(*s, store, 0);
+	if (ret != 0) {
+		printf("Error while saving state data. State not changed.\n");
+	}
+
+	ppp_fini(*s);
+	*s = NULL;
+
+	return ret;
+}
+
 
 /* Ask a question; return 0 only if "yes" was written, 1 otherwise */
 static int _yes_or_no(const char *msg)
@@ -158,9 +240,9 @@ static void _show_keys(const state *s)
 	mpz_init_set(unsalted_counter, s->counter);
 	if (!(s->flags & FLAG_NOT_SALTED)) {
 		mpz_and(unsalted_counter, unsalted_counter, s->code_mask);
-	} 
+	}
 	/* Convert to user numbering */
-	mpz_add_ui(unsalted_counter, unsalted_counter, 1); 
+	mpz_add_ui(unsalted_counter, unsalted_counter, 1);
 
 	gmp_printf("Key     = %064ZX\n", s->sequence_key);
 	gmp_printf("Counter = %032ZX\n", s->counter);
@@ -180,16 +262,18 @@ int action_authenticate(options_t *options, const cfg_t *cfg)
 	int retval = 0;
 
 	/* OTP State */
-	state s;
+	state *s;
 
-	if (state_init(&s, options->username) != 0) {
+
+
+	if (_init_state(&s, options, 0) != 0) {
 		/* This will fail if we're unable to locate home directory */
 		print(PRINT_ERROR, "Unable to initialize state.\n");
 		return 0; /* False - not authenticated */
 	}
 
 	/* Using locking load state, increment counter, and store new state */
-	retval = ppp_increment(&s);
+	retval = ppp_increment(s);
 	switch (retval) {
 	case 0:
 		/* Everything fine */
@@ -204,17 +288,14 @@ int action_authenticate(options_t *options, const cfg_t *cfg)
 		printf("Authentication failed (user doesn't have a key).\n");
 		retval = 0;
 		goto cleanup;
-		
+
 	default: /* Any other problem - error */
 		printf("Authentication failed (error).\n");
 		retval = 0;
 		goto cleanup;
 	}
 
-	/* Generate prompt */
-	ppp_calculate(&s);
-
-	if (ppp_authenticate(&s, options->action_arg) == 0) {
+	if (ppp_authenticate(s, options->action_arg) == 0) {
 		/* Correctly authenticated */
 		printf("Authentication successful.\n");
 		retval = 1;
@@ -222,7 +303,12 @@ int action_authenticate(options_t *options, const cfg_t *cfg)
 	}
 
 cleanup:
-	state_fini(&s);
+	if (_fini_state(&s, 0) != 0) {
+		/* Should never happen */
+		print(PRINT_ERROR, "Error while finalizing state\n");
+		retval = 0;
+	}
+
 	return retval;
 }
 
@@ -278,18 +364,18 @@ int action_key(options_t *options, const cfg_t *cfg)
 
 	int salted = 1;
 	switch (cfg->allow_salt) {
-	case 0: 
+	case 0:
 		salted = 0;
 		break;
 	case 2:
 		salted = 1;
 		break;
 	default:
-	case 1: 
+	case 1:
 		salted = options->flag_set_mask & FLAG_NOT_SALTED ? 0 : 1;
 		break;
 	}
-	
+
 	if (state_key_generate(&s, salted) != 0) {
 		print(PRINT_ERROR, "Unable to generate new key\n");
 		goto cleanup;
@@ -329,7 +415,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 
 	printf("Key stored! One-time passwords enabled for this account.\n");
 	retval = 0;
-	
+
 cleanup:
 	state_fini(&s);
 	return retval;
@@ -362,56 +448,31 @@ int action_license(options_t *options, const cfg_t *cfg)
 int action_flags(options_t *options, const cfg_t *cfg)
 {
 	int retval = 1;
-	int ret, state_locked = 0;
-	int state_changed = 0;
-	state s;
-	if (state_init(&s, options->username) != 0) {
-		print(PRINT_ERROR, "Unable to initialize state\n");
-		exit(1);
-	}
+	int ret;
+	int save_state = 0;
+	state *s;
 
-
-	/* FIXME, TODO: Remove behaviour when locking fails
-	 * but state_load is ok. It's rare, and state_load will fail
-	 * also because it tries to lock */
-
-	ret = state_lock(&s);
+	/* Initialize, lock, read, calculate additional card info... */
+	ret = _init_state(&s, options, 1);
 	if (ret != 0) {
-		/* whoops! */
-		print(PRINT_ERROR, "Unable to lock file! Unable to save"
-		      " any changes back to file!\n");
-	} else {
-		state_locked = 1;
+		return ret;
 	}
-
-	/* Load our state */
-	ret = state_load(&s);
-	if (ret == STATE_DOESNT_EXISTS) {
-		/* Unable to load state */
-		goto no_key_file;
-	}
-
-	if (ret != 0)
-		goto cleanup;
-
-	/* Calculate additional passcard info */
-	ppp_calculate(&s);
 
 	switch(options->action) {
 	case 'f':
 		/* Change flags */
-		s.flags |= options->flag_set_mask;
-		s.flags &= ~(options->flag_clear_mask);
+		s->flags |= options->flag_set_mask;
+		s->flags &= ~(options->flag_clear_mask);
 
 		if (options->flag_set_mask || options->flag_clear_mask) {
-			state_changed = 1;
+			save_state = 1;
 		}
 
 		if (options->set_codelength >= cfg->min_passcode_length &&
 		    options->set_codelength <= cfg->max_passcode_length) {
-			s.code_length = options->set_codelength;
-			state_changed = 1;
-		} else if (options->set_codelength) {
+			s->code_length = options->set_codelength;
+			save_state = 1;
+		} else if (options->set_codelength >= 0) {
 			printf("Illegal passcode length specified\n");
 			goto cleanup;
 		}
@@ -421,25 +482,25 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		const int len = strlen(options->action_arg);
 		unsigned char sha_buf[32];
 		if (len == 0) {
-			s.spass_set = 0;
-			mpz_set_ui(s.spass, 0);
+			s->spass_set = 0;
+			mpz_set_ui(s->spass, 0);
 			printf("Turning off static password.\n\n");
 		} else {
 			/* Change static password */
 			/* TODO: Ensure its length/difficulty */
 			crypto_sha256((unsigned char *)options->action_arg, len, sha_buf);
-			num_from_bin(s.spass, sha_buf, sizeof(sha_buf));
-			s.spass_set = 1;
+			num_from_bin(s->spass, sha_buf, sizeof(sha_buf));
+			s->spass_set = 1;
 			printf("Static password set.\n\n");
 		}
 
-		state_changed = 1;
+		save_state = 1;
 		break;
 	}
 	case 'd':
 		/* Change label */
-		if (strlen(options->action_arg) + 1 > sizeof(s.label)) {
-			printf("Label can't be longer than %zu characters\n", sizeof(s.label)-1);
+		if (strlen(options->action_arg) + 1 > sizeof(s->label)) {
+			printf("Label can't be longer than %zu characters\n", sizeof(s->label)-1);
 			goto cleanup;
 		}
 
@@ -447,17 +508,17 @@ int action_flags(options_t *options, const cfg_t *cfg)
 			printf(
 			      "Contact contains illegal characters.\n"
 			      "Alphanumeric + ' -+,.@_*' are allowed\n");
-			goto cleanup;			
+			goto cleanup;
 		}
 
-		state_changed = 1;
-		strcpy(s.label, options->action_arg);
+		strcpy(s->label, options->action_arg);
+		save_state = 1;
 		break;
 
 	case 'c':
 		/* Change contact info */
-		if (strlen(options->action_arg) + 1 > sizeof(s.contact)) {
-			printf("Contact can't be longer than %zu characters\n", sizeof(s.contact)-1);
+		if (strlen(options->action_arg) + 1 > sizeof(s->contact)) {
+			printf("Contact can't be longer than %zu characters\n", sizeof(s->contact)-1);
 			goto cleanup;
 		}
 
@@ -465,17 +526,16 @@ int action_flags(options_t *options, const cfg_t *cfg)
 			printf(
 			      "Contact contains illegal characters.\n"
 			      "Alphanumeric + ' -+,.@_*' are allowed\n");
-			goto cleanup;			
+			goto cleanup;
 		}
-		strcpy(s.contact, options->action_arg);
-		state_changed = 1;
+		strcpy(s->contact, options->action_arg);
+		save_state = 1;
 		break;
 
 	case 'L': /* List */
-		_show_keys(&s);
-		printf("\nFlags:\n");
-		_show_flags(&s);
-		/* Omit saving */
+		_show_keys(s);
+
+		save_state = 0;
 		retval = 0;
 		goto cleanup;
 
@@ -484,35 +544,23 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		assert(0);
 	}
 
-
-	if (state_locked == 1 && state_changed == 1) {
-		print(PRINT_NOTICE, "Saving changes to state file\n");
-		if (state_store(&s) != 0) {
-			print(PRINT_ERROR, "Error while saving changes!\n");
-			goto cleanup;
-		} else 
-			printf("Flags updated, current configuration:\n");
-	} else {
-		printf("Flags not changed, current configuration:\n");
-	}
-	
-	_show_flags(&s);
 	retval = 0;
-	
 cleanup:
-	if (state_locked) {
-		if (state_unlock(&s) != 0) {
-			print(PRINT_ERROR, "Error while releasing lock!\n");
-			retval = 1;
-		}
+	if (retval == 0) {
+		printf("Your current flags:\n");
+		_show_flags(s);
 	}
 
-	state_fini(&s);
+	/* Finish state. If retval = 0 and save_state nonzero then save it */
+	if (_fini_state(&s, save_state && (retval == 0)) != 0) {
+		retval = 1;
+	} else {
+		if (save_state)
+			printf("Flags updated.\n");
+		else
+			printf("Flags not changed.\n");
+	}
 	return retval;
-
-no_key_file:
-	printf("Error while reading state, have you created a key with -k option?\n");
-	return 2;
 }
 
 int action_print(options_t *options, const cfg_t *cfg)
@@ -521,50 +569,17 @@ int action_print(options_t *options, const cfg_t *cfg)
 	int ret;
 
 	/* This action requires a created key */
-	state s;
-	int state_locked = 0;
-	int state_changed = 0;
-	if (state_init(&s, options->username) != 0) {
-		print(PRINT_ERROR, "Unable to initialize state\n");
-		return 1;
-	}
+	state *s;
+	int save_state = 0;
 
-	ret = state_lock(&s);
+	ret = _init_state(&s, options, 1);
 	if (ret != 0) {
-		/* whoops! */
-		print(PRINT_ERROR, "Unable to lock file! Unable to save"
-		      " any changes back to file!\n");
-	} else {
-		state_locked = 1;
+		return ret;
 	}
-
-	/* Load our state */
-	ret = state_load(&s);
-	if (ret == STATE_DOESNT_EXISTS) {
-		printf("Unable to load state file. Have you tried -k option?\n");
-		goto cleanup;
-	} else if (ret != 0) {
-		printf("Error while reading state file!\n");
-		goto cleanup;
-	}
-
-	/* Calculate current cards etc */
-	ppp_calculate(&s);
-
-	/* See if we have any counters left */
-	int counter_correct = 1;
-	ret = ppp_verify_range(&s);
-	if (ret == 2) {
-		/* State file corrupted */
-		goto cleanup;
-	}
-
-	if (ret != 0)
-		counter_correct = 0;
 
 	/* Do we have to just show any warnings? */
 	if (options->action == 'w') {
-		int e = ppp_get_warning_condition(&s);
+		int e = ppp_get_warning_condition(s);
 		const char *warn = ppp_get_warning_message(e);
 		if (warn) {
 			const char *format = "* OTP WARNING: %s *\n";
@@ -579,58 +594,46 @@ int action_print(options_t *options, const cfg_t *cfg)
 		goto cleanup;
 	}
 
-	/* Parse argument, we need card number + passcode number */
 	int code_selected = 0;
 	mpz_t passcard_num;
 	mpz_t passcode_num;
 	mpz_init(passcard_num);
 	mpz_init(passcode_num);
 
+	/* Determine what user wants to print(or skip) and parse it to
+	 * either passcode number or passcard number. Remember what was
+	 * read to code_selected so later we can print it
+	 */
 	if (strcasecmp(options->action_arg, "current") == 0) {
 		/* Current passcode */
-		if (counter_correct == 0) {
-			printf("Passcode counter overflowed. "
-			       "Regenerate key.\n");
-			goto cleanup1;
-		}
-
 		code_selected = 1;
-		mpz_set(passcode_num, s.counter);
+		mpz_set(passcode_num, s->counter);
 
 	} else if (strcasecmp(options->action_arg, "next") == 0) {
 		/* Next passcard. */
-		if (counter_correct == 0) {
-			printf( 
-			      "Passcode counter overflowed. "
-			      "Regenerate key.\n");
-			goto cleanup1;
-		}
-
 		code_selected = 0;
 
 		/* If current code is further than s->latest_card
-		 * Then ignore this setting and start printing 
+		 * Then ignore this setting and start printing
 		 * from current_card */
-		if (mpz_cmp(s.current_card, s.latest_card) > 0) {
-			mpz_set(passcard_num, s.current_card);
+		if (mpz_cmp(s->current_card, s->latest_card) > 0) {
+			mpz_set(passcard_num, s->current_card);
 
 			/* Increment by 1 or by 6 for LaTeX */
 			if (options->action == 'l') {
-				mpz_add_ui(s.latest_card, s.current_card, 5);
+				mpz_add_ui(s->latest_card, s->current_card, 5);
 			} else {
-				mpz_set(s.latest_card, s.current_card);
+				mpz_set(s->latest_card, s->current_card);
 			}
 		} else {
-			mpz_add_ui(passcard_num, s.latest_card, 1);
+			mpz_add_ui(passcard_num, s->latest_card, 1);
 
 			/* Increment by 1 or by 6 for LaTeX */
 			mpz_add_ui(
-				s.latest_card,
-				s.latest_card,
-				options->action == 't' ? 1 : 6);
+				s->latest_card,
+				s->latest_card,
+				options->action == 'l' ? 6 : 1);
 		}
-
-		state_changed = 1;
 	} else if (isalpha(options->action_arg[0])) {
 		/* Format: CRR[number] */
 		char column;
@@ -649,7 +652,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 			goto cleanup1;
 		}
 
-		if (!_is_passcard_in_range(&s, passcard_num)) {
+		if (!_is_passcard_in_range(s, passcard_num)) {
 			printf(
 			      "Passcard number out of range. "
 			      "First passcard has number 1.\n");
@@ -657,7 +660,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 		}
 
 		/* ppp_get_passcode_number adds salt as needed */
-		ret = ppp_get_passcode_number(&s, passcard_num, passcode_num, column, row);
+		ret = ppp_get_passcode_number(s, passcard_num, passcode_num, column, row);
 		if (ret != 0) {
 			printf("Error while parsing passcard description.\n");
 			goto cleanup1;
@@ -670,7 +673,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 		int i;
 		for (i=0; options->action_arg[i]; i++) {
 			if (!isdigit(options->action_arg[i])) {
-				print(PRINT_ERROR, 
+				print(PRINT_ERROR,
 				      "Illegal passcode number!\n");
 				goto cleanup1;
 			}
@@ -684,15 +687,15 @@ int action_print(options_t *options, const cfg_t *cfg)
 			goto cleanup1;
 		}
 
-		if (!_is_passcode_in_range(&s, passcode_num)) {
+		if (!_is_passcode_in_range(s, passcode_num)) {
 			printf("Passcode number out of range.\n");
 			goto cleanup1;
 		}
 
 		mpz_sub_ui(passcode_num, passcode_num, 1);
 
-		/* Add salt and this number cames from user */
-		ppp_add_salt(&s, passcode_num);
+		/* Add salt as this number came from user */
+		ppp_add_salt(s, passcode_num);
 
 		code_selected = 1;
 	} else if (options->action_arg[0] == '['
@@ -704,7 +707,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 			goto cleanup1;
 		}
 
-		if (!_is_passcard_in_range(&s, passcard_num)) {
+		if (!_is_passcard_in_range(s, passcard_num)) {
 			printf("Passcard out of accessible range.\n");
 			goto cleanup1;
 		}
@@ -715,12 +718,14 @@ int action_print(options_t *options, const cfg_t *cfg)
 		goto cleanup1;
 	}
 
-	/* Print the thing requested */
+	/*
+	 * Parsed! Now print/skip the thing requested
+	 */
 	if (code_selected == 0) {
 		char *card;
 		switch (options->action) {
 		case 't':
-			card = card_ascii(&s, passcard_num);
+			card = card_ascii(s, passcard_num);
 			if (!card) {
 				print(PRINT_ERROR, "Error while printing "
 				      "card (not enough memory?)\n");
@@ -731,7 +736,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 			break;
 
 		case 'l':
-			card = card_latex(&s, passcard_num);
+			card = card_latex(s, passcard_num);
 			if (!card) {
 				print(PRINT_ERROR, "Error while printing "
 				      "card (not enough memory?)\n");
@@ -742,20 +747,16 @@ int action_print(options_t *options, const cfg_t *cfg)
 			break;
 
 		case 's':
-			if (counter_correct == 0) {
-				printf("Passcode counter overflowed. Regenerate key.\n");
-				goto cleanup1;
-			}
 			/* Skip to passcard... */
-			ret = ppp_get_passcode_number(&s, passcard_num,
+			ret = ppp_get_passcode_number(s, passcard_num,
 						      passcode_num, 'A', 1);
 			if (ret != 0) {
-				print(PRINT_ERROR, 
+				print(PRINT_ERROR,
 				      "Error while generating destination passcode\n");
 				goto cleanup1;
 			}
 
-			if (mpz_cmp(s.counter, passcode_num) > 0) {
+			if (mpz_cmp(s->counter, passcode_num) > 0) {
 				printf(
 					"**********************************\n"
 					"* WARNING: You should never skip *\n"
@@ -764,10 +765,10 @@ int action_print(options_t *options, const cfg_t *cfg)
 			}
 
 			printf("Skipped to specified passcard.\n");
-			mpz_set(s.counter, passcode_num);
-			state_changed = 1;
+			mpz_set(s->counter, passcode_num);
+			save_state = 1;
 			break;
-			
+
 		case 'P':
 			print(PRINT_ERROR, "Option requires passcode as argument\n");
 			break;
@@ -779,7 +780,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 		case 't':
 			/* ppp_get_passcode wants internal
 			 * passcodes (with salt) */
-			ret = ppp_get_passcode(&s, passcode_num, passcode);
+			ret = ppp_get_passcode(s, passcode_num, passcode);
 			if (ret != 0) {
 				print(PRINT_ERROR, "Error while calculating passcode\n");
 				goto cleanup1;
@@ -794,12 +795,8 @@ int action_print(options_t *options, const cfg_t *cfg)
 			break;
 
 		case 's':
-			if (counter_correct == 0) {
-				printf("Passcode counter overflowed. Regenerate key.\n");
-				goto cleanup1;
-			}
 			/* Skip to passcode */
-			if (mpz_cmp(s.counter, passcode_num) > 0) {
+			if (mpz_cmp(s->counter, passcode_num) > 0) {
 				printf(
 					"**********************************\n"
 					"* WARNING: You should never skip *\n"
@@ -807,43 +804,39 @@ int action_print(options_t *options, const cfg_t *cfg)
 					"**********************************\n");
 			}
 			printf("Skipped to specified passcode.\n");
-			mpz_set(s.counter, passcode_num);
-			state_changed = 1;
+			mpz_set(s->counter, passcode_num);
+			save_state = 1;
 			break;
-			
+
 		case 'P':
 			/* Don't save state after this operation */
-			mpz_set(s.counter, passcode_num);
-			ppp_calculate(&s);
-			prompt = ppp_get_prompt(&s);
+			mpz_set(s->counter, passcode_num);
+			ppp_calculate(s);
+			prompt = ppp_get_prompt(s);
 			printf("%s\n", prompt);
-			assert(state_changed == 0);
+			assert(save_state == 0);
 			break;
 		}
 	}
 
 	retval = 0;
+
 cleanup1:
 	mpz_clear(passcode_num);
 	mpz_clear(passcard_num);
 
 cleanup:
-	if (state_changed) {
-		if (state_locked == 0)  {
-			print(PRINT_NOTICE,  "NOT saving any changes since file is not locked\n");
-			retval = 1;
+	/* If anything failed save_state should be zero */
+	assert((save_state == 0) || (save_state && (retval == 0)));
+
+	ret = _fini_state(&s, save_state);
+	if (ret != 0) {
+		retval = ret;
+		if (save_state) {
+			printf("Error while saving state! Changes not written.\n");
 		} else {
-			print(PRINT_NOTICE, "Saving changes to state file\n");
-			if (state_store(&s) != 0) {
-				print(PRINT_ERROR, "Error while saving changes!\n");
-				retval = 1;
-			}
-			state_unlock(&s);
+			printf("Error while finalizing state. (No changes to write)\n");
 		}
 	}
-
-	state_fini(&s);
 	return retval;
 }
-
-

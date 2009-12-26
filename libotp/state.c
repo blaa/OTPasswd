@@ -216,6 +216,9 @@ int state_init(state *s, const char *username)
 
 void state_fini(state *s)
 {
+	if (s->lock_fd > 0)
+		state_unlock(s);
+
 	mpz_clear(s->counter);
 	mpz_clear(s->sequence_key);
 	mpz_clear(s->latest_card);

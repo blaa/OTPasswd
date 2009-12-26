@@ -139,7 +139,7 @@ int process_cmd_line(int argc, char **argv)
 
 		.flag_set_mask = 0,
 		.flag_clear_mask = 0,
-		.set_codelength = 0
+		.set_codelength = -1
 	};
 
 	cfg_t *cfg = cfg_get();

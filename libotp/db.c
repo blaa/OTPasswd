@@ -147,7 +147,7 @@ static int _db_find_user_entry(
 		}
 
 		/* Temporary change first separator into \0 */
-		char *first_sep = index(buff, _delim[0]);
+		char *first_sep = strchr(buff, _delim[0]);
 		if (first_sep) {
 			*first_sep = '\0';
 			
@@ -183,6 +183,12 @@ static int _db_parse_user_entry(char *buff, char **field)
 		if (field[i] == NULL) {
 			print(PRINT_ERROR,
 			      "State file invalid. Not enough fields.\n");
+			return 1;
+		}
+
+		if (strlen(field[i]) > STATE_MAX_FIELD_SIZE) {
+			print(PRINT_ERROR,
+			      "State file corrupted. Entry too long\n");
 			return 1;
 		}
 

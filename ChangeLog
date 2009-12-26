@@ -23,11 +23,18 @@ Trying to sort tasks according to their priority.
         * [!] New testcase allowed to detect some memory leaks.
               Possibly exist in 0.4
 	* [+] Improve error messages when state file is not found.
-	* [?] Import/export of ascii state lines...
-	* [-] See how functions in otpasswd_actions initialize and
+	* [+] Config file in /etc/security
+	      pam_access parses this file itself; samba(winbind) uses
+	      iniparser library (on MIT license)
+	* [+] See how functions in otpasswd_actions initialize and
               deinitialize state, see if they can use ppp_, if not
 	      make them so they can. Or write some local static functions
 	      to handle errors during lock&load.
+	* [?] Import/export of ascii state lines...
+	* [%] The key/counter length is not checked when read from file.
+	* [?] First unlink lock file, then unlock to omit race condition?
+	* [?] Fix db* functions to return values from enum in ppp_common.h
+	* [!] Skipping to 'next' not by 6...
 	* [-] Keeping track of failures.
 	      Started (place in state files created)
 	* [-] Implement static passwords;
@@ -45,13 +52,9 @@ Trying to sort tasks according to their priority.
 	* [-] Manuals
         * [?] Big thing - Move state files to /etc + SUID.
 	* [?] Use locales for user messages [_("")? ]
-	* [?] Config file in /etc/security
-	      pam_access parses this file itself; samba(winbind) uses
-	      iniparser library (on MIT license)
 	* [%] Ensure that PAM session can display warning in three calls
 	      to conversation function. If not, we must build a buffer
 	      (See for example how winscp shows that warning)
-	* [?] Use PAM_SERVICE_ERR
 	* [?] Check if OOB script is not SUID?
 	* [-] right trim values from config?
 
@@ -59,6 +62,7 @@ Trying to sort tasks according to their priority.
 	* [?] Improve LaTeX output (some colors, borders?)
         * [?] Incorporate SSH key fingerprints on passcards?
 	* [-] Keep lines below 75 columns? Or 80?
+	* [?] Use PAM_SERVICE_ERR
 
 2009-12-13 v0.4
 	* [!] Fixed some memory leaks.
