@@ -21,6 +21,12 @@
 
 #include <gmp.h>
 
+/* With DEBUG_POSITIONS messages printed on 
+ * stdout get information about their source */
+#ifndef DEBUG_POSITIONS
+#define DEBUG_POSITIONS 0
+#endif
+
 enum PRINT_LEVEL {
 	PRINT_NOTICE = 1,
 	PRINT_WARN = 2,
@@ -35,11 +41,21 @@ extern int print_init(int log_level, int use_stdout, int use_syslog, const char 
 extern void print_fini();
 
 /* Log some data */
-extern int print(int level, const char *fmt, ...);
+extern int _print(const char *file, const int line, int level, const char *fmt, ...);
 
 /* Log data and preceed it with perror message */
-extern int print_perror(int level, const char *fmt, ...);
+extern int _print_perror(const char *file, const int line, int level, const char *fmt, ...);
 
 /* Return number in base which doesn't need to be freed */
 extern const char *print_mpz(const mpz_t number, int base);
+
+
+#if DEBUG_POSITIONS == 1
+#define print(x, y, ...) _print(__FILE__, __LINE__, (x), (y), ## __VA_ARGS__)
+#define print_perror(x, y, ...) _print_perror(__FILE__, __LINE__, (x), (y), ## __VA_ARGS__)
+#else
+#define print(x, y, ...) _print(NULL, -1, (x), (y), ## __VA_ARGS__)
+#define print_perror(x, y, ...) _print_perror(NULL, -1, (x), (y), ## __VA_ARGS__)
+#endif
+
 #endif

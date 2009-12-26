@@ -591,7 +591,8 @@ static int _ppp_testcase_authenticate(const char *passcode)
 		/* Everything fine */
 		break;
 
-	case STATE_DOESNT_EXISTS:
+	case STATE_NON_EXISTENT:
+	case STATE_NO_USER_ENTRY: /* FIXME, TODO: Differentiate */
 		if (enforced == 0) {
 			/* Not enforced - ignore */
 			printf("IGNORING - NO DIR\n");

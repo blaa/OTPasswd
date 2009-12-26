@@ -77,6 +77,7 @@ static void _usage(int argc, const char **argv)
 		"  CRR[number] - specify a passcode in passcard of a given number.\n"
 		"                C is its column (A through G), RR - row (1..10)\n"
 		"  current     - passcode used for next time authentication\n"
+		"  [current]   - passcard containing current passcode\n"
 		"  next        - first, not yet printed, passcard\n"
 
 		"\nConfiguration:\n"
@@ -150,7 +151,6 @@ int process_cmd_line(int argc, char **argv)
 
 	/* Default logging */
 	cfg->logging = 1;
-
 
 	static struct option long_options[] = {
 		/* Action selection */

@@ -27,7 +27,6 @@
 
 #include "print.h"
 
-
 /* Currently used print_level */
 struct log_state {
 	/* Log messages of level equal or greater to print_level */
@@ -67,8 +66,7 @@ int print_init(int print_level, int use_stdout, int use_syslog, const char *log_
 	return 0;
 }
 
-
-int print(int level, const char *fmt, ...)
+int _print(const char *file, const int line, int level, const char *fmt, ...)
 {
 	int ret;
 	char buff[512]; 
@@ -124,14 +122,23 @@ int print(int level, const char *fmt, ...)
 
 	}
 
-
 	/* stdout */
 	switch (log_state.use_stdout) {
 	case 1:
+		if (file) {
+			char *base = strrchr(file, '/') + 1;
+			if (!base) file = base;
+			fprintf(stdout, "%s:%d ", base, line);
+		}
 		fputs(intro, stdout);
 		fputs(buff, stdout);
 		break;
 	case 2:
+		if (file) {
+			char *base = strrchr(file, '/') + 1;
+			if (!base) file = base;
+			fprintf(stderr, "%s:%d ", base, line);
+		}
 		fputs(intro, stderr);
 		fputs(buff, stderr);
 		break;
@@ -156,7 +163,7 @@ int print(int level, const char *fmt, ...)
 }
 
 
-int print_perror(int level, const char *fmt, ...)
+int _print_perror(const char *file, int line, int level, const char *fmt, ...)
 {
 	char buff[512]; 
 
@@ -176,7 +183,7 @@ int print_perror(int level, const char *fmt, ...)
 		return 2;
 	}
 	
-	return print(level, "%s (%s)\n", buff, error);
+	return _print(file, line, level, "%s (%s)\n", buff, error);
 }
 
 void print_fini()

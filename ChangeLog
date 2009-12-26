@@ -30,11 +30,12 @@ Trying to sort tasks according to their priority.
               deinitialize state, see if they can use ppp_, if not
 	      make them so they can. Or write some local static functions
 	      to handle errors during lock&load.
+	* [+] Fix db* functions to return values from enum in ppp_common.h
 	* [?] Import/export of ascii state lines...
 	* [%] The key/counter length is not checked when read from file.
 	* [?] First unlink lock file, then unlock to omit race condition?
-	* [?] Fix db* functions to return values from enum in ppp_common.h
 	* [!] Skipping to 'next' not by 6...
+	* [?] Add -K option to remove key and disable OTP.
 	* [-] Keeping track of failures.
 	      Started (place in state files created)
 	* [-] Implement static passwords;

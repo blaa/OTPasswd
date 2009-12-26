@@ -74,7 +74,7 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 
 	/* Check if OOB enabled */
 	if (cfg->oob_path == NULL || cfg->oob == 0) {
-		(void)print(PRINT_WARN,
+		print(PRINT_WARN,
 			    "Trying OOB when it's not enabled\n");
 		return 1;
 	}
@@ -83,21 +83,27 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 	{
 		struct stat st;
 		if (stat(cfg->oob_path, &st) != 0) {
-			(void) print(PRINT_ERROR,
+			print(PRINT_ERROR,
 				     "Unable to access oob sender. "
 				     "Check oob_path parameter\n");
 			return 2;
 		}
 		
 		if (!S_ISREG(st.st_mode)) {
-			(void)print(PRINT_ERROR,
+			print(PRINT_ERROR,
 				    "oob_path is not a file!\n");
+			return 2;
+		}
+
+		if ( (S_ISUID & st.st_mode) || (S_ISGID & st.st_mode) ) {
+			print(PRINT_ERROR,
+				    "oob_path is SUID or SGID!\n");
 			return 2;
 		}
 		
 		/* Check permissions */
 		if (st.st_mode & S_IXOTH) {
-			(void)print(PRINT_WARN, 
+			print(PRINT_WARN, 
 				    "Others can execute OOB utility\n");
 		} else {
 			/* That's cool, but can we execute it? */
@@ -111,7 +117,7 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 				/* Neither from group nor from 
 				 * owner mode */
 				/* TODO: testcase this */
-				(void)print(PRINT_ERROR,
+				print(PRINT_ERROR,
 					    "UID %d is unable to execute "
 					    "OOB utility!\n", cfg->uid);
 				return 2;
@@ -128,7 +134,7 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 
 	const char *c = ppp_get_contact(s);
 	if (!c || strlen(c) == 0) {
-		(void)print(PRINT_WARN,
+		print(PRINT_WARN,
 			    "User without contact data "
 			    "required OOB transmission\n");
 		return 2;
@@ -139,14 +145,14 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 	pid_t new_pid;
 	new_pid = fork();
 	if (new_pid == -1) {
-		(void)print(PRINT_ERROR, 
+		print(PRINT_ERROR, 
 			    "Unable to fork and call OOB utility\n");
 		return 1;
 	}
 
 	if (new_pid == 0) {
 		// dangerous print, remove it 
-		(void)print(PRINT_NOTICE,
+		print(PRINT_NOTICE,
 			    "Executing OOB transmission of %s to %s\n", 
 			    current_passcode, contact);
 
@@ -154,7 +160,7 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 		/* TODO/FIXME: What with the locks? */
 		retval = ppp_release(s, 0, 0);
 		if (retval != 0) {
-			(void)print(PRINT_ERROR, "RELEASE FAILED IN CHILD!");
+			print(PRINT_ERROR, "RELEASE FAILED IN CHILD!");
 			exit(10);
 		}
 
@@ -200,30 +206,30 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 			return 1;
 		}
 		if (retval == 0) {
-			(void)print(PRINT_NOTICE,  "Waiting for  OOB return\n");
+			print(PRINT_NOTICE,  "Waiting for  OOB return\n");
 			continue;
 		}
 	}
 
 	if (times == 0) {
 		/* Timed out while waiting for it's merry death */
-		(void) kill(new_pid, 9);
+		kill(new_pid, 9);
 
 		/* waitpid should return immediately now, but just wait to be sure */
 		usleep(100);
-		(void) waitpid(new_pid, NULL, WNOHANG);
-		(void) print(PRINT_ERROR, 
+		waitpid(new_pid, NULL, WNOHANG);
+		print(PRINT_ERROR, 
 			     "Timed out while waiting for OOB utility "
 			     "to die. Fix it!\n");
 		return 2;
 	}
 
-	(void)print(PRINT_NOTICE, "OOB child returned fast\n");
+	print(PRINT_NOTICE, "OOB child returned fast\n");
 
 	if (WEXITSTATUS(status) == 0)
-		(void) print(PRINT_NOTICE, "OOB utility successful\n");
+		print(PRINT_NOTICE, "OOB utility successful\n");
 	else {
-		(void) print(PRINT_WARN, 
+		print(PRINT_WARN, 
 			     "OOB utility returned %d\n", 
 			     WEXITSTATUS(status));
 	}
@@ -282,19 +288,29 @@ int ph_increment(pam_handle_t *pamh, const cfg_t *cfg, state *s)
 		ph_show_message(pamh, cfg, lock_msg);
 		return PAM_AUTH_ERR;
 
-	case STATE_DOESNT_EXISTS:
-		if (cfg->enforce == 0) {
-			/* Not enforced - ignore */
-			return PAM_IGNORE;
-		} else {
-			ph_show_message(pamh, cfg, enforced_msg);
+	case STATE_NON_EXISTENT:
+		/* Fail only if db=user! */
+		if (cfg->enforce == 1 && cfg->db == CONFIG_DB_USER) {
+			goto enforced_fail;
 		}
 
-		/* Fall-throught */
+		/* Otherwise we are just not configured correctly
+		 * or we are not enforcing. */
+		return PAM_IGNORE;
+
+	case STATE_NO_USER_ENTRY:
+		if (cfg->enforce == 0)
+			return PAM_IGNORE;
+		else
+			goto enforced_fail;
 
 	default: /* Any other problem - error */
 		return PAM_AUTH_ERR;
 	}
+
+enforced_fail:
+	ph_show_message(pamh, cfg, enforced_msg);
+	return PAM_AUTH_ERR;
 
 }
 

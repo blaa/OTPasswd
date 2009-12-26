@@ -20,7 +20,7 @@ rm -rf lcov gcov
 
 make clean
 rm -rf CMakeFiles CMakeCache.txt 
-cmake -DPROFILE=1 . || (echo "Config failed"; exit 1)
+cmake -DDEBUG=1 -DPROFILE=1 . || (echo "Config failed"; exit 1)
 make || (echo "Build failed"; exit 1)
 
 echo "Failed create testcase...\n"

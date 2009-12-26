@@ -31,14 +31,18 @@ SET(${PROJECT_NAME}_MINOR_VERSION 1)
 ADD_DEFINITIONS("-Wall -ggdb -fPIC")
 
 option(PROFILE "Unable coverage tests" OFF)
+option(DEBUG "Enable additional debug information" OFF)
 
 # If Debug option given - enable coverage tests
 IF (PROFILE)
   ADD_DEFINITIONS("-static -fprofile-arcs -ftest-coverage")
   LINK_LIBRARIES(gcov)
-
-#  SET(ADDITIONAL_LIBS gcov -fprofile-arcs)
 ENDIF (PROFILE)
+
+IF (DEBUG)
+  ADD_DEFINITIONS("-DDEBUG_POSITIONS=1")
+ENDIF (DEBUG)
+
 
 # Detect system
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")

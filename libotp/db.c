@@ -60,20 +60,20 @@ static int _db_file_permissions(const state *s)
 
 	if (stat(s->db_path, &st) != 0) {
 		/* Does not exists */
-		return STATE_DOESNT_EXISTS;
+		return STATE_NON_EXISTENT;
 	}
 
 	/* It should be a file or a link to file */
 	if (!S_ISREG(st.st_mode)) {
 		/* Error, not a file */
 		print(PRINT_ERROR, "ERROR: %s is not a regular file\n", s->db_path);
-		return STATE_DOESNT_EXISTS;
+		return STATE_IO_ERROR;
 	}
 
 	if (chmod(s->db_path, S_IRUSR|S_IWUSR) != 0) {
 		print_perror(PRINT_ERROR, "chmod");
 		print(PRINT_ERROR, "Unable to enforce %s permissions", s->db_path);
-		return 3;
+		return STATE_IO_ERROR;
 	}
 	return 0;
 }
@@ -126,9 +126,11 @@ static int _db_find_user_entry(
 		/* Read all file into a buffer */
 		if (fgets(buff, buff_size, f) == NULL) {
 			if (feof(f))
-				return 1; /* Not found */
+				/* Not found */
+				return STATE_NO_USER_ENTRY;
 			else
-				return 2; /* Error */
+				/* Error */
+				return STATE_IO_ERROR; 
 		}
 		
 		line_length = strlen(buff);
@@ -136,14 +138,14 @@ static int _db_find_user_entry(
 		if (buff[line_length-1] != '\n') {
 			print(PRINT_NOTICE, 
 			      "Line too long inside the state file\n");
-			return 3;
+			return STATE_PARSE_ERROR;
 		} 
 		
 		if (line_length < 10) {
 			/* This can't hold correct state */
 			print(PRINT_NOTICE, 
 			      "State file is invalid. Line too short.\n");
-			return 3;
+			return STATE_PARSE_ERROR;
 		}
 
 		/* Temporary change first separator into \0 */
@@ -165,13 +167,13 @@ static int _db_find_user_entry(
 			if (fputs(buff, out) < 0) {
 				print(PRINT_NOTICE, 
 				      "Error while writting data to file!\n");
-				return 4;
+				return STATE_IO_ERROR;
 			}
 		}
 	}
 
 	/* Not found */
-	return 1;
+	return STATE_NO_USER_ENTRY;
 }
 
 static int _db_parse_user_entry(char *buff, char **field)
@@ -183,13 +185,13 @@ static int _db_parse_user_entry(char *buff, char **field)
 		if (field[i] == NULL) {
 			print(PRINT_ERROR,
 			      "State file invalid. Not enough fields.\n");
-			return 1;
+			return STATE_PARSE_ERROR;
 		}
 
 		if (strlen(field[i]) > STATE_MAX_FIELD_SIZE) {
 			print(PRINT_ERROR,
 			      "State file corrupted. Entry too long\n");
-			return 1;
+			return STATE_PARSE_ERROR;
 		}
 
 		/* If we parsed field version, check it immediately */
@@ -198,21 +200,21 @@ static int _db_parse_user_entry(char *buff, char **field)
 				print(PRINT_ERROR,
 				      "Error while parsing state file "
 				      "version.\n");
-				return 1;
+				return STATE_PARSE_ERROR;
 			}
 
 			if (ret != _version) {
 				print(PRINT_ERROR,
 				      "State file version is incompatible. "
 				      "Recreate key.\n");
-				return 1;
+				return STATE_PARSE_ERROR;
 			}
 		}
 	}
 
 	if (_strtok(NULL, _delim) != NULL) {
 		print(PRINT_ERROR, "State file invalid. Too much fields.\n");
-		return 1;
+		return STATE_PARSE_ERROR;
 	}
 
 	return 0;
@@ -227,16 +229,24 @@ int db_file_load(state *s)
 	char buff[STATE_ENTRY_SIZE];
 
 	/* Did we lock it here? */
-	int locked = 0;
+	int locked;
 
-	char *field[fields]; /* Pointers to fields in file */
+	/* Pointers to fields in file */
+	char *field[fields]; 
 
+	/* Temporary variable for returned values */
 	int ret = 0;
+
+	/* State file */
 	FILE *f = NULL;
 
-	if (_db_file_permissions(s) != 0) {
+	/* Value returned. */
+	int retval;
+
+	ret = _db_file_permissions(s);
+	if (ret != 0) {
 		print(PRINT_NOTICE, "Unable to load state file.\n");
-		return STATE_DOESNT_EXISTS;
+		return ret;
 	}
 
 	/* DB file should always be locked before changing.
@@ -250,9 +260,13 @@ int db_file_load(state *s)
 		      "State file not locked while reading from it\n");
 		if (db_file_lock(s) != 0) {
 			print(PRINT_ERROR, "Unable to lock file for reading!\n");
-			return 1;
+			return STATE_LOCK_ERROR;
 		}
+
+		/* Locked locally, unlock locally later */
 		locked = 1;
+	} else {
+		locked = 0;
 	}
 
 	f = fopen(s->db_path, "r");
@@ -260,27 +274,36 @@ int db_file_load(state *s)
 		print_perror(PRINT_ERROR,
 			     "Unable to open %s for reading.",
 			     s->db_path);
-		goto error;
+		retval = STATE_IO_ERROR;
+		goto cleanup;
 	}
 
 	/* Read all file into a buffer */
 	ret = _db_find_user_entry(s->username, f, NULL, buff, sizeof(buff));
-	if (ret != 0)
-		goto error;
+	if (ret != 0) {
+		/* No entry, or file invalid */
+		retval = ret;
+		goto cleanup;
+	}
 
 	ret = _db_parse_user_entry(buff, field);
-	if (ret != 0)
-		goto error;
+	if (ret != 0) {
+		/* Parse error */
+		retval = ret;
+		goto cleanup;
+	}
 
-	/* Parse fields */
+	/* Parse fields, if anybody bad happens return parse error */
+	retval = STATE_PARSE_ERROR;
+
 	if (mpz_set_str(s->sequence_key, field[FIELD_KEY], STATE_BASE) != 0) {
 		print(PRINT_ERROR, "Error while parsing sequence key.\n");
-		goto error;
+		goto cleanup;
 	}
 
 	if (mpz_set_str(s->counter, field[FIELD_COUNTER], STATE_BASE) != 0) {
 		print(PRINT_ERROR, "Error while parsing counter.\n");
-		goto error;
+		goto cleanup;
 	}
 
 	if (mpz_set_str(s->latest_card, 
@@ -288,34 +311,32 @@ int db_file_load(state *s)
 		print(PRINT_ERROR,
 		      "Error while parsing number "
 		      "of latest printed passcard\n");
-		goto error;
+		goto cleanup;
 	}
 
 	if (sscanf(field[FIELD_FAILURES], "%u", &s->failures) != 1) {
 		print(PRINT_ERROR, "Error while parsing failures count\n");
-		goto error;
+		goto cleanup;
 	}
 
 	if (sscanf(field[FIELD_RECENT_FAILURES], "%u", &s->recent_failures) != 1) {
 		print(PRINT_ERROR, "Error while parsing recent failure count\n");
-		goto error;
+		goto cleanup;
 	}
 
 	if (mpz_set_str(s->channel_time, field[FIELD_CHANNEL_TIME], STATE_BASE) != 0) {
 		print(PRINT_ERROR, "Error while parsing channel use time.\n");
-		goto error;
-		s->spass_set = 0;
+		goto cleanup;
 	}
-
 
 	if (sscanf(field[FIELD_CODE_LENGTH], "%u", &s->code_length) != 1) {
 		print(PRINT_ERROR, "Error while parsing passcode length\n");
-		goto error;
+		goto cleanup;
 	}
 
 	if (sscanf(field[FIELD_FLAGS], "%u", &s->flags) != 1) {
 		print(PRINT_ERROR, "Error while parsing flags\n");
-		goto error;
+		goto cleanup;
 	}
 
 	if (strlen(field[FIELD_SPASS]) == 0) {
@@ -323,7 +344,7 @@ int db_file_load(state *s)
 	} else {
 		if (mpz_set_str(s->spass, field[FIELD_SPASS], STATE_BASE) != 0) {
 			print(PRINT_ERROR, "Error while parsing static password.\n");
-			goto error;
+			goto cleanup;
 		}
 		s->spass_set = 1;
 	}
@@ -334,22 +355,22 @@ int db_file_load(state *s)
 
 	if (s->label[sizeof(s->label)-1] != '\0') {
 		print(PRINT_ERROR, "Label field too long\n");
-		goto error;
+		goto cleanup;
 	}
 
 	if (s->contact[sizeof(s->contact)-1] != '\0') {
 		print(PRINT_ERROR, "Contact field too long\n");
-		goto error;
+		goto cleanup;
 	}
 
 	if (!state_validate_str(s->label)) {
 		print(PRINT_ERROR, "Illegal characters in label\n");
-		goto error;
+		goto cleanup;
 	}
 
 	if (!state_validate_str(s->contact)) {
 		print(PRINT_ERROR, "Illegal characters in contact\n");
-		goto error;
+		goto cleanup;
 	}
 
 	/* Everything is read. Now - check if it's correct */
@@ -357,49 +378,50 @@ int db_file_load(state *s)
 		print(PRINT_ERROR, 
 		      "Read a negative sequence key. "
 		      "State file is invalid\n");
-		goto error;
+		goto cleanup;
 	}
 
 	if (mpz_sgn(s->counter) == -1) {
 		print(PRINT_ERROR, 
 		      "Read a negative counter. "
 		      "State file is corrupted.\n");
-		goto error;
+		goto cleanup;
 	}
 
 	if (mpz_sgn(s->latest_card) == -1) {
 		print(PRINT_ERROR, 
 		      "Latest printed card is negative. "
 		      "State file is corrupted.\n");
-		goto error;
+		goto cleanup;
 	}
 
 	if (s->code_length < 2 || s->code_length > 16) {
 		print(PRINT_ERROR, "Illegal passcode length. %s is invalid\n", 
 		      s->db_path);
-		goto error;
+		goto cleanup;
 	}
 
 	if (s->flags > (FLAG_SHOW|FLAG_ALPHABET_EXTENDED|FLAG_NOT_SALTED)) {
 		print(PRINT_ERROR, "Unsupported set of flags. %s is invalid\n", 
 		      s->db_path);
-		goto error;
+		goto cleanup;
 
 	}
 
-	if (locked && db_file_unlock(s) != 0) {
-		print(PRINT_ERROR, "Error while unlocking state file!\n");
-	}
-	fclose(f);
-	return 0;
-
-error:
+	retval = 0;
+cleanup:
+	/* Clear memory */
 	memset(buff, 0, sizeof(buff));
-	if (locked && db_file_unlock(s) != 0) {
+
+	/* Unlocked if locally locked */
+	if ((locked == 1) && (db_file_unlock(s) != 0)) {
 		print(PRINT_ERROR, "Error while unlocking state file!\n");
+		if (retval == 0)
+			retval = STATE_LOCK_ERROR;
 	}
+
 	fclose(f);
-	return 1;
+	return retval;
 }
 
 static int _db_generate_user_entry(const state *s, char *buffer, int buff_length)
@@ -461,7 +483,7 @@ error:
 int db_file_store(state *s)
 {
 	/* Return value, by default return error */
-	int ret = 1;
+	int ret;
 
 	/* State file */
 	FILE *in = NULL, *out = NULL;
@@ -481,7 +503,7 @@ int db_file_store(state *s)
 		      "State file not locked while writing to it\n");
 		if (db_file_lock(s) != 0) {
 			print(PRINT_ERROR, "Unable to lock file for writing!\n");
-			return 1;
+			return STATE_LOCK_ERROR;
 		}
 		locked = 1;
 	}
@@ -492,7 +514,7 @@ int db_file_store(state *s)
 			     "Unable to open %s for reading",
 			     s->db_path);
 
-		ret = STATE_PERMISSIONS;
+		ret = STATE_IO_ERROR;
 		goto cleanup;
 	}
 
@@ -502,39 +524,42 @@ int db_file_store(state *s)
 			     "Unable to open %s for writing",
 			     s->db_tmp_path);
 
-		ret = STATE_PERMISSIONS;
+		ret = STATE_IO_ERROR;
 		goto cleanup;
 
 	}
 
 	/* 1) Copy entries before our username */
-	tmp = _db_find_user_entry(s->username, in, out,	user_entry_buff, sizeof(user_entry_buff));
-	if (tmp != 1 && tmp != 0) {
+	ret = _db_find_user_entry(s->username, in, out,	user_entry_buff, sizeof(user_entry_buff));
+	if (ret != 1 && ret != 0) {
 		/* Error happened. */
 		goto cleanup;
 	}
 
 	/* 2) Generate our new entry and store it into file */
-	tmp = _db_generate_user_entry(s, user_entry_buff, sizeof(user_entry_buff));
-	if (tmp != 0) {
+	ret = _db_generate_user_entry(s, user_entry_buff, sizeof(user_entry_buff));
+	if (ret != 0) {
 		print(PRINT_ERROR, "Strange error while generating new user entry line\n");
 		goto cleanup;
 	}
 
 	if (fputs(user_entry_buff, out) < 0) {
 		print(PRINT_ERROR, "Error while writing user entry to database\n");
+		ret = STATE_IO_ERROR;
 		goto cleanup;
 	}
 
 	/* 3) Copy rest of the file */
-	tmp = _db_find_user_entry(s->username, in, out,	user_entry_buff, sizeof(user_entry_buff));
-	if (tmp == 0) {
+	ret = _db_find_user_entry(s->username, in, out,	user_entry_buff, sizeof(user_entry_buff));
+	if (ret == 0) {
 		print(PRINT_ERROR, "Duplicate entry for user %s in state file\n", s->username);
 		goto cleanup;
 	}
 
-	if (tmp != 1) {
-		/* Error happened. */
+	if (ret != STATE_NO_USER_ENTRY) {
+		/* Double user entry. */
+		print(PRINT_NOTICE, "Double user entry in state file.\n");
+		ret = STATE_PARSE_ERROR;
 		goto cleanup;
 	}
 
@@ -544,12 +569,11 @@ int db_file_store(state *s)
 	out = NULL;
 	if (tmp != 0) {
 		print_perror(PRINT_ERROR, "Error while flushing/closing state file");
+		ret = STATE_IO_ERROR;
 		goto cleanup;
 	}
 
 	ret = 0; /* We are fine! */
-
-
 cleanup:
 	if (in)
 		fclose(in);
@@ -562,7 +586,7 @@ cleanup:
 			print_perror(PRINT_WARN, 
 				     "Unable to rename temporary state "
 				     "file and save state\n");
-			ret = 1;
+			ret = STATE_IO_ERROR;
 		} else {
 			/* It might fail, but shouldn't
 			 * Also we just want to ensure others 

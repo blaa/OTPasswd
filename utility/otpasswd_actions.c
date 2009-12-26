@@ -65,45 +65,13 @@ static int _init_state(state **s, const options_t *options, int load)
 	switch (ret) {
 	case 0:
 		/* All right */
-		break;
-
-	case PPP_NOMEM:
-		printf("Out of memory while reading state.\n");
-		goto error;
-
-	case STATE_LOCK_ERROR:
-		printf("Unable to lock state file!\n");
-		goto error;
-
-	case STATE_DOESNT_EXISTS:
-		printf("Have you created key with --key option?\n");
-		goto error;
-
-	case STATE_PERMISSIONS:
-		printf("Insufficient permissions to read state.\n");
-		goto error;
-
-	case STATE_NUMSPACE:
-		printf("You've used up all available passcodes! Regenerate key.\n");
-		goto error;
-
-	case STATE_RANGE:
-		printf("State file invalid (Key/counter range invalid).\n");
-		goto error;
-
-	case STATE_INVALID:
-		printf("State file invalid.\n");
-		goto error;
+		return 0;
 
 	default:
-		printf("Error occured while reading state. Use -v to determine which.\n");
-		goto error;
+		printf("%s\n", ppp_get_error_desc(ret));
+		ppp_fini(*s);
+		return ret;
 	}
-
-	return ret;
-error:
-	ppp_fini(*s);
-	return 1;
 }
 
 /* Finish anything started by "_load_state" */
@@ -256,6 +224,127 @@ static void _show_keys(const state *s)
 
 }
 
+/* Parse specification of passcode or passcard from "spec" string
+ * Result save to passcode (and return 1) or to passcard (and return 2)
+ * any other return value means error 
+ */
+static int _parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t passcode)
+{
+	int ret;
+	int selected;
+
+	/* Determine what user wants to print(or skip) and parse it to
+	 * either passcode number or passcard number. Remember what was
+	 * read to selected so later we can print it
+	 */
+	if (strcasecmp(spec, "current") == 0) {
+		/* Current passcode */
+		selected = 1;
+		mpz_set(passcode, s->counter);
+	} else if (strcasecmp(spec, "[current]") == 0) {
+		/* Current passcode */
+		selected = 2;
+		mpz_set(passcard, s->current_card);
+	} else if (strcasecmp(spec, "next") == 0) {
+		/* Next passcard. */
+		selected = 2;
+
+		/* Set passcard to latest_card + 1, but if 
+		 * current code is further than s->latest_card
+		 * then start printing from current_card */
+		if (mpz_cmp(s->current_card, s->latest_card) > 0) {
+			mpz_set(passcard, s->current_card);
+		} else {
+			mpz_add_ui(passcard, s->latest_card, 1);
+		}
+	} else if (isalpha(spec[0])) {
+		/* Format: CRR[number] */
+		char column;
+		int row;
+		char number[41];
+		ret = sscanf(spec, "%c%d[%40s]", &column, &row, number);
+		column = toupper(column);
+		if (ret != 3 || (column < 'A' || column > 'J')) {
+			printf("Incorrect passcode specification. (%d)\n", ret);
+			goto error;
+		}
+
+		ret = gmp_sscanf(number, "%Zu", passcard);
+		if (ret != 1) {
+			printf("Incorrect passcard specification.\n");
+			goto error;
+		}
+
+		if (!_is_passcard_in_range(s, passcard)) {
+			printf(
+			      "Passcard number out of range. "
+			      "First passcard has number 1.\n");
+			goto error;
+		}
+
+		/* ppp_get_passcode_number adds salt as needed */
+		ret = ppp_get_passcode_number(s, passcard, passcode, column, row);
+		if (ret != 0) {
+			printf("Error while parsing passcard description.\n");
+			goto error;
+		}
+
+		selected = 1;
+
+	} else if (isdigit(spec[0])) {
+		/* All characters must be a digit! */
+		int i;
+		for (i=0; spec[i]; i++) {
+			if (!isdigit(spec[i])) {
+				printf("Illegal passcode number!\n");
+				goto error;
+			}
+		}
+
+
+		/* number -- passcode number */
+		ret = gmp_sscanf(spec, "%Zd", passcode);
+		if (ret != 1) {
+			printf("Error while parsing passcode number.\n");
+			goto error;
+		}
+
+		if (!_is_passcode_in_range(s, passcode)) {
+			printf("Passcode number out of range.\n");
+			goto error;
+		}
+
+		mpz_sub_ui(passcode, passcode, 1);
+
+		/* Add salt as this number came from user */
+		ppp_add_salt(s, passcode);
+
+		selected = 1;
+	} else if (spec[0] == '['
+		   && spec[strlen(spec)-1] == ']') {
+		/* [number] -- passcard number */
+		ret = gmp_sscanf(spec, "[%Zd]", passcard);
+		if (ret != 1) {
+			printf("Error while parsing passcard number.\n");
+			goto error;
+		}
+
+		if (!_is_passcard_in_range(s, passcard)) {
+			printf("Passcard out of accessible range.\n");
+			goto error;
+		}
+
+		selected = 2;
+	} else {
+		printf("Illegal argument passed to option.\n");
+		goto error;
+	}
+
+	return selected;
+error:
+	return 5;
+}
+
 /* Authenticate; returns boolean; 1 - authenticated */
 int action_authenticate(options_t *options, const cfg_t *cfg)
 {
@@ -284,22 +373,37 @@ int action_authenticate(options_t *options, const cfg_t *cfg)
 		retval = 0;
 		goto cleanup;
 
-	case STATE_DOESNT_EXISTS:
+	case STATE_NON_EXISTENT:
 		printf("Authentication failed (user doesn't have a key).\n");
 		retval = 0;
 		goto cleanup;
 
+	case STATE_NO_USER_ENTRY:
+		printf("Authentication failed (user doesn't have entry in db).\n");
+		retval = 0;
+		goto cleanup;
+
 	default: /* Any other problem - error */
-		printf("Authentication failed (error).\n");
+		printf("Authentication failed (state increment error).\n");
 		retval = 0;
 		goto cleanup;
 	}
 
-	if (ppp_authenticate(s, options->action_arg) == 0) {
+	retval = ppp_authenticate(s, options->action_arg);
+	switch (retval) {
+	case 0:
 		/* Correctly authenticated */
 		printf("Authentication successful.\n");
 		retval = 1;
-		goto cleanup;
+		break;
+	case 3:
+		printf("Authentication failed (wrong passcode).\n");
+		retval = 0;
+		break;
+	default:
+		printf("Authentication failed (ppp_authenticate error).\n");
+		retval = 0;
+		break;
 	}
 
 cleanup:
@@ -328,7 +432,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 
 	if (state_init(&s, options->username) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
-		exit(1);
+		return 1;
 	}
 
 	/* Check existance of previous key */
@@ -474,6 +578,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 			save_state = 1;
 		} else if (options->set_codelength >= 0) {
 			printf("Illegal passcode length specified\n");
+			save_state = 0;
 			goto cleanup;
 		}
 		break;
@@ -497,6 +602,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		save_state = 1;
 		break;
 	}
+
 	case 'd':
 		/* Change label */
 		if (strlen(options->action_arg) + 1 > sizeof(s->label)) {
@@ -551,8 +657,11 @@ cleanup:
 		_show_flags(s);
 	}
 
+	/* save_state musn't be true if retval is */
+	assert(!(retval && save_state));
+
 	/* Finish state. If retval = 0 and save_state nonzero then save it */
-	if (_fini_state(&s, save_state && (retval == 0)) != 0) {
+	if (_fini_state(&s, save_state) != 0) {
 		retval = 1;
 	} else {
 		if (save_state)
@@ -568,14 +677,26 @@ int action_print(options_t *options, const cfg_t *cfg)
 	int retval = 1;
 	int ret;
 
-	/* This action requires a created key */
 	state *s;
+
+	/* If 1, we will try to update state at the end of function */
 	int save_state = 0;
+
+	/* Passcard/code to print */
+	mpz_t passcard_num;
+	mpz_t passcode_num;
+
+	/* And which to look at: 1 - code, 2 - card */
+	int selected = 0; 
 
 	ret = _init_state(&s, options, 1);
 	if (ret != 0) {
 		return ret;
 	}
+
+	/* From this point we must free these two */
+	mpz_init(passcard_num);
+	mpz_init(passcode_num);
 
 	/* Do we have to just show any warnings? */
 	if (options->action == 'w') {
@@ -594,134 +715,17 @@ int action_print(options_t *options, const cfg_t *cfg)
 		goto cleanup;
 	}
 
-	int code_selected = 0;
-	mpz_t passcard_num;
-	mpz_t passcode_num;
-	mpz_init(passcard_num);
-	mpz_init(passcode_num);
 
-	/* Determine what user wants to print(or skip) and parse it to
-	 * either passcode number or passcard number. Remember what was
-	 * read to code_selected so later we can print it
-	 */
-	if (strcasecmp(options->action_arg, "current") == 0) {
-		/* Current passcode */
-		code_selected = 1;
-		mpz_set(passcode_num, s->counter);
-
-	} else if (strcasecmp(options->action_arg, "next") == 0) {
-		/* Next passcard. */
-		code_selected = 0;
-
-		/* If current code is further than s->latest_card
-		 * Then ignore this setting and start printing
-		 * from current_card */
-		if (mpz_cmp(s->current_card, s->latest_card) > 0) {
-			mpz_set(passcard_num, s->current_card);
-
-			/* Increment by 1 or by 6 for LaTeX */
-			if (options->action == 'l') {
-				mpz_add_ui(s->latest_card, s->current_card, 5);
-			} else {
-				mpz_set(s->latest_card, s->current_card);
-			}
-		} else {
-			mpz_add_ui(passcard_num, s->latest_card, 1);
-
-			/* Increment by 1 or by 6 for LaTeX */
-			mpz_add_ui(
-				s->latest_card,
-				s->latest_card,
-				options->action == 'l' ? 6 : 1);
-		}
-	} else if (isalpha(options->action_arg[0])) {
-		/* Format: CRR[number] */
-		char column;
-		int row;
-		char number[41];
-		ret = sscanf(options->action_arg, "%c%d[%40s]", &column, &row, number);
-		column = toupper(column);
-		if (ret != 3 || (column < 'A' || column > 'J')) {
-			printf("Incorrect passcode specification. (%d)\n", ret);
-			goto cleanup1;
-		}
-
-		ret = gmp_sscanf(number, "%Zu", passcard_num);
-		if (ret != 1) {
-			printf("Incorrect passcard specification.\n");
-			goto cleanup1;
-		}
-
-		if (!_is_passcard_in_range(s, passcard_num)) {
-			printf(
-			      "Passcard number out of range. "
-			      "First passcard has number 1.\n");
-			goto cleanup1;
-		}
-
-		/* ppp_get_passcode_number adds salt as needed */
-		ret = ppp_get_passcode_number(s, passcard_num, passcode_num, column, row);
-		if (ret != 0) {
-			printf("Error while parsing passcard description.\n");
-			goto cleanup1;
-		}
-
-		code_selected = 1;
-
-	} else if (isdigit(options->action_arg[0])) {
-		/* All characters must be a digit! */
-		int i;
-		for (i=0; options->action_arg[i]; i++) {
-			if (!isdigit(options->action_arg[i])) {
-				print(PRINT_ERROR,
-				      "Illegal passcode number!\n");
-				goto cleanup1;
-			}
-		}
-
-
-		/* number -- passcode number */
-		ret = gmp_sscanf(options->action_arg, "%Zd", passcode_num);
-		if (ret != 1) {
-			printf("Error while parsing passcode number.\n");
-			goto cleanup1;
-		}
-
-		if (!_is_passcode_in_range(s, passcode_num)) {
-			printf("Passcode number out of range.\n");
-			goto cleanup1;
-		}
-
-		mpz_sub_ui(passcode_num, passcode_num, 1);
-
-		/* Add salt as this number came from user */
-		ppp_add_salt(s, passcode_num);
-
-		code_selected = 1;
-	} else if (options->action_arg[0] == '['
-		   && options->action_arg[strlen(options->action_arg)-1] == ']') {
-		/* [number] -- passcard number */
-		ret = gmp_sscanf(options->action_arg, "[%Zd]", passcard_num);
-		if (ret != 1) {
-			printf("Error while parsing passcard number.\n");
-			goto cleanup1;
-		}
-
-		if (!_is_passcard_in_range(s, passcard_num)) {
-			printf("Passcard out of accessible range.\n");
-			goto cleanup1;
-		}
-
-		code_selected = 0;
-	} else {
-		printf("Illegal argument passed to option.\n");
-		goto cleanup1;
+	/* Parse argument */
+	selected = _parse_code_spec(s, options->action_arg, passcard_num, passcode_num);
+	if ((selected != 1) && (selected != 2)) {
+		goto cleanup;
 	}
 
 	/*
 	 * Parsed! Now print/skip the thing requested
 	 */
-	if (code_selected == 0) {
+	if (selected == 2) { /* Card */
 		char *card;
 		switch (options->action) {
 		case 't':
@@ -729,7 +733,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 			if (!card) {
 				print(PRINT_ERROR, "Error while printing "
 				      "card (not enough memory?)\n");
-				goto cleanup1;
+				goto cleanup;
 			}
 			puts(card);
 			free(card);
@@ -740,7 +744,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 			if (!card) {
 				print(PRINT_ERROR, "Error while printing "
 				      "card (not enough memory?)\n");
-				goto cleanup1;
+				goto cleanup;
 			}
 			puts(card);
 			free(card);
@@ -753,7 +757,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 			if (ret != 0) {
 				print(PRINT_ERROR,
 				      "Error while generating destination passcode\n");
-				goto cleanup1;
+				goto cleanup;
 			}
 
 			if (mpz_cmp(s->counter, passcode_num) > 0) {
@@ -783,7 +787,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 			ret = ppp_get_passcode(s, passcode_num, passcode);
 			if (ret != 0) {
 				print(PRINT_ERROR, "Error while calculating passcode\n");
-				goto cleanup1;
+				goto cleanup;
 			}
 			printf("%s\n", passcode);
 			break;
@@ -819,13 +823,45 @@ int action_print(options_t *options, const cfg_t *cfg)
 		}
 	}
 
+	/* Increment latest_card printed in some circumstances:
+	 * 1) "next" argument used with option --text or --latex
+	 * Maybe:
+	 * When printing latest_card + 1 card?
+	 */
+	int do_increment = 0;
+	if (strcasecmp(options->action_arg, "next") == 0) {
+		if (options->action == 'l' || options->action == 't')
+			do_increment = 1;
+	}
+
+	/* Increment "latest_card" in state if appropriate  */
+	if (do_increment) {
+		/* If current code is further than s->latest_card
+		 * Then ignore this setting and start printing
+		 * from current_card */
+		if (mpz_cmp(s->current_card, s->latest_card) > 0) {
+			/* Set next to current, or current + 5 for LaTeX */
+			if (options->action == 'l') {
+				mpz_add_ui(s->latest_card, s->current_card, 5);
+			} else {
+				mpz_set(s->latest_card, s->current_card);
+			}
+		} else {
+			/* Increment by 1 or by 6 for LaTeX */
+			mpz_add_ui(
+				s->latest_card,
+				s->latest_card,
+				options->action == 'l' ? 6 : 1);
+		}
+		save_state = 1;
+	}
+
 	retval = 0;
 
-cleanup1:
+cleanup:
 	mpz_clear(passcode_num);
 	mpz_clear(passcard_num);
 
-cleanup:
 	/* If anything failed save_state should be zero */
 	assert((save_state == 0) || (save_state && (retval == 0)));
 

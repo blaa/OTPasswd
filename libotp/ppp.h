@@ -78,6 +78,8 @@ extern int ppp_get_warning_condition(const state *s);
 /* Return warning message for a warning condition */
 extern const char *ppp_get_warning_message(enum ppp_warning warning);
 
+/* Decode error */
+extern const char *ppp_get_error_desc(int error);
 
 /* Try to authenticate user; returns 0 on successful authentication */
 extern int ppp_authenticate(const state *s, const char *passcode);

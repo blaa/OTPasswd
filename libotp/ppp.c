@@ -321,7 +321,7 @@ int ppp_verify_range(const state *s)
 	if (mpz_cmp(s->sequence_key, max_key) > 0) {
 		print(PRINT_ERROR, "State file corrupted. Key number too big\n");
 		mpz_clear(max_key);
-		return STATE_RANGE;
+		return STATE_PARSE_ERROR;
 	}
 	mpz_clear(max_key);
 
@@ -334,7 +334,7 @@ int ppp_verify_range(const state *s)
 	if (mpz_cmp(s->counter, max_counter) > 0) {
 		print(PRINT_ERROR, "State file corrupted. Counter number too big\n");
 		mpz_clear(max_counter);
-		return STATE_RANGE;
+		return STATE_PARSE_ERROR;
 	}
 	mpz_clear(max_counter);
 
@@ -392,6 +392,37 @@ const char *ppp_get_warning_message(enum ppp_warning warning)
 	default:
 		assert(0);
 		return 0;
+	}
+}
+
+const char *ppp_get_error_desc(int error)
+{
+	switch (error) {
+	case 0:
+		return "No error";
+	case PPP_NOMEM:
+		return "Out of memory while reading state.";
+
+	case STATE_LOCK_ERROR:
+		return "Unable to lock state file!";
+
+	case STATE_NON_EXISTENT:
+		return "Have you created key with --key option?";
+
+	case STATE_IO_ERROR:
+		return "I/O error (permissions, file type, connection, ...) while reading state.";
+
+	case STATE_NUMSPACE:
+		return "You've used up all available passcodes! Regenerate key.";
+
+	case STATE_PARSE_ERROR:
+		return "State file invalid.";
+
+	case STATE_NO_USER_ENTRY:
+		return "No user entry in state DB";
+
+	default:
+		return "Error occured while reading state. Use -v to determine which.";
 	}
 }
 
@@ -459,15 +490,18 @@ int ppp_is_flag(const state *s, int flag)
 
 int ppp_release(state *s, int store, int unlock)
 {
+	int ret;
 	int retval = 0;
 
-	if (store && state_store(s) != 0) {
+	if (store && (ret = state_store(s)) != 0) {
 		print(PRINT_ERROR, "Error while storing state file\n");
+		print(PRINT_NOTICE, "(%d: %s)\n", ret, ppp_get_error_desc(ret));
 		retval++;
 	}
 
-	if (unlock && state_unlock(s) != 0) {
+	if (unlock && (ret = state_unlock(s)) != 0) {
 		print(PRINT_ERROR, "Error while unlocking state file\n");
+		print(PRINT_NOTICE, "(%d: %s)\n", ret, ppp_get_error_desc(ret));
 		retval++;
 	}
 
