@@ -459,7 +459,8 @@ int main(int argc, char **argv)
 		security_permanent_drop();
 	} else {
 		/* Otherwise - drop them temporarily */
-		security_temporal_drop();
+		// TODO: FIX.
+		security_permanent_switch();
 	}
 	
 	/* TODO/FIXME: If we are SGID and not SUID is there a problem with

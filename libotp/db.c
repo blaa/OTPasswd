@@ -22,7 +22,7 @@
 #include <assert.h>
 #include <errno.h>
 
-#include <unistd.h>	/* usleep, open, close, unlink */
+#include <unistd.h>	/* usleep, open, close, unlink, getuid */
 #include <sys/types.h>
 #include <sys/stat.h>	/* stat */
 #include <fcntl.h>
@@ -30,6 +30,7 @@
 #include "print.h"
 #include "state.h"
 #include "db.h"
+#include "config.h"
 
 /******************
  * Static helpers 
@@ -71,12 +72,61 @@ static int _db_file_permissions(const state *s)
 		return STATE_IO_ERROR;
 	}
 
-	if (chmod(s->db_path, S_IRUSR|S_IWUSR) != 0) {
-		print_perror(PRINT_ERROR, "chmod");
-		print(PRINT_ERROR, "Unable to enforce %s permissions", s->db_path);
-		return STATE_IO_ERROR;
+	/* Others should never have rwx.
+	 * 
+	 * 1) DB=user; File should be rwx------, enforce
+	 * 2) DB=global.
+	 *    a) We are SGID - group has rw, we can't enforce.
+	 *    b) We are SUID - rwx------, we can enforce
+	 *    Hm:
+	 *    If program euid == file uid, and uid != 0, make file rwx------
+	 *    else
+	 *    If program egid == file gid, ensure others have ---.
+	 *
+	 * Hard to predict if this will conflict with something (state on samba?)
+	 * Should ensure all permissions it can
+	 *
+	 *
+	 */
+	cfg_t *cfg = cfg_get();
+	uid_t uid = geteuid(), gid = geteuid();
+	mode_t current_mode = st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
+
+	if (current_mode & S_IRWXO) {
+		print(PRINT_WARN, "State DB had permissions for others\n");
 	}
+
+
+	switch (cfg->db) {
+	case CONFIG_DB_USER:
+		if (chmod(s->db_path, S_IRUSR|S_IWUSR) != 0) {
+			print_perror(PRINT_NOTICE, "chmod");
+			goto error;
+		}
+		break;
+
+	case CONFIG_DB_GLOBAL:
+		/* If root, just ensure others don't have access */
+		if (uid == 0 ) {
+			if (chmod(s->db_path, S_IRUSR|S_IWUSR) != 0) {
+				print_perror(PRINT_NOTICE, "chmod while root");
+				goto error;
+			}
+		} else {
+			/* Not root */
+		}
+		
+		break;
+	default:
+		/* Should never happen */
+		assert(0);
+	}
+
 	return 0;
+error:
+	print(PRINT_ERROR, "Unable to enforce state db permissions.\n");
+	return STATE_IO_ERROR;
+	
 }
 
 /* State files constants */
@@ -511,6 +561,8 @@ int db_file_store(state *s)
 
 	in = fopen(s->db_path, "r");
 	if (!in) {
+		/* Ok. User=db and file doesn't exist - ok. */
+
 		/* Probably doesn't exists, if not... */
 		if (errno != ENOENT) {
 			/* FIXME, better rewrite to use stat */
@@ -537,7 +589,7 @@ int db_file_store(state *s)
 	if (in) {
 		/* 1) Copy entries before our username */
 		ret = _db_find_user_entry(s->username, in, out,	user_entry_buff, sizeof(user_entry_buff));
-		if (ret != 1 && ret != 0) {
+		if (ret != STATE_NO_USER_ENTRY && ret != 0) {
 			/* Error happened. */
 			goto cleanup;
 		}

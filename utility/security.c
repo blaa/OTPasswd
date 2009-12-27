@@ -29,6 +29,9 @@
 #include <unistd.h>
 #include <assert.h>
 
+/* signal */
+#include <signal.h>
+
 /* isdigit */
 #include <ctype.h>
 
@@ -92,6 +95,29 @@ void security_init(void)
 		/* Normal or SUID */
 		umask(S_IWOTH | S_IROTH | S_IXOTH | S_IWGRP | S_IRGRP | S_IXGRP);
 	}
+
+	/* Ignore keyboard signals */
+	ret = 0;
+	if (signal(SIGTERM, SIG_IGN) == SIG_ERR)
+		ret++;
+	if (signal(SIGINT, SIG_IGN) == SIG_ERR)
+		ret++;
+	if (signal(SIGQUIT, SIG_IGN) == SIG_ERR)
+		ret++;
+	if (signal(SIGTSTP, SIG_IGN) == SIG_ERR)
+		ret++;
+	if (signal(SIGHUP, SIG_IGN) == SIG_ERR)
+		ret++;
+	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+		ret++;
+	if (signal(SIGALRM, SIG_IGN) == SIG_ERR)
+		ret++;
+	if (signal(SIGTTOU, SIG_IGN) == SIG_ERR)
+		ret++;
+	if (ret) {
+		printf("Unable to disable signals. Quitting before we touch state files\n");
+		exit(EXIT_FAILURE);
+	}
 }
 
 static void _ensure_no_privileges()
@@ -126,7 +152,6 @@ void security_temporal_drop(void)
 
 	/* Paranoid check */
 	if (geteuid() != real_uid || getegid() != real_uid) {
-		printf("d_t: fun\n");
 		goto error;
 	}
 
@@ -135,6 +160,37 @@ error:
 	printf("Temporal privilege drop failed. Dying.\n");
 	exit(EXIT_FAILURE);
 }
+
+void security_permanent_switch(void)
+{
+	assert(real_gid != -1);
+
+	/* Draft of setre version:
+	 * setreuid(real_uid, set_uid); - copy euid to suid
+	 * seteuid(drop_to); - drop
+	 * ensure correctness
+	 */
+
+	if (setresuid(set_uid, set_uid, set_uid) != 0) {
+		goto error;
+	}
+	set_gid = 0;
+	if (setresgid(set_gid, set_gid, set_gid) != 0) {
+		goto error;
+	}
+
+
+	/* Paranoid check */
+	if (geteuid() != set_uid || getegid() != set_gid) {
+		goto error;
+	}
+
+	return;
+error:
+	printf("Permanent user switch failed. Dying.\n");
+	exit(EXIT_FAILURE);
+}
+
 
 void security_permanent_drop(void)
 {

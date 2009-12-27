@@ -31,10 +31,11 @@ Trying to sort tasks according to their priority.
 	      make them so they can. Or write some local static functions
 	      to handle errors during lock&load.
 	* [+] Fix db* functions to return values from enum in ppp_common.h
-	* [?] Import/export of ascii state lines...
+	* [!] Skipping to 'next' not by 6...
 	* [%] The key/counter length is not checked when read from file.
 	* [?] First unlink lock file, then unlock to omit race condition?
-	* [!] Skipping to 'next' not by 6...
+	* [?] Security: Do we need to change something regarding ulimits?
+	      Because of signals - redo permissions.
 	* [?] Add -K option to remove key and disable OTP.
 	* [-] Keeping track of failures.
 	      Started (place in state files created)
@@ -58,6 +59,8 @@ Trying to sort tasks according to their priority.
 	      (See for example how winscp shows that warning)
 	* [?] Check if OOB script is not SUID?
 	* [-] right trim values from config?
+	* [?] SELinux compatibility.
+	* [?] Import/export of ascii state lines...
 
 	Low-priority:
 	* [?] Improve LaTeX output (some colors, borders?)

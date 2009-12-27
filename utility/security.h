@@ -28,6 +28,9 @@ extern void security_temporal_drop(void);
 /* Pernamently drop rights */
 extern void security_permanent_drop(void);
 
+/* Pernamently switch user */
+extern void security_permanent_switch(void);
+
 /* Restore rights which were dropped temporarily */
 extern void security_restore(void);
 

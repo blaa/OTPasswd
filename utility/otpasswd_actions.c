@@ -459,7 +459,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 			state_init(&s, options->username);
 		}
 	} else {
-		/* Failed load might have changed something in struct */
+		/* Failed, state_load might have changed something in struct, reinit. */
 		state_fini(&s);
 		state_init(&s, options->username);
 	}
@@ -512,7 +512,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 		goto cleanup;
 	}
 
-	ret = state_store(&s);
+	ret = state_store(&s); /* This should auto lock */
 	if (ret != 0) {
 		print(PRINT_ERROR, "Unable to save state to %s file\n", s.db_path);
 		print(PRINT_NOTICE, "(%s)\n", ppp_get_error_desc(ret));

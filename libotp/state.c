@@ -96,6 +96,33 @@ error:
 	return NULL;
 }
 
+static int _state_lck_tmp_path(const char *base, char **lck, char **tmp)
+{
+	int ret;
+
+	/* Create lock filename; normal file + .lck */
+	*lck = malloc(strlen(base) + 5 + 1);
+
+	if (!*lck) {
+		return PPP_NOMEM; 
+	}
+
+	*tmp = malloc(strlen(base) + 5 + 1);
+	if (!*tmp) {
+		free(*lck);
+		*lck = NULL;
+		return PPP_NOMEM; 
+	}
+
+	ret = sprintf(*lck, "%s.lck", base);
+	assert(ret > 0);
+	
+	ret = sprintf(*tmp, "%s.tmp", base);
+	assert(ret > 0);
+
+	return 0;
+}
+
 
 /******************************************
  * Functions for managing state information
@@ -162,31 +189,31 @@ int state_init(state *s, const char *username)
 		}
 
 		/* Create lock filename; normal file + .lck */
-		s->db_lck_path = malloc(strlen(s->db_path) + 5 + 1);
-
-		if (!s->db_lck_path) {
-			free(s->db_path);
-			return 1; 
+		if (_state_lck_tmp_path(s->db_path,
+					&s->db_lck_path,
+					&s->db_tmp_path) != 0) {
+			free(s->db_path), s->db_path = NULL;
+			return PPP_NOMEM;
 		}
-
-		s->db_tmp_path = malloc(strlen(s->db_path) + 5 + 1);
-		if (!s->db_tmp_path) {
-			free(s->db_path);
-			free(s->db_lck_path);
-			return 1; 
-		}
-
-		ret = sprintf(s->db_lck_path, "%s.lck", s->db_path);
-		assert(ret > 0);
-
-		ret = sprintf(s->db_tmp_path, "%s.tmp", s->db_path);
-		assert(ret > 0);
 		break;
 
 	case CONFIG_DB_GLOBAL:
+		s->db_path = strdup(cfg->global_db_path);
+		if (!s->db_path) {
+			return PPP_NOMEM;
+		}
+
+		if (_state_lck_tmp_path(s->db_path, 
+					&s->db_lck_path, 
+					&s->db_tmp_path) != 0) {
+			free(s->db_path), s->db_path = NULL;
+			return PPP_NOMEM;
+		}
+		break;
+
 	case CONFIG_DB_MYSQL:
 	case CONFIG_DB_LDAP:
-		print(PRINT_ERROR, "Database type not implemented.\n");
+		print(PRINT_ERROR, "Database type not yet implemented.\n");
 		return 1; 
 	}
 
