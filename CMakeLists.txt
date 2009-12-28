@@ -62,15 +62,8 @@ INCLUDE_DIRECTORIES(${GMP_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${PAM_INCLUDE_DIR})
 LINK_DIRECTORIES(${GMP_LIBRARY_DIR})
 
-# Dependencies
-INCLUDE(CheckLibraryExists)
-
-#CHECK_LIBRARY_EXISTS(gmp mpz_init "" HAVE_GMP) It didn't work.
-CHECK_LIBRARY_EXISTS(ssl SHA256 "" HAVE_OPENSSL)
-FIND_PACKAGE(OpenSSL REQUIRED)
-
 # Module and PAM uses libotp, so add it's include to path...
-INCLUDE_DIRECTORIES(libotp/)
+INCLUDE_DIRECTORIES(libotp/ crypto/)
 
 # option( MYSQL "Generate code for MySQL database" OFF )
 
@@ -81,7 +74,7 @@ INCLUDE_DIRECTORIES(libotp/)
 # Library containing common functions
 ADD_LIBRARY(otp STATIC libotp/crypto.c libotp/num.c libotp/ppp.c 
 	libotp/state.c libotp/db.c libotp/print.c libotp/passcards.c
-	libotp/config.c)
+	libotp/config.c crypto/polarssl_aes.c crypto/coreutils_sha256.c)
 
 # Pam module target
 SET(CMAKE_SHARED_LIBRARY_PREFIX "")
@@ -91,8 +84,8 @@ ADD_LIBRARY(pam_otpasswd SHARED pam/pam_helpers.c pam/pam_otpasswd.c)
 ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/otpasswd_actions.c utility/testcases.c utility/security.c)
 
 # Linking targets
-TARGET_LINK_LIBRARIES(pam_otpasswd otp gmp ssl pam ${ADDITIONAL_LIBS})
-TARGET_LINK_LIBRARIES(otpasswd otp gmp ssl ${ADDITIONAL_LIBS})
+TARGET_LINK_LIBRARIES(pam_otpasswd otp gmp crypto pam ${ADDITIONAL_LIBS})
+TARGET_LINK_LIBRARIES(otpasswd otp gmp crypto ${ADDITIONAL_LIBS})
 
 ##
 # Install target
@@ -106,7 +99,7 @@ INSTALL(TARGETS pam_otpasswd otpasswd
 #  LIBRARY DESTINATION /lib)
 
 INSTALL(FILES examples/otpasswd-login DESTINATION /etc/pam.d)
-INSTALL(FILES examples/otpasswd.conf DESTINATION /etc/security)
+INSTALL(FILES examples/otpasswd.conf DESTINATION /etc/otpasswd)
 
 
 ##

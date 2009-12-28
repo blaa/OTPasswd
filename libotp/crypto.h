@@ -22,10 +22,12 @@
 /* Get some fast cryptographically-secure pseudo-random data
  * and store in a buff. With secure=1 uses real random seed.
  */
+/*
 extern int crypto_ossl_rng(
 	unsigned char *buff,
 	const int size, 
 	int secure);
+*/
 
 /* Read count of random data from device (urandom or random usually)
  * into buf. Print message before you start and show progress
@@ -44,6 +46,7 @@ extern int crypto_aes_encrypt(
 	unsigned char *encrypted);
 
 /* Decrypt 128 bits with 256 bit key */
+
 extern int crypto_aes_decrypt(
 	const unsigned char *key,
 	const unsigned char *encrypted,

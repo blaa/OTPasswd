@@ -14,6 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * This program is released under the GPL with the additional
+ * exemption that compiling, linking, and/or using OpenSSL is allowed.
  **********************************************************************/
 
 /* On systems without setres* use setre* to drop pernamently.

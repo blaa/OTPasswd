@@ -19,10 +19,11 @@
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
 
-#define CONFIG_PATH		"/etc/security/otpasswd.conf"
-#define CONFIG_MAX_LINE_LEN	200
-#define CONFIG_DEF_DB_GLOBAL	"/etc/otshadow"
+#define CONFIG_DIR		"/etc/otpasswd/"
+#define CONFIG_PATH		(CONFIG_DIR "otpasswd.conf")
+#define CONFIG_DEF_DB_GLOBAL	(CONFIG_DIR "otshadow")
 #define CONFIG_DEF_DB_USER	".otpasswd"
+#define CONFIG_MAX_LINE_LEN	200
 #define CONFIG_PATH_LEN		100
 #define CONFIG_SQL_LEN		50
 

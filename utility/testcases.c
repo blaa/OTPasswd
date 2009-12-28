@@ -36,7 +36,6 @@
 int crypto_testcase(void)
 {
 	int failed = 0;
-	int i;
 
 	unsigned char plain[] = 
 		"To be encrypted.";
@@ -48,7 +47,7 @@ int crypto_testcase(void)
 	unsigned char key[32] = "This is the key";
 
 	crypto_aes_encrypt(key, plain, encrypted);
-	crypto_aes_decrypt(key, encrypted, decrypted);
+	crypto_aes_decrypt(key, encrypted, decrypted); 
 
 	printf("crypto_aes_test [ 1]: ");
 	if (memcmp(plain, decrypted, 16) != 0) {
@@ -60,14 +59,17 @@ int crypto_testcase(void)
 
 	if (memcmp(encrypted, encrypted_origin, 16) != 0) {
 		printf("FAILED\n");
+		crypto_print_hex(encrypted, 16);
 		failed++;
 	} else {
 		printf("PASSED\n");		
 	}
 
-	printf("crypto_aes_test [ 2]: ");
+
+	int i;
+	printf("crypto_aes_test (enc/dec) [ 2]: ");
 	for (i = 0; i < 10; i++) {
-		crypto_ossl_rng(plain, 16, 0);
+		crypto_file_rng("/dev/urandom", NULL, plain, 16);
 		crypto_aes_encrypt(key, plain, encrypted);
 		crypto_aes_decrypt(key, encrypted, decrypted);
 		
@@ -80,6 +82,7 @@ int crypto_testcase(void)
 		}
 	}
 	printf("\n");
+
 
 	/* SHA256 testcase */
 	const unsigned char hash_plain[] = "To be encrypted.";

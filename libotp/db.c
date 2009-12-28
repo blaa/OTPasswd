@@ -477,6 +477,7 @@ cleanup:
 
 static int _db_generate_user_entry(const state *s, char *buffer, int buff_length)
 {
+	int retval = 1;
 	int tmp;
 
 	/* Converted state parts */
@@ -521,14 +522,14 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 		goto error;
 	}
 
-	return 0;
+	retval = 0;
 error:
 	free(sequence_key);
 	free(counter);
 	free(latest_card);
 	free(channel_time);
 	free(spass);
-	return 1;
+	return retval;
 }
 
 int db_file_store(state *s)

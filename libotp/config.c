@@ -78,7 +78,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 	}
 
 	if (!f) {
-		print_perror(PRINT_ERROR, "Unable to open config file!\n");
+		print_perror(PRINT_ERROR, "Unable to open config file!");
 		return 1;
 	}
 

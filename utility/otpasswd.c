@@ -130,32 +130,18 @@ static void _usage(int argc, const char **argv)
 		"%s --latex next > tmp.latex\n"
 		"pdflatex tmp.latex\n",
 		prog_name, prog_name, prog_name, prog_name, prog_name, prog_name
-		);
+	);
 }
 
-int process_cmd_line(int argc, char **argv)
+int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 {
-	int retval = 1;
-
-	/* Options passed to utility with command line */
-	options_t options = {
-		.action = 0,
-		.action_arg = NULL,
-
-		.username = NULL,
-
-		.flag_set_mask = 0,
-		.flag_clear_mask = 0,
-		.set_codelength = -1
-	};
-
-	cfg_t *cfg = cfg_get();
 	assert(cfg);
+	assert(options);
 
 	/* This will cause GMP to free memory safely */
 	num_init();
 
-	/* Default logging */
+	/* By default perform only some logging */
 	cfg->logging = 1;
 
 	static struct option long_options[] = {
@@ -199,11 +185,11 @@ int process_cmd_line(int argc, char **argv)
 		case 'k':
 		case 'x':
 		case 'h':
-			if (options.action != 0) {
+			if (options->action != 0) {
 				printf("Only one action can be specified on the command line\n");
-				exit(EXIT_FAILURE);
+				return 1;
 			}
-			options.action = c;
+			options->action = c;
 			break;
 
 			/* Actions with argument */
@@ -215,86 +201,86 @@ int process_cmd_line(int argc, char **argv)
 		case 'p':
 		case 'd':
 		case 'c':
-			if (options.action != 0) {
+			if (options->action != 0) {
 				printf("Only one action can be specified on the command line\n");
 				exit(EXIT_FAILURE);
 			}
-			options.action = c;
+			options->action = c;
 
 			if (optarg) 
-				options.action_arg = strdup(optarg);
+				options->action_arg = strdup(optarg);
 			else
-				options.action_arg = NULL;
+				options->action_arg = NULL;
 			break;
 
 		case 'n':
-			if (options.flag_set_mask != 0) {
+			if (options->flag_set_mask != 0) {
 				printf("-n option can only be passed during key creation!\n");
 				exit(EXIT_FAILURE);
 			}
 
-			options.flag_set_mask |= FLAG_NOT_SALTED;
+			options->flag_set_mask |= FLAG_NOT_SALTED;
 			break;
 
 		case 'f':
-			if (options.action != 0 && options.action != 'f') {
+			if (options->action != 0 && options->action != 'f' && options->action != 'k') {
 				printf("Only one action can be specified on the command line\n");
-				exit(EXIT_FAILURE);
+				goto error;
 			}
 
-			if (options.flag_set_mask & FLAG_NOT_SALTED) {
+			if (options->flag_set_mask & FLAG_NOT_SALTED) {
 				printf("-n option can only be passed during key creation!\n");
-				exit(EXIT_FAILURE);
+				goto error;
 			}
 
 			assert(optarg != NULL);
 
 			if (strcmp(optarg, "show") == 0)
-				options.flag_set_mask |= FLAG_SHOW;
+				options->flag_set_mask |= FLAG_SHOW;
 			else if (strcmp(optarg, "dont-show") == 0)
-				options.flag_clear_mask |= FLAG_SHOW;
+				options->flag_clear_mask |= FLAG_SHOW;
 			else if (strcmp(optarg, "alphabet-simple") == 0) {
 				if (cfg->min_alphabet_length > 64) {
 					/* TODO: Check also max */
 					printf("Alphabet length disallowed by configuration\n");
-					exit(EXIT_FAILURE);
+					goto error;
 				}
-				options.flag_clear_mask |= FLAG_ALPHABET_EXTENDED;
+				options->flag_clear_mask |= FLAG_ALPHABET_EXTENDED;
 			} else if (strcmp(optarg, "alphabet-extended") == 0) {
 				if (cfg->max_alphabet_length < 88) {
 					/* TODO: Check also min */
 					printf("Alphabet length disallowed by configuration\n");
-					exit(EXIT_FAILURE);
+					goto error;
 				}
-				options.flag_set_mask |= FLAG_ALPHABET_EXTENDED;
+				options->flag_set_mask |= FLAG_ALPHABET_EXTENDED;
 			} else if (strcmp(optarg, "list") == 0) {
-				if (options.action != 0) {
+				if (options->action != 0) {
 					printf("Only one action can be specified on the command line\n"
 						"and you can't mix 'list' flag with other flags.\n");
-					exit(EXIT_FAILURE);
+					goto error;
 				}
 
-				options.action = 'L'; /* List! Instead of changing flags */
+				options->action = 'L'; /* List! Instead of changing flags */
 			} else {
 				int tmp;
 				if (sscanf(optarg, "codelength-%d", &tmp) == 1) {
-					options.set_codelength = tmp;
+					options->set_codelength = tmp;
 				} else {
 					/* Illegal flag */
 					printf("No such flag %s\n", optarg);
-					exit(EXIT_FAILURE);
+					goto error;
 				}
 			}
 
-			if (options.action != 'L')
-				options.action = 'f';
+			if (options->action != 'L')
+				options->action = 'f';
 			break;
 
 		case '?':
 			/* getopt_long already printed an error message. */
 			_usage(argc, (const char **)argv);
-			exit(EXIT_FAILURE);
-			break;
+			goto error;
+
 		case 'u':
 			assert(optarg);
 			if (security_is_root() == 0) {
@@ -302,17 +288,18 @@ int process_cmd_line(int argc, char **argv)
 				exit(EXIT_SUCCESS);
 			}
 
-			if (options.username) {
+			if (options->username) {
 				printf("Multiple '--user' options passed\n");
 				exit(EXIT_SUCCESS);
 			}
 
-			options.username = security_parse_user(optarg);
-			if (!options.username) {
+			options->username = security_parse_user(optarg);
+			if (!options->username) {
 				printf("Illegal user specified on command prompt\n");
 				exit(EXIT_SUCCESS);
 			}
 			break;
+
 		case 'v':
 			cfg->logging = 2;
 			break;
@@ -323,14 +310,27 @@ int process_cmd_line(int argc, char **argv)
 		}
 	}
 
-	if (!options.username) {
+	if (!options->username) {
 		/* User not specified, use the one who has ran us */
-		options.username = security_get_current_user();
-		if (!options.username) {
+		options->username = security_get_current_user();
+		if (!options->username) {
 			printf("Unable to determine current username!\n");
-			exit(EXIT_SUCCESS);
+			goto error;
 		}
 	}
+
+	return 0;
+
+error:
+	free(options->username);
+	free(options->action_arg);
+	return 1;
+}
+
+int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
+{
+	int ret;
+	int retval;
 
 	/* Initialize logging subsystem */
 	if (print_init(cfg->logging == 1 ? PRINT_WARN : PRINT_NOTICE, 
@@ -338,9 +338,9 @@ int process_cmd_line(int argc, char **argv)
 		printf("Unable to start debugging\n");
 	}
 
-	int ret;
+
 	/* Perform action */
-	switch (options.action) {
+	switch (options->action) {
 	case 0:
 		print(PRINT_ERROR, "No action specified. Try passing -k, -s, -t or -l\n\n");
 		_usage(argc, (const char **) argv);
@@ -353,7 +353,7 @@ int process_cmd_line(int argc, char **argv)
 		break;
 
 	case 'k':
-		retval = action_key(&options, cfg);
+		retval = action_key(options, cfg);
 		break;
 
 	case 'L': /* list action */
@@ -361,17 +361,17 @@ int process_cmd_line(int argc, char **argv)
 	case 'd':
 	case 'c':
 	case 'p':
-		retval = action_flags(&options, cfg);
+		retval = action_flags(options, cfg);
 		break;
 
 	case 'a':
-		ret = action_authenticate(&options, cfg);
+		ret = action_authenticate(options, cfg);
 		print_fini();
 		if (ret == 0)
 			retval = 1;
 		break;
 	case 'Q':
-		retval = action_license(&options, cfg);
+		retval = action_license(options, cfg);
 		break;
 
 	case 'w': /* Warning */
@@ -379,7 +379,7 @@ int process_cmd_line(int argc, char **argv)
 	case 't':
 	case 'l':
 	case 'P':
-		retval = action_print(&options, cfg);
+		retval = action_print(options, cfg);
 		break;
 
 	case 'x':
@@ -417,9 +417,10 @@ int process_cmd_line(int argc, char **argv)
 		}
 	}
 
+
 cleanup:
-	free(options.action_arg);
-	free(options.username);
+	free(options->action_arg);
+	free(options->username);
 	print_fini();
 	return retval;
 }
@@ -430,6 +431,18 @@ int main(int argc, char **argv)
 	int ret;
 	cfg_t *cfg = NULL;
 
+	/* Options passed to utility with command line */
+	options_t options = {
+		.action = 0,
+		.action_arg = NULL,
+
+		.username = NULL,
+
+		.flag_set_mask = 0,
+		.flag_clear_mask = 0,
+		.set_codelength = -1
+	};
+
 	/* Init environment, store uids, etc. */
 	security_init();
 
@@ -439,8 +452,10 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	/* TODO: Check if config is readable only by group or user if LDAP or MySQL enabled
-	 * and print error message if it is. */
+	/* TODO:
+	 * If we are SUID and DB=LDAP or DB=MySQL ensure only 
+	 * we can read config.
+	 */
 
 	/* Get global config */
 	cfg = cfg_get();
@@ -462,22 +477,40 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	/* If database is not global we can drop _pernamently_ permissions now.
+	/* Config is read. We know LDAP/MySQL passwords and
+	 * if DB is not global we must drop permissions now
+	 * as our SUID user might not be able to read state
+	 * file from user directory
 	 *
-	 * And well. We have to. Because SUID/SGID user might not be able
-	 * to read user state file from his home.
+	 *
+	 * FIXME: Can signal from user while connecting to LDAP/MySQL
+	 * cause problems?
 	 */
 	if (cfg->db != CONFIG_DB_GLOBAL) {
 		security_permanent_drop();
+
+		/* After drop we can safely parse user data */
+		ret = process_cmd_line(argc, argv, &options, cfg);
 	} else {
-		/* Otherwise - drop them temporarily */
-		// TODO: FIX.
+		/* Before we gain pernamently permissions,
+		 * drop them temporarily and parse user data */
+		security_temporal_drop();
+		ret = process_cmd_line(argc, argv, &options, cfg);
+
+
+		/* Otherwise - switch pernamently to SUID user
+		 * so the user can't send us any signals while we 
+		 * have state files locked */
 		security_permanent_switch();
+
+
 	}
 	
-	/* TODO/FIXME: If we are SGID and not SUID is there a problem with
-	 * receiving a signal at stupid point of time? */
 
-	ret = process_cmd_line(argc, argv);
+	if (ret != 0)
+		return ret;
+
+	
+	ret = perform_action(argc, argv, &options, cfg);
 	return ret;
 }
