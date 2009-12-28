@@ -41,7 +41,11 @@
 
 static const char *_program_name(const char *argv0)
 {
-	const char *pos = strrchr(argv0, '/');
+	const char *pos;
+	if (!argv0)
+		return "otpasswd";
+
+	pos = strrchr(argv0, '/');
 	if (pos)
 		return pos+1;
 	else
@@ -50,8 +54,8 @@ static const char *_program_name(const char *argv0)
 
 static void _usage(int argc, const char **argv)
 {
-	const char *prog_name =	_program_name(argv[0]);
-	fprintf(stderr,
+	const char *prog_name =	_program_name(argc >= 2 ? argv[0] : NULL);
+	fprintf(stdout,
 		"Usage: %s [options]\n"
 		"Actions:\n"
 		"  -k, --key    Generate a new key. Also resets all flags\n"
@@ -109,8 +113,10 @@ static void _usage(int argc, const char **argv)
 		"  -u, --user <username|UID>\n"
 		"                Operate on state of specified user. Administrator-only option.\n"
 		"  -v, --verbose Display more information about what is happening.\n"
-		"  --license     Display license, warranty, version and author information.\n"
+		"  --version     Display license, warranty, version and author information.\n"
+		"  -h, --help    This message\n"
 		"  --check       Run all testcases.\n"
+
 
 		"\nNotes:\n"
 		"  Both --text and --latex can get \"next\" as a parameter which\n"
@@ -171,7 +177,8 @@ int process_cmd_line(int argc, char **argv)
 		{"user",		required_argument,	0, 'u'},
 		{"verbose",		no_argument,		0, 'v'},
 		{"check",		no_argument,		0, 'x'},
-		{"license",		no_argument,		0, 'Q'},
+		{"version",		no_argument,		0, 'Q'},
+		{"help",		no_argument,		0, 'h'},
 
 		{0, 0, 0, 0}
 	};
@@ -179,7 +186,7 @@ int process_cmd_line(int argc, char **argv)
 	while (1) {
 		int option_index = 0;
 
-		int c = getopt_long(argc, argv, "ks:t:l:P:a:wf:p:d:c:nvu:", long_options, &option_index);
+		int c = getopt_long(argc, argv, "ks:t:l:P:a:wf:p:d:c:nvu:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1)
@@ -191,6 +198,7 @@ int process_cmd_line(int argc, char **argv)
 		case 'w':
 		case 'k':
 		case 'x':
+		case 'h':
 			if (options.action != 0) {
 				printf("Only one action can be specified on the command line\n");
 				exit(EXIT_FAILURE);
@@ -287,7 +295,6 @@ int process_cmd_line(int argc, char **argv)
 			_usage(argc, (const char **)argv);
 			exit(EXIT_FAILURE);
 			break;
-
 		case 'u':
 			assert(optarg);
 			if (security_is_root() == 0) {
@@ -339,6 +346,11 @@ int process_cmd_line(int argc, char **argv)
 		_usage(argc, (const char **) argv);
 		retval = 1;
 		goto cleanup;
+
+	case 'h':
+		_usage(argc, (const char **)argv);
+		retval = 0;
+		break;
 
 	case 'k':
 		retval = action_key(&options, cfg);

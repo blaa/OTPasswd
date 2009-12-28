@@ -46,6 +46,7 @@
 /* Initial remembered values */
 static uid_t real_uid=-1, set_uid=-1;
 static uid_t real_gid=-1, set_gid=-1;
+static int is_suid = 0;
 
 extern char **environ;
 
@@ -64,6 +65,15 @@ void security_init(void)
 	if (real_uid != 0 && set_uid == 0) {
 		printf("OTPasswd is set-uid root. And it shouldn't. Fix it.\n");
 		exit(EXIT_FAILURE);
+	}
+
+	if (real_gid != set_gid) {
+		printf("We're not supposed to work as SGID program\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if (real_uid != set_uid) {
+		is_suid = 1;
 	}
 
 	/* As we might be SUID/SGID binary. Clear the environment. */
@@ -96,27 +106,30 @@ void security_init(void)
 		umask(S_IWOTH | S_IROTH | S_IXOTH | S_IWGRP | S_IRGRP | S_IXGRP);
 	}
 
-	/* Ignore keyboard signals */
-	ret = 0;
-	if (signal(SIGTERM, SIG_IGN) == SIG_ERR)
-		ret++;
-	if (signal(SIGINT, SIG_IGN) == SIG_ERR)
-		ret++;
-	if (signal(SIGQUIT, SIG_IGN) == SIG_ERR)
-		ret++;
-	if (signal(SIGTSTP, SIG_IGN) == SIG_ERR)
-		ret++;
-	if (signal(SIGHUP, SIG_IGN) == SIG_ERR)
-		ret++;
-	if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
-		ret++;
-	if (signal(SIGALRM, SIG_IGN) == SIG_ERR)
-		ret++;
-	if (signal(SIGTTOU, SIG_IGN) == SIG_ERR)
-		ret++;
-	if (ret) {
-		printf("Unable to disable signals. Quitting before we touch state files\n");
-		exit(EXIT_FAILURE);
+	/* Ignore keyboard signals if we're suid */
+
+	if (is_suid == 1) {
+		ret = 0;
+		if (signal(SIGTERM, SIG_IGN) == SIG_ERR)
+			ret++;
+		if (signal(SIGINT, SIG_IGN) == SIG_ERR)
+			ret++;
+		if (signal(SIGQUIT, SIG_IGN) == SIG_ERR)
+			ret++;
+		if (signal(SIGTSTP, SIG_IGN) == SIG_ERR)
+			ret++;
+		if (signal(SIGHUP, SIG_IGN) == SIG_ERR)
+			ret++;
+		if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
+			ret++;
+		if (signal(SIGALRM, SIG_IGN) == SIG_ERR)
+			ret++;
+		if (signal(SIGTTOU, SIG_IGN) == SIG_ERR)
+			ret++;
+		if (ret) {
+			printf("Unable to disable signals. Quitting before we touch state files\n");
+			exit(EXIT_FAILURE);
+		}
 	}
 }
 
