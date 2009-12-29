@@ -142,14 +142,18 @@ int authenticate(const char *user, char *answer)
 	/* If success, try session */
 	if (retval == 6) {
 		printf("Session test...\n");
-		if (pam_open_session(pamh, 0) != PAM_SUCCESS) {
+		ret = pam_open_session(pamh, 0);
+		if (ret != PAM_SUCCESS) {
 			printf("Open session failed\n");
 			retval += 100;
-		} else if (pam_close_session(pamh, 0) != PAM_SUCCESS) {
-			printf("Close session failed!\n");
-			retval += 1000;
 		} else {
-			printf("Session test OK\n");
+			ret = pam_close_session(pamh, 0);
+			if (ret != PAM_SUCCESS) {
+				printf("Close session failed! ret=%d\n", ret);
+				retval += 1000;
+			} else {
+				printf("Session test OK\n");
+			}
 		}
 	}
 

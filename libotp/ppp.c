@@ -419,7 +419,7 @@ const char *ppp_get_error_desc(int error)
 		return "State file invalid.";
 
 	case STATE_NO_USER_ENTRY:
-		return "No user entry in state DB";
+		return "No user entry. Have you created key with --key option?";
 
 	default:
 		return "Error occured while reading state. Use -v to determine which.";

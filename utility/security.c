@@ -64,27 +64,8 @@ void security_init(void)
 	real_gid = getgid();
 	set_gid = getegid();
 
-	/* Just check... */
-	if (real_uid != 0 && set_uid == 0) {
-		printf("OTPasswd is set-uid root. And it shouldn't. Fix it.\n");
-		exit(EXIT_FAILURE);
-	}
-
-	if (real_gid != set_gid) {
-		printf("We're not supposed to work as SGID program\n");
-		exit(EXIT_FAILURE);
-	}
-
-	if (real_uid != set_uid) {
-		is_suid = 1;
-	}
-
-	/* As we might be SUID/SGID binary. Clear the environment. */
-	ret = clearenv();
-	if (ret != 0) {
-		printf("Unable to clear environment\n");
-		exit(EXIT_FAILURE);
-	}
+	/* Ensure that stdout exists! And that we've got 3 descriptors
+	 * opened. */
 
 	ret = chdir("/");
 	if (ret != 0) {
@@ -92,26 +73,45 @@ void security_init(void)
 		exit(EXIT_FAILURE);
 	}
 
-	if (environ != NULL || (environ && *environ != NULL)) {
-		printf("Environment not clear!\n");
+	/* Set umask so others won't read our files */
+	/* Normal or SUID */
+	umask(S_IWOTH | S_IROTH | S_IXOTH | S_IWGRP | S_IRGRP | S_IXGRP);
+
+
+	/* Just check if everything is all right... */
+	if (real_uid != 0 && set_uid == 0) {
+		printf("OTPasswd is set-uid root. And it shouldn't. Fix it.\n");
 		exit(EXIT_FAILURE);
 	}
 
-	putenv("PATH=/bin:/usr/bin");
-
-	/* Set umask so others won't read our files */
 	if (real_gid != set_gid) {
-		/* We are SGID. Don't remove bits from group... */
-		umask(S_IWOTH | S_IROTH | S_IXOTH);
-	}
-	else {
-		/* Normal or SUID */
-		umask(S_IWOTH | S_IROTH | S_IXOTH | S_IWGRP | S_IRGRP | S_IXGRP);
+		printf("We're not supposed to work as SGID program. SUID or nothing.\n");
+		exit(EXIT_FAILURE);
 	}
 
-	/* Ignore keyboard signals if we're suid */
+	if (real_uid != set_uid) {
+		is_suid = 1;
 
-	if (is_suid == 1) {
+	}
+
+	if (is_suid) {
+		/* Clear the environment. */
+		ret = clearenv();
+		if (ret != 0) {
+			printf("Unable to clear environment\n");
+			exit(EXIT_FAILURE);
+		}
+
+		if (environ != NULL || (environ && *environ != NULL)) {
+			printf("Environment not clear!\n");
+			exit(EXIT_FAILURE);
+		}
+
+		putenv("PATH=/bin:/usr/bin");
+		putenv("IFS= \t\n");
+		putenv("TZ=UTC"); /* TODO: Verify this */
+
+		/* Disable signals */
 		ret = 0;
 		if (signal(SIGTERM, SIG_IGN) == SIG_ERR)
 			ret++;
@@ -133,6 +133,7 @@ void security_init(void)
 			printf("Unable to disable signals. Quitting before we touch state files\n");
 			exit(EXIT_FAILURE);
 		}
+
 	}
 }
 
@@ -161,13 +162,14 @@ void security_temporal_drop(void)
 	 * ensure correctness
 	 */
 
-	if (setresgid(real_gid, real_gid, set_gid) != 0)
+	if (setresuid(real_uid, real_uid, set_uid) != 0) {
 		goto error;
-	if (setresuid(real_uid, real_uid, set_uid) != 0)
-		goto error;
+	}
+
+	/* We're not SGID, we can omit GID setting */
 
 	/* Paranoid check */
-	if (geteuid() != real_uid || getegid() != real_uid) {
+	if (geteuid() != real_uid) {
 		goto error;
 	}
 
@@ -190,17 +192,14 @@ void security_permanent_switch(void)
 	if (setresuid(set_uid, set_uid, set_uid) != 0) {
 		goto error;
 	}
-	set_gid = 0;
-	if (setresgid(set_gid, set_gid, set_gid) != 0) {
-		goto error;
-	}
 
+	/* Ignoring GID */
 
 	/* Paranoid check */
-	if (geteuid() != set_uid || getegid() != set_gid) {
+	if (geteuid() != set_uid) {
 		goto error;
 	}
-
+	
 	return;
 error:
 	printf("Permanent user switch failed. Dying.\n");

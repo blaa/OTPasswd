@@ -32,6 +32,10 @@ Trying to sort tasks according to their priority.
 	      to handle errors during lock&load.
 	* [+] Fix db* functions to return values from enum in ppp_common.h
 	* [!] Skipping to 'next' not by 6...
+        * [+] Removed dependency - OpenSSL
+        * [?] Check if lock files are links. if so. fail. Or rather always unlink 
+              before overwritting. 
+        * [?] Logging into syslog from utility if SUID; Also deny -v.
 	* [%] The key/counter length is not checked when read from file.
 	* [?] First unlink lock file, then unlock to omit race condition?
 	* [?] Security: Do we need to change something regarding ulimits?

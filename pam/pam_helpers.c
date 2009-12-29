@@ -324,7 +324,8 @@ struct pam_response *ph_query_user(
 	struct pam_response *resp = NULL;
 
 	/* Initialize conversation function */
-	pam_get_item(pamh, PAM_CONV, (const void **)&conversation);
+	if (pam_get_item(pamh, PAM_CONV, (const void **)&conversation) != PAM_SUCCESS)
+		return NULL;
 
 	/* Echo on if enforced by "show" option or enabled by user
 	 * and not disabled by "noshow" option
@@ -349,6 +350,9 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, cfg_t **
 	const char *user = NULL;
 
 	int retval;
+
+	/* Set safe umask */
+	umask(077);
 
 	/* Bootstrap logging */
 	print_init(PRINT_NOTICE, 0, 1, NULL);

@@ -33,7 +33,7 @@
 #include "config.h"
 
 /******************
- * Static helpers 
+ * Static helpers
  ******************/
 static char *_strtok(char *input, const char *delim)
 {
@@ -54,79 +54,122 @@ static char *_strtok(char *input, const char *delim)
 	return token;
 }
 
-/* Check if file exists, and if
- * it does - enforce it's permissions */
+/* Check if db exists, and enforce permissions.
+ * - enforce it's correct permissions */
 static int _db_file_permissions(const state *s)
 {
+	const uid_t uid = getuid();
 	struct stat st;
+	cfg_t *cfg = cfg_get();
 
-	if (stat(s->db_path, &st) != 0) {
-		/* Does not exists */
-		return STATE_NON_EXISTENT;
+	if (uid != 0 && cfg->db == CONFIG_DB_GLOBAL) {
+		/* Not root. So we're run as utility, most probably.
+		 * Then our uid must match directory uid,
+		 * and db uid. */
+
+		/* Start with directory */
+		if (stat(CONFIG_DIR, &st) != 0) {
+			/* Might be caused by some weird race condition.
+			 * Just fail */
+			print(PRINT_ERROR, "Strange error. " CONFIG_DIR
+			      " ceased to exist during program work.\n");
+			return STATE_IO_ERROR;
+		}
+
+		/* 1) It should be a dir */
+		if (!S_ISDIR(st.st_mode)) {
+			/* Error, not a file */
+			print(PRINT_ERROR, "ERROR: " CONFIG_DIR " is not a directory\n");
+			return STATE_IO_ERROR;
+		}
+
+		/* 2) Owned by us */
+		if (st.st_uid != uid) {
+			/* Not ok. */
+			print(PRINT_ERROR, 
+			      "Owner of DB file must match owner "
+			      "of SUID utility.\n");
+			return STATE_IO_ERROR;
+		}
+
+		/* 3) No "write" rights for group or others too */
+		if (st.st_mode & (S_IWGRP | S_IWOTH)) {
+			/* If were wrong enforce rwx --- --- */
+			if (chmod(CONFIG_DIR, S_IRWXU) != 0) {
+				print_perror(PRINT_NOTICE, "Unable to enforce "
+					     "mode of global state directory.\n");
+				return STATE_IO_ERROR;
+			} else {
+				print(PRINT_WARN, 
+				      "State directory had write permissions "
+				      "for others or group.\n");
+			}
+		}
+		
 	}
 
-	/* It should be a file or a link to file */
+
+	/* Now we consider state file itself. Either user or global */
+
+	/* 1) If state doesn't exist return appropriate error.
+	 * 2) It must be a file
+	 * 3) Others should never have rwx.
+	 *
+	 * We can be run as either from PAM as uid=0,
+	 * or from the utility with credentials of either
+	 * the user or special SUID otpasswd user. 
+	 */
+
+	/* 1) Check if state file exists and read it's parameters */
+	if (stat(s->db_path, &st) != 0) {
+		/* Does not exists */
+		if (cfg->db == CONFIG_DB_USER)
+			return STATE_NON_EXISTENT;
+		else {
+			return STATE_NO_USER_ENTRY;
+		}
+	}
+
+	/* 2) It file */
 	if (!S_ISREG(st.st_mode)) {
 		/* Error, not a file */
-		print(PRINT_ERROR, "ERROR: %s is not a regular file\n", s->db_path);
+		print(PRINT_ERROR, "State file is not a regular file\n");
 		return STATE_IO_ERROR;
 	}
 
-	/* Others should never have rwx.
-	 * 
-	 * 1) DB=user; File should be rwx------, enforce
-	 * 2) DB=global.
-	 *    a) We are SGID - group has rw, we can't enforce.
-	 *    b) We are SUID - rwx------, we can enforce
-	 *    Hm:
-	 *    If program euid == file uid, and uid != 0, make file rwx------
-	 *    else
-	 *    If program egid == file gid, ensure others have ---.
-	 *
-	 * Hard to predict if this will conflict with something (state on samba?)
-	 * Should ensure all permissions it can
-	 *
-	 *
-	 */
-	cfg_t *cfg = cfg_get();
-	uid_t uid = geteuid(), gid = geteuid();
-	mode_t current_mode = st.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO);
-
-	if (current_mode & S_IRWXO) {
-		print(PRINT_WARN, "State DB had permissions for others\n");
+	/* 3) Others/Group */
+	if (st.st_mode & (S_IRWXG | S_IRWXO)) {
+		if (chmod(s->db_path, S_IRUSR|S_IWUSR) != 0) {
+			print_perror(PRINT_NOTICE, 
+				     "Unable to enforce state file permissions.\n");
+			return STATE_IO_ERROR;
+		} else {
+			print(PRINT_WARN,
+			      "State file had incorrect permissions "
+			      "for others or group.\n");
+		}
 	}
 
+	/* Now differentiate configurations and ensure details */
+	if (cfg->db == CONFIG_DB_USER) {
+		/* TODO: Enforce uid of file matches uid of s->username uid */
+	} else 	if (cfg->db == CONFIG_DB_GLOBAL) {
+		/* If we are not root, then we're run as SUID utility:
+		 * - File must be owned by our uid
+		 */
 
-	switch (cfg->db) {
-	case CONFIG_DB_USER:
-		if (chmod(s->db_path, S_IRUSR|S_IWUSR) != 0) {
-			print_perror(PRINT_NOTICE, "chmod");
-			goto error;
-		}
-		break;
-
-	case CONFIG_DB_GLOBAL:
-		/* If root, just ensure others don't have access */
-		if (uid == 0 ) {
-			if (chmod(s->db_path, S_IRUSR|S_IWUSR) != 0) {
-				print_perror(PRINT_NOTICE, "chmod while root");
-				goto error;
+		if (uid != 0) {
+			if (st.st_uid != uid) {
+				/* Not ok... */
+				print(PRINT_ERROR, 
+				      "Owner of state file must match owner "
+				      "of SUID utility.\n");
+				return STATE_IO_ERROR;
 			}
-		} else {
-			/* Not root */
-		}
-		
-		break;
-	default:
-		/* Should never happen */
-		assert(0);
+		} 
 	}
 
 	return 0;
-error:
-	print(PRINT_ERROR, "Unable to enforce state db permissions.\n");
-	return STATE_IO_ERROR;
-	
 }
 
 /* State files constants */
@@ -153,8 +196,8 @@ enum {
 
 /* Find entry in database for username. Unmodified line
  * is left in buffer.
- * 
- * If out is given each line we pass without a match 
+ *
+ * If out is given each line we pass without a match
  * is written into this file.
  */
 static int _db_find_user_entry(
@@ -170,7 +213,7 @@ static int _db_find_user_entry(
 
 	if (username)
 		username_length = strlen(username);
-	else 
+	else
 		username_length = 0;
 
 	while (!feof(f)) {
@@ -181,20 +224,20 @@ static int _db_find_user_entry(
 				return STATE_NO_USER_ENTRY;
 			else
 				/* Error */
-				return STATE_IO_ERROR; 
+				return STATE_IO_ERROR;
 		}
-		
+
 		line_length = strlen(buff);
-		
+
 		if (buff[line_length-1] != '\n') {
-			print(PRINT_NOTICE, 
+			print(PRINT_NOTICE,
 			      "Line too long inside the state file\n");
 			return STATE_PARSE_ERROR;
-		} 
-		
+		}
+
 		if (line_length < 10) {
 			/* This can't hold correct state */
-			print(PRINT_NOTICE, 
+			print(PRINT_NOTICE,
 			      "State file is invalid. Line too short.\n");
 			return STATE_PARSE_ERROR;
 		}
@@ -203,7 +246,7 @@ static int _db_find_user_entry(
 		char *first_sep = strchr(buff, _delim[0]);
 		if (first_sep) {
 			*first_sep = '\0';
-			
+
 			/* Check the username */
 			if (username && (strcmp(buff, username) == 0)) {
 				/* Found */
@@ -216,7 +259,7 @@ static int _db_find_user_entry(
 
 		if (out) {
 			if (fputs(buff, out) < 0) {
-				print(PRINT_NOTICE, 
+				print(PRINT_NOTICE,
 				      "Error while writting data to file!\n");
 				return STATE_IO_ERROR;
 			}
@@ -283,7 +326,7 @@ int db_file_load(state *s)
 	int locked;
 
 	/* Pointers to fields in file */
-	char *field[fields]; 
+	char *field[fields];
 
 	/* Temporary variable for returned values */
 	int ret = 0;
@@ -301,13 +344,13 @@ int db_file_load(state *s)
 	}
 
 	/* DB file should always be locked before changing.
-	 * Locking can only be omitted when we want to discard 
-	 * any changes or that we don't bother if somebody changes 
+	 * Locking can only be omitted when we want to discard
+	 * any changes or that we don't bother if somebody changes
 	 * them at the same time.
-	 * Here we just detect that it's not locked and lock it then 
+	 * Here we just detect that it's not locked and lock it then
 	 */
 	if (s->lock_fd <= 0) {
-		print(PRINT_NOTICE, 
+		print(PRINT_NOTICE,
 		      "State file not locked while reading from it\n");
 		if (db_file_lock(s) != 0) {
 			print(PRINT_ERROR, "Unable to lock file for reading!\n");
@@ -357,8 +400,8 @@ int db_file_load(state *s)
 		goto cleanup;
 	}
 
-	if (mpz_set_str(s->latest_card, 
-			field[FIELD_LATEST_CARD], STATE_BASE) != 0) {	
+	if (mpz_set_str(s->latest_card,
+			field[FIELD_LATEST_CARD], STATE_BASE) != 0) {
 		print(PRINT_ERROR,
 		      "Error while parsing number "
 		      "of latest printed passcard\n");
@@ -426,34 +469,34 @@ int db_file_load(state *s)
 
 	/* Everything is read. Now - check if it's correct */
 	if (mpz_sgn(s->sequence_key) == -1) {
-		print(PRINT_ERROR, 
+		print(PRINT_ERROR,
 		      "Read a negative sequence key. "
 		      "State file is invalid\n");
 		goto cleanup;
 	}
 
 	if (mpz_sgn(s->counter) == -1) {
-		print(PRINT_ERROR, 
+		print(PRINT_ERROR,
 		      "Read a negative counter. "
 		      "State file is corrupted.\n");
 		goto cleanup;
 	}
 
 	if (mpz_sgn(s->latest_card) == -1) {
-		print(PRINT_ERROR, 
+		print(PRINT_ERROR,
 		      "Latest printed card is negative. "
 		      "State file is corrupted.\n");
 		goto cleanup;
 	}
 
 	if (s->code_length < 2 || s->code_length > 16) {
-		print(PRINT_ERROR, "Illegal passcode length. %s is invalid\n", 
+		print(PRINT_ERROR, "Illegal passcode length. %s is invalid\n",
 		      s->db_path);
 		goto cleanup;
 	}
 
 	if (s->flags > (FLAG_SHOW|FLAG_ALPHABET_EXTENDED|FLAG_NOT_SALTED)) {
-		print(PRINT_ERROR, "Unsupported set of flags. %s is invalid\n", 
+		print(PRINT_ERROR, "Unsupported set of flags. %s is invalid\n",
 		      s->db_path);
 		goto cleanup;
 
@@ -470,8 +513,8 @@ cleanup:
 		if (retval == 0)
 			retval = STATE_LOCK_ERROR;
 	}
-
-	fclose(f);
+	if (f)
+		fclose(f);
 	return retval;
 }
 
@@ -493,7 +536,7 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 	counter = mpz_get_str(NULL, STATE_BASE, s->counter);
 	latest_card = mpz_get_str(NULL, STATE_BASE, s->latest_card);
 
-	if (s->spass_set) 
+	if (s->spass_set)
 		spass = mpz_get_str(NULL, STATE_BASE, s->spass);
 	else
 		spass = strdup("");
@@ -506,7 +549,7 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 	}
 
 	const char d = _delim[0];
-	tmp = snprintf(buffer, buff_length, 
+	tmp = snprintf(buffer, buff_length,
 		      "%s%c%d%c"
 		      "%s%c%s%c%s%c" /* Key, counter, latest_card */
 		      "%u%c%u%c%s%c" /* Failures, recent fails, channel time */
@@ -551,7 +594,7 @@ int db_file_store(state *s)
 	assert(s->username != NULL);
 
 	if (s->lock_fd <= 0) {
-		print(PRINT_NOTICE, 
+		print(PRINT_NOTICE,
 		      "State file not locked while writing to it\n");
 		if (db_file_lock(s) != 0) {
 			print(PRINT_ERROR, "Unable to lock file for writing!\n");
@@ -570,7 +613,7 @@ int db_file_store(state *s)
 			print_perror(PRINT_ERROR,
 				     "Unable to open %s for reading",
 				     s->db_path);
-			
+
 			ret = STATE_IO_ERROR;
 			goto cleanup;
 		}
@@ -586,6 +629,19 @@ int db_file_store(state *s)
 		goto cleanup;
 
 	}
+
+	/* Temporary file opened, ensure it's owner matches
+	 * owner of original file if we are root! */
+	if (geteuid() == 0) {
+		struct stat st;
+		stat(s->db_path, &st);
+		if (chown(s->db_tmp_path, st.st_uid, st.st_gid) != 0) {
+			print_perror(PRINT_ERROR, "Unable to ensure owner/group of temporary file\n");
+			ret = STATE_IO_ERROR;
+			goto cleanup;
+		}
+	}
+
 
 	if (in) {
 		/* 1) Copy entries before our username */
@@ -646,23 +702,23 @@ cleanup:
 	if (ret == 0) {
 		/* If everything went fine, rename tmp to normal file */
 		if (rename(s->db_tmp_path, s->db_path) != 0) {
-			print_perror(PRINT_WARN, 
+			print_perror(PRINT_WARN,
 				     "Unable to rename temporary state "
 				     "file and save state.");
 			ret = STATE_IO_ERROR;
 		} else {
 			/* It might fail, but shouldn't
-			 * Also we just want to ensure others 
+			 * Also we just want to ensure others
 			 * can't read this file */
 			if (_db_file_permissions(s) != 0) {
-				print(PRINT_WARN, 
+				print(PRINT_WARN,
 				      "Unable to set state file permissions. "
 				      "Key might be world-readable!\n");
 			}
 			print(PRINT_NOTICE, "State file written correctly\n");
 		}
 	} else if (unlink(s->db_tmp_path) != 0) {
-		print_perror(PRINT_WARN, "Unable to unlink temporary state file %s", 
+		print_perror(PRINT_WARN, "Unable to unlink temporary state file %s",
 			     s->db_tmp_path);
 	}
 
@@ -693,7 +749,7 @@ int db_file_lock(state *s)
 
 	if (fd == -1) {
 		/* Unable to create file, therefore unable to obtain lock */
-		print_perror(PRINT_NOTICE, "Unable to create lock file");
+		print_perror(PRINT_NOTICE, "Unable to create %s lock file", s->db_lck_path);
 		goto error;
 	}
 

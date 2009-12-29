@@ -12,4 +12,6 @@
 auth            sufficient	pam_otpasswd.so debug
 auth		required	pam_deny.so
 
-session		optional	pam_otpasswd.so debug
+# This should return PAM_IGNORE and success.
+session		required	pam_otpasswd.so debug
+session		required	pam_permit.so 

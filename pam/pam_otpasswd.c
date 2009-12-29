@@ -175,22 +175,16 @@ PAM_EXTERN int pam_sm_open_session(
 	}
 
 	/* Generate message */
-	char buff_msg[200], buff_ast[200];
-	int len, i;
+	char buff_msg[300];
+	int len;
 
-	len = snprintf(buff_msg, sizeof(buff_msg), "* WARNING: %s *", msg);
+	len = snprintf(buff_msg, sizeof(buff_msg), "*** OTPasswd Warning: %s", msg);
 	if (len < 10) {
 		print(PRINT_ERROR, "(session) sprintf error\n");
 		goto cleanup;
 	}
 
-	for (i=0; i<len && i < sizeof(buff_ast)-1; i++)
-		buff_ast[i] = '*';
-	buff_ast[i] = '\0';
-	/* FIXME: musn't we use single ph_show_message? */
-	ph_show_message(pamh, cfg, buff_ast);
 	ph_show_message(pamh, cfg, buff_msg);
-	ph_show_message(pamh, cfg, buff_ast);
 
 cleanup:
 	ppp_release(s, 0, 1); /* Unlock, do not store */

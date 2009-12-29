@@ -17,7 +17,7 @@
  **********************************************************************/
 
 #ifndef PROG_VERSION
-#define PROG_VERSION "v0.5pre1"
+#define PROG_VERSION "v0.5beta"
 #endif
 
 #include <stdio.h>
@@ -641,6 +641,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		break;
 
 	case 'L': /* List */
+		printf("User    = %s\n", s->username);
 		_show_keys(s);
 
 		save_state = 0;
