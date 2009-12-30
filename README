@@ -76,9 +76,16 @@ Current:
    * Capable of enforcing system OTP security policy decisions
    * User-selectable passcode entry alphabet to suit language, or keyboard
    * High entropy passcodes for rapid entry, reducing Over-The-Shoulder attacks
+   * Passcards may be generated in either plain ASCII or LaTeX
+   * Secure locking of state files to resolve race conditions
+   * Many user options: display entered passcodes, passcode length, etc.
+   * Many sysadmin options: enforcement or overriding user options, etc.
+   * Warnings issued when user passcard supply is running low
+   * Support for cryptographic salt to increase attack resistance (optional)
+   * Designed and written with emphasis on secure code
 
 Planned:
-   * Out-of-band passcode transmission possible through customizable scripts
+   * Out-of-band passcode transmission with customizable scripts (SMS, IM, etc)
    * Wide variety of supported platforms (Linux, Unix, BSD, Solaris)
    * Comprehensive documentation
    * Pre-compiled binary packages for major distributions; Also, Gentoo ebuild
