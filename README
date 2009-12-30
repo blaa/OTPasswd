@@ -1,222 +1,379 @@
+OTPasswd - One-Time Password Authentication System
+--------------------------------------------------
+Updated:  29-Dec-09 (v0.5pre1)
+
+
 Contents
 ========
-
+0. Package Status
 1. Introduction
-  a. Security concerns
+  a. Security Concerns
   b. Contact
   c. History
 2. Installation
-3. Passcode generation algorithm
-4. Demo (Screenshot!)
+3. Passcode Generation Algorithm
+4. About PAM (short lecture)
+5. Demo (Screenshot!)
+6. Licensing
 
-4. About PAM (short talk)
-   More details about how PAM works
 
-5. Licensing
+
+0. Package Status
+=================
+OTPasswd is under development.  In the ChangeLog there's a list of things
+I'd like to implement before publishing the package as version 1.0.  Most
+features currently work (as of v0.3) but, of course, testing is still
+required.  Think of this as beta software.
+
+It is a goal of OTPasswd development to create a source package which can
+readily be compiled on a variety of *nix platforms, including Linux, BSD,
+Mac OSX, and Solaris.  In addition, it is hoped that pre-compiled binary
+packages can be maintained for major Linux distributions, as well as a
+Gentoo ebuild.
+
 
 
 1. Introduction
 ===============
-A one-time password (OTP) is a password that is only valid for a
-single login session or transaction (usually along a normal static
-password). Using them reduces risks associated with login into your
-system from insecure (key logged) workstations.
+A one-time password (OTP) is a password that is only valid for a single login
+session or transaction (normally used along with a normal static password).
+Using an OTP reduces the risks associated with logging into your system
+from insecure (eg, key logged) workstations.
 
-The otpasswd consists of a pam module and an user utility. With the
-utility user manages his "state" file: creates his KEY, manages flags
-and prints passcards with one-time passwords.
+The OTPasswd package consists of two primary components, a user utility
+and a PAM module (Pluggable Authentication Module).  The utility allows the
+management of a user's interaction with the OTPasswd system.  Its primary
+functions are to generate the user's cryptographic key, manage options
+affecting OTPasswd behavior, and to print passcards with one-time passwords.
+The user's OTPasswd configuration is known as the user's "state", and can
+either be stored in the user's home directory or in a system-wide database.
 
-PAM module enables (for example) OpenSSH to do an authentication using
-one-time password with the information from user state file.
+The second primary component of the OTPasswd system, the PAM module, enables
+"PAM aware" applications, such as OpenSSH, to do OTP authentications using
+the user's OTPasswd "state" information.
 
-The program is written in C (C99) and implements OTP as described in
-"Perfect Paper Passwords" description of which can be found here
-https://www.grc.com/ppp.htm
-This program also kind of extends this idea with "salt".
+OTPasswd is written in C (C99) and implements an OTP system as described
+by Steve Gibson's "Perfect Paper Passwords" specification.  An excellent
+description may be found at: <https://www.grc.com/ppp.htm>.  Note that
+OTPasswd is designed to be completely compliant with the PPPv3.1
+specification, however it does optionally extend the specification by
+allowing the use of a cryptographic "salt" to the passcode counter.
 
-OTPasswd is in development. In ChangeLog there's a list of things I'd
-like to implement before publishing this as version 1.0.  Most of
-features work currently (as of v0.3) but of course - it requires
-tests. Think of this as a beta software.
-
-a. Security concerns
---------------------
-TODO: Active / Passive methods of attacks. Why we're just trying to make
-attack as impossible as possible. What can be used to circumvent our
-inventions.
+1a. Security Concerns
+---------------------
+TODO: Active / Passive methods of attacks. Why we're just trying to
+make attack as impossible as possible. What can be used to circumvent
+our inventions.
 
 There are certain security related issues you should be aware of.
 
-I. This program is not intended to replace normal passwords, it's
-supposed to add a second level of authentication. Therefore an
-attacker to log into your system must know something you know - a UNIX
-password (which he can for example keylog or sniff using e-m radiation
-of your keyboard's PS/2 communication), and additionaly must posses
-something only you have - a passcard with codes or, for example, your
-mobile phone.
+I. This program is not intended to replace normal passwords, it's supposed
+to add a second level of authentication -- a second "factor".  In other
+words, an attacker attempting to log into your system must know something
+you know -- a UNIX password -- and additionally must possess something
+only you have -- a passcard with one-time passcodes, or a mobile device to
+which a passcode can be sent.  Therefore, even if the attacker manages to
+discover your UNIX password, for example through the use of a key logger
+or by sniffing the E-M radiation of your keyboard's PS/2 connection,
+the attacker would still need to have access to your passcard.
 
-II. Second issue is a DoS attack possible in some configurations. When
-the attacker repeatedly tries to authenticate he can use up all your
-printed passcodes and therefore make you unable to login. This can be
-fixed in several ways:
-1) By requesting that the UNIX password be correctly entered before asking
-   (and therefore using up) a passcode. (See required/requisite difference
-   in PAM description chapter).
-     This will limit the problem to the case when the attacker sniffs your
-   password. He won't be able to login still, but he can perform this DoS
-   attack. Well. That's OK with me. Even better - if he does it, then I
-   know I must change my UNIX password.
+II. The second issue is that a Denial-of-Service (DoS) attack is possible
+in some configurations. When an attacker repeatedly tries to authenticate
+he can use up all of your printed passcodes and therefore cause you to be
+unable to login. This can be fixed in several ways:
 
-2) By limiting number of trials on another level. For example sshguard can
-   block IP access to SSH after 3 unsuccessful attempts to authenticate. I
-   think that such a security measures should always be enabled no matter
-   if you use OTP or not. Their use would make attacker use a lot more IP
-   addresses (in certain configuration around 23 to skip one passcard)
+   1) By requesting that the UNIX password be correctly entered before asking
+      for (and therefore using up) a passcode. (Consult the PAM description
+      chapter for the distinction between the required/requisite keywords).
+      This will limit the problem to the case when the attacker sniffs
+      your password.  In this case, the attacker will still be unable to
+      login, but the DoS described above would now be possible.  This is
+      arguably an acceptable situation, since it alerts the user to the
+      fact that his UNIX password has been compromised and must be changed.
 
-3) By enabling yourself to receive a next passcode anytime via a secure
-   channel which cannot be blocked by attacker (like SMS).
+   2) By limiting number of failed authentication attempts.  For example,
+      sshguard can block IP access to SSH after 3 unsuccessful attempts
+      to authenticate.  The use of such a security measure is advisable
+      regardless of whether OTP is used, or not.  This type of filter
+      would force an attacker to consume a large number of IP addresses in
+      the process of an attack.  In certain configurations of OTPasswd an
+      attacker would need around 23 IP addresses to skip a single passcard.
 
-   In some scenarios DoS also can be performed. For example if we'd use a
-   free SMS gateway, attacker who'd know our phone number can use it himself
-   to send you lots of any messages consuming limit of
-   SMSes/phone number/day. It's pretty unlikely scenario and
-   furthermore, it can be secured by using other means of sending sms
-   (sending with GSM modem/phone connected to the computer).
+   3) By receiving passcodes on an as-needed basis via a secure channel
+      which cannot be blocked by attacker, such as SMS text-messaging.
 
-4) Kind of by enabling dont-skip option. This option is a bit of a problem
-   because we must NEVER allow successful authentication with the same
-   passcode. They must be completely ONE-TIME. Enabling dont-skip causes
-   otpasswd to authenticate like this:
-   a) Read state file, increment passcode counter, store file
-   b) If user authenticates successfully, passcode is already
-      incremented and everything is fine. If he fails to authenticate
-      then do the step c:
-   c) Read state file, check if somebody modified this state file
-      in the meantime (second authentication for example). If not -
-      decrement counter and store file. If file was modified nothing is
-      changed, and therefore passcode is securely skipped.
-   This behaviour *doesn't* solve the problem as you can see, because
-   attacker might use two separate authentication sessions. This would have
-   to be blocked in some other way (might be implemented in otpasswd one
-   day!)
+      In some scenarios this scheme could also be susceptible to a DoS
+      attack.  For example, if a free SMS gateway is used which imposes
+      usage limits, an attacker who is aware of your phone number could
+      easily exhaust your daily quota of text messages.  While this type of
+      attack is technically possible, it's also quite unlikely.  However,
+      it does serve to highlight the fact that every countermeasure has
+      vulnerabilities.  As far as this particular attack is concerned,
+      SMS transmissions could simply be sent using a different method,
+      such as making use of a GSM phone/modem connected to the computer.
 
-III. If the attacker will get your previous, used up, passcards he can
-try to do a brute-force attack on your key to predict future
-passcodes. Yet, this is kind of a hard thing to do, especially if
-salting is enabled.  See 'Passcode generation algorithm' for details.
+   4) By enabling the dont-skip option to OTPasswd.  This option prevents
+      the skipping of a passcode that was used in a failed authentication
+      attempt.  In essence, the dont-skip option slightly changes the
+      semantics of what is meant by a "one-time password" from never
+      allowing the reuse of a passcode, to allowing reuse of passcodes
+      on authentication failures.  The intent of this modified semantic
+      is to prevent passcode exhaustion as a consequence of a DoS attack.
+      It is important to note that a passcode must NEVER be reused if it
+      was used for a successful authentication.
 
-IV. OTPasswd secures the process of authentication by fixing the
-problem of classical static passwords - their /staticness/. After
-you're authenticated someone still might takeover your session to do
-something nasty. So while man-in-the-middle attack on your SSH to
-eavesdrop your password for later authentication might not be
-feasible, it still can be used to hijack authenticated sessions. 
+      WARNING: Even if the dont-skip option is enabled, OTPasswd is currently
+      still vulnerable to a passcode exhaustion DoS attack when multiple
+      concurrent login sessions are used.  This is clear from the following
+      description of the authentication process:
 
-To securely log into a system with SSH you still must have a trusted
-ssh client software (from pendrive?) and validate server key
-fingerprint. Beware also man-from-behind attacks when you're banged in the head
-after authenticating.
+      a) Read state file, increment passcode counter, store file
+      b) If user authenticates successfully, passcode is already incremented
+         and procedure is complete.  If user fails to authenticate then
+         go on to step (c).
+      c) Read state file, check if state file has been modified in the
+         meantime (by a second authentication attempt, for example).
+         If not, then decrement counter and store file.  If state file was
+         modified, it is no longer possible to revert the counter since
+         a subsequent passcode has already been accessed.  As a result,
+         the state file is not changed.  This means that the passcode will
+         have been skipped, and it can no longer be reused regardless of
+         the dont-skip option setting.
 
-b. Contact
+      It is hoped that this vulnerability in OTPasswd will be closed in
+      some future release.
+
+III. If an attacker is able to collect used passcards, it is conceivable
+that a brute-force attack could be made on the cryptographic key which
+was used to generate the passcodes.  If the key is discovered, then future
+passcodes could be generated at will.  Given the cipher currently being used
+in OTPasswd, this type of attack is not likely to be successful, particularly
+if the optional cryptographic "salt" is applied to the passcode counter.
+However, if weaknesses are discovered in the Rijndael cipher at some point,
+then it is possible that such an attack may be more likely to succeed.
+See 'Passcode Generation Algorithm' for details.
+
+IV. OTPasswd secures the process of authentication by addressing the
+problem of classical static passwords -- the fact that they are /static/.
+After you've successfully authenticated, however, someone might still
+be able to takeover your session to do something nasty.  So while a
+man-in-the-middle (MITM) attack on your SSH session to eavesdrop your
+password for later authentication might not be feasible, a MITM can still
+be used to hijack authenticated sessions.
+
+IMPORTANT.  In order to securely login to a system with SSH you still
+must have trusted SSH client software (from a pendrive, for example)
+and you must validate the SSH server key fingerprint.  Also, beware of
+man-from-behind attacks when you're banged in the head after authenticating.
+
+1b. Contact
 ----------
-You can contact author with questions, support, praises or curses at
-bla@thera.be. Any feedback welcomed (even faint one). And no, I don't get a
-lot of feedback so don't think 'nah, I won't write anything he's probably
-pissed at us anyway'.
+You may contact the author with questions, support, praise or curses at
+<mailto:bla@thera.be>.  Any feedback will be welcomed (even faint praise).
+And no, I don't get a lot of feedback, so don't think "nah, I won't write
+anything since he's probably pissed at us anyway".
 
-c. History
+1c. History
 ----------
 The creation of this program was inspired by the ppp-pam project
-(http://code.google.com/p/ppp-pam/). Idea is basically the same. I started
-development by contributing to ppp-pam, but there was plenty of things to
-fix, author didn't answer (during first month) and I just decided I'll be
-better off rewritingeverything from scratch. Projects share some of my
-code, like locking functions but nothing more. You can kind of thing about
-otpasswd as a fork of ppp-pam.
+(http://code.google.com/p/ppp-pam/). The idea is basically the same. I
+started development by contributing to ppp-pam, but there were plenty of
+things to fix, and when the author didn't respond (during first month) I
+just decided I'd be better off rewriting everything from scratch.  The two
+projects share some of my code, like locking functions, but nothing more.
+It would be reasonable to think of OTPasswd as a fork of ppp-pam.
 
 
 
 2. Installation
 ===============
-To install otpasswd and configure it to work with ssh you have to:
-0. Have all required dependencies (with headers)
-1. Install the package
-2. Enable its use in /etc/pam.d
-3. Configure ssh to use PAM.
-4. Generate keys for user (and print at least one password card)
-5. Tweak otpasswd configuration
+OTPasswd can easily be configured to work in conjunction with any text-based
+PAM-aware application, such as sudo, su, ftp, or any standard *nix console
+login.  While it would technically also be possible for OTPasswd to be
+used in GUI-based PAM applications, as one might find in the KDE or Gnome
+desktops, the necessary GUI layers do not presently exist.  The typical use
+case for OTPasswd by far, however, is to secure non-publickey SSH logins,
+which is what will be described in this section.
+
+To compile, install, and configure OTPasswd to work with SSH you must
+complete the following steps:
+
+   0. Have all required dependencies (with headers)
+   1. Install the package
+   2. Tweak OTPasswd configuration
+   3. Generate a user key (and print at least one passcard)
+   4. Enable OTPasswd in /etc/pam.d
+   5. Configure SSH to use PAM authentication
+
+Be aware that if OTPasswd is installed over an SSH connection, it is possible
+to inadvertently become "locked-out".  This can happen if OTPasswd is enabled
+for SSH logins prior to having generated an initial set of passcodes, which
+in turn requires the generation of a OTPasswd user key.  The installation
+procedure outlined above is intended to minimize the likelihood that this
+will happen.
 
 So.
 
-0) Package required openssl and gmp libraries and cmake tool (with their
-   -dev packages!). All of these should be available in the repository of
-   your distribution. In future it's possible that MySQL and LDAP databases 
-   could be used optionally.
+   0. Required Dependencies
+   ------------------------
+   OTPasswd may be installed either through compilation from source, or
+   if available, from a pre-compiled binary package.  Regardless of the
+   installation type, OTPasswd requires the GNU Multiple-Precision (GMP)
+   library.  Additional packages are required when OTPasswd is compiled
+   from source, namely, the CMake cross-platform build system, as well as
+   the corresponding -dev packages for both GMP and CMake.  All of these
+   packages should be available in your distribution's repositories.
 
-1) Check if the package is not in your distribution package manager. If it
-is - install it as any other software. Otherwise fallback to compilation:
-$ cd otpasswd
-$ cmake .      # This will generate makefiles (You can add -DDEBUG=1)
-$ make         # This should compile anything
-$ make install # This should install otpasswd into system.
+   Future versions of OTPasswd may optionally use MySQL and LDAP.  It is
+   also possible that a GNU Autotools build system will eventually either
+   replace, or serve as an alternative to CMake.  These options may
+   therefore introduce a different set of package dependencies.
 
-Instead of using make install you can also copy following files:
-a) PAM module 'pam_otpasswd.so' -> /lib/security/
-b) Utility 'otpasswd' -> /usr/bin/
-c) Exemplary PAM configuration example/otpasswd-login -> /etc/pam.d/
-d) otpasswd configuration example/otpasswd.conf -> /etc/security/
+   1. Install OTPasswd
+   -------------------
+   Check to see if a pre-compiled binary package is available for OTPasswd
+   in your distribution's package manager.  If so, then install it as you
+   would any other package.  Otherwise, you will need to compile OTPasswd
+   from source, as follows:
 
-Depending on DB option (see point 5) otpasswd utility can require a SGID
-flag and separate group.
+      $ cd otpasswd
+      $ cmake .            # Generate makefiles (You can add -DDEBUG=1)
+      $ make               # Compile everything
+      $ sudo make install  # Install otpasswd into system (as root)
 
-2) See last chapter for detailed information. In short, install
-example/otpasswd-login in /etc/pam.d and change a line in /etc/pam.d/sshd
-from:
-auth       include        system-remote-login
-to:
-auth       include        otpasswd-login
+   If you would prefer to perform the final installation step manually,
+   then instead of using 'make install' you can copy the following files:
+
+      a) PAM module                       'pam_otpasswd.so' -> /lib/security/
+      b) Utility program                         'otpasswd' -> /usr/bin/
+      c) Example PAM configuration 'example/otpasswd-login' -> /etc/pam.d/
+      d) OTPasswd configuration    'example/otpasswd.conf'  -> /etc/security/
+
+   NOTE: Depending on the DB backend that is being used (see the next
+   section), it may be necessary to create a unique system user exclusively
+   for OTPasswd, then set the utility program to run as this user through
+   use of the SUID flag.
+
+   2. Tweak OTPasswd Configuration
+   -------------------------------
+   OTPasswd is configured via the /etc/security/otpasswd.conf file.  Upon
+   initial installation, this file will contain a template of all valid
+   configuration options along with copious commentary.  A pristine version
+   of this file should be available in the OTPasswd package documentation
+   directory of your system's /usr/share hierarchy.
+
+   The most important configuration setting is the "DB" option.  The DB
+   option can be set as follows:
+
+      DB=user
+      -------
+      In this mode, OTPasswd stores user state information in the user's
+      home directory.  As a result, the OTPasswd utility doesn't require
+      any SUID privilege, and can be run in the user's security context.
+      Note that even if the utility is installed with the SUID flag, it will
+      drop privileges immediately after reading the configuration file.
+      The major disadvantage of this mode is that since the user has
+      complete access to his state file, it is impossible to guarantee all
+      aspects of system security policy compliance.  Among other things,
+      a user could cause passcode recycling/reuse through manipulation of
+      state file information.
+
+      DB=global
+      ---------
+      This mode uses a system-wide configuration database.  The default
+      location for this database is /etc/otpasswd/otshadow.  The database
+      file must be owned by a special user created for OTPasswd use, and
+      it MUST not be readable for normal users.  Since all critical data
+      is under system control, system security policies can be enforced.
+      However, the OTPasswd utility must be granted SUID privilege to the
+      OTPasswd UID to enable access to this database on the user's behalf.
+
+      DB=mysql
+      --------
+      (Not currently implemented) The user state information is stored
+      in a MySQL database.  The database access password is stored in the
+      OTPasswd configuration file /etc/security/otpasswd.conf, so this file
+      must be readable only by the special OTPasswd UID described above.
+      The OTPasswd utility must be run with SUID privilege to gain access
+      the configuration file, however privileges are dropped promptly
+      after reading the file.
+
+      DB=ldap
+      -------
+      (Not currently implemented) The user state information is stored
+      in an LDAP database.  See the DB=mysql description above for more
+      information.
+
+   3. Generate OTPasswd Key & Print Passcard
+   -----------------------------------------
+   To use OTPasswd, a user is required to have a cryptographic key, which
+   is then used to generate the user's passcodes.  To generate this key,
+   ensure that you are logged in as the user for whom you want to create
+   the key, then issue the following command:
+
+      $ otpasswd --key
+
+   An administrator may generate a key for any user, as follows:
+
+      $ otpasswd --key --user tux
+
+   Be aware that OTPasswd, by default, generates a key which is not
+   compatible with the PPPv3.1 specification.  If you would like to
+   retain compatibility with the specification and thereby also retain
+   interoperability with other PPPv3 applications, issue the following
+   command:
+
+      $ otpasswd --key --no-salt
+
+   Note: As mentioned above, if OTPasswd is being configured over an SSH
+   session, it is conceivable that one can lose one's ability to log back
+   in after any key change since one will not yet have any valid passcodes.
+   Because of this, the OTPasswd utility will immediately print a passcard
+   upon key generation.  The prudent user would be wise to either print
+   this passcard, or minimally jot down the first few passcodes.  You have
+   been warned.
+
+   4. Enable OTPasswd in PAM Configuration
+   ---------------------------------------
+   Previously, the prototype PAM configuration 'example/otpasswd-login'
+   was copied to the PAM configuration directory '/etc/pam.d'.  Now,
+   to enable OTPasswd use with SSH, one line must be changed in the SSH
+   daemon's PAM configuration '/etc/pam.d/sshd', as follows:
+
+      From:
+            auth       include        system-remote-login
+      to:
+            auth       include        otpasswd-login
+
+   Consult the section titled 'About PAM' (below) for detailed information.  
+
+   5. Configure SSHD to Use PAM Authentication
+   -------------------------------------------
+   The OpenSSH daemon's (SSHD) configuration is usually located in the file
+   '/etc/ssh/sshd_config'.  Ensure that this file contains the following
+   two lines:
+
+      ChallengeResponseAuthentication yes
+      UsePAM yes
+
+   It is entirely possible that these two configuration settings are
+   already enabled, and that no modification is required.  If the file
+   must be modified, it should contain no other uncommented instances of
+   either keyword.  Note that it is always advisable to make a backup copy
+   of configuration files prior to making any changes.
 
 
-3) In /etc/ssh/sshd_config you should have the following two lines:
-ChallengeResponseAuthentication yes
-UsePAM yes
 
-4) To generate key, and display first passcard as fast as possible (so
-you won't loose ability to login in case you're configuring OTP
-remotely) you can use:
-$ otpasswd -k
-
-5) OTPasswd is configured via the /etc/security/otpasswd.conf file which
-has all possible options included and commented.
-
-The most important setting there is "DB" option. If DB is set to:
-user:
-  utility doesn't need to be SGID/SUID as state is stored inside user home
-  directories. Nevertheless policies can't be enforced then.
-  It don't hurt much if DB=user and utility is SGID as otpasswd will drop
-  it's permissions right after reading config file.
-global:
-  Keys are stored in /etc (usually /etc/otshadow). Policies can be
-  enforced, but otpasswd utility must be SGID to the group owned by
-  otshadow, and users must not be able to read this file. You should create
-  separate group (otpasswd proposed) for this task.
-mysql/ldap:
-  Not yet implemented. Still as passwords to DB will be stored inside
-  /etc/security/otpasswd.conf you should make this file readable only by
-  special group, and make otpasswd utility SGID to this group.
-  Just after reading a state file group permissions are dropped.
-
-3. Passcode generation algorithm
+3. Passcode Generation Algorithm
 ================================
+The heart of the system is the Rijndael (AES) cipher, which encrypts
+128-bit blocks with a 256-bit key; this operation generates 128-bits of
+data which is used to calculate a passcode.
 
-The heart of the system is Rijndael (AES) cipher, which encrypts
-128bit blocks with 256bit key; this operation generated 128bit of data
-which is used  to calculate passcode.
-
-Each user during key generation is equipped with this key and 128bit
-passcode counter. When user authenticates or prints passcard, for each
-passcode generated the corresponding counter value is encrypted with
-key:
+During key generation, the user is equipped with a 256-bit key and a
+128-bit passcode counter.  Whenever a passcode is validated or generated,
+such as when the user authenticates or prints a passcard, the counter
+value is encrypted with the key to produce a corresponding passcode:
 
        |-------------|
        | 256 bit key |
@@ -240,214 +397,256 @@ key:
      | 96bit |  32bit  |          /------------/
      |-----------------|
 
-This salt needs a bit of explanation. Genuine PPPv3 algorithms doesn't
-use salt at all - counter is 128bit long. This allows to use over
-3.4 * 10^38  passcodes, that is around 4.86 * 10^36 passcards. Nobody
-needs that much and so this bits would be wasted. Also, an attacker which
-would be able to keylog your authentication will know corresponding counter
-value and to predict future passcodes he only lacks the key.
+The salt needs a bit of explanation.  In cryptography, a 'salt' comprises
+random bits of data that are used as one of the inputs to a key derivation
+function.  Genuine PPPv3 algorithms don't use salt at all -- the counter
+is a 128-bit value which starts at zero.  This allows the use of over
+3.4 * 10^38 passcodes, which is around 4.86 * 10^36 passcards.  Nobody will
+ever need that many passcodes, hence many bits of the counter would be
+wasted.
 
-Many ciphers were vulnerable to, so called, known-plaintext
-attacks. Rijndael -- as far as I know -- isn't but it doesn't mean
-that in future such attack couldn't be discovered.
+In addition, any attacker who is able to key log your authentications will
+know both the passcodes (the ciphertext) and the corresponding counter values
+(the plaintext), and thus the attacker lacks only the key in order to be
+able to predict future passcodes.  Once both plaintext and ciphertext are
+available, an attacker can employ the traditional attack model known as a
+Known-Plaintext Attack (KPA).  Many ciphers have been vulnerable to such
+an attack.  As far as is known, Rijndael (AES) is not currently vulnerable
+to such an attack, but there are no guarantees of what the future might hold.
 
-Closing this hole was easy. By generating additionally 96bits of random
-data and storing them inside counter value we make attacker impossible
-task of breaking the key even more impossible. Also brute-force attack
-on key will take a bit longer.
+In the case of OTPasswd, addressing this issue was easy.  By generating an
+additional 96-bits of random data and storing them inside the counter value
+an attacker will no longer be able to easily deduce the counter value used
+to produce a given passcode.  This makes the attacker's already impossible
+task of breaking the key even more impossible.  Additionally, using a salt
+will also increase the amount of time needed for a brute-force attack.
 
-If you had 10^6 of 3GHz machines, being able to test one key in one
-cycle... you could test 3*10^9*10^6 keys in a second. That would still
-take you... 1.22 * 10^54 yeeeaaarrrsss. With salt that is more than
- 10^82 years.
+To illustrate this point, suppose you had 10^6 3GHz machines each being
+able to test one key every machine cycle... this would allow you to
+test 3 * 10^9 * 10^6 keys per second.  Even at that rate, without a salt,
+it would still take you... 1.22 * 10^54 yeeeaaarrrsss to check every key.
+By salting the counter, each key would now need to be checked against 2^96
+counter values instead of just one, so it would now take longer than 10^82
+years for an exhaustive search of the key-space.  Good luck!
 
 
 
-4. About PAM (short talk)
-=========================
-Most application which require password input use PAM. I'll stick to the
-sshd as an example.
+4. About PAM (short lecture)
+============================
+Most applications which require password input use PAM.  I'll stick to
+the SSH daemon (SSHD) as an example.
 
-SSH when user logs in tries to authenticate him using it's own
-method - keys. Then, if this method fails it talks with PAM.
-PAM to see how to authenticate sshd reads /etc/pam.d/sshd.
+When a user logs in, SSH attempts authentication using it's own method,
+namely, publickeys.  Then, if this method fails it talks to PAM.  PAM,
+in turn, must read the configuration in /etc/pam.d/sshd to see how it
+should process authentication requests from SSHD.
 
-In default Gentoo installation it will contain following lines:
-auth       include        system-remote-login
-account    include        system-remote-login
-password   include        system-remote-login
-session    include        system-remote-login
+The default Gentoo installation includes the following lines in the PAM
+SSHD configuration file:
 
-This is line-oriented file in which each line tells us what to do.
-We're interested in "auth" part only, which here - includes configuration
-from system-remote-login file, which looks like this:
-auth            include         system-login
+   auth       include        system-remote-login
+   account    include        system-remote-login
+   password   include        system-remote-login
+   session    include        system-remote-login
 
-And, as you can see, it just reads configuration from yet another file:
-auth            required        pam_tally.so onerr=succeed
-auth            required        pam_shells.so
-auth            required        pam_nologin.so
-auth            include         system-auth
-(account, password, session omitted)
+This is line-oriented file in which each line tells PAM what to do.
+We're only interested in "auth" part, which in this case instructs PAM to
+include the additional configuration from the system-remote-login file.
+This file contains the line:
 
-Still one more file (system-auth) to look into:
-auth            required        pam_env.so
-auth            required        pam_unix.so try_first_pass likeauth nullok
+   auth       include        system-login
 
-PAM when authenticating a user will read the lines from top to bottom.
-pam_tally - reads failures and can do some action according to them
-pam_shells - checks if user has a valid shell (listed in /etc/shells)
-pam_nologin - checks if logins were disabled (shows message)
-pam_env - does something with environment
+And, as you can see, it just tells PAM to include more configuration data
+from yet another file:
+
+   auth       required       pam_tally.so onerr=succeed
+   auth       required       pam_shells.so
+   auth       required       pam_nologin.so
+   auth       include        system-auth
+
+   (account, password, session sections omitted)
+
+There is still one more file (system-auth) to look into:
+
+   auth       required       pam_env.so
+   auth       required       pam_unix.so try_first_pass likeauth nullok
+
+When authenticating a user, PAM will read the lines from top to bottom.
+
+   pam_tally    - tracks login failures and can take related action
+   pam_shells   - checks if user has a valid shell (listed in /etc/shells)
+   pam_nologin  - checks if logins were disabled (shows message)
+   pam_env      - does something with environment
+
 and finally:
-pam_unix - checks password according to /etc/shadow
 
-This is default schema and somewhere there we ought to add our OTP.
+   pam_unix     - checks password according to /etc/shadow
 
-Easiest approach just modifies the first file: sshd. After all auth
-entries we just add our pam_otpasswd module. File would look like:
+This is an overview of the default PAM authentication schema (for Gentoo).
+Somewhere in this process we will need to add our OTP authentication.
 
-auth            include         system-remote-login
-# Line added for OTP:
-auth            required        pam_otpasswd.so secure
+The easiest approach is just to modify the first file: /etc/pam.d/sshd.
+At the end of all the 'auth' entries, we can just add our pam_otpasswd
+module.  The file would then look like this:
 
-account    include        system-remote-login
-password   include        system-remote-login
-session           include        system-remote-login
+   auth       include        system-remote-login
+   # Line added for OTP:
+   auth       required       pam_otpasswd.so secure
 
-This will ask us for OTP after we are asked for our normal unix password
-regardless if the unix password was correct or not. This can lead to Denial
-of Service problem when attacker tries to login enough times to use up all
-our printed passcards. If we have some other security mechanism (like
-sshguard - which blocks sshd port for people who try the dictionary attacks)
-it might be perfectly ok.
+   account    include        system-remote-login
+   password   include        system-remote-login
+   session    include        system-remote-login
 
-If not, we can change the line with pam_unix.so module from:
-auth            required        pam_unix.so try_first_pass likeauth nullok
-To:
-auth            requisite       pam_unix.so try_first_pass likeauth nullok
+This will cause PAM to ask us for an OTP after we have been asked for our
+normal UNIX password, regardless of whether the UNIX password was correct
+or not.  This can lead to a Denial of Service issue when the attacker tries
+to login enough times to use up all of our printed passcards.  If we have
+some other security mechanism (like sshguard -- which blocks the SSHD port
+for people who try dictionary attacks) it might be perfectly okay.
 
-Which will require correct unix password before asking OTP at all. If
-we don't like to mess with global pam config files (system-auth etc.)
-we can move all auth lines to sshd file, change this one line and add
-pam_otpasswd line, which results in following configuration:
+If this risk is not acceptable, then we can change the line with pam_unix.so
+module from:
 
-# Include commented out:
-#auth       include         system-remote-login
-# All auths included in sshd:
-auth        required        pam_tally.so onerr=succeed
-auth        required        pam_shells.so
-auth        required        pam_nologin.so
-auth        required        pam_env.so
-# Changed 'required' to 'requisite':
-auth        requisite       pam_unix.so try_first_pass likeauth nullok
-# Our added line:
-auth        required        pam_otpasswd.so secure
+   auth       required       pam_unix.so try_first_pass likeauth nullok
 
-#Rest
-account    include        system-remote-login
-password   include        system-remote-login
-session    include        system-remote-login
+to:
 
+   auth       requisite      pam_unix.so try_first_pass likeauth nullok
 
-This is exactly what is written in our examples/otpasswd-login file. You can
-place this file in /etc/pam.d, and then edit your ssh to use it
-in it's auth part:
-auth       include        otpasswd-login
-account    include        system-remote-login
-password   include        system-remote-login
-session    include        system-remote-login
+This configuration will require the correct UNIX password be entered before
+asking for an OTP.
+
+If we would rather not mess with global PAM configuration files (system-auth,
+etc), we could move all auth lines to the sshd file, change the pam_unix
+authentication to 'requisite' (as above), then add the pam_otpasswd line.
+This would result in following configuration:
+
+   # Include commented out:
+   #auth      include        system-remote-login
+
+   # All auths included in sshd:
+   auth       required       pam_tally.so onerr=succeed
+   auth       required       pam_shells.so
+   auth       required       pam_nologin.so
+   auth       required       pam_env.so
+
+   # Changed 'required' to 'requisite':
+   auth       requisite      pam_unix.so try_first_pass likeauth nullok
+
+   # Our added line for OTP:
+   auth       required       pam_otpasswd.so secure
+
+   # And all the rest...
+   account    include        system-remote-login
+   password   include        system-remote-login
+   session    include        system-remote-login
+
+This is exactly what is written in our examples/otpasswd-login file. You
+can place this file in /etc/pam.d, and then edit your sshd file to use it
+by modifying auth line:
+
+   auth       include        otpasswd-login
+   account    include        system-remote-login
+   password   include        system-remote-login
+   session    include        system-remote-login
+
+For more information about Linux-PAM, you may consult the PAM(7) man page
+on your system, or read the PAM System Administrator's Guide, which can
+be found at:
+
+   http://www.kernel.org/pub/linux/libs/pam/Linux-PAM-html/Linux-PAM_SAG.html
 
 
 
 5. Demo (Screenshot!)
 =====================
-Everybody loves it, so here is key generation, run by a user who
-already has some key generated (and some flags toggled: 3-character
-long passcodes, extended algorithm):
+Everybody loves it, so here is an example of key generation, run by a user
+who has previously generated a key, and has also set some optional flags
+(3-character long passcodes, extended algorithm):
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Cirrus ~ % otpasswd -k
-*****************************************************
-* This will irreversibly erase your previous key    *
-* making all already printed passcards worthless!   *
-*****************************************************
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   Cirrus ~ % otpasswd -k
+   *****************************************************
+   * This will irreversibly erase your previous key    *
+   * making all already printed passcards worthless!   *
+   *****************************************************
 
-Are you sure you want to continue? (yes/no): yes
+   Are you sure you want to continue? (yes/no): yes
 
-Your current flags: show dont-skip alphabet-extended (key salted) codelength-3
-Do you want to keep them? (yes/no): yes
+   Your current flags: show alphabet-extended (key salted) codelength-3
+   Do you want to keep them? (yes/no): yes
 
-Hint: Move your mouse, cause some disc activity
-or type on keyboard to make the progress faster.
+   Hint: Move your mouse, cause some disc activity
+   or type on keyboard to make the progress faster.
 
-Gathering entropy... OK!
+   Gathering entropy... OK!
 
-*****************************************************
-* Print following passcard or at least make a note  *
-* with a few first passcodes so you won't loose     *
-* ability to log into your system!                  *
-*****************************************************
+   *****************************************************
+   * Print following passcard or at least make a note  *
+   * with a few first passcodes so you won't loose     *
+   * ability to log into your system!                  *
+   *****************************************************
 
-Cirrus                          [1]
-    A   B   C   D   E   F   G   H
- 1: ZKU ;R2 k<N Cs@ 8aj K+/ 7U~ een
- 2: 35p =k[ oCw Tp' ;sN t4i >v_ R-L
- 3: !w, f%T +q~ M_b 9^3 KcA Po& $h<
- 4: >vo %(R ak& UF( a|L Y~H A(b zbZ
- 5: b,i O|, ?b+ VhS Y6F 95/ {\c %MG
- 6: H/^ t_i Dye k3: 3Mq \7y vz[ +Wk
- 7: (uU sa3 v\n [%c &5e [mE f"j pq^
- 8: Es> ~pa wqo ?C[ !rL Y&O "[4 daT
- 9: 'x: eE} YwU q|v eyy yp= ;y7 T\-
-10: At! mFr GCC @dZ _$_ SeB ^4L |_w
+   Cirrus                          [1]
+       A   B   C   D   E   F   G   H
+    1: ZKU ;R2 k<N Cs@ 8aj K+/ 7U~ een
+    2: 35p =k[ oCw Tp' ;sN t4i >v_ R-L
+    3: !w, f%T +q~ M_b 9^3 KcA Po& $h<
+    4: >vo %(R ak& UF( a|L Y~H A(b zbZ
+    5: b,i O|, ?b+ VhS Y6F 95/ {\c %MG
+    6: H/^ t_i Dye k3: 3Mq \7y vz[ +Wk
+    7: (uU sa3 v\n [%c &5e [mE f"j pq^
+    8: Es> ~pa wqo ?C[ !rL Y&O "[4 daT
+    9: 'x: eE} YwU q|v eyy yp= ;y7 T\-
+   10: At! mFr GCC @dZ _$_ SeB ^4L |_w
 
-Are you ready to start using one-time passwords? (yes/no): yes
+   Are you ready to start using one-time passwords? (yes/no): yes
 
-Key stored!
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   Key stored!
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Example usage:
-user@host $ ssh user@cirrus
-Password: <user unix password>
-Passcode B3 [1]: f%T
 
-user@cirrus $
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   user@host $ ssh user@cirrus
+   Password: <user unix password>
+   Passcode B3 [1]: f%T
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   user@cirrus $
+   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 
-5. Licensing
+6. Licensing
 ============
-This README file, examples and the source code of the otpasswd program
-are all licensed under GNU General Public License version 3. License
-should be included with the project inside LICENSE file. Copyright notice
-follows:
+This README file, the examples and the source code of the OTPasswd
+program are all licensed under GNU General Public License version 3.
+The license should be included with the project inside LICENSE file.
+Copyright notice follows:
 
 Copyright (C) 2009 by Tomasz bla Fortuna <bla@thera.be>
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option)
+any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+more details.
 
-You should have received a copy of the GNU General Public License
-along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along
+with OTPasswd.  If not, see <http://www.gnu.org/licenses/>.
 
-In addition, as a special exception, the copyright holders give
-permission to link the code of portions of this program with the
-OpenSSL library under certain conditions as described in each
-individual source file, and distribute linked combinations including
-the two. You must obey the GNU General Public License in all
-respects  for all of the code used other than OpenSSL.  If you
-modify file(s) with this exception, you may extend this exception to your
-version of the file(s), but you are not obligated to do so.  If you
-do not wish to do so, delete this exception statement from your
-version.  If you delete this exception statement from all source
+In addition, as a special exception, the copyright holders give permission
+to link the code of portions of this program with the OpenSSL library
+under certain conditions as described in each individual source file,
+and distribute linked combinations including the two.  You must obey the
+GNU General Public License in all respects for all of the code used other
+than OpenSSL.  If you modify file(s) with this exception, you may extend
+this exception to your version of the file(s), but you are not obligated
+to do so.  If you do not wish to do so, delete this exception statement
+from your version.  If you delete this exception statement from all source
 files in the program, then also delete it here.
+
