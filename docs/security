@@ -1,0 +1,304 @@
+
+	      OTPasswd - One-Time Password Authentication System
+	      --------------------------------------------------
+		https://savannah.nongnu.org/projects/otpasswd
+			Updated: 29-Dec-09 (v0.5pre1)
+
+				SECURITY GUIDE
+
+Contents
+========
+  1. Security Concerns
+  2. Passcode Generation Algorithm
+  3. About PAM (short lecture)
+
+
+
+1. Security Concerns
+====================
+TODO: Active / Passive methods of attacks. Why we're just trying to
+make attack as impossible as possible. What can be used to circumvent
+our inventions.
+
+There are certain security related issues you should be aware of.
+
+  I. This program is not intended to replace normal passwords, it's
+     supposed to add a second level of authentication -- a second "factor".
+     In other words, an attacker attempting to log into your system must
+     know something you know -- a UNIX password -- and additionally must
+     possess something only you have -- a passcard with one-time passcodes,
+     or a mobile device to which a passcode can be sent.  Therefore, even
+     if the attacker manages to discover your UNIX password, for example
+     through the use of a key logger or by sniffing the E-M radiation of
+     your keyboard's PS/2 connection, the attacker would still need to
+     have access to your passcard.
+
+ II. The second issue is that a Denial-of-Service (DoS) attack is possible in
+     some configurations. When an attacker repeatedly tries to authenticate
+     he can use up all of your printed passcodes and therefore cause you
+     to be unable to login. This can be fixed in several ways:
+
+     1) By requesting that the UNIX password be correctly entered
+        before asking for (and therefore using up) a passcode. (Consult
+        the PAM description chapter for the distinction between the
+        required/requisite keywords).  This will limit the problem to the
+        case when the attacker sniffs your password.  In this case, the
+        attacker will still be unable to login, but the DoS described above
+        would now be possible.  This is arguably an acceptable situation,
+        since it alerts the user to the fact that his UNIX password has
+        been compromised and must be changed.
+
+     2) By limiting number of failed authentication attempts.  For example,
+        sshguard can block IP access to SSH after 3 unsuccessful attempts
+        to authenticate.  The use of such a security measure is advisable
+        regardless of whether OTP is used, or not.  This type of filter
+        would force an attacker to consume a large number of IP addresses in
+        the process of an attack.  In certain configurations of OTPasswd an
+        attacker would need around 23 IP addresses to skip a single passcard.
+
+     3) By receiving passcodes on an as-needed basis via a secure channel
+        which cannot be blocked by attacker, such as SMS text-messaging.
+
+        In some scenarios this scheme could also be susceptible to a DoS
+        attack.  For example, if a free SMS gateway is used which imposes
+        usage limits, an attacker who is aware of your phone number could
+        easily exhaust your daily quota of text messages.  While this type of
+        attack is technically possible, it's also quite unlikely.  However,
+        it does serve to highlight the fact that every countermeasure has
+        vulnerabilities.  As far as this particular attack is concerned,
+        SMS transmissions could simply be sent using a different method,
+        such as making use of a GSM phone/modem connected to the computer.
+
+
+     NOTE: Early versions of OTPasswd included what was known as the
+     'dont-skip' option.  This option prevented the skipping of a passcode
+     that was used in a failed authentication attempt.  In essence, the
+     dont-skip option slightly changed the semantics of what is meant by a
+     "one-time password" from never allowing the reuse of a passcode, to
+     allowing reuse of passcodes on authentication failures.  The intent
+     of this modified semantic was to protect against passcode exhaustion
+     as a consequence of a DoS attack.  However, due to limitations of the
+     implementation, enabling this option did not completely prevent the
+     consumption of passcodes when the attack involved concurrent login
+     sessions.  Since this option did not meet its intended design goal,
+     it was ultimately removed.
+
+III. If an attacker is able to collect used passcards, it is conceivable
+     that a brute-force attack could be made on the cryptographic key
+     which was used to generate the passcodes.  If the key is discovered,
+     then future passcodes could be generated at will.  Given the cipher
+     currently being used in OTPasswd, this type of attack is not likely
+     to be successful, particularly if the optional cryptographic "salt"
+     is applied to the passcode counter.  However, if weaknesses are
+     discovered in the Rijndael cipher at some point, then it is possible
+     that such an attack may be more likely to succeed.  See 'Passcode
+     Generation Algorithm' (below) for details.
+
+ IV. OTPasswd secures the process of authentication by addressing the
+     problem of classic static passwords -- the fact that they are /static/.
+     After you've successfully authenticated, however, someone might still
+     be able to takeover your session to do something nasty.  So while a
+     man-in-the-middle (MITM) attack on your SSH session to eavesdrop your
+     password for later authentication might not be feasible, a MITM can
+     still be used to hijack authenticated sessions.
+
+IMPORTANT.  In order to securely login to a system with SSH you still
+must have trusted SSH client software (from a pendrive, for example)
+and you must validate the SSH server key fingerprint.  Also, beware of
+man-from-behind attacks when you're banged in the head after authenticating.
+
+
+
+2. Passcode Generation Algorithm
+================================
+The heart of the system is the Rijndael (AES) cipher, which encrypts
+128-bit blocks with a 256-bit key; this operation generates 128-bits of
+data which is used to calculate a passcode.
+
+During key generation, the user is equipped with a 256-bit key and a
+128-bit passcode counter.  Whenever a passcode is validated or generated,
+such as when the user authenticates or prints a passcard, the counter
+value is encrypted with the key to produce a corresponding passcode:
+
+       |-------------|
+       | 256 bit key |
+       |-------------|
+             ||
+             ||
+             ||
+            \||/
+             \/
+       /-------------\       \  |-----------------|
+       |  Rijndael   | -------\ | Encrypted value |
+       |   Cipher    | -------/ | 128 bits        |
+       \-------------/       /  |-----------------|
+             /\                          |
+            /||\                         | Repeated division
+             ||                          | by alphabet length.
+             ||                        \ | /
+             ||                         \./
+     |-----------------|            /------------/
+     | Salt  | counter |           /  Passcode  /
+     | 96bit |  32bit  |          /------------/
+     |-----------------|
+
+The salt needs a bit of explanation.  In cryptography, a 'salt' comprises
+random bits of data that are used as one of the inputs to a key derivation
+function.  Genuine PPPv3 algorithms don't use salt at all -- the counter
+is a 128-bit value which starts at zero.  This allows the use of over
+3.4 * 10^38 passcodes, which is around 4.86 * 10^36 passcards.  Nobody will
+ever need that many passcodes, hence many bits of the counter would be
+wasted.
+
+In addition, any attacker who is able to key log your authentications will
+know both the passcodes (the ciphertext) and the corresponding counter values
+(the plaintext), and thus the attacker lacks only the key in order to be
+able to predict future passcodes.  Once both plaintext and ciphertext are
+available, an attacker can employ the traditional attack model known as a
+Known-Plaintext Attack (KPA).  Many ciphers have been vulnerable to such
+an attack.  As far as is known, Rijndael (AES) is not currently vulnerable
+to such an attack, but there are no guarantees of what the future might hold.
+
+In the case of OTPasswd, addressing this issue was easy.  By generating an
+additional 96-bits of random data and storing them inside the counter value
+an attacker will no longer be able to easily deduce the counter value used
+to produce a given passcode.  This makes the attacker's already impossible
+task of breaking the key even more impossible.  Additionally, using a salt
+will also increase the amount of time needed for a brute-force attack.
+
+To illustrate this point, suppose you had 10^6 3GHz machines each being
+able to test one key every machine cycle... this would allow you to
+test 3 * 10^9 * 10^6 keys per second.  Even at that rate, without a salt,
+it would still take you... 1.22 * 10^54 yeeeaaarrrsss to check every key.
+By salting the counter, each key would now need to be checked against 2^96
+counter values instead of just one, so it would now take longer than 10^82
+years for an exhaustive search of the key-space.  Good luck!
+
+
+
+3. About PAM (short lecture)
+============================
+Most applications which require password input use PAM.  I'll stick to
+the SSH daemon (SSHD) as an example.
+
+When a user logs in, SSH attempts authentication using it's own method,
+namely, publickeys.  Then, if this method fails it talks to PAM.  PAM,
+in turn, must read the configuration in /etc/pam.d/sshd to see how it
+should process authentication requests from SSHD.
+
+The default Gentoo installation includes the following lines in the PAM
+SSHD configuration file:
+
+   auth       include        system-remote-login
+   account    include        system-remote-login
+   password   include        system-remote-login
+   session    include        system-remote-login
+
+This is line-oriented file in which each line tells PAM what to do.
+We're only interested in "auth" part, which in this case instructs PAM to
+include the additional configuration from the system-remote-login file.
+This file contains the line:
+
+   auth       include        system-login
+
+And, as you can see, it just tells PAM to include more configuration data
+from yet another file:
+
+   auth       required       pam_tally.so onerr=succeed
+   auth       required       pam_shells.so
+   auth       required       pam_nologin.so
+   auth       include        system-auth
+
+   (account, password, session sections omitted)
+
+There is still one more file (system-auth) to look into:
+
+   auth       required       pam_env.so
+   auth       required       pam_unix.so try_first_pass likeauth nullok
+
+When authenticating a user, PAM will read the lines from top to bottom.
+
+   pam_tally    - tracks login failures and can take related action
+   pam_shells   - checks if user has a valid shell (listed in /etc/shells)
+   pam_nologin  - checks if logins were disabled (shows message)
+   pam_env      - does something with environment
+
+and finally:
+
+   pam_unix     - checks password according to /etc/shadow
+
+This is an overview of the default PAM authentication schema (for Gentoo).
+Somewhere in this process we will need to add our OTP authentication.
+
+The easiest approach is just to modify the first file: /etc/pam.d/sshd.
+At the end of all the 'auth' entries, we can just add our pam_otpasswd
+module.  The file would then look like this:
+
+   auth       include        system-remote-login
+   # Line added for OTP:
+   auth       required       pam_otpasswd.so secure
+
+   account    include        system-remote-login
+   password   include        system-remote-login
+   session    include        system-remote-login
+
+This will cause PAM to ask us for an OTP after we have been asked for our
+normal UNIX password, regardless of whether the UNIX password was correct
+or not.  This can lead to a Denial of Service issue when the attacker tries
+to login enough times to use up all of our printed passcards.  If we have
+some other security mechanism (like sshguard -- which blocks the SSHD port
+for people who try dictionary attacks) it might be perfectly okay.
+
+If this risk is not acceptable, then we can change the line with pam_unix.so
+module from:
+
+   auth       required       pam_unix.so try_first_pass likeauth nullok
+
+to:
+
+   auth       requisite      pam_unix.so try_first_pass likeauth nullok
+
+This configuration will require the correct UNIX password be entered before
+asking for an OTP.
+
+If we would rather not mess with global PAM configuration files (system-auth,
+etc), we could move all auth lines to the sshd file, change the pam_unix
+authentication to 'requisite' (as above), then add the pam_otpasswd line.
+This would result in following configuration:
+
+   # Include commented out:
+   #auth      include        system-remote-login
+
+   # All auths included in sshd:
+   auth       required       pam_tally.so onerr=succeed
+   auth       required       pam_shells.so
+   auth       required       pam_nologin.so
+   auth       required       pam_env.so
+
+   # Changed 'required' to 'requisite':
+   auth       requisite      pam_unix.so try_first_pass likeauth nullok
+
+   # Our added line for OTP:
+   auth       required       pam_otpasswd.so secure
+
+   # And all the rest...
+   account    include        system-remote-login
+   password   include        system-remote-login
+   session    include        system-remote-login
+
+This is exactly what is written in our examples/otpasswd-login file. You
+can place this file in /etc/pam.d, and then edit your sshd file to use it
+by modifying auth line:
+
+   auth       include        otpasswd-login
+   account    include        system-remote-login
+   password   include        system-remote-login
+   session    include        system-remote-login
+
+For more information about Linux-PAM, you may consult the PAM(7) man page
+on your system, or read the PAM System Administrator's Guide, which can
+be found at:
+
+   http://www.kernel.org/pub/linux/libs/pam/Linux-PAM-html/Linux-PAM_SAG.html
+
+				     ###
