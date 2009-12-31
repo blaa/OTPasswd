@@ -6,6 +6,8 @@
 
 				    README
 
+
+
 Contents
 ========
   0. Package Status
@@ -33,7 +35,8 @@ Mac OSX, and Solaris.  In addition, it is hoped that pre-compiled binary
 packages can be maintained for major Linux distributions, as well as a
 Gentoo ebuild.
 
-
+View the most recent version of this document on the web at:
+http://git.savannah.gnu.org/cgit/otpasswd.git/plain/README
 
 1. Introduction
 ===============
@@ -56,12 +59,11 @@ the user's OTPasswd "state" information.
 
 OTPasswd is written in C (C99) and implements an OTP system as described
 by Steve Gibson's "Perfect Paper Passwords" specification.  An excellent
-description may be found at: <https://www.grc.com/ppp.htm>.  Note that
-OTPasswd is designed to be completely compliant with the PPPv3.1
-specification, however it does optionally extend the specification by
-allowing the use of a cryptographic "salt" to the passcode counter.
-OTPasswd does not contain any compatibility code for earlier versions of
-the PPP specification.
+description may be found at: <https://www.grc.com/ppp.htm>.  While OTPasswd
+is designed to be completely compliant with the PPPv3.1 specification, 
+it does optionally extend the specification by allowing the use of a 
+cryptographic "salt" to the passcode counter. OTPasswd does not support 
+earlier versions of the PPP specification.
 
 
 
@@ -192,7 +194,9 @@ So.
    NOTE: Depending on the DB backend that is being used (see the next
    section), it may be necessary to create a unique system user exclusively
    for OTPasswd, then set the utility program to run as this user through
-   use of the SUID flag.
+   use of the SUID flag. By default, no OTPasswd binaries are SUID. 
+   
+   **** DO NOT RUN OTPASSWD SUID ROOT ****
 
    2. Tweak OTPasswd Configuration
    -------------------------------
