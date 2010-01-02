@@ -65,6 +65,7 @@ Trying to sort tasks according to their priority.
 	* [-] right trim values from config?
 	* [?] SELinux compatibility.
 	* [?] Import/export of ascii state lines...
+	* [+] Modify build config to work with CMake v2.4.7
 
 	Low-priority:
 	* [?] Improve LaTeX output (some colors, borders?)

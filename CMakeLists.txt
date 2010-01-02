@@ -19,18 +19,18 @@
 # Global thingies
 ##
 
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.4.7)
 
-PROJECT(otpam)
+PROJECT(otpasswd)
 
 SET(${PROJECT_NAME}_MAJOR_VERSION 0)
-SET(${PROJECT_NAME}_MINOR_VERSION 1)
+SET(${PROJECT_NAME}_MINOR_VERSION 5pre1)
 
 # -fPIC is required for .a library on x64 only!
 # How to add it only to this target?
 ADD_DEFINITIONS("-Wall -ggdb -fPIC")
 
-option(PROFILE "Unable coverage tests" OFF)
+option(PROFILE "Enable coverage tests" OFF)
 option(DEBUG "Enable additional debug information" OFF)
 
 # If Debug option given - enable coverage tests
@@ -77,15 +77,15 @@ ADD_LIBRARY(otp STATIC libotp/crypto.c libotp/num.c libotp/ppp.c
 	libotp/config.c crypto/polarssl_aes.c crypto/coreutils_sha256.c)
 
 # Pam module target
-SET(CMAKE_SHARED_LIBRARY_PREFIX "")
 ADD_LIBRARY(pam_otpasswd SHARED pam/pam_helpers.c pam/pam_otpasswd.c) 
+SET_TARGET_PROPERTIES(pam_otpasswd PROPERTIES PREFIX "")
 
 # Password management target
 ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/otpasswd_actions.c utility/testcases.c utility/security.c)
 
 # Linking targets
-TARGET_LINK_LIBRARIES(pam_otpasswd otp gmp crypto pam ${ADDITIONAL_LIBS})
-TARGET_LINK_LIBRARIES(otpasswd otp gmp crypto ${ADDITIONAL_LIBS})
+TARGET_LINK_LIBRARIES(pam_otpasswd otp gmp pam ${ADDITIONAL_LIBS})
+TARGET_LINK_LIBRARIES(otpasswd     otp gmp     ${ADDITIONAL_LIBS})
 
 ##
 # Install target
