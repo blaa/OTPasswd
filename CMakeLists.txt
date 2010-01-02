@@ -26,12 +26,20 @@ PROJECT(otpasswd)
 SET(${PROJECT_NAME}_MAJOR_VERSION 0)
 SET(${PROJECT_NAME}_MINOR_VERSION 5pre1)
 
-# -fPIC is required for .a library on x64 only!
+# Cmake says this is required for locating gmp/libotp.a
+if(COMMAND cmake_policy)
+  cmake_policy(SET CMP0003 NEW)
+endif(COMMAND cmake_policy)
+
+# FIXME: -fPIC is required for .a library on x64 only!
 # How to add it only to this target?
 ADD_DEFINITIONS("-Wall -ggdb -fPIC")
 
 option(PROFILE "Enable coverage tests" OFF)
 option(DEBUG "Enable additional debug information" OFF)
+# option( MYSQL "Generate code for MySQL database" OFF )
+# option( LDAP "Generate code for LDAP" OFF )
+
 
 # If Debug option given - enable coverage tests
 IF (PROFILE)
@@ -65,8 +73,6 @@ LINK_DIRECTORIES(${GMP_LIBRARY_DIR})
 # Module and PAM uses libotp, so add it's include to path...
 INCLUDE_DIRECTORIES(libotp/ crypto/)
 
-# option( MYSQL "Generate code for MySQL database" OFF )
-
 ##
 # Targets
 ##
@@ -84,8 +90,8 @@ SET_TARGET_PROPERTIES(pam_otpasswd PROPERTIES PREFIX "")
 ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/otpasswd_actions.c utility/testcases.c utility/security.c)
 
 # Linking targets
-TARGET_LINK_LIBRARIES(pam_otpasswd otp gmp pam ${ADDITIONAL_LIBS})
-TARGET_LINK_LIBRARIES(otpasswd     otp gmp     ${ADDITIONAL_LIBS})
+TARGET_LINK_LIBRARIES(pam_otpasswd otp gmp pam)
+TARGET_LINK_LIBRARIES(otpasswd     otp gmp    )
 
 ##
 # Install target
