@@ -26,6 +26,7 @@
 #define CONFIG_MAX_LINE_LEN	200
 #define CONFIG_PATH_LEN		100
 #define CONFIG_SQL_LEN		50
+#define CONFIG_ALPHABET_LEN	90
 
 /* DB types */
 enum CONFIG_DB_TYPE {
@@ -56,11 +57,17 @@ typedef struct {
 	/* Location of user database file */
 	char user_db_path[CONFIG_PATH_LEN];
 
-	/* Not implemented sql data */
+	/* SQL Configuration data */
 	char sql_host[CONFIG_SQL_LEN];
 	char sql_database[CONFIG_SQL_LEN];
 	char sql_user[CONFIG_SQL_LEN];
 	char sql_pass[CONFIG_SQL_LEN];
+
+	/* SQL Configuration data */
+	char ldap_host[CONFIG_SQL_LEN];
+	char ldap_dn[CONFIG_SQL_LEN];
+	char ldap_user[CONFIG_SQL_LEN];
+	char ldap_pass[CONFIG_SQL_LEN];
 
 	/***
 	 * PAM Configuration
@@ -69,9 +76,6 @@ typedef struct {
 	/* Enforced makes any user without key
 	 * fail to login */
 	int enforce;
-
-	/* Do we allow dont-skip? 0 - yes */
-	int secure;
 
 	/* Turns on increased debugging
 	 * 0 - Only Errors
@@ -92,7 +96,7 @@ typedef struct {
 	int retry;
 
 	/* How many retries are allowed */
-	int retries_count;
+	int retries;
 
 	/* Shall we echo entered passcode?
 	 * 1 - user selected
@@ -100,6 +104,23 @@ typedef struct {
 	 * 2 - (show) echo enabled
 	 */
 	int show;
+
+	/* Do we allow key regeneration (,) prompt? */
+	int key_regeneration_prompt;
+
+	/* If recent_failures > 0, show user warning during session */
+	int failure_warning;
+	
+	/* Number of recent failures after which to increment
+	 * delay */
+	int failure_boundary;
+
+	/* Delay to add before authentication if 
+	 * recent_failures hits failure_boundary */
+	int failure_delay;
+
+	/* Require spass prefix on each logon */
+	int spass_require;
 
 	/* 0 - OOB disabled
 	 * 1 - OOB on request
@@ -114,7 +135,8 @@ typedef struct {
 
 	/* Parameters determined from the environment and
 	 * not options themselves  */
-	int uid, gid; /* uid, gid of a safe, non-root user who can run OOB script */
+	/* uid, gid of a safe, non-root user who can run OOB script */
+	int oob_uid, oob_gid; 
 
 	/***
 	 * Policy configuration
@@ -126,6 +148,18 @@ typedef struct {
 
 	/* User can start key generation */
 	int allow_key_generation;
+
+	/* User can generate key by using a command line or file entry */
+	int allow_sourced_key_generation;
+	
+	/* Allow user to remove his key */
+	int allow_key_removal;
+
+	/* Allow -a option usage */
+	int allow_shell_auth;
+	/* Allow -v option usage */
+	int allow_verbose_output;
+
 	/* User can skip further in passcodes */
 	int allow_skipping;
 	/* User can print passcards/passcodes */
@@ -133,21 +167,49 @@ typedef struct {
 	/* User can see his key/counter */
 	int allow_key_print;
 
+	/* Allow state export/import */
+	int allow_state_export;
+	int allow_state_import;
+
+	/* Allow contact/label change */
+	int allow_contact_change;
+	int allow_label_change;
+
 	/* Passcode configuration. Default, minimal and maximal */
-	int def_passcode_length;
-	int min_passcode_length;
-	int max_passcode_length;
+	int passcode_def_length;
+	int passcode_min_length;
+	int passcode_max_length;
 
 	/* Alphabet configuration. Default, minimal and maximal */
-	/* def=0 - 64 long alphabet 
-	 * def=1 - 88 long alphabet 
+	/* def=1 - 64 long alphabet 
+	 * def=2 - 88 long alphabet 
 	 */
-	int def_alphabet;
-	int min_alphabet_length;
-	int max_alphabet_length;
+	int alphabet_allow_change;
+	int alphabet_def;
+	int alphabet_min_length;
+	int alphabet_max_length;
+	char alphabet_custom[CONFIG_ALPHABET_LEN];
+
+	/* Allow user to change his static password */
+	int spass_allow_change;
+
+	/* Minimal length */
+	int spass_min_length;
+
+	/* Minimal number of digits */
+	int spass_require_digit;
+
+	/* Minimal number of non-alpha */
+	int spass_require_special;
+
+	/* Minimal number of uppercase letters */
+	int spass_require_uppercase;
 
 	/* Disallow (0), allow (1) or enforce (2) salt */
-	int allow_salt;
+	int salt_allow;
+
+	/* Enabled (1), disabled (1) */
+	int salt_def;
 } cfg_t;
 
 /* Get options structure or NULL if error happens */

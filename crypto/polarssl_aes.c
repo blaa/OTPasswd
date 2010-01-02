@@ -1,4 +1,9 @@
 /*
+ * This file belongs to PolarSSL package.
+ * Homepage: http://www.polarssl.org/
+ */
+
+/*
  *  FIPS-197 compliant AES implementation
  *
  *  Copyright (C) 2006-2009, Paul Bakker <polarssl_maintainer at polarssl.org>

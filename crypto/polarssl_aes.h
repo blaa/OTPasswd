@@ -1,3 +1,8 @@
+/*
+ * This file belongs to PolarSSL package.
+ * Homepage: http://www.polarssl.org/
+ */
+
 /**
  * \file aes.h
  *
@@ -23,6 +28,8 @@
 #ifndef POLARSSL_AES_H
 #define POLARSSL_AES_H
 
+/* Those do not enable/disable encrypt/decrypt but
+ * are used as a constants to functions. */
 #define AES_ENCRYPT     1
 #define AES_DECRYPT     0
 
@@ -38,10 +45,6 @@ typedef struct
     unsigned long buf[68];      /*!<  unaligned data    */
 }
 aes_context;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /**
  * \brief          AES key schedule (encryption)
@@ -122,9 +125,5 @@ void aes_crypt_cfb128( aes_context *ctx,
  * \return         0 if successful, or 1 if the test failed
  */
 int aes_self_test( int verbose );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* aes.h */

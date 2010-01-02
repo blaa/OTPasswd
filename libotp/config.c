@@ -32,30 +32,70 @@ static void _config_defaults(cfg_t *cfg)
 	const cfg_t o = {
 		/* Field description near cfg struct declaration */
 		.db = CONFIG_DB_GLOBAL,
-		.global_db_path = "/etc/otshadow",
+		.global_db_path = "/etc/otpasswd/otshadow",
 		.user_db_path = ".otpasswd",
 
-		.enforce = 0,
-		.secure = 1,
+		.sql_host = "localhost",
+		.sql_database = "otpasswd",
+		.sql_user = "",
+		.sql_pass = "",
+
+		.ldap_host = "localhost",
+		.ldap_dn = "",
+		.ldap_user = "",
+		.ldap_pass = "",
+
 		.logging = 1,
 		.silent = 0,
-		.retry = 0,
 		.show = 1,
+		.enforce = 0,
+		.retry = 0,
+		.retries = 3,
+
+		.key_regeneration_prompt = 0,
+		.failure_warning = 1,
+		.failure_boundary = 3,
+		.failure_delay = 5,
+		.spass_require = 0,
+		
 		.oob = 0,
-		.oob_path = "",
+		.oob_path = "/etc/otpasswd/otpasswd_oob.sh",
+		.oob_uid = -1,
+		.oob_gid = -1,
 
 		.allow_key_generation = 1,
-		.allow_skipping = 1,
+		.allow_sourced_key_generation = 0,
+		.allow_key_removal = 1,
 		.allow_passcode_print = 1,
 		.allow_key_print = 1,
+		.allow_skipping = 1,
+
+		.allow_shell_auth = 1,
+		.allow_verbose_output = 1,
+		.allow_state_import = 0,
+		.allow_state_export = 1,
+		.allow_contact_change = 1,
+		.allow_label_change = 1,
+
+		.spass_allow_change = 1,
+		.spass_min_length = 7,
+		.spass_require_digit  = 1,
+		.spass_require_special = 1,
+		.spass_require_uppercase = 1,
 		
-		.def_passcode_length = 4,
-		.min_passcode_length = 2,
-		.max_passcode_length = 16,
-		.def_alphabet = 0,
-		.min_alphabet_length = 64,
-		.max_alphabet_length = 88,
-		.allow_salt = 1,
+		.passcode_def_length = 4,
+		.passcode_min_length = 2,
+		.passcode_max_length = 16,
+
+		.alphabet_allow_change = 1,
+		.alphabet_def = 1,
+		.alphabet_min_length = 32,
+		.alphabet_max_length = 88,
+
+		.alphabet_custom = "0123456789",
+
+		.salt_allow = 1,
+		.salt_def = 1,
 	};
 	*cfg = o;
 }
@@ -65,6 +105,7 @@ static void _config_defaults(cfg_t *cfg)
  */
 static int _config_parse(cfg_t *cfg, const char *config_path)
 {
+	int fail = 0;
 	int retval = 1;
 	int line_count = 0;
 	FILE *f;
@@ -150,10 +191,11 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 		}						\
 		if (arg < (from) || arg > (to)) {		\
 			print(PRINT_ERROR,			\
-			      "Number argument (%d) out of"	\
+			      "Argument (%d) of \"%s\" out of"	\
 			      " range (%d;%d) in config "	\
 			      "at line %d.\n",			\
-			      arg, from, to, line_count);	\
+			      arg, line_buf, from, to,		\
+			      line_count);			\
 			goto error;				\
 		}						\
 	} while (0)
@@ -190,12 +232,12 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 				goto error;
 			}
 
-		} else if (_EQ(line_buf, "global_db")) {
+		} else if (_EQ(line_buf, "db_global")) {
 			_COPY(cfg->global_db_path, equality);
-		} else if (_EQ(line_buf, "user_db")) {
+		} else if (_EQ(line_buf, "db_user")) {
 			_COPY(cfg->user_db_path, equality);
 
-		/* Ignore for now */
+		/* SQL Configuration */
 		} else if (_EQ(line_buf, "sql_host")) {
 			_COPY(cfg->sql_host, equality);
 		} else if (_EQ(line_buf, "sql_database")) {
@@ -204,6 +246,16 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			_COPY(cfg->sql_user, equality);
 		} else if (_EQ(line_buf, "sql_pass")) {
 			_COPY(cfg->sql_pass, equality);
+
+		/* LDAP Configuration */
+		} else if (_EQ(line_buf, "ldap_host")) {
+			_COPY(cfg->ldap_host, equality);
+		} else if (_EQ(line_buf, "ldap_user")) {
+			_COPY(cfg->ldap_user, equality);
+		} else if (_EQ(line_buf, "ldap_pass")) {
+			_COPY(cfg->ldap_pass, equality);
+		} else if (_EQ(line_buf, "ldap_dn")) {
+			_COPY(cfg->ldap_dn, equality);
 
 		/* Parsing PAM configuration */
 		} else if (_EQ(line_buf, "show")) {
@@ -217,7 +269,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			cfg->retry = arg;
 		} else if (_EQ(line_buf, "retries")) {
 			REQUIRE_ARG(2, 5);
-			cfg->retries_count = arg;
+			cfg->retries = arg;
 		} else if (_EQ(line_buf, "logging")) {
 			REQUIRE_ARG(0, 2);
 			cfg->logging = arg;
@@ -236,53 +288,118 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 				      "at line %d.\n", line_count);
 				goto error;
 			}
-			cfg->uid = pwd->pw_uid;
-			cfg->gid = pwd->pw_gid;
+			cfg->oob_uid = pwd->pw_uid;
+			cfg->oob_gid = pwd->pw_gid;
 		} else if (_EQ(line_buf, "oob_path")) {
 			_COPY(cfg->oob_path, equality);
+		} else if (_EQ(line_buf, "key_regeneration_prompt")) {
+			REQUIRE_ARG(0, 1);
+			cfg->key_regeneration_prompt = arg;
+		} else if (_EQ(line_buf, "failure_warning")) {
+			REQUIRE_ARG(0, 1);
+			cfg->failure_warning = arg;
+		} else if (_EQ(line_buf, "failure_boundary")) {
+			REQUIRE_ARG(0, 500);
+			cfg->failure_boundary = arg;
+		} else if (_EQ(line_buf, "failure_delay")) {
+			REQUIRE_ARG(0, 500);
+			cfg->failure_delay = arg;
+		} else if (_EQ(line_buf, "spass_require")) {
+			REQUIRE_ARG(0, 1);
+			cfg->spass_require = arg;
 
 		/* Parsing POLICY configuration */
+		} else if (_EQ(line_buf, "allow_key_generation")) {
+			REQUIRE_ARG(0, 1);
+			cfg->allow_key_generation = arg;
+		} else if (_EQ(line_buf, "allow_sourced_key_generation")) {
+			REQUIRE_ARG(0, 1);
+			cfg->allow_sourced_key_generation = arg;
+		} else if (_EQ(line_buf, "allow_key_removal")) {
+			REQUIRE_ARG(0, 1);
+			cfg->allow_key_removal = arg;
 		} else if (_EQ(line_buf, "allow_skipping")) {
 			REQUIRE_ARG(0, 1);
 			cfg->allow_skipping = arg;
+		} else if (_EQ(line_buf, "allow_verbose_output")) {
+			REQUIRE_ARG(0, 1);
+			cfg->allow_verbose_output = arg;
+		} else if (_EQ(line_buf, "allow_shell_auth")) {
+			REQUIRE_ARG(0, 1);
+			cfg->allow_shell_auth = arg;
 		} else if (_EQ(line_buf, "allow_passcode_print")) {
 			REQUIRE_ARG(0, 1);
 			cfg->allow_passcode_print = arg;
 		} else if (_EQ(line_buf, "allow_key_print")) {
 			REQUIRE_ARG(0, 1);
 			cfg->allow_key_print = arg;
-		} else if (_EQ(line_buf, "allow_key_generation")) {
-			REQUIRE_ARG(0, 1);
-			cfg->allow_key_generation = arg;
-		} else if (_EQ(line_buf, "allow_salt")) {
+
+		} else if (_EQ(line_buf, "salt_allow")) {
 			REQUIRE_ARG(0, 2);
-			cfg->allow_salt = arg;
-
-		} else if (_EQ(line_buf, "def_passcode_length")) {
-			REQUIRE_ARG(2, 16);
-			cfg->def_passcode_length = arg;
-		} else if (_EQ(line_buf, "min_passcode_length")) {
-			REQUIRE_ARG(2, 16);
-			cfg->min_passcode_length = arg;
-
-		} else if (_EQ(line_buf, "max_passcode_length")) {
-			REQUIRE_ARG(2, 16);
-			cfg->max_passcode_length = arg;
-
-		} else if (_EQ(line_buf, "def_alphabet")) {
+			cfg->salt_allow = arg;
+		} else if (_EQ(line_buf, "salt_def")) {
 			REQUIRE_ARG(0, 1);
-			cfg->def_alphabet = arg;
-		} else if (_EQ(line_buf, "min_alphabet_length")) {
-			REQUIRE_ARG(64, 88);
-			cfg->min_alphabet_length = arg;
-		} else if (_EQ(line_buf, "max_alphabet_length")) {
-			REQUIRE_ARG(64, 88);
-			cfg->max_alphabet_length = arg;
+			cfg->salt_def = arg;
+
+		} else if (_EQ(line_buf, "allow_state_import")) {
+			REQUIRE_ARG(0, 1);
+			cfg->allow_state_import = arg;
+		} else if (_EQ(line_buf, "allow_state_export")) {
+			REQUIRE_ARG(0, 1);
+			cfg->allow_state_export = arg;
+		} else if (_EQ(line_buf, "allow_contact_change")) {
+			REQUIRE_ARG(0, 1);
+			cfg->allow_contact_change = arg;
+		} else if (_EQ(line_buf, "allow_label_change")) {
+			REQUIRE_ARG(0, 1);
+			cfg->allow_label_change = arg;
+
+		} else if (_EQ(line_buf, "passcode_def_length")) {
+			REQUIRE_ARG(2, 16);
+			cfg->passcode_def_length = arg;
+		} else if (_EQ(line_buf, "passcode_min_length")) {
+			REQUIRE_ARG(2, 16);
+			cfg->passcode_min_length = arg;
+		} else if (_EQ(line_buf, "passcode_max_length")) {
+			REQUIRE_ARG(2, 16);
+			cfg->passcode_max_length = arg;
+
+		} else if (_EQ(line_buf, "alphabet_allow_change")) {
+			REQUIRE_ARG(0, 1);
+			cfg->alphabet_allow_change = arg;
+		} else if (_EQ(line_buf, "alphabet_def")) {
+			REQUIRE_ARG(1, 2);
+			cfg->alphabet_def = arg;
+		} else if (_EQ(line_buf, "alphabet_min_length")) {
+			REQUIRE_ARG(5, 88);
+			cfg->alphabet_min_length = arg;
+		} else if (_EQ(line_buf, "alphabet_max_length")) {
+			REQUIRE_ARG(5, 88);
+			cfg->alphabet_max_length = arg;
+		} else if (_EQ(line_buf, "alphabet_custom")) {
+			_COPY(cfg->alphabet_custom, equality);
+
+		} else if (_EQ(line_buf, "spass_allow_change")) {
+			REQUIRE_ARG(0, 1);
+			cfg->spass_allow_change = arg;
+		} else if (_EQ(line_buf, "spass_min_length")) {
+			REQUIRE_ARG(4, 500);
+			cfg->spass_min_length = arg;
+		} else if (_EQ(line_buf, "spass_require_digit")) {
+			REQUIRE_ARG(0, 20);
+			cfg->spass_require_digit = arg;
+		} else if (_EQ(line_buf, "spass_require_special")) {
+			REQUIRE_ARG(0, 20);
+			cfg->spass_require_special = arg;
+		} else if (_EQ(line_buf, "spass_require_uppercase")) {
+			REQUIRE_ARG(0, 20);
+			cfg->spass_require_uppercase = arg;
+
 		} else {
 			/* Error */
 			print(PRINT_ERROR, "Unrecognized variable '%s' on line %d in config file\n",
 			      line_buf, line_count);
-			goto error;
+			fail++;
 		}
 
 	} while (!feof(f));
@@ -291,8 +408,11 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 	/* TODO Check obvious errors like default value
 	 * out of max/min values */
 
-	/* All ok */
-	retval = 0;
+	/* All ok? */
+	if (fail)
+		retval = 1;
+	else
+		retval = 0;
 error:
 	fclose(f);
 	return retval;

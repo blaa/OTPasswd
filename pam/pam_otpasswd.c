@@ -60,7 +60,7 @@ PAM_EXTERN int pam_sm_authenticate(
 
 	/* Retry = 0 - do not retry, 1 - with changing passcodes */
 	int tries;
-	for (tries = 0; tries < (cfg->retry == 0 ? 1 : cfg->retries_count); tries++) {
+	for (tries = 0; tries < (cfg->retry == 0 ? 1 : cfg->retries); tries++) {
 		if (tries == 0 || cfg->retry == 1) {
 			/* First time or we are retrying while changing the password */
 			retval = ph_increment(pamh, cfg, s);
@@ -128,7 +128,7 @@ PAM_EXTERN int pam_sm_authenticate(
 
 		print(PRINT_WARN, 
 		      "Authentication failure; user=%s; try=%d/%d\n",
-		      ppp_get_username(s), tries+1, cfg->retries_count);
+		      ppp_get_username(s), tries+1, cfg->retries);
 	}
 
 cleanup:

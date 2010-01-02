@@ -240,14 +240,14 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			else if (strcmp(optarg, "dont-show") == 0)
 				options->flag_clear_mask |= FLAG_SHOW;
 			else if (strcmp(optarg, "alphabet-simple") == 0) {
-				if (cfg->min_alphabet_length > 64) {
+				if (cfg->alphabet_min_length > 64) {
 					/* TODO: Check also max */
 					printf("Alphabet length disallowed by configuration\n");
 					goto error;
 				}
 				options->flag_clear_mask |= FLAG_ALPHABET_EXTENDED;
 			} else if (strcmp(optarg, "alphabet-extended") == 0) {
-				if (cfg->max_alphabet_length < 88) {
+				if (cfg->alphabet_max_length < 88) {
 					/* TODO: Check also min */
 					printf("Alphabet length disallowed by configuration\n");
 					goto error;

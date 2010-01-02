@@ -47,7 +47,7 @@ char *card_ascii(const state *s, const mpz_t passcard)
 
 	/* Calculate what you can */
 	const int width = (whitespace + s->code_length) * s->codes_in_row + 3;
-	const int size = (width + 1) * (10 + 2) + 1;
+	const int size = (width + 1) * (ROWS_PER_CARD + 2) + 1;
 	const int label_len_max = width - num_min;
 
 	/* Allocate memory */
@@ -176,7 +176,7 @@ char *card_latex(const state *s, const mpz_t number)
 	int size = 
 		sizeof(intro) + sizeof(outro) +
 		sizeof(block_start)*2 + sizeof(block_stop) * 2 +
-		700 * 6;
+		(60 * ROWS_PER_CARD) * 6;
 	char *whole_card = malloc(size);
 	char *card_pos = whole_card;
 	

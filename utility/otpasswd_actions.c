@@ -466,8 +466,8 @@ int action_key(options_t *options, const cfg_t *cfg)
 
 	s.flags |= options->flag_set_mask;
 
-	int salted = 1;
-	switch (cfg->allow_salt) {
+	int salted = cfg->salt_def;
+	switch (cfg->salt_allow) {
 	case 0:
 		salted = 0;
 		break;
@@ -574,8 +574,8 @@ int action_flags(options_t *options, const cfg_t *cfg)
 			save_state = 1;
 		}
 
-		if (options->set_codelength >= cfg->min_passcode_length &&
-		    options->set_codelength <= cfg->max_passcode_length) {
+		if (options->set_codelength >= cfg->passcode_min_length &&
+		    options->set_codelength <= cfg->passcode_max_length) {
 			s->code_length = options->set_codelength;
 			save_state = 1;
 		} else if (options->set_codelength >= 0) {

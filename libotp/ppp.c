@@ -24,16 +24,40 @@
 #include "ppp.h"
 #include "print.h"
 
-/* 64 characters -> 16 777 216 passcodes for length 4 */
+/* Number of combinations calculated for 4 passcodes */
+/* 64 characters -> 16 777 216 */
 const char alphabet_simple[] =
 	"!#%+23456789:=?@"
 	"ABCDEFGHJKLMNPRSTUVWXYZ"
 	"abcdefghijkmnopqrstuvwxyz";
 
-/* 88 characters -> 59 969 536 passcodes for length 4 */
+/* 88 characters -> 59 969 536 */
 const char alphabet_extended[] =
 	"!\"#$%&'()*+,-./23456789:;<=>?@ABCDEFGHJKLMNO"
 	"PRSTUVWXYZ[\\]^_abcdefghijkmnopqrstuvwxyz{|}~";
+
+/* 54 chars -> 8 503 056 */
+const char alphabet_simple_no_vowels[] =
+	"!#%+23456789:=?@BCDFGHJKLMNPRSTVWXZbcdfghjkmnpqrstvwxz";
+
+/* 78 chars -> 37 015 056 */
+const char alphabet_extended_no_vowels[] =
+	"!\"#$%&'()*+,-./23456789:;<=>?@BCDFGHJKLMNPRSTVWXZ[\\]^_bcdfghjkmnpqrstvwxz{|}~";
+
+/* 56 chars -> 9 834 496 */
+const char alphabet_alpha[] = 
+	"23456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPRSTUVWXYZ";
+
+const char *alphabets[] = {
+	NULL, /* Custom */
+	alphabet_simple,
+	alphabet_extended,
+	alphabet_simple_no_vowels,
+	alphabet_extended_no_vowels,
+	alphabet_alpha,
+};
+
+const int alphabet_cnt = sizeof(alphabets);
 
 void ppp_add_salt(const state *s, mpz_t passcode)
 {
@@ -108,6 +132,8 @@ int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
 
 	/* Convert result back to number */
 	num_from_bin(cipher, cipher_bin, 16);
+
+	assert(alphabet_cnt > 6);
 
 	int alphabet_len;
 	const char *alphabet;

@@ -109,17 +109,17 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 			/* That's cool, but can we execute it? */
 			const int can_owner = 
 				((st.st_mode & S_IXUSR) &&
-				 st.st_uid == cfg->uid);
+				 st.st_uid == cfg->oob_uid);
 			const int can_group =
 				((st.st_mode & S_IXGRP) &&
-				 st.st_gid == cfg->gid);
+				 st.st_gid == cfg->oob_gid);
 			if (! (can_owner || can_group) ) {
 				/* Neither from group nor from 
 				 * owner mode */
 				/* TODO: testcase this */
 				print(PRINT_ERROR,
 					    "UID %d is unable to execute "
-					    "OOB utility!\n", cfg->uid);
+					    "OOB utility!\n", cfg->oob_uid);
 				return 2;
 			}
 		}
@@ -165,17 +165,17 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 		}
 
 		/* Drop root */
-		retval = setgid(cfg->gid);
+		retval = setgid(cfg->oob_gid);
 		if (retval != 0) {
 			print_perror(PRINT_ERROR,
-				     "UNABLE TO CHANGE GID TO %d\n", cfg->gid);
+				     "UNABLE TO CHANGE GID TO %d\n", cfg->oob_gid);
 			exit(11);
 		}
 
-		retval = setuid(cfg->uid);
+		retval = setuid(cfg->oob_uid);
 		if (retval != 0) {
 			print_perror(PRINT_ERROR, 
-				     "UNABLE TO CHANGE UID TO %d\n", cfg->uid);
+				     "UNABLE TO CHANGE UID TO %d\n", cfg->oob_uid);
 			exit(12);
 		}
 

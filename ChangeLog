@@ -33,6 +33,9 @@ Trying to sort tasks according to their priority.
 	* [+] Fix db* functions to return values from enum in ppp_common.h
 	* [!] Skipping to 'next' not by 6...
         * [+] Removed dependency - OpenSSL
+	* [+] Modify build config to work with CMake v2.4.7
+        * [+] Config file revised.
+        * [+] Multiple alphabet support started
         * [?] Check if lock files are links. if so. fail. Or rather always unlink 
               before overwritting. 
         * [?] Logging into syslog from utility if SUID; Also deny -v.
@@ -65,7 +68,6 @@ Trying to sort tasks according to their priority.
 	* [-] right trim values from config?
 	* [?] SELinux compatibility.
 	* [?] Import/export of ascii state lines...
-	* [+] Modify build config to work with CMake v2.4.7
 
 	Low-priority:
 	* [?] Improve LaTeX output (some colors, borders?)

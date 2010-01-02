@@ -27,10 +27,6 @@
 # include <stdio.h>
 # include <stdint.h>
 
-# ifdef __cplusplus
-extern "C" {
-# endif
-
 /* Structure to save state of computation between the single steps.  */
 struct sha256_ctx
 {
@@ -82,9 +78,5 @@ extern int sha256_stream (FILE *stream, void *resblock);
    output yields to the wanted ASCII representation of the message
    digest.  */ 
 extern void *sha256_buffer (const unsigned char *buffer, size_t len, void *resblock);
-
-# ifdef __cplusplus
-}
-# endif
 
 #endif

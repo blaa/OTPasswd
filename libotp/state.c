@@ -152,8 +152,8 @@ int state_init(state *s, const char *username)
 		return 2;
 	}
 
-	assert(cfg->def_passcode_length >= 2 &&
-	       cfg->def_passcode_length <= 16);
+	assert(cfg->passcode_def_length >= 2 &&
+	       cfg->passcode_def_length <= 16);
 
 	/** Non-allocating initialization of state variables */
 	s->failures = 0;
@@ -168,10 +168,10 @@ int state_init(state *s, const char *username)
 	memset(s->label, 0x00, sizeof(s->label));
 	memset(s->contact, 0x00, sizeof(s->contact));
 
-	s->code_length = cfg->def_passcode_length;
+	s->code_length = cfg->passcode_def_length;
 	if (cfg->show != 0)
 		s->flags = FLAG_SHOW;
-	if (cfg->def_alphabet == 1)
+	if (cfg->alphabet_def == 2)
 		s->flags |= FLAG_ALPHABET_EXTENDED;
 
 	/* This will be calculated later by ppp.c */
