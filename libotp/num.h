@@ -42,12 +42,38 @@ static inline void num_to_bin(const mpz_t num, unsigned char *data, const size_t
 	assert(size == 1);
 }
 
-static inline void num_print(const mpz_t num, const int base)
+/* Convert number to hex which conforms with PPPv3 methods */
+static inline void num_to_hex(const mpz_t num, char *data, const unsigned int length)
 {
-	char *result = mpz_get_str(NULL, base, num);
-	(void) puts(result);
-	free(result);
+	unsigned char bin[32];
+	int i;
+	int bin_len;
+
+	assert(length == 65 || length == 33); /* Key or counter */
+
+	bin_len = (length-1) / 2;
+
+	num_to_bin(num, bin, bin_len);
+
+	for (i = 0; i < bin_len; i++)
+		snprintf(data + i * 2,  3, "%02X", bin[i]);
 }
+
+static inline void num_print(const mpz_t num, const unsigned int length)
+{
+	unsigned char bin[32];
+	int i;
+
+	assert(length == 32 || length == 64); /* Key or counter */
+
+	const int bin_len = (length) / 2;
+
+	num_to_bin(num, bin, bin_len);
+
+	for (i = 0; i < bin_len; i++)
+		printf("%02X", bin[i]);
+}
+
 
 /* This function set's GMP memory allocation routines 
  * to safer versions which cleanup deallocated memory */

@@ -672,7 +672,7 @@ int ppp_testcase(void)
 		mpz_set_ui(s.sequence_key, 1345126463UL);
 	}
 
-	/* Statistical tests using key = 0 */
+	/* Statistical tests using following key */
 	mpz_set_ui(s.sequence_key, 1345126463UL);
 	failed += _ppp_testcase_statistical(&s, 64, 16, 200000);
 	/* Following test should fail using norms from first test */

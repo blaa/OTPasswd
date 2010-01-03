@@ -262,13 +262,19 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		int c = getopt_long(argc, argv, "krs:t:l:P:a:wf:p:d:c:vu:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
-		if (c == -1)
+		if (c == -1) {
+			if (optind < argc) {
+				printf("Garbage on command line. (%s)\n", argv[optind]);
+				goto error;
+			}
+	
 			break;
+		}
 
 		/* Assert maximal length of parameter */
 		if (optarg && (strlen(optarg) > 100)) {
 			printf("Option argument too long!\n");
-			return 1;
+			goto error;
 		}
 
 		switch (c) {

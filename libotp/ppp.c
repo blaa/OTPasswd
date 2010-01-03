@@ -29,9 +29,7 @@
 /* Number of combinations calculated for 4 passcodes */
 /* 64 characters -> 16 777 216 */
 static const char alphabet_simple[] =
-	"!#%+23456789:=?@"
-	"ABCDEFGHJKLMNPRSTUVWXYZ"
-	"abcdefghijkmnopqrstuvwxyz";
+	"!#%+23456789:=?@ABCDEFGHJKLMNPRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 /* 88 characters -> 59 969 536 */
 static const char alphabet_extended[] =
@@ -48,7 +46,7 @@ static const char alphabet_extended_no_vowels[] =
 
 /* 56 chars -> 9 834 496 */
 static const char alphabet_alpha[] = 
-	"23456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPRSTUVWXYZ";
+	"23456789ABCDEFGHJKLMNPRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 static const char *alphabets[] = {
 	NULL, /* Custom */

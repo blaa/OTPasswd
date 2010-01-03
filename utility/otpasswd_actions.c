@@ -214,7 +214,12 @@ static void _show_keys(const state *s)
 	mpz_add_ui(unsalted_counter, unsalted_counter, 1);
 
 	if (cfg->allow_key_print == 1 || security_is_root()) {
-		gmp_printf("Key     = %064ZX\n", s->sequence_key);
+		/* Print key in LSB as PPP likes */
+		printf("Key     = "); num_print(s->sequence_key, 64);
+		printf("\n");
+
+		/* This prints data MSB */
+		/* gmp_printf("Key     = %064ZX\n", s->sequence_key); */
 		gmp_printf("Counter = %032ZX\n", s->counter);
 	} else {
 		printf("Key     = (denied by policy)\n");

@@ -1,4 +1,4 @@
-/**********************************************************************
+ /**********************************************************************
  * otpasswd -- One-time password manager and PAM module.
  * Copyright (C) 2009 by Tomasz bla Fortuna <bla@thera.be>
  *
@@ -59,6 +59,8 @@ extern int crypto_sha256(
 	unsigned char *hash);
 
 /* Helpers */
+
+/* Display hexadecimally binary data */
 extern void crypto_print_hex(
 	const unsigned char *data,
 	const unsigned int length);
