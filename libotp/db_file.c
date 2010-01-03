@@ -25,6 +25,7 @@
 #include <unistd.h>	/* usleep, open, close, unlink, getuid */
 #include <sys/types.h>
 #include <sys/stat.h>	/* stat */
+#include <pwd.h>	/* getpwnam */
 #include <fcntl.h>
 
 #include "print.h"
@@ -56,7 +57,7 @@ static char *_strtok(char *input, const char *delim)
 
 /* Check if db exists, and enforce permissions.
  * - enforce it's correct permissions */
-static int _db_file_permissions(const state *s)
+static int _db_file_permissions(const char *db_path)
 {
 	const uid_t uid = getuid();
 	struct stat st;
@@ -121,7 +122,7 @@ static int _db_file_permissions(const state *s)
 	 */
 
 	/* 1) Check if state file exists and read it's parameters */
-	if (stat(s->db_path, &st) != 0) {
+	if (stat(db_path, &st) != 0) {
 		/* Does not exists */
 		if (cfg->db == CONFIG_DB_USER)
 			return STATE_NON_EXISTENT;
@@ -139,7 +140,7 @@ static int _db_file_permissions(const state *s)
 
 	/* 3) Others/Group */
 	if (st.st_mode & (S_IRWXG | S_IRWXO)) {
-		if (chmod(s->db_path, S_IRUSR|S_IWUSR) != 0) {
+		if (chmod(db_path, S_IRUSR|S_IWUSR) != 0) {
 			print_perror(PRINT_NOTICE, 
 				     "Unable to enforce state file permissions.\n");
 			return STATE_IO_ERROR;
@@ -170,6 +171,89 @@ static int _db_file_permissions(const state *s)
 	}
 
 	return 0;
+}
+
+/* Returns a name of current state + lock + temp file */
+static int _db_path(const char *username, char **db, char **lck, char **tmp)
+{
+	int retval = 1;
+	static struct passwd *pwdata = NULL;
+	cfg_t *cfg = cfg_get();
+
+
+	assert(username);
+	assert(cfg);
+	assert(!*db && !*lck && !*tmp); /* Must be NULL */
+
+	/* Determine db location at first */
+	switch (cfg->db) {
+	case CONFIG_DB_USER:
+	{
+		char *home = NULL;
+		int length;
+		
+		/* Get home */
+		pwdata = getpwnam(username);
+		if (pwdata && pwdata->pw_dir)
+			home = pwdata->pw_dir;
+		else {
+			return STATE_NO_SUCH_USER;
+		}
+
+		/* Append a filename */
+		length = strlen(home);
+		length += strlen(cfg->user_db_path);
+		length += 2;
+		
+		*db = malloc(length);
+		if (!*db) 
+			return STATE_NOMEM;
+		
+		int ret = snprintf(*db, length, "%s/%s", home, cfg->user_db_path);
+		
+		assert( ret == length - 1 );
+
+		break;
+	}
+	case CONFIG_DB_GLOBAL:
+		*db = strdup(cfg->global_db_path);
+		if (!*db) {
+			return STATE_NOMEM;
+		}
+		break;
+
+	case CONFIG_DB_MYSQL:
+	case CONFIG_DB_LDAP:
+	default:
+		/* We should not be called with this options never */
+		assert(0);
+	}
+
+	const int db_len = strlen(*db);
+	/* Create lock filename; normal file + .lck */
+
+	retval = STATE_NOMEM;
+	*lck = malloc(db_len + 5 + 1);
+	*tmp = malloc(db_len + 5 + 1);
+
+	if (!*lck || !*tmp) {
+		goto error;
+	}
+
+	retval = sprintf(*lck, "%s.lck", *db);
+	assert(retval > 0);
+	
+	retval = sprintf(*tmp, "%s.tmp", *db);
+	assert(retval > 0);
+
+	/* All ok */
+	return 0;
+
+error:
+	free(*db), *db = NULL;
+	free(*tmp), *tmp = NULL;
+	free(*lck), *lck = NULL;
+	return retval;
 }
 
 /* State files constants */
@@ -338,10 +422,17 @@ int db_file_load(state *s)
 	/* Value returned. */
 	int retval;
 
-	ret = _db_file_permissions(s);
+	/* Files: database, lock and temporary */
+	char *db = NULL, *lck = NULL, *tmp = NULL;
+	ret = _db_path(s->username, &db, &lck, &tmp);
 	if (ret != 0) {
-		print(PRINT_NOTICE, "Unable to load state file.\n");
 		return ret;
+	}
+
+	retval = _db_file_permissions(db);
+	if (retval != 0) {
+		print(PRINT_NOTICE, "Unable to load state file.\n");
+		goto cleanup1;
 	}
 
 	/* DB file should always be locked before changing.
@@ -350,12 +441,13 @@ int db_file_load(state *s)
 	 * them at the same time.
 	 * Here we just detect that it's not locked and lock it then
 	 */
-	if (s->lock_fd <= 0) {
+	if (s->lock <= 0) {
 		print(PRINT_NOTICE,
 		      "State file not locked while reading from it\n");
-		if (db_file_lock(s) != 0) {
+		retval = db_file_lock(s);
+		if (retval != 0) {
 			print(PRINT_ERROR, "Unable to lock file for reading!\n");
-			return STATE_LOCK_ERROR;
+			goto cleanup1;
 		}
 
 		/* Locked locally, unlock locally later */
@@ -364,11 +456,11 @@ int db_file_load(state *s)
 		locked = 0;
 	}
 
-	f = fopen(s->db_path, "r");
+	f = fopen(db, "r");
 	if (!f) {
 		print_perror(PRINT_ERROR,
 			     "Unable to open %s for reading.",
-			     s->db_path);
+			     db);
 		retval = STATE_IO_ERROR;
 		goto cleanup;
 	}
@@ -498,13 +590,13 @@ int db_file_load(state *s)
 
 	if (s->code_length < 2 || s->code_length > 16) {
 		print(PRINT_ERROR, "Illegal passcode length. %s is invalid\n",
-		      s->db_path);
+		      db);
 		goto cleanup;
 	}
 
 	if (s->flags > (FLAG_SHOW|FLAG_SALTED)) {
 		print(PRINT_ERROR, "Unsupported set of flags. %s is invalid\n",
-		      s->db_path);
+		      db);
 		goto cleanup;
 
 	}
@@ -522,6 +614,11 @@ cleanup:
 	}
 	if (f)
 		fclose(f);
+
+cleanup1:
+	free(db);
+	free(tmp);
+	free(lck);
 	return retval;
 }
 
@@ -595,22 +692,25 @@ int db_file_store(state *s)
 
 	char user_entry_buff[STATE_ENTRY_SIZE];
 
-	int tmp;
+	/* Files: database, lock and temporary */
+	char *db = NULL, *lck = NULL, *tmp = NULL;
+	ret = _db_path(s->username, &db, &lck, &tmp);
+	if (ret != 0) {
+		return ret;
+	}
 
-	assert(s->db_path != NULL);
-	assert(s->username != NULL);
-
-	if (s->lock_fd <= 0) {
+	if (s->lock <= 0) {
 		print(PRINT_NOTICE,
 		      "State file not locked while writing to it\n");
-		if (db_file_lock(s) != 0) {
+		ret = db_file_lock(s);
+		if (ret != 0) {
 			print(PRINT_ERROR, "Unable to lock file for writing!\n");
-			return STATE_LOCK_ERROR;
+			goto cleanup1;
 		}
 		locked = 1;
 	}
 
-	in = fopen(s->db_path, "r");
+	in = fopen(db, "r");
 	if (!in) {
 		/* User=db and file doesn't exist - ok. */
 
@@ -619,18 +719,18 @@ int db_file_store(state *s)
 			/* FIXME, better rewrite to use stat */
 			print_perror(PRINT_ERROR,
 				     "Unable to open %s for reading",
-				     s->db_path);
+				     db);
 
 			ret = STATE_IO_ERROR;
 			goto cleanup;
 		}
 	}
 
-	out = fopen(s->db_tmp_path, "w");
+	out = fopen(tmp, "w");
 	if (!out) {
 		print_perror(PRINT_ERROR,
 			     "Unable to open %s for writing",
-			     s->db_tmp_path);
+			     tmp);
 
 		ret = STATE_IO_ERROR;
 		goto cleanup;
@@ -641,8 +741,8 @@ int db_file_store(state *s)
 	 * owner of original file if we are root! */
 	if (geteuid() == 0) {
 		struct stat st;
-		stat(s->db_path, &st);
-		if (chown(s->db_tmp_path, st.st_uid, st.st_gid) != 0) {
+		stat(db, &st);
+		if (chown(tmp, st.st_uid, st.st_gid) != 0) {
 			print_perror(PRINT_ERROR, "Unable to ensure owner/group of temporary file\n");
 			ret = STATE_IO_ERROR;
 			goto cleanup;
@@ -689,10 +789,10 @@ int db_file_store(state *s)
 	}
 
 	/* 4) Flush, save... then rename in cleanup part */
-	tmp = fflush(out);
-	tmp += fclose(out);
+	ret = fflush(out);
+	ret += fclose(out);
 	out = NULL;
-	if (tmp != 0) {
+	if (ret != 0) {
 		print_perror(PRINT_ERROR, "Error while flushing/closing state file");
 		ret = STATE_IO_ERROR;
 		goto cleanup;
@@ -703,12 +803,14 @@ int db_file_store(state *s)
 cleanup:
 	if (in)
 		fclose(in);
-	if (out)
+	if (out) {
+		fflush(out);
 		fclose(out);
+	}
 
 	if (ret == 0) {
 		/* If everything went fine, rename tmp to normal file */
-		if (rename(s->db_tmp_path, s->db_path) != 0) {
+		if (rename(tmp, db) != 0) {
 			print_perror(PRINT_WARN,
 				     "Unable to rename temporary state "
 				     "file and save state.");
@@ -717,22 +819,27 @@ cleanup:
 			/* It might fail, but shouldn't
 			 * Also we just want to ensure others
 			 * can't read this file */
-			if (_db_file_permissions(s) != 0) {
+			if (_db_file_permissions(db) != 0) {
 				print(PRINT_WARN,
 				      "Unable to set state file permissions. "
 				      "Key might be world-readable!\n");
 			}
 			print(PRINT_NOTICE, "State file written correctly\n");
 		}
-	} else if (unlink(s->db_tmp_path) != 0) {
+
+	} else if (unlink(tmp) != 0) {
 		print_perror(PRINT_WARN, "Unable to unlink temporary state file %s",
-			     s->db_tmp_path);
+			     tmp);
 	}
 
 	if (locked && db_file_unlock(s) != 0) {
 		print(PRINT_ERROR, "Error while unlocking state file!\n");
 	}
 
+cleanup1:
+	free(db);
+	free(lck);
+	free(tmp);
 	return ret;
 }
 
@@ -743,20 +850,25 @@ int db_file_lock(state *s)
 	int cnt;
 	int fd;
 
-	assert(s->db_lck_path);
-	assert(s->db_path);
-	assert(s->lock_fd == -1);
+	assert(s->lock == -1);
+
+	/* Files: database, lock and temporary */
+	char *db = NULL, *lck = NULL, *tmp = NULL;
+	ret = _db_path(s->username, &db, &lck, &tmp);
+	if (ret != 0) {
+		return ret;
+	}
 
 	fl.l_type = F_WRLCK;
 	fl.l_whence = SEEK_SET;
 	fl.l_start = fl.l_len = 0;
 
 	/* Open/create lock file */
-	fd = open(s->db_lck_path, O_WRONLY|O_CREAT, S_IWUSR|S_IRUSR);
+	fd = open(lck, O_WRONLY|O_CREAT, S_IWUSR|S_IRUSR);
 
 	if (fd == -1) {
 		/* Unable to create file, therefore unable to obtain lock */
-		print_perror(PRINT_NOTICE, "Unable to create %s lock file", s->db_lck_path);
+		print_perror(PRINT_NOTICE, "Unable to create %s lock file", lck);
 		goto error;
 	}
 
@@ -785,11 +897,16 @@ int db_file_lock(state *s)
 		goto error;
 	}
 
-	s->lock_fd = fd;
+	s->lock = fd;
 	print(PRINT_NOTICE, "Got lock on state file\n");
 
 	return 0; /* Got lock */
+
 error:
+	free(db);
+	free(lck);
+	free(tmp);
+
 	return STATE_LOCK_ERROR;
 }
 
@@ -798,30 +915,44 @@ error:
 int db_file_unlock(state *s)
 {
 	struct flock fl;
+	int retval = STATE_LOCK_ERROR;
 
-	if (s->lock_fd < 0) {
+	/* Files: database, lock and temporary */
+	char *db = NULL, *lck = NULL, *tmp = NULL;
+	retval = _db_path(s->username, &db, &lck, &tmp);
+	if (retval != 0) {
+		return retval;
+	}
+
+
+	if (s->lock < 0) {
 		print(PRINT_NOTICE, "No lock to release!\n");
-		return STATE_LOCK_ERROR; /* No lock to release */
+		goto error;
 	}
 
 	fl.l_type = F_UNLCK;
 	fl.l_whence = SEEK_SET;
 	fl.l_start = fl.l_len = 0;
 
-	int ret = fcntl(s->lock_fd, F_SETLK, &fl);
+	int ret = fcntl(s->lock, F_SETLK, &fl);
 
-	close(s->lock_fd);
-	s->lock_fd = -1;
+	close(s->lock);
+	s->lock = -1;
 
-	unlink(s->db_lck_path);
+	unlink(lck);
 
 	if (ret != 0) {
 		print(PRINT_NOTICE, "Strange error while releasing lock\n");
 		/* Strange error while releasing the lock */
-		return STATE_LOCK_ERROR;
+		goto error;
 	}
 
-	return 0;
+	retval = 0;
+error:
+	free(db);
+	free(lck);
+	free(tmp);
+	return retval;
 }
 
 

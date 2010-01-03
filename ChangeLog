@@ -48,6 +48,10 @@ Trying to sort tasks according to their priority.
 	* [+] Because of signals - redo permissions. (SUID required)
 	* [+] The key/counter length is not checked when read from file.
         * [+] Big thing - Move state files to /etc + SUID.
+        * [?] Any possibility to change directory from /etc/otpasswd?
+              There's config so it can't be defined there.
+	* [?] Global DB should work with users which aren't in passwd.
+        * [?] fsync before rename/unlock (see ext4 problem) 
         * [?] Check if lock files are links. if so. fail. Or rather always unlink 
               before overwritting. 
         * [?] Logging into syslog from utility if SUID; Also deny -v.

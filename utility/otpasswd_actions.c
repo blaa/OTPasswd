@@ -561,7 +561,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 
 	ret = state_store(&s); /* This should auto lock */
 	if (ret != 0) {
-		print(PRINT_ERROR, "Unable to save state to %s file\n", s.db_path);
+		print(PRINT_ERROR, "Unable to save state.\n");
 		print(PRINT_NOTICE, "(%s)\n", ppp_get_error_desc(ret));
 		goto cleanup;
 	}

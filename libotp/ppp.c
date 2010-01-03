@@ -532,7 +532,7 @@ const char *ppp_get_error_desc(int error)
 	switch (error) {
 	case 0:
 		return "No error";
-	case PPP_NOMEM:
+	case STATE_NOMEM:
 		return "Out of memory while reading state.";
 
 	case STATE_LOCK_ERROR:
@@ -553,6 +553,9 @@ const char *ppp_get_error_desc(int error)
 	case STATE_NO_USER_ENTRY:
 		return "No user entry. Have you created key with --key option?";
 
+	case STATE_NO_SUCH_USER:
+		return "No such Unix user in passwd database. Unable to locate home.\n";
+
 	default:
 		return "Error occured while reading state. Use -v to determine which.";
 	}
@@ -566,7 +569,7 @@ int ppp_init(state **s, const char *user)
 	int ret;
 	*s = malloc(sizeof(**s));
 	if (!*s)
-		return PPP_NOMEM;
+		return STATE_NOMEM;
 	ret = state_init(*s, user);
 
 	if (ret == 0)

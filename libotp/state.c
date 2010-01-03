@@ -38,9 +38,9 @@ int state_validate_str(const char *str)
 	int i;
 	/* Spaces are ok, \n and \r not.
 	 * alpha, digits, +, -, @, _ are ok
-	 * These characters should be LaTeX safe, so no {}
-	 * Also they can be passed to some external script,
-	 * so they must obey restrictions.
+	 * These characters should be Shell & LaTeX safe, so no {}
+	 * and other strange characters which aren't necessary
+	 * for labels and contacts.
 	 */
 	for (i=0; i<len; i++) {
 		if (isalnum(str[i]))
@@ -52,75 +52,6 @@ int state_validate_str(const char *str)
 		return 0; /* False */
 	}
 	return 1;
-}
-
-/* Returns a name of user state file */
-static char *_state_user_db_file(const char *username)
-{
-	static struct passwd *pwdata = NULL;
-	char *home = NULL;
-	char *name = NULL;
-	cfg_t *cfg = cfg_get();
-	int length;
-
-	assert(username);
-
-	/* Get home */
-	pwdata = getpwnam(username);
-	if (pwdata && pwdata->pw_dir)
-		home = pwdata->pw_dir;
-	else
-		return NULL;
-
-	/* Append a filename */
-	length = strlen(home);
-	length += strlen(cfg->user_db_path);
-	length += 2;
-
-	name = malloc(length);
-	if (!name) 
-		goto error;
-
-	int ret = snprintf(name, length, "%s/%s", home, cfg->user_db_path);
-
-	assert( ret == length - 1 );
-
-	if (ret != length - 1) {
-		goto error;
-	}
-
-	return name;
-
-error:
-	free(name);
-	return NULL;
-}
-
-static int _state_lck_tmp_path(const char *base, char **lck, char **tmp)
-{
-	int ret;
-
-	/* Create lock filename; normal file + .lck */
-	*lck = malloc(strlen(base) + 5 + 1);
-
-	if (!*lck) {
-		return PPP_NOMEM; 
-	}
-
-	*tmp = malloc(strlen(base) + 5 + 1);
-	if (!*tmp) {
-		free(*lck);
-		*lck = NULL;
-		return PPP_NOMEM; 
-	}
-
-	ret = sprintf(*lck, "%s.lck", base);
-	assert(ret > 0);
-	
-	ret = sprintf(*tmp, "%s.tmp", base);
-	assert(ret > 0);
-
-	return 0;
 }
 
 
@@ -159,11 +90,9 @@ int state_init(state *s, const char *username)
 	s->failures = 0;
 	s->recent_failures = 0;
 	s->spass_set = 0;
-	s->lock_fd = -1;
+	s->lock = -1;
 
 	s->prompt = NULL;
-	s->db_path = NULL;
-	s->db_lck_path = NULL;
 
 	memset(s->label, 0x00, sizeof(s->label));
 	memset(s->contact, 0x00, sizeof(s->contact));
@@ -180,45 +109,6 @@ int state_init(state *s, const char *username)
 	/* This will be calculated later by ppp.c */
 	s->codes_on_card = s->codes_in_row = s->current_row =
 		s->current_column = 0;
-
-	/** Determine state file position */
-	switch (cfg->db) {
-	case CONFIG_DB_USER:
-		s->db_path = _state_user_db_file(username);
-
-		if (s->db_path == NULL) {
-			print(PRINT_ERROR, "Unable to determine home directory of user\n");
-			return 4;
-		}
-
-		/* Create lock filename; normal file + .lck */
-		if (_state_lck_tmp_path(s->db_path,
-					&s->db_lck_path,
-					&s->db_tmp_path) != 0) {
-			free(s->db_path), s->db_path = NULL;
-			return PPP_NOMEM;
-		}
-		break;
-
-	case CONFIG_DB_GLOBAL:
-		s->db_path = strdup(cfg->global_db_path);
-		if (!s->db_path) {
-			return PPP_NOMEM;
-		}
-
-		if (_state_lck_tmp_path(s->db_path, 
-					&s->db_lck_path, 
-					&s->db_tmp_path) != 0) {
-			free(s->db_path), s->db_path = NULL;
-			return PPP_NOMEM;
-		}
-		break;
-
-	case CONFIG_DB_MYSQL:
-	case CONFIG_DB_LDAP:
-		print(PRINT_ERROR, "Database type not yet implemented.\n");
-		return 1; 
-	}
 
 	/* Save user name in state */
 	s->username = strdup(username);
@@ -240,13 +130,12 @@ int state_init(state *s, const char *username)
 	ret = mpz_init_set_str(s->code_mask, code_mask, 16);
 	assert(ret == 0);
 
-
 	return 0;
 }
 
 void state_fini(state *s)
 {
-	if (s->lock_fd > 0)
+	if (s->lock > 0)
 		state_unlock(s);
 
 	mpz_clear(s->counter);
@@ -267,9 +156,6 @@ void state_fini(state *s)
 		s->prompt = NULL;
 	}
 
-	free(s->db_path);
-	free(s->db_lck_path);
-	free(s->db_tmp_path);
 	free(s->username);
 
 	/* Clear the rest of memory */
@@ -348,8 +234,6 @@ int state_lock(state *s)
 {
 	cfg_t *cfg = cfg_get();
 	assert(cfg);
-
-	assert(s->db_path != NULL);
 
 	switch (cfg->db) {
 	case CONFIG_DB_USER:

@@ -31,8 +31,6 @@
 
 /*** State ***/
 typedef struct {
-	/*** State stored in STATE_FILENAME ***/
-
 	/* 128 bit counter pointing at the next passcode
 	 * which will be used for authentication */
 	mpz_t counter;
@@ -102,11 +100,12 @@ typedef struct {
 	 * state information.
 	 */
 	char *username;		/* user who called utility or does auth */
-	char *db_path;		/* Path to state file    */
-	char *db_lck_path;		/* Name of lock filename */
-	char *db_tmp_path;	/* Temporary state file location */
-	int lock_fd;		/* Descriptor of state lock
-				 * will be < 0 if file not locked */
+
+	/* DB lock status.-1 value means state is not locked
+	 * while all other values mean that it's locked
+	 * and can have some other db_ related information
+	 * (like descriptor of opened lock file) */
+	int lock;	
 } state;
 
 
