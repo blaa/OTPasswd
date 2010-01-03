@@ -11,226 +11,229 @@ ChangeLog / TODO
 Trying to sort tasks according to their priority.
 
 2009-12-13 v0.5
-	* [+] Check bit distribution for alphabets not divisible by 2
-	* [+] Remove dont-skip option.
-	* [+] GMP might leak information with reallocs of it's mpz_t
-	      Fixed by substituting alloc functions. num_init() must
-	      be called before any other gmp functions.
+        * [+] Check bit distribution for alphabets not divisible by 2
+        * [+] Remove dont-skip option.
+        * [+] GMP might leak information with reallocs of it's mpz_t
+              Fixed by substituting alloc functions. num_init() must
+              be called before any other gmp functions.
         * [+] Testcases added into make, with coverage measurement.
-	      They will modify your state data though so beware!
+              They will modify your state data though so beware!
               PAM testcase added! Including coverage support, whoa!
         * [!] Bug in num.c/reallocate fixed. Did not exist in 0.4
         * [!] New testcase allowed to detect some memory leaks.
               Possibly exist in 0.4
-	* [+] Improve error messages when state file is not found.
-	* [+] Config file in /etc/security
-	      pam_access parses this file itself; samba(winbind) uses
-	      iniparser library (on MIT license)
-	* [+] See how functions in otpasswd_actions initialize and
+        * [+] Improve error messages when state file is not found.
+        * [+] Config file in /etc/security
+              pam_access parses this file itself; samba(winbind) uses
+              iniparser library (on MIT license)
+        * [+] See how functions in otpasswd_actions initialize and
               deinitialize state, see if they can use ppp_, if not
-	      make them so they can. Or write some local static functions
-	      to handle errors during lock&load.
-	* [+] Fix db* functions to return values from enum in ppp_common.h
-	* [!] Skipping to 'next' not by 6...
+              make them so they can. Or write some local static functions
+              to handle errors during lock&load.
+        * [+] Fix db* functions to return values from enum in ppp_common.h
+        * [!] Skipping to 'next' not by 6...
         * [+] Removed dependency - OpenSSL
-	* [+] Modify build config to work with CMake v2.4.7
+        * [+] Modify build config to work with CMake v2.4.7
         * [+] Config file revised.
         * [+] Multiple alphabet support
-	* [+] Passing -f, -d, -c along with the -k.
+        * [+] Passing -f, -d, -c along with the -k.
         * [+] Partial policy implemented.
               Ensure that if the invalid state is read from file
               that the authentication will never succeed.
-	* [+] Check if OOB script is not SUID?
-	* [+] Ensure that PAM session can display warning in three calls
-	      to conversation function. If not, we must build a buffer
-	      (See for example how winscp shows that warning)
+        * [+] Check if OOB script is not SUID?
+        * [+] Ensure that PAM session can display warning in three calls
+              to conversation function. If not, we must build a buffer
+              (See for example how winscp shows that warning)
               (FIXED by simplifying warnings)
-	* [+] Because of signals - redo permissions. (SUID required)
-	* [+] The key/counter length is not checked when read from file.
+        * [+] Because of signals - redo permissions. (SUID required)
+        * [+] The key/counter length is not checked when read from file.
         * [+] Big thing - Move state files to /etc + SUID.
-	* [%] Should we start suid root then drop to some config-defined user
-	      so attacker who breaks otpasswd can't modify the executable?
+        * [+] Manuals - Plenty of things finished thanks to Hannes Beinert.
+        * [+] fsync before rename/unlock (see ext4 problem)
+              sync() call inserted after fclose and before rename.
+        * [+] First unlink lock file, then unlock to omit race condition?
+        * [+] Add -r option to remove key and disable OTP.
+
+        * [%] Should we start suid root then drop to some config-defined user
+              so attacker who breaks otpasswd can't modify the executable?
         * [?] Check custom alphabet correction (whitespaces or multiple
-	      occurences of same character not allowed.
+              occurences of same character not allowed.
         * [?] Any possibility to change directory from /etc/otpasswd?
               There's config so it can't be defined there.
-	* [?] Global DB should work with users which aren't in passwd.
-        * [?] fsync before rename/unlock (see ext4 problem) 
-        * [?] Check if lock files are links. if so. fail. Or rather always unlink 
-              before overwritting. 
+        * [?] Global DB should work with users which aren't in passwd.
+        * [?] Check if lock files are links. if so. fail. Or rather always unlink
+              before overwritting.
         * [?] Logging into syslog from utility if SUID; Also deny -v.
-	* [?] First unlink lock file, then unlock to omit race condition?
-	* [?] Security: Do we need to change something regarding ulimits?
-	* [?] Add -K option to remove key and disable OTP.
+        * [?] Security: Do we need to change something regarding ulimits?
         * [?] Add error_t and bool_t to differentiate differently
               used ints?
-	* [-] Keeping track of failures.
-	      Started (place in state files created)
-	* [-] Implement static passwords;
-		They might be required always or just to perform some commands
-		like second-channel usage.
-	* [?] Cleanup PPP interface. This should look like follows.
-	      "State" is class implementing some basic features of 
-	      state management. From this 'class' ppp is derived.
-	      ppp implements high-level functions which should be used
-	      explicitly to manage state information unless something
-	      more fine-grained is necessary. State on the other hand
-	      uses 'db' backend for operating on files/databases.
-	* [-] Scan all FIXME/TODO entries
-	* [-] Manuals
-	* [?] Use locales for user messages [_("")? ]
-	* [-] right trim values from config?
-	* [?] SELinux compatibility.
-	* [?] Import/export of ascii state lines...
+        * [-] Keeping track of failures.
+              Started (place in state files created)
+        * [-] Implement static passwords;
+              They might be required always or just to perform some commands
+              like second-channel usage.
+        * [?] Cleanup PPP interface. This should look like follows.
+              "State" is class implementing some basic features of
+              state management. From this 'class' ppp is derived.
+              ppp implements high-level functions which should be used
+              explicitly to manage state information unless something
+              more fine-grained is necessary. State on the other hand
+              uses 'db' backend for operating on files/databases.
+        * [-] Scan all FIXME/TODO entries
+        * [?] Use locales for user messages [_("")? ]
+        * [-] right trim values from config?
+        * [?] SELinux compatibility.
+        * [?] Import/export of ascii state lines...
 
-	Low-priority:
-	* [?] Improve LaTeX output (some colors, borders?)
+        Low-priority:
+        * [?] Improve LaTeX output (some colors, borders?)
         * [?] Incorporate SSH key fingerprints on passcards?
-	* [-] Keep lines below 75 columns? Or 80?
-	* [?] Use PAM_SERVICE_ERR
+	      Use some file as passcard background, allow hook
+	      regenerating this passcard
+        * [-] Keep lines below 75 columns? Or 80?
 
 2009-12-13 v0.4
-	* [!] Fixed some memory leaks.
-	* [!] Ensure state loaded correctly when label/caption full
+        * [!] Fixed some memory leaks.
+        * [!] Ensure state loaded correctly when label/caption full
         * [+] Improve testcases so when they fail it's clearly visible.
-	* [+] Fixed licensing so the project can be hosted on Savannah
-	* [+] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
-		Seems ok. pam_unix defines pam_syslog as openlog, vsyslog,
-		closelog.
-	* [+] Warnings when on last passcard
-	* [+] Add information to state files about last usage of second
+        * [+] Fixed licensing so the project can be hosted on Savannah
+        * [+] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
+                Seems ok. pam_unix defines pam_syslog as openlog, vsyslog,
+                closelog.
+        * [+] Warnings when on last passcard
+        * [+] Add information to state files about last usage of second
               channel. Important to limit number of e.g. sent sms.
-	      Second-channel itself still not implemented
-	* [+] Calling external script for mailing/sms
-	* [+] Key generation might be to slow on systems without mouse...
-	      Maybe use openssl prng and initialize it from urandom?
-	      Also is there any reason to use SHA256 on RANDOM data?
-	      Maybe few bytes from rng + some from prng and SHA out of it?
-	* [+] Place common functions inside a shared library       
-	* [+] Check bit distribution for alphabets not divisible by 2
+              Second-channel itself still not implemented
+        * [+] Calling external script for mailing/sms
+        * [+] Key generation might be to slow on systems without mouse...
+              Maybe use openssl prng and initialize it from urandom?
+              Also is there any reason to use SHA256 on RANDOM data?
+              Maybe few bytes from rng + some from prng and SHA out of it?
+        * [+] Place common functions inside a shared library       
+        * [+] Check bit distribution for alphabets not divisible by 2
               Added separate testcase evaluating character distribution
               instead of bits. This testcase shows that distribution
               is in correct range. 
-	* [-] Keeping track of failures.
-	      Started (place in state files created)
-	* [-] Implement static passwords;
-		They might be required always or just to perform some commands
-		like second-channel usage.
-	* [%] GMP might leak information with reallocs of it's mpz_t
-	* [?] Cleanup PPP interface. This should look like follows.
-	      "State" is class implementing some basic features of 
-	      state management. From this 'class' ppp is derived.
-	      ppp implements high-level functions which should be used
-	      explicitly to manage state information unless something
-	      more fine-grained is necessary.
-	* [-] Scan all FIXME/TODO entries
-	* [-] Manuals
-	* [-] Improve error messages when state file is not found.
+        * [-] Keeping track of failures.
+              Started (place in state files created)
+        * [-] Implement static passwords;
+                They might be required always or just to perform some commands
+                like second-channel usage.
+        * [%] GMP might leak information with reallocs of it's mpz_t
+        * [?] Cleanup PPP interface. This should look like follows.
+              "State" is class implementing some basic features of 
+              state management. From this 'class' ppp is derived.
+              ppp implements high-level functions which should be used
+              explicitly to manage state information unless something
+              more fine-grained is necessary.
+        * [-] Scan all FIXME/TODO entries
+        * [-] Manuals
+        * [-] Improve error messages when state file is not found.
         * [?] Big thing - Move state files to /etc + SUID.
-	* [?] Use locales for user messages [_("")? ]
-	* [?] Config file in /etc/security
-	      pam_access parses this file itself; samba(winbind) uses
-	      iniparser library (on MIT license)
-	* [%] Ensure that PAM session can display warning in three calls
-	      to conversation function. If not, we must build a buffer
-	      (See for example how winscp shows that warning)
-	* [?] Use PAM_SERVICE_ERR
+        * [?] Use locales for user messages [_("")? ]
+        * [?] Config file in /etc/security
+              pam_access parses this file itself; samba(winbind) uses
+              iniparser library (on MIT license)
+        * [%] Ensure that PAM session can display warning in three calls
+              to conversation function. If not, we must build a buffer
+              (See for example how winscp shows that warning)
+        * [?] Use PAM_SERVICE_ERR
 
-	Low-priority:
-	* [?] Improve LaTeX output (some colors, borders?)
+        Low-priority:
+        * [?] Improve LaTeX output (some colors, borders?)
         * [?] Incorporate SSH key fingerprints on passcards?
-	* [-] Keep lines below 75 columns? Or 80?
-	* [-] off-by-one testcases; a bit tests done.
+        * [-] Keep lines below 75 columns? Or 80?
+        * [-] off-by-one testcases; a bit tests done.
 
-	To be removed:
-	* [-] Single-authentication/locking per user option to prevent DoS
-	      This would enable attacker to perform just another DoS attack.
-	* [-] Share objects between targets (CMake)
-	      Splitting project into shared lib, util + pam is better
+        To be removed:
+        * [-] Single-authentication/locking per user option to prevent DoS
+              This would enable attacker to perform just another DoS attack.
+        * [-] Share objects between targets (CMake)
+              Splitting project into shared lib, util + pam is better
 2008-12-02 v0.3
-	* [!] Fixed some memory leaks.
-	* [!] Ensure state loaded correctly when label/caption full
-	* [+] Fixed licensing so the project can be hosted on Savannah
-	* [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
-	* [-] Warnings when on last passcard
-	* [-] Calling external script for mailing/sms
-	* [-] Share objects between targets (CMake)
-	      I'll rather ignore it. .so must have -fPIC, util shouldn't...
-	* [?] Scan all FIXME/TODO entries
-	* [?] Keep lines below 75 columns? Or 80?
-	* [?] off-by-one testcase; a bit done
-	* [?] manuals
-	* [%] GMP might leak information with reallocs of it's mpz_t
-	* [?] Single-authentication/locking per user option to prevent DoS
-	* [?] Check bit distribution for alphabets not divisible by 2
-	* [?] Error messages when no state file.
-	* [?] Key generation might be to slow on systems without mouse...
-	      Maybe use openssl prng and initialize it from urandom?
-	      Also is there any reason to use SHA256 on RANDOM data?
-	      Maybe few bytes from rng + some from prng and SHA out of it?
-	* [?] Keeping track of failures.
-	      Started (place in state files created)
+        * [!] Fixed some memory leaks.
+        * [!] Ensure state loaded correctly when label/caption full
+        * [+] Fixed licensing so the project can be hosted on Savannah
+        * [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
+        * [-] Warnings when on last passcard
+        * [-] Calling external script for mailing/sms
+        * [-] Share objects between targets (CMake)
+              I'll rather ignore it. .so must have -fPIC, util shouldn't...
+        * [?] Scan all FIXME/TODO entries
+        * [?] Keep lines below 75 columns? Or 80?
+        * [?] off-by-one testcase; a bit done
+        * [?] manuals
+        * [%] GMP might leak information with reallocs of it's mpz_t
+        * [?] Single-authentication/locking per user option to prevent DoS
+        * [?] Check bit distribution for alphabets not divisible by 2
+        * [?] Error messages when no state file.
+        * [?] Key generation might be to slow on systems without mouse...
+              Maybe use openssl prng and initialize it from urandom?
+              Also is there any reason to use SHA256 on RANDOM data?
+              Maybe few bytes from rng + some from prng and SHA out of it?
+        * [?] Keeping track of failures.
+              Started (place in state files created)
 
 2009-12-01 v0.2
-	* [!] One off-by-one error fixed
-	* [+] Implement label and contact setting
-	* [+] Differentiate abnormal errors from normal errors
-	* [+] 'next' behaviour with LaTeX (+6!)
-	* [+] Decide on state file look, add version
-	* [+] ppp testcase - statistical
-	* [+] Check all assertions! If they don't contain anything important
-	* [%] Ensure state loaded correctly when label/caption full
-	* [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
-	* [-] Warnings when on last passcard
-	* [-] Calling external script for mailing/sms
-	* [-] Share objects between targets (CMake)
-	* [-] Using Gecos field for phone information?
-	* [?] Scan all FIXME/TODO entries
-	* [?] Keep lines below 75 columns? Or 80?
-	* [?] off-by-one testcase; a bit done
-	* [?] manuals
-	* [%] GMP might leak information with reallocs of it's mpz_t
+        * [!] One off-by-one error fixed
+        * [+] Implement label and contact setting
+        * [+] Differentiate abnormal errors from normal errors
+        * [+] 'next' behaviour with LaTeX (+6!)
+        * [+] Decide on state file look, add version
+        * [+] ppp testcase - statistical
+        * [+] Check all assertions! If they don't contain anything important
+        * [%] Ensure state loaded correctly when label/caption full
+        * [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
+        * [-] Warnings when on last passcard
+        * [-] Calling external script for mailing/sms
+        * [-] Share objects between targets (CMake)
+        * [-] Using Gecos field for phone information?
+        * [?] Scan all FIXME/TODO entries
+        * [?] Keep lines below 75 columns? Or 80?
+        * [?] off-by-one testcase; a bit done
+        * [?] manuals
+        * [%] GMP might leak information with reallocs of it's mpz_t
 
 2009-12-01 v0.1 first working version
 
-	* [!] CHECK: Make testcase to check if locking file and then rewritting it has any sense.
-		It didn't; rewritten code uses .lck file
-	* [+] Implement/debug Retries
-	* [+] Implement skipping
-	* [+] Implement next functionality
-	* [+] Printing 'next' passcard.
-	* [+] Ensure passcards/codes passed by user are in range and won't get larger because of increments.
-		Needs debuging. Especially internal incrementation.
-	* [+] Ensure file permissions are always set correctly
-	* [+] If not locked when storing/loading lock it for this procedure.
+        * [!] CHECK: Make testcase to check if locking file and then rewritting it has any sense.
+                It didn't; rewritten code uses .lck file
+        * [+] Implement/debug Retries
+        * [+] Implement skipping
+        * [+] Implement next functionality
+        * [+] Printing 'next' passcard.
+        * [+] Ensure passcards/codes passed by user are in range and won't get larger because of increments.
+                Needs debuging. Especially internal incrementation.
+        * [+] Ensure file permissions are always set correctly
+        * [+] If not locked when storing/loading lock it for this procedure.
 
-	* [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
-	* [-] Warnings when on last passcard
-	* [-] Decide on state file look, add version
-	* [-] Implement label and contact setting
-	* [-] Calling external script for mailing/sms
-	* [-] Share objects between targets (CMake)
-	* [-] Using Gecos field for phone information?
-	* [?] Keep lines below 75 columns? Or 80?
-	* [?] 'next' behaviour with LaTeX (+6!)
-	* [?] ppp testcase - statistical
-	* [?] off-by-one testcase
-	* [?] manuals
+        * [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
+        * [-] Warnings when on last passcard
+        * [-] Decide on state file look, add version
+        * [-] Implement label and contact setting
+        * [-] Calling external script for mailing/sms
+        * [-] Share objects between targets (CMake)
+        * [-] Using Gecos field for phone information?
+        * [?] Keep lines below 75 columns? Or 80?
+        * [?] 'next' behaviour with LaTeX (+6!)
+        * [?] ppp testcase - statistical
+        * [?] off-by-one testcase
+        * [?] manuals
 
 2009-11-24 intro/rapid-development TODO
 == "Roadmap" to v1.0 ==
-	* [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
-	* [-] CHECK: Make testcase to check if locking file and then rewritting it has any sense.
-	* [-] Implement/debug Retries
-	* [-] Implement skipping
-	* [-] Implement next functionality
-	* [-] Warnings when on last passcard
-	* [-] Printing 'next' passcard.
-	* [-] Ensure passcards/codes passed by user are in range and won't get larger because of increments.
-	* [-] Ensure file permissions are always set correctly
-	* [-] If not locked when storing/loading lock it for this procedure.
-	* [-] Decide on state file look, add version
-	* [-] Implement label and contact setting
-	* [-] Calling external script for mailing/sms
-	* [-] Share objects between targets (CMake)
-	* [-] Using Gecos field for phone information?
+        * [-] CHECK: Can pam module use openlog()? Maybe the log is already opened? I guess so...
+        * [-] CHECK: Make testcase to check if locking file and then rewritting it has any sense.
+        * [-] Implement/debug Retries
+        * [-] Implement skipping
+        * [-] Implement next functionality
+        * [-] Warnings when on last passcard
+        * [-] Printing 'next' passcard.
+        * [-] Ensure passcards/codes passed by user are in range and won't get larger because of increments.
+        * [-] Ensure file permissions are always set correctly
+        * [-] If not locked when storing/loading lock it for this procedure.
+        * [-] Decide on state file look, add version
+        * [-] Implement label and contact setting
+        * [-] Calling external script for mailing/sms
+        * [-] Share objects between targets (CMake)
+        * [-] Using Gecos field for phone information?
