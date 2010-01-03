@@ -214,7 +214,7 @@ So.
 
    2. Tweak OTPasswd Configuration
    -------------------------------
-   OTPasswd is configured via the /etc/security/otpasswd.conf file.  Upon
+   OTPasswd is configured via the /etc/otpasswd/otpasswd.conf file.  Upon
    initial installation, this file will contain a template of all valid
    configuration options along with copious commentary.  A pristine version
    of this file should be available in the OTPasswd package documentation
@@ -279,10 +279,15 @@ So.
    Be aware that OTPasswd, by default, generates a key which is not
    compatible with the PPPv3.1 specification.  If you would like to
    retain compatibility with the specification and thereby also retain
-   interoperability with other PPPv3 applications, issue the following
-   command:
+   interoperability with other PPPv3 applications, you can either change
+   default behaviour by editing SALT_DEF parameter in the config, or,
+   add no-salt flag during key creation as in the following example:
 
-      $ otpasswd --key --no-salt
+      $ otpasswd --flag no-salt --key
+
+   You can combine also other flags, contact and label parameters like this:
+
+      $ otpasswd -f salt -d Home -f alphabet-2 -f codelength-6 -k
 
    Note: As mentioned above, if OTPasswd is being configured over an SSH
    session, it is conceivable that one can lose one's ability to log back
@@ -339,7 +344,7 @@ who has previously generated a key, and has also set some optional flags
 
    Are you sure you want to continue? (yes/no): yes
 
-   Your current flags: show alphabet-extended (key salted) codelength-3
+   Your current flags: show alphabet-2 (salt) codelength-3
    Do you want to keep them? (yes/no): yes
 
    Hint: Move your mouse, cause some disc activity
@@ -411,7 +416,7 @@ program are all licensed under GNU General Public License version 3.
 The license should be included with the project inside LICENSE file.
 Copyright notice follows:
 
-Copyright (C) 2009,2010 by Tomasz bla Fortuna <bla@thera.be>
+Copyright (C) 2009, 2010 by Tomasz bla Fortuna <bla@thera.be>
 
 This program is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free

@@ -443,6 +443,13 @@ static void _update_flags(const options_t *options, const cfg_t *cfg, state *s, 
 	s->flags |= options->flag_set_mask;
 	s->flags &= options->flag_clear_mask;
 
+	if (options->set_codelength != -1)
+		s->code_length = options->set_codelength;
+
+	if (options->set_alphabet != -1)
+		s->alphabet = options->set_alphabet;
+
+
 	switch (cfg->salt_allow) {
 	case 0:
 		*salted = 0;
@@ -531,10 +538,10 @@ int action_key(options_t *options, const cfg_t *cfg)
 
 		_update_flags(options, cfg, &s, &salted);
 
-		printf("Your current flags (updated with command line options): ");
+		printf("Your current flags (updated with command line options):\n");
 		_show_flags(&s);
 		if (_enforced_yes_or_no(
-			    "Do you want to keep them or use updated defaults?") == QUERY_NO) {
+			    "Type 'yes' to use those, or 'no' to start with updated defaults?") == QUERY_NO) {
 			printf("Reverting to defaults.\n");
 			state_fini(&s);
 			state_init(&s, options->username);

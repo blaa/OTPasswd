@@ -48,6 +48,10 @@ Trying to sort tasks according to their priority.
 	* [+] Because of signals - redo permissions. (SUID required)
 	* [+] The key/counter length is not checked when read from file.
         * [+] Big thing - Move state files to /etc + SUID.
+	* [%] Should we start suid root then drop to some config-defined user
+	      so attacker who breaks otpasswd can't modify the executable?
+        * [?] Check custom alphabet correction (whitespaces or multiple
+	      occurences of same character not allowed.
         * [?] Any possibility to change directory from /etc/otpasswd?
               There's config so it can't be defined there.
 	* [?] Global DB should work with users which aren't in passwd.

@@ -36,14 +36,17 @@ and manage various configuration options.
 .TP
 \fB\-k\fR, \fB\-\-key\fR
 Generate a new key.
-Resets all flags and prints first passcard immediately.
+Can be combined with -f, -d and -c. If user already has state,
+OTPasswd can either, use default flag set and then modify it 
+by user options, or use previous state as defaults. User will
+be asked what he prefers.
+
+After state is prepared, OTPasswd prints first passcard and waits until 
+user manages to note/print them down.
 
 .TP
-\fB\-n\fR, \fB\-\-no\-salt\fR
-Disables the application of a cryptographic salt to the passcode counter.
-Enabling this option will make \fBOTPasswd\fR compatible with the PPPv3
-specification, and will increase the number of available passcards
-while theoretically lowering security.
+\fB\-r\fR, \fB\-\-remove\fR
+Remove user state.
 
 .SS Passcard Printing
 .TP
@@ -61,14 +64,14 @@ Display authentication prompt for the specified passcode.
 
 .TP
 \fB\-a\fR, \fB\-\-authenticate\fR \fIpasscode\fR
-Attempt authentication with the actual passcode specified.  (FIXME: why?)
+Attempt authentication with the actual passcode specified.
+This might be used for testing or scripted authentication.
 
 .TP
 \fB\-s\fR, \fB\-\-skip\fR ( \fIcard\fR | \fIcode\fR )
 Skip forward to a specific point in the passcode sequence.
 The next authentication request will request either the specified passcode,
 or the first passcode on the specified passcard.
-(FIXME: true?)
 
 .TP
 \fB\-w\fR, \fB\-\-warning\fR
@@ -88,19 +91,30 @@ Show passcode when authenticating. (default)
 .TP +19m
 \fBdont\-show\fR
 Do not show passcode when authenticating.
+
 .TP +19m
-\fBalphabet\-simple\fR
-Use 64\-character alphabet. (default)
+\fBalphabet\-\fIX\fR
+Sets used alphabet, X can be an ID or a 'list' command,
+which will print IDs of all available alphabets.
+By default 64\-character alphabet is used.
+
 .TP +19m
-\fBalphabet\-extended\fR
-Use 88\-character alphabet.
-.TP +19m
-\fBcodelength\-\fInum\fR\fR
+\fBcodelength\-\fInum\fR
 Set passcode length to \fInum\fR characters,
-.br
 where \fInum\fR may be between 2 and 16.
-.br
 (Default: \fBcodelength\-4\fR)
+
+.TP +19m
+\fBno\-salt\fR
+Meaningful only during key generation. Disables salting of a passcode counter.
+Enabling this option will make program compatible with PPPv3.1 and will increase
+available passcard number at the cost of (theoretically) less security.
+.TP +19m
+
+\fBsalt\fR
+Enables salting of key if not enabled by default.
+
+
 .TP +19m
 \fBlist\fR
 Display current user state information.
@@ -196,10 +210,13 @@ The first unprinted passcard.
 .PD
 
 .SH SECURITY NOTES
-This section needs to be completed (FIXME).
+This section needs to be completed (FIXME). Until this section is written
+see docs/security file which is distributed with OTPasswd sources.
 
 .SH EXIT STATUS
 This section needs to be completed (FIXME).
+OTPasswd will return 0 on success and non-zero 
+on failure. This can be used for scripting (e.g. see -a option).
 
 .\"   RETURN VALUE       [Normally only in Sections 2, 3]
 .\"   ERRORS             [Typically only in Sections 2, 3]
@@ -220,9 +237,13 @@ and should not be accessible for normal users (mode 0700).
 The main \fBOTPasswd\fR system configuration file.
 This file contains key-value configuration parameters that
 govern the operation of the system.
+
+This file contains state DB configuration, system-wide defaults,
+PAM configuration and policy configuration.
+
 When the backend user database is configured to use MySQL or LDAP,
 this file will contain privileged information and
-must be not be accessible for normal users.  (FIXME: true?)
+must be not be accessible for normal users.
 
 .TP
 /etc/otpasswd/otshadow
@@ -243,12 +264,13 @@ only contains information for a single user.
 .TP
 /etc/pam.d/otpasswd_login
 The PAM prototype configuration for \fBOTPasswd\fR.
-If this file is \fIinclude\fRd in a PAM configuration used for 
-authentication by a text-based utility, the
-\fBpam_otpasswd\fR(8) PAM module will be used to ask the user for a passcode.
+If this file is \fIinclude\fRd in a PAM configuration of any
+service (like SSH), the \fBpam_otpasswd\fR(8) PAM module will be 
+used to ask the user for a passcode just after normal pam_unix 
+authentication mechanisms succeeds.
 
 .TP
-/lib/security/pam_otpasswd
+/lib/security/pam_otpasswd.so
 The \fBOTPasswd\fR system PAM module.
 This module is dynamically loaded by \fBPAM\fR(7) when an \fBOTPasswd\fR
 one-time password authentication has been configured.
@@ -266,13 +288,13 @@ An excellent description of PPPv3 is available on the web at:
 .PP
 Note that for \fBOTPasswd\fR to operate in a manner which is
 strictly compatible with PPPv3, it is important to specify
-the \fB--no-salt\fR option during key generation.
+the \fB\-f no\-salt\fR option during key generation.
 A compatible key will generate passcards, and passcodes
 which are interoperable with other PPPv3-compliant applications.
 For a list of such applications, see
 <http://www.grc.com/ppp/software.htm>.
 .PP
-\fBOTPasswd\fR does \fInot\fR support any earlier version
+\fBOTPasswd\fR does \fInot\fR support any earlier versions
 of the PPP specification.
 
 .\"   CONFORMING TO
@@ -281,12 +303,13 @@ of the PPP specification.
 
 .SH EXAMPLES
 Every user must generate a key in order to use \fBOTPasswd\fR.
-A cryptographic salt is used by default, unless the \fB--no-salt\fR option is specified.
+A cryptographic salt is used by default, unless the \fB\-f no-salt\fR
+option is specified or SALT_DEF parameter in config file changed.
 This type of key is not compatible with the PPPv3 specification.
 To generate a new salted key and print the first passcard, use:
 .PP
 .ti +4m
-$ otpasswd \-\-key
+$ otpasswd \-\-flag salt \-\-key
 .PP
 Typically, to use the \fBOTPasswd\fR authentication system,
 a user will carry a series of passcards to consult during system login.
@@ -301,15 +324,18 @@ $ otpasswd \-\-text '[3]'
 And the current passcard may be printed with:
 .PP
 .ti +4m
-$ otpasswd \-\-text current
+$ otpasswd \-\-text '[current]'
 .PP
 To configure a passcode length of five (5) characters, use:
 .PP
 .ti +4m
 $ otpasswd \-\-flag codelength\-5
 .PP
+You can use this option at any time, including key creation.
+.PP
 While plain ASCII passcards are perfectly useful,
-LaTeX enables much more attractively formatted passcards.
+LaTeX enables much more attractively formatted passcards and easy
+approach to printing few passcards at a time.
 One way to efficiently print a LaTeX file is to use the \fIpdflatex\fR
 utility from the \fItexlive-latex-base\fR package.
 To generate the next six (6) passcards on an A4 page using LaTeX, use:
@@ -320,6 +346,8 @@ $ otpasswd \fB\-\-latex\fR next > tmp.latex
 $ pdflatex tmp.latex
 .br
 $ lp tmp.pdf
+.br
+# Remember to remove any temporary files to keep your passcards secret.
 .RE
 
 .SH SEE ALSO
