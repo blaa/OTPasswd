@@ -690,7 +690,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 
 	retval = 0;
 cleanup:
-	if (retval == 0) {
+	if (retval == 0 && options->action != 'A') {
 		printf("Your current flags:\n");
 		_show_flags(s);
 	}

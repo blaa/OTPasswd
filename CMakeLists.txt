@@ -131,8 +131,8 @@ ADD_TEST(state_pass1 ./otpasswd -v -p "staticpass")
 ADD_TEST(state_pass2 ./otpasswd -v -p "")
 ADD_TEST(state_flag1 ./otpasswd -v -f dont-show)
 ADD_TEST(state_flag2 ./otpasswd -v -f codelength-12)
-ADD_TEST(state_flag3 ./otpasswd -v -f alphabet-extended)
-ADD_TEST(state_flag4 ./otpasswd -v -f alphabet-simple)
+ADD_TEST(state_flag3 ./otpasswd -v -f alphabet-5)
+ADD_TEST(state_flag4 ./otpasswd -v -f alphabet-2)
 ADD_TEST(state_flag5 ./otpasswd -v -f list)
 ADD_TEST(state_label ./otpasswd -v -d "Set label")
 ADD_TEST(state_warnings ./otpasswd -v -w)
@@ -149,10 +149,12 @@ ADD_TEST(fail_ok7 ./otpasswd -v -d "01234567890123456789012345678901234567890123
 ADD_TEST(fail_ok8 ./otpasswd -v -c "0123456789012345678901234567890123456789012345678900123456789")
 ADD_TEST(fail_ok9 ./otpasswd -v -f codelength-17)
 ADD_TEST(fail_ok10 ./otpasswd -v -f codelength-1)
-ADD_TEST(fail_ok11 ./otpasswd -a '___')
-ADD_TEST(fail_ok12 ./otpasswd --nonexisting-command a)
+ADD_TEST(fail_ok11 ./otpasswd -v -f alphabet--1)
+ADD_TEST(fail_ok12 ./otpasswd -v -f alphabet-33)
+ADD_TEST(fail_ok13 ./otpasswd -a '___')
+ADD_TEST(fail_ok14 ./otpasswd --nonexisting-command a)
 
 SET_TESTS_PROPERTIES(fail_ok1 fail_ok2 fail_ok3 fail_ok4
   fail_ok5 fail_ok6 fail_ok7 fail_ok8 fail_ok9 fail_ok10 fail_ok11
-  fail_ok12 PROPERTIES WILL_FAIL TRUE)
+  fail_ok12 fail_ok13 fail_ok14 PROPERTIES WILL_FAIL TRUE)
 

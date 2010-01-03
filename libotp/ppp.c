@@ -70,6 +70,7 @@ int ppp_alphabet_verify(int id)
 	const int min = cfg->alphabet_min_length;
 	const int max = cfg->alphabet_max_length;
 
+	/* Check if it's legal */
 	if (id < 0 || id > alphabet_cnt)
 		return 1;
 
@@ -77,9 +78,7 @@ int ppp_alphabet_verify(int id)
 	 * alphabet is not default one */
 	if  (cfg->alphabet_allow_change == 0 &&
 	     cfg->alphabet_def != id)
-
-
-		return 1;
+		return 2;
 
 
 	const char *alphabet;
@@ -92,10 +91,11 @@ int ppp_alphabet_verify(int id)
 
 	const int len = strlen(alphabet);
 
-	if (len>=min && len<=max) 
-		return 0;
+	if (len<min || len>max) 
+		return 2;
 
-	return 1;
+	/* OK */
+	return 0;
 }
 
 void ppp_alphabet_print(void)

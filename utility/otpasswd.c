@@ -185,12 +185,19 @@ int parse_flag(options_t *options, const char *arg)
 			}
 			options->set_codelength = tmp;
 
-		} if (sscanf(arg, "alphabet-%d", &tmp) == 1) {
-			if (ppp_alphabet_verify(tmp) != 0) {
+		} else if (sscanf(arg, "alphabet-%d", &tmp) == 1) {
+			const int ret = ppp_alphabet_verify(tmp);
+			if (ret == 1) {
 				printf("Illegal alphabet specified. See "
 				       "-f alphabet-list\n");
 				return 1;
-			}
+			} else if (ret == 2) {
+				printf("Alphabet denied by policy. See "
+				       "-f alphabet-list\n");
+				return 2;
+			} else if (ret != 0) 
+				return 3;
+
 			options->set_alphabet = tmp;
 
 		} else {
