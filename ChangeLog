@@ -47,6 +47,7 @@ Trying to sort tasks according to their priority.
               (FIXED by simplifying warnings)
 	* [+] Because of signals - redo permissions. (SUID required)
 	* [+] The key/counter length is not checked when read from file.
+        * [+] Big thing - Move state files to /etc + SUID.
         * [?] Check if lock files are links. if so. fail. Or rather always unlink 
               before overwritting. 
         * [?] Logging into syslog from utility if SUID; Also deny -v.
@@ -67,7 +68,6 @@ Trying to sort tasks according to their priority.
 	      uses 'db' backend for operating on files/databases.
 	* [-] Scan all FIXME/TODO entries
 	* [-] Manuals
-        * [?] Big thing - Move state files to /etc + SUID.
 	* [?] Use locales for user messages [_("")? ]
 	* [-] right trim values from config?
 	* [?] SELinux compatibility.

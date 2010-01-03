@@ -262,6 +262,12 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		if (c == -1)
 			break;
 
+		/* Assert maximal length of parameter */
+		if (optarg && (strlen(optarg) > 100)) {
+			printf("Option argument too long!\n");
+			return 1;
+		}
+
 		switch (c) {
 			/* Argument-less actions */
 		case 'Q':
