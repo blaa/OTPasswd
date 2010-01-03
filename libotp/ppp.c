@@ -461,31 +461,66 @@ int ppp_verify_range(const state *s)
 /******************
  * Warning support
  ******************/
-int ppp_get_warning_condition(const state *s)
+int ppp_get_warning_conditions(const state *s)
 {
+	int warnings = 0;
+
 	assert(s->codes_on_card > 0);
 
 	int tmp = mpz_cmp(s->current_card, s->latest_card);
 	if (tmp == 0)
-		return PPP_WARN_LAST_CARD;
-	if (tmp > 0)
-		return PPP_WARN_NOTHING_LEFT;
+		warnings |= PPP_WARN_LAST_CARD;
+	else if (tmp > 0)
+		warnings |= PPP_WARN_NOTHING_LEFT;
 
-	return PPP_WARN_OK;
+	if (s->recent_failures > 0)
+		warnings |= PPP_WARN_RECENT_FAILURES;
+
+	return warnings;
 }
 
-const char *ppp_get_warning_message(enum ppp_warning warning)
+const char *ppp_get_warning_message(const state *s, int *warning)
 {
 	const char *nothing_left = "You have no printed passcodes left!";
 	const char *last_card = "You are on your last printed passcard!";
+	const char *failures_template = 
+		"There were %d recent auth failures! Is your static password broken?";
+	const char *failure_template = 
+		"There was 1 recent auth failure! Is your static password broken?";
 
-	switch (warning) {
-	case PPP_WARN_OK:
+	static char failures_buff[sizeof(failures_template) + 10];
+
+	if (*warning == PPP_WARN_OK)
 		return NULL;
+
+	if (*warning & PPP_WARN_RECENT_FAILURES) {
+		int ret;
+		*warning &= ~PPP_WARN_RECENT_FAILURES;
+		if (s->recent_failures == 1) {
+			return failure_template;
+		}
+
+		/* Just to be sure */
+		assert(s->recent_failures < 999999999);
+
+		ret = snprintf(failures_buff, sizeof(failures_buff),
+			       failures_template, s->recent_failures);
+		if (ret < 10) 
+			return NULL;
+
+		failures_buff[sizeof(failures_buff) - 1] = '\0';
+		return failures_buff;
+	}
+
+	switch (*warning) {
 	case PPP_WARN_LAST_CARD:
+		*warning &= ~PPP_WARN_LAST_CARD;
 		return last_card;
+
 	case PPP_WARN_NOTHING_LEFT:
+		*warning &= ~PPP_WARN_NOTHING_LEFT;
 		return nothing_left;
+
 	default:
 		assert(0);
 		return 0;

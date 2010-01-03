@@ -78,12 +78,18 @@ const char *ppp_get_contact(const state *s);
 enum ppp_warning{
 	PPP_WARN_OK = 0,		/* No warning condition */
 	PPP_WARN_LAST_CARD = 1,		/* User on last printed card */
-	PPP_WARN_NOTHING_LEFT = 2	/* Used up all passcodes */
+	PPP_WARN_NOTHING_LEFT = 2,	/* Used up all printed passcodes */
+	PPP_WARN_RECENT_FAILURES = 4,	/* There were some failures */
+	
 };
-extern int ppp_get_warning_condition(const state *s);
+/* Returns an ORed mask of warning conditions */
+extern int ppp_get_warning_conditions(const state *s);
 
-/* Return warning message for a warning condition */
-extern const char *ppp_get_warning_message(enum ppp_warning warning);
+/* Return warning message for a warning condition
+ * and clear this condition from flag. Returns NULL
+ * when no conditions are left in argument.
+ */
+extern const char *ppp_get_warning_message(const state *s, int *warning);
 
 /* Decode error */
 extern const char *ppp_get_error_desc(int error);

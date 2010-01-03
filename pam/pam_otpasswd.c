@@ -159,32 +159,28 @@ PAM_EXTERN int pam_sm_open_session(
 
 	print(PRINT_NOTICE, "(session) state loaded\n");
 
-	int err = ppp_get_warning_condition(s);
+	int err = ppp_get_warning_conditions(s);
 	if (err == 0) {
 		/* No warnings! */
 		print(PRINT_NOTICE, "(session) no warning to be printed\n");
 		goto cleanup;
 	}
 
-	const char *msg = ppp_get_warning_message(err);
+	const char *msg;
 
-	if (!msg) {
-		/* Should never happen */
-		print(PRINT_NOTICE, "(session) no warning returned\n");
-		goto cleanup;
+	while ((msg = ppp_get_warning_message(s, &err)) != NULL) {
+		/* Generate message */
+		char buff_msg[300];
+		int len;
+		
+		len = snprintf(buff_msg, sizeof(buff_msg), "*** OTPasswd Warning: %s", msg);
+		if (len < 10) {
+			print(PRINT_ERROR, "(session) sprintf error\n");
+			goto cleanup;
+		}
+		
+		ph_show_message(pamh, cfg, buff_msg);
 	}
-
-	/* Generate message */
-	char buff_msg[300];
-	int len;
-
-	len = snprintf(buff_msg, sizeof(buff_msg), "*** OTPasswd Warning: %s", msg);
-	if (len < 10) {
-		print(PRINT_ERROR, "(session) sprintf error\n");
-		goto cleanup;
-	}
-
-	ph_show_message(pamh, cfg, buff_msg);
 
 cleanup:
 	ppp_release(s, 0, 1); /* Unlock, do not store */

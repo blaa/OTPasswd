@@ -62,8 +62,22 @@ void security_init(void)
 	real_gid = getgid();
 	set_gid = getegid();
 
-	/* Ensure that stdout exists! And that we've got 3 descriptors
-	 * opened. */
+	/* Ensure that stdout and stderr exists, so we won't overwrite
+	 * any opened files with stdout data. I wonder if this danger is
+	 * still valid on new Unix systems. */
+
+	struct stat st;
+	/* Do we have stdout? */
+	ret = fstat(1, &st);
+	if (ret != 0) {
+		exit(EXIT_FAILURE);
+	}
+
+	/* Do we have stderr? */
+	ret = fstat(2, &st);
+	if (ret != 0) {
+		exit(EXIT_FAILURE);
+	}
 
 	ret = chdir("/");
 	if (ret != 0) {

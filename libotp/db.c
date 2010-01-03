@@ -612,7 +612,7 @@ int db_file_store(state *s)
 
 	in = fopen(s->db_path, "r");
 	if (!in) {
-		/* Ok. User=db and file doesn't exist - ok. */
+		/* User=db and file doesn't exist - ok. */
 
 		/* Probably doesn't exists, if not... */
 		if (errno != ENOENT) {

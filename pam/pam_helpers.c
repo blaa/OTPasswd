@@ -72,6 +72,8 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 	char current_passcode[17] = {0};
 	char contact[STATE_CONTACT_SIZE];
 
+	/* We musn't have lock on state when running this function */
+
 	/* Check if OOB enabled */
 	if (cfg->oob_path == NULL || cfg->oob == 0) {
 		print(PRINT_WARN,
@@ -79,7 +81,7 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 		return 1;
 	}
 
-	/* Ensure path is correct */
+	/* Ensure cfg->oob_path is correct */
 	{
 		struct stat st;
 		if (stat(cfg->oob_path, &st) != 0) {
@@ -116,7 +118,7 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 			if (! (can_owner || can_group) ) {
 				/* Neither from group nor from 
 				 * owner mode */
-				/* TODO: testcase this */
+				/* TODO: testcase this check */
 				print(PRINT_ERROR,
 					    "UID %d is unable to execute "
 					    "OOB utility!\n", cfg->oob_uid);
@@ -124,8 +126,6 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 			}
 		}
 	}
-
-
 
 	/* Gather required data */
 	retval = ppp_get_current(s, current_passcode);
@@ -151,14 +151,16 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 	}
 
 	if (new_pid == 0) {
-		// dangerous print, remove it 
+		// TODO/FIXME: dangerous print, remove it 
 		print(PRINT_NOTICE,
 			    "Executing OOB transmission of %s to %s\n", 
 			    current_passcode, contact);
 
 		/* We don't want to leave state in memory! */
-		/* TODO/FIXME: What with the locks? */
+		/* TODO/FIXME: What with the locks? DB may unlock
+		 * data if it was locked. */
 		retval = ppp_release(s, 0, 0);
+		// ppp_fini(s);
 		if (retval != 0) {
 			print(PRINT_ERROR, "RELEASE FAILED IN CHILD!");
 			exit(10);

@@ -750,16 +750,11 @@ int action_print(options_t *options, const cfg_t *cfg)
 
 	/* Do we have to just show any warnings? */
 	if (options->action == 'w') {
-		int e = ppp_get_warning_condition(s);
-		const char *warn = ppp_get_warning_message(e);
-		if (warn) {
-			const char *format = "* OTP WARNING: %s *\n";
-			/* Calculate length */
-			int a, c = snprintf(NULL, 0, format, warn);
-			/* Print boxed */
-			a = c; while (--a) putchar('*'); putchar('\n');
+		int e = ppp_get_warning_conditions(s);
+		const char *warn;
+		while ((warn = ppp_get_warning_message(s, &e)) != NULL) {
+			const char *format = "*** OTPasswd Warning: %s\n";
 			printf(format, warn);
-			a = c; while (--a) putchar('*'); putchar('\n');
 		}
 		retval = 0;
 		goto cleanup;
