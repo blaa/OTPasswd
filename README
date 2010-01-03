@@ -1,10 +1,10 @@
 
-	      OTPasswd - One-Time Password Authentication System
-	      --------------------------------------------------
-		https://savannah.nongnu.org/projects/otpasswd
-			Updated: 29-Dec-09 (v0.5pre1)
+              OTPasswd - One-Time Password Authentication System
+              --------------------------------------------------
+                https://savannah.nongnu.org/projects/otpasswd
+                        Updated: 02-Jan-10 (v0.5pre1)
 
-				    README
+                                    README
 
 
 
@@ -38,6 +38,8 @@ Gentoo ebuild.
 View the most recent version of this document on the web at:
 http://git.savannah.gnu.org/cgit/otpasswd.git/plain/README
 
+
+
 1. Introduction
 ===============
 A one-time password (OTP) is a password that is only valid for a single login
@@ -60,9 +62,9 @@ the user's OTPasswd "state" information.
 OTPasswd is written in C (C99) and implements an OTP system as described
 by Steve Gibson's "Perfect Paper Passwords" specification.  An excellent
 description may be found at: <https://www.grc.com/ppp.htm>.  While OTPasswd
-is designed to be completely compliant with the PPPv3.1 specification, 
-it does optionally extend the specification by allowing the use of a 
-cryptographic "salt" to the passcode counter. OTPasswd does not support 
+is designed to be completely compliant with the PPPv3.1 specification,
+it does optionally extend the specification by allowing the use of a
+cryptographic "salt" to the passcode counter.  OTPasswd does not support
 earlier versions of the PPP specification.
 
 
@@ -108,9 +110,9 @@ issues related to any system security software:
 
 The user is encouraged to read the documentation provided in the <docs>
 directory of this package.  In particular, the <docs/security> document
-will discuss a number of security concerns related to this package.  The
-user is also encouraged to read the information on the GRC website
-(above) regarding PPP.
+covers a number of security concerns related to this package.  The user
+is also encouraged to read the information on the GRC website (above)
+regarding PPP.
 
 The user is also advised to take the following two warnings to heart:
 
@@ -163,8 +165,20 @@ So.
    installation type, OTPasswd requires the GNU Multiple-Precision (GMP)
    library.  Additional packages are required when OTPasswd is compiled
    from source, namely, the CMake cross-platform build system, as well as
-   the corresponding -dev packages for both GMP and CMake.  All of these
+   the corresponding -dev packages for both GMP and PAM.  All of these
    packages should be available in your distribution's repositories.
+
+   The following table provides a number of known configurations under
+   which OTPasswd is known to compile and run.  This table is not intended
+   to be comprehensive, but merely to serve as a point of reference.
+
+      Distribution     Type     Package       Version
+      ---------------  -------  ------------  ---------------------
+      Ubuntu 8.04 LTS  Runtime  libpam0g      0.99.7.1-5ubuntu6.1
+                                libgmp3c2     2:4.2.2+dfsg-1ubuntu2
+                       Build    cmake         2.4.7-1build1
+                                libpam0g-dev  0.99.7.1-5ubuntu6.1
+                                libgmp3-dev   2:4.2.2+dfsg-1ubuntu2
 
    Future versions of OTPasswd may optionally use MySQL and LDAP.  It is
    also possible that a GNU Autotools build system will eventually either
@@ -194,8 +208,8 @@ So.
    NOTE: Depending on the DB backend that is being used (see the next
    section), it may be necessary to create a unique system user exclusively
    for OTPasswd, then set the utility program to run as this user through
-   use of the SUID flag. By default, no OTPasswd binaries are SUID. 
-   
+   use of the SUID flag.  By default, no OTPasswd binaries are SUID.
+
    **** DO NOT RUN OTPASSWD SUID ROOT ****
 
    2. Tweak OTPasswd Configuration
@@ -225,14 +239,13 @@ So.
       DB=global
       ---------
       This mode uses a system-wide configuration database.  The default
-      location for this database is /etc/otpasswd/otshadow.  The
-      database file and directory which contains it must be owned by a
-      special user created for OTPasswd use, and it MUST not be
-      readable for normal users.  Since all critical data is under
-      system control, system security policies can be
-      enforced. However, the OTPasswd utility must be granted SUID
-      privilege to the OTPasswd UID to enable access to this database
-      on the user's behalf. 
+      location for this database is /etc/otpasswd/otshadow.  The database
+      file and directory which contains it must be owned by a special
+      user created for OTPasswd use, and it MUST not be readable for
+      normal users.  Since all critical data is under system control,
+      system security policies can be enforced.  However, the OTPasswd
+      utility must be granted SUID privilege to the OTPasswd UID to enable
+      access to this database on the user's behalf.
 
       DB=mysql
       --------
@@ -382,8 +395,8 @@ anything since he's probably pissed at us anyway".
 7. History
 ==========
 The creation of this program was inspired by the ppp-pam project
-(http://code.google.com/p/ppp-pam/). The idea is basically the same. I
-started development by contributing to ppp-pam, but there were plenty of
+(http://code.google.com/p/ppp-pam/).  The idea is basically the same.
+I started development by contributing to ppp-pam, but there were plenty of
 things to fix, and when the author didn't respond (during first month) I
 just decided I'd be better off rewriting everything from scratch.  The two
 projects share some of my code, like locking functions, but nothing more.
@@ -398,7 +411,7 @@ program are all licensed under GNU General Public License version 3.
 The license should be included with the project inside LICENSE file.
 Copyright notice follows:
 
-Copyright (C) 2009 by Tomasz bla Fortuna <bla@thera.be>
+Copyright (C) 2009,2010 by Tomasz bla Fortuna <bla@thera.be>
 
 This program is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free
@@ -413,4 +426,4 @@ more details.
 You should have received a copy of the GNU General Public License along
 with OTPasswd.  If not, see <http://www.gnu.org/licenses/>.
 
-				     ###
+                                     ###
