@@ -1,10 +1,12 @@
 
-	      OTPasswd - One-Time Password Authentication System
-	      --------------------------------------------------
-		https://savannah.nongnu.org/projects/otpasswd
-			Updated: 29-Dec-09 (v0.5pre1)
+              OTPasswd - One-Time Password Authentication System
+              --------------------------------------------------
+                https://savannah.nongnu.org/projects/otpasswd
+                        Updated: 29-Dec-09 (v0.5pre1)
 
-				SECURITY GUIDE
+                                SECURITY GUIDE
+
+
 
 Contents
 ========
@@ -16,8 +18,8 @@ Contents
 
 1. Security Concerns
 ====================
-TODO: Active / Passive methods of attacks. Why we're just trying to
-make attack as impossible as possible. What can be used to circumvent
+TODO: Active / Passive methods of attacks.  Why we're just trying to
+make attack as impossible as possible.  What can be used to circumvent
 our inventions.
 
 There are certain security related issues you should be aware of.
@@ -34,12 +36,12 @@ There are certain security related issues you should be aware of.
      have access to your passcard.
 
  II. The second issue is that a Denial-of-Service (DoS) attack is possible in
-     some configurations. When an attacker repeatedly tries to authenticate
+     some configurations.  When an attacker repeatedly tries to authenticate
      he can use up all of your printed passcodes and therefore cause you
-     to be unable to login. This can be fixed in several ways:
+     to be unable to login.  This can be fixed in several ways:
 
      1) By requesting that the UNIX password be correctly entered
-        before asking for (and therefore using up) a passcode. (Consult
+        before asking for (and therefore using up) a passcode.  (Consult
         the PAM description chapter for the distinction between the
         required/requisite keywords).  This will limit the problem to the
         case when the attacker sniffs your password.  In this case, the
@@ -286,7 +288,7 @@ This would result in following configuration:
    password   include        system-remote-login
    session    include        system-remote-login
 
-This is exactly what is written in our examples/otpasswd-login file. You
+This is exactly what is written in our examples/otpasswd-login file.  You
 can place this file in /etc/pam.d, and then edit your sshd file to use it
 by modifying auth line:
 
@@ -301,4 +303,4 @@ be found at:
 
    http://www.kernel.org/pub/linux/libs/pam/Linux-PAM-html/Linux-PAM_SAG.html
 
-				     ###
+                                     ###
