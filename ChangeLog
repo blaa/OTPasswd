@@ -109,11 +109,11 @@ Trying to sort tasks according to their priority.
               Maybe use openssl prng and initialize it from urandom?
               Also is there any reason to use SHA256 on RANDOM data?
               Maybe few bytes from rng + some from prng and SHA out of it?
-        * [+] Place common functions inside a shared library       
+        * [+] Place common functions inside a shared library
         * [+] Check bit distribution for alphabets not divisible by 2
               Added separate testcase evaluating character distribution
               instead of bits. This testcase shows that distribution
-              is in correct range. 
+              is in correct range.
         * [-] Keeping track of failures.
               Started (place in state files created)
         * [-] Implement static passwords;
@@ -121,7 +121,7 @@ Trying to sort tasks according to their priority.
                 like second-channel usage.
         * [%] GMP might leak information with reallocs of it's mpz_t
         * [?] Cleanup PPP interface. This should look like follows.
-              "State" is class implementing some basic features of 
+              "State" is class implementing some basic features of
               state management. From this 'class' ppp is derived.
               ppp implements high-level functions which should be used
               explicitly to manage state information unless something

@@ -87,9 +87,9 @@ Current:
    * Warnings issued when user passcard supply is running low
    * Support for cryptographic salt to increase attack resistance (optional)
    * Designed and written with emphasis on secure code
+   * Out-of-band passcode transmission with customizable scripts (SMS, IM, etc)
 
 Planned:
-   * Out-of-band passcode transmission with customizable scripts (SMS, IM, etc)
    * Wide variety of supported platforms (Linux, Unix, BSD, Solaris)
    * Comprehensive documentation
    * Pre-compiled binary packages for major distributions; Also, Gentoo ebuild

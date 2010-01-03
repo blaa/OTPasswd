@@ -17,7 +17,7 @@
  **********************************************************************/
 
 #ifndef PROG_VERSION
-#define PROG_VERSION "v0.5beta"
+#define PROG_VERSION "v0.5"
 #endif
 
 #include <stdio.h>
@@ -643,6 +643,12 @@ int action_flags(options_t *options, const cfg_t *cfg)
 	int save_state = 0;
 	state *s;
 
+	if (options->action == 'A') {
+		/* This does not require state. */
+		ppp_alphabet_print();
+		return 0;
+	}
+
 	/* Initialize, lock, read, calculate additional card info... */
 	ret = _init_state(&s, options, 1);
 	if (ret != 0) {
@@ -715,11 +721,8 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		retval = 0;
 		goto cleanup;
 
-	case 'A': /* List alphabets */
-		ppp_alphabet_print();
-		save_state = 0;
-		retval = 0;
-		goto cleanup;
+	case 'A': /* List alphabets ought be done before */
+		assert(0);
 
 	default:
 		printf("You should never end up here\n");
