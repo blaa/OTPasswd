@@ -335,7 +335,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 				}
 
 				if (strlen(optarg) + 1 > STATE_CONTACT_SIZE) {
-					printf("Contact can't be longer than %zu "
+					printf("Contact can't be longer than %d "
 					       "characters\n", STATE_CONTACT_SIZE-1);
 					goto error;
 				}
@@ -356,7 +356,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 				}
 
 				if (strlen(optarg) + 1 > STATE_LABEL_SIZE) {
-					printf("Label can't be longer than %zu "
+					printf("Label can't be longer than %d "
 					       "characters\n", STATE_LABEL_SIZE-1);
 					goto error;
 				}

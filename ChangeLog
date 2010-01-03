@@ -40,13 +40,18 @@ Trying to sort tasks according to their priority.
         * [+] Partial policy implemented.
               Ensure that if the invalid state is read from file
               that the authentication will never succeed.
+	* [+] Check if OOB script is not SUID?
+	* [+] Ensure that PAM session can display warning in three calls
+	      to conversation function. If not, we must build a buffer
+	      (See for example how winscp shows that warning)
+              (FIXED by simplifying warnings)
+	* [+] Because of signals - redo permissions. (SUID required)
+	* [+] The key/counter length is not checked when read from file.
         * [?] Check if lock files are links. if so. fail. Or rather always unlink 
               before overwritting. 
         * [?] Logging into syslog from utility if SUID; Also deny -v.
-	* [%] The key/counter length is not checked when read from file.
 	* [?] First unlink lock file, then unlock to omit race condition?
 	* [?] Security: Do we need to change something regarding ulimits?
-	      Because of signals - redo permissions.
 	* [?] Add -K option to remove key and disable OTP.
 	* [-] Keeping track of failures.
 	      Started (place in state files created)
@@ -64,10 +69,6 @@ Trying to sort tasks according to their priority.
 	* [-] Manuals
         * [?] Big thing - Move state files to /etc + SUID.
 	* [?] Use locales for user messages [_("")? ]
-	* [%] Ensure that PAM session can display warning in three calls
-	      to conversation function. If not, we must build a buffer
-	      (See for example how winscp shows that warning)
-	* [?] Check if OOB script is not SUID?
 	* [-] right trim values from config?
 	* [?] SELinux compatibility.
 	* [?] Import/export of ascii state lines...
