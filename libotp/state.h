@@ -94,7 +94,6 @@ typedef struct {
 	unsigned char current_row;	/* 1 - 10 */
 	unsigned char current_column;	/* A ... */
 
-
 	/* Not necessarily part of a user state,
 	 * this is data used for storing/restoring
 	 * state information.
@@ -138,7 +137,8 @@ extern int state_unlock(state *s);
 
 /* Load/Store state from/to file database. */
 extern int state_load(state *s);
-extern int state_store(state *s);
+/* If remove == 1, remove user state */
+extern int state_store(state *s, int remove);
 
 
 

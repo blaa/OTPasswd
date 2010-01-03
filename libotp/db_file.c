@@ -679,7 +679,7 @@ error:
 	return retval;
 }
 
-int db_file_store(state *s)
+int db_file_store(state *s, int remove)
 {
 	/* Return value, by default return error */
 	int ret;
@@ -689,6 +689,9 @@ int db_file_store(state *s)
 
 	/* Did we lock the file? */
 	int locked = 0;
+
+	cfg_t *cfg = cfg_get();
+	assert(cfg);
 
 	char user_entry_buff[STATE_ENTRY_SIZE];
 
@@ -705,9 +708,20 @@ int db_file_store(state *s)
 		ret = db_file_lock(s);
 		if (ret != 0) {
 			print(PRINT_ERROR, "Unable to lock file for writing!\n");
-			goto cleanup1;
+			goto cleanup_free;
 		}
 		locked = 1;
+	}
+
+	if (cfg->db == CONFIG_DB_USER && remove) {
+		ret = unlink(db);
+		if (ret != 0) {
+			ret = STATE_IO_ERROR;
+			print_perror(PRINT_ERROR,
+				     "Unable to unlink state file\n");
+		}
+		ret = 0;
+		goto cleanup_lock;
 	}
 
 	in = fopen(db, "r");
@@ -760,16 +774,22 @@ int db_file_store(state *s)
 	}
 
 	/* 2) Generate our new entry and store it into file */
-	ret = _db_generate_user_entry(s, user_entry_buff, sizeof(user_entry_buff));
-	if (ret != 0) {
-		print(PRINT_ERROR, "Strange error while generating new user entry line\n");
-		goto cleanup;
-	}
-
-	if (fputs(user_entry_buff, out) < 0) {
-		print(PRINT_ERROR, "Error while writing user entry to database\n");
-		ret = STATE_IO_ERROR;
-		goto cleanup;
+	if (remove == 0) {
+		ret = _db_generate_user_entry(s, user_entry_buff, 
+					      sizeof(user_entry_buff));
+		if (ret != 0) {
+			print(PRINT_ERROR,
+			      "Strange error while generating new user "
+			      "entry line\n");
+			goto cleanup;
+		}
+		
+		if (fputs(user_entry_buff, out) < 0) {
+			print(PRINT_ERROR, "Error while writing user "
+			      "entry to database\n");
+			ret = STATE_IO_ERROR;
+			goto cleanup;
+		}
 	}
 
 	/* 3) Copy rest of the file */
@@ -832,11 +852,12 @@ cleanup:
 			     tmp);
 	}
 
+cleanup_lock:
 	if (locked && db_file_unlock(s) != 0) {
 		print(PRINT_ERROR, "Error while unlocking state file!\n");
 	}
 
-cleanup1:
+cleanup_free:
 	free(db);
 	free(lck);
 	free(tmp);

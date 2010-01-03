@@ -293,20 +293,20 @@ int state_load(state *s)
 }
 
 
-int state_store(state *s)
+int state_store(state *s, int remove)
 {
 	cfg_t *cfg = cfg_get();
 	assert(cfg);
 	switch (cfg->db) {
 	case CONFIG_DB_USER:
 	case CONFIG_DB_GLOBAL:
-		return db_file_store(s);
+		return db_file_store(s, remove);
 
 	case CONFIG_DB_MYSQL:
-		return db_mysql_store(s);
+		return db_mysql_store(s, remove);
 
 	case CONFIG_DB_LDAP:
-		return db_ldap_store(s);
+		return db_ldap_store(s, remove);
 	default:
 		assert(0);
 		return 1;

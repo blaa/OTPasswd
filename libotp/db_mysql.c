@@ -40,7 +40,7 @@ int db_mysql_load(state *s)
 	return 1;
 }
 
-int db_mysql_store(state *s)
+int db_mysql_store(state *s, int remove)
 {
 	print(PRINT_ERROR, "Unimplemented\n");
 	return 1;

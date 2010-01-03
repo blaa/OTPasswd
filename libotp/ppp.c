@@ -628,7 +628,7 @@ int ppp_release(state *s, int store, int unlock)
 	int ret;
 	int retval = 0;
 
-	if (store && (ret = state_store(s)) != 0) {
+	if (store && (ret = state_store(s, 0)) != 0) {
 		print(PRINT_ERROR, "Error while storing state file\n");
 		print(PRINT_NOTICE, "(%d: %s)\n", ret, ppp_get_error_desc(ret));
 		retval++;

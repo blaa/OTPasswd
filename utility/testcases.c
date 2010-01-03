@@ -294,7 +294,7 @@ int state_testcase(void)
 		printf("state_testcase[%2d] failed(%d)\n", test, failed++);
 	mpz_set_ui(s1.counter, 321323211UL);
 
-	test++; if (state_store(&s1) != 0)
+	test++; if (state_store(&s1, 0) != 0)
 		printf("state_testcase[%2d] failed(%d)\n", test, failed++);
 
 	test++; if (state_load(&s2) != 0)
@@ -750,7 +750,7 @@ int ppp_testcase(void)
 		free(current_user);
 		return failed;
 	}
-	state_store(&s);
+	state_store(&s, 0);
 	state_fini(&s);
 
 	printf("Should succeed:\n");

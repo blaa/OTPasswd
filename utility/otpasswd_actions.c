@@ -467,11 +467,21 @@ int action_key(options_t *options, const cfg_t *cfg)
 {
 	int retval = 1;
 
-	if (security_is_root() == 0 && cfg->allow_key_generation == 0) {
+	int remove = options->action == 'k' ? 0 : 1;
+
+	if (!remove && 
+	    security_is_root() == 0 &&
+	    cfg->allow_key_generation == 0) {
 		printf("Key generation denied by policy.\n");
 		return 1;
 	}
 
+	if (remove && 
+	    security_is_root() == 0 &&
+	    cfg->allow_key_removal == 0) {
+		printf("Key removal denied by policy.\n");
+		return 1;
+	}
 
 	int ret;
 	state s;
@@ -486,16 +496,32 @@ int action_key(options_t *options, const cfg_t *cfg)
 	if (state_load(&s) == 0) {
 		/* We loaded state correctly, key exists */
 		puts(
-			"*****************************************************\n"
-			"* This will irreversibly erase your previous key    *\n"
-			"* making all already printed passcards worthless!   *\n"
-			"*****************************************************\n"
+			"*************************************************\n"
+			"* This will irreversibly erase your key, making *\n"
+			"*    all already printed passcards worthless!   *\n"
+			"*************************************************\n"
 		);
 
 		if (_yes_or_no("Are you sure you want to continue?") != 0) {
 			printf("Stopping\n");
 			goto cleanup;
 		}
+
+		/* If we were supposed to remove the key do it now */
+		if (remove) {
+			ret = state_store(&s, 1);
+			if (ret == 0) {
+				printf("Key removed!\n");
+				retval = 0;
+			} else {
+				printf("Error while removing key!\n");
+				retval = 1;
+			}
+			goto cleanup;
+		}
+
+		/* We are not removing, read flags, update them
+		 * with user options and ask if he likes it */
 
 		/* Use default from previous state */
 		if (s.flags & FLAG_SALTED)
@@ -518,6 +544,11 @@ int action_key(options_t *options, const cfg_t *cfg)
 			_update_flags(options, cfg, &s, &salted);
 		}
 	} else {
+		if (remove) {
+			printf("Unable to load your state, nothing to remove.\n");
+			goto cleanup;
+		}
+
 		/* Failed, state_load might have changed something in struct, reinit. */
 		state_fini(&s);
 		state_init(&s, options->username);
@@ -559,7 +590,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 		goto cleanup;
 	}
 
-	ret = state_store(&s); /* This should auto lock */
+	ret = state_store(&s, 0); /* This should auto lock */
 	if (ret != 0) {
 		print(PRINT_ERROR, "Unable to save state.\n");
 		print(PRINT_NOTICE, "(%s)\n", ppp_get_error_desc(ret));
@@ -629,7 +660,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 			save_state = 1;
 		}
 
-		if (options->set_alphabet > 0) {
+		if (options->set_alphabet >= 0) {
 			s->alphabet = options->set_alphabet;
 			save_state = 1;
 		}

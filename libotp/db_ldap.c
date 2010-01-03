@@ -39,7 +39,7 @@ int db_ldap_load(state *s)
 	return 1;
 }
 
-int db_ldap_store(state *s)
+int db_ldap_store(state *s, int remove)
 {
 	print(PRINT_ERROR, "Unimplemented\n");
 	return 1;

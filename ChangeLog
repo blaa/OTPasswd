@@ -58,6 +58,8 @@ Trying to sort tasks according to their priority.
 	* [?] First unlink lock file, then unlock to omit race condition?
 	* [?] Security: Do we need to change something regarding ulimits?
 	* [?] Add -K option to remove key and disable OTP.
+        * [?] Add error_t and bool_t to differentiate differently
+              used ints?
 	* [-] Keeping track of failures.
 	      Started (place in state files created)
 	* [-] Implement static passwords;

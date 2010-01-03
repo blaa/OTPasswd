@@ -41,7 +41,7 @@ extern int db_file_unlock(state *s);
 
 /* Load/Store state from/to file database. */
 extern int db_file_load(state *s);
-extern int db_file_store(state *s);
+extern int db_file_store(state *s, int remove);
 
 
 /*** MySQL DB. ***/
@@ -52,7 +52,7 @@ extern int db_mysql_unlock(state *s);
 
 /* Load/Store state from/to file database. */
 extern int db_mysql_load(state *s);
-extern int db_mysql_store(state *s);
+extern int db_mysql_store(state *s, int remove);
 
 /*** LDAP DB. ***/
 
@@ -62,6 +62,6 @@ extern int db_ldap_unlock(state *s);
 
 /* Load/Store state from/to file database. */
 extern int db_ldap_load(state *s);
-extern int db_ldap_store(state *s);
+extern int db_ldap_store(state *s, int remove);
 
 #endif

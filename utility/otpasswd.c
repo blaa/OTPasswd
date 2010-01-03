@@ -58,8 +58,9 @@ static void _usage(int argc, const char **argv)
 	fprintf(stdout,
 		"Usage: %s [options]\n"
 		"Actions:\n"
-		"  -k, --key    Generate a new key. Also resets all flags\n"
-		"               and prints first passcard immediately\n"
+		"  -k, --key    Generate a new key. You can pass\n"
+		"               -d, -c and -f options along.\n"
+		"  -r, --remove Remove key, and disable OTP for user\n"
 		"  -s, --skip <which>\n"
 		"               Skip to a card specified as an argument.\n"
 		"  -t, --text <which>\n"
@@ -122,7 +123,7 @@ static void _usage(int argc, const char **argv)
 		"  -v, --verbose Display more information about what is happening.\n"
 		"  --version     Display license, warranty, version and author information.\n"
 		"  -h, --help    This message\n"
-		"  --check       Run all testcases.\n"
+		"  --check       Run all testcases. Assumes default config file.\n"
 
 
 		"\nNotes:\n"
@@ -230,7 +231,8 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 
 	static struct option long_options[] = {
 		/* Action selection */
-		{"key",			no_argument,		0, 'k'}, /* L used up */
+		{"key",			no_argument,		0, 'k'},
+		{"remove",		no_argument,		0, 'r'},
 		{"skip",		required_argument,	0, 's'},
 		{"text",		required_argument,	0, 't'},
 		{"latex",		required_argument,	0, 'l'},
@@ -256,7 +258,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 	while (1) {
 		int option_index = 0;
 
-		int c = getopt_long(argc, argv, "ks:t:l:P:a:wf:p:d:c:vu:h", long_options, &option_index);
+		int c = getopt_long(argc, argv, "krs:t:l:P:a:wf:p:d:c:vu:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1)
@@ -273,6 +275,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		case 'Q':
 		case 'w':
 		case 'k':
+		case 'r':
 		case 'x':
 		case 'h':
 			/* Error unless there was flag defined for key generation */
@@ -481,6 +484,7 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 		break;
 
 	case 'k':
+	case 'r':
 		retval = action_key(options, cfg);
 		break;
 
