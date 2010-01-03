@@ -32,6 +32,7 @@
 #include "crypto.h"
 #include "num.h"
 #include "config.h"
+#include "security.h"
 
 #define PPP_INTERNAL
 #include "ppp.h"
@@ -169,17 +170,14 @@ static void _show_flags(const state *s)
 	else
 		printf("dont-show ");
 
-	if (s->flags & FLAG_ALPHABET_EXTENDED)
-		printf("alphabet-extended ");
-	else
-		printf("alphabet-simple ");
-
+	printf("alphabet-%d ", s->alphabet);
 	printf("codelength-%d ", s->code_length);
 
-	if (s->flags & FLAG_NOT_SALTED)
-		printf("(no salt)\n");
+	if (s->flags & FLAG_SALTED)
+		printf("(salt)\n");
 	else
-		printf("(key salted)\n");
+		printf("(no-salt)\n");
+
 
 	if (strlen(s->label) > 0) {
 		printf("Passcard label='%s', ", s->label);
@@ -204,16 +202,24 @@ static void _show_keys(const state *s)
 {
 	assert(s->codes_on_card > 0);
 
+	cfg_t *cfg = cfg_get();
+	assert(cfg);
+
 	mpz_t unsalted_counter;
 	mpz_init_set(unsalted_counter, s->counter);
-	if (!(s->flags & FLAG_NOT_SALTED)) {
+	if (s->flags & FLAG_SALTED) {
 		mpz_and(unsalted_counter, unsalted_counter, s->code_mask);
 	}
 	/* Convert to user numbering */
 	mpz_add_ui(unsalted_counter, unsalted_counter, 1);
 
-	gmp_printf("Key     = %064ZX\n", s->sequence_key);
-	gmp_printf("Counter = %032ZX\n", s->counter);
+	if (cfg->allow_key_print == 1 || security_is_root()) {
+		gmp_printf("Key     = %064ZX\n", s->sequence_key);
+		gmp_printf("Counter = %032ZX\n", s->counter);
+	} else {
+		printf("Key     = (denied by policy)\n");
+		printf("Counter = (denied by policy)\n");
+	}
 	gmp_printf("Current card        = %Zd\n", s->current_card);
 	gmp_printf("Current code        = %Zd\n", unsalted_counter);
 	gmp_printf("Latest printed card = %Zd\n", s->latest_card);
@@ -351,9 +357,12 @@ int action_authenticate(options_t *options, const cfg_t *cfg)
 	int retval = 0;
 
 	/* OTP State */
-	state *s;
+	state *s = NULL;
 
-
+	if (cfg->allow_shell_auth == 0) {
+		printf("Authentication failed (denied by policy).\n");
+		return 0;
+	}
 
 	if (_init_state(&s, options, 0) != 0) {
 		/* This will fail if we're unable to locate home directory */
@@ -416,19 +425,57 @@ cleanup:
 	return retval;
 }
 
+static void _update_flags(const options_t *options, const cfg_t *cfg, state *s, int *salted)
+{
+	assert(options);
+	assert(cfg);
+	assert(s);
+
+	/* Copy all user-selected values to state
+	 * but check if they match policy */
+
+	/* Length of contact/label is ensured in process_cmd_line */
+	if (options->contact)
+		strcpy(s->contact, options->contact); 
+	if (options->label)
+		strcpy(s->label, options->label);
+
+	s->flags |= options->flag_set_mask;
+	s->flags &= options->flag_clear_mask;
+
+	switch (cfg->salt_allow) {
+	case 0:
+		*salted = 0;
+		break;
+	case 2:
+		*salted = 1;
+		break;
+	default:
+		if (options->flag_set_mask & FLAG_SALTED) 
+			*salted = 1;
+		if (options->flag_clear_mask & FLAG_SALTED) 
+			*salted = 0;
+		break;
+	}
+
+	if (*salted)
+		s->flags |= FLAG_SALTED;
+}
+
 /* Generate new key */
 int action_key(options_t *options, const cfg_t *cfg)
 {
 	int retval = 1;
 
-	if (cfg->allow_key_generation == 0) {
-		// TODO; check if we can write to global db
-		// if yes - ok, if not - diee.
+	if (security_is_root() == 0 && cfg->allow_key_generation == 0) {
+		printf("Key generation denied by policy.\n");
+		return 1;
 	}
 
 
 	int ret;
 	state s;
+	int salted; /* Do we salt the key? */
 
 	if (state_init(&s, options->username) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
@@ -450,34 +497,34 @@ int action_key(options_t *options, const cfg_t *cfg)
 			goto cleanup;
 		}
 
-		printf("Your current flags: ");
+		/* Use default from previous state */
+		if (s.flags & FLAG_SALTED)
+			salted = 1;
+		else 
+			salted = 0;
+
+		_update_flags(options, cfg, &s, &salted);
+
+		printf("Your current flags (updated with command line options): ");
 		_show_flags(&s);
 		if (_enforced_yes_or_no(
-			    "Do you want to keep them?") == QUERY_NO) {
+			    "Do you want to keep them or use updated defaults?") == QUERY_NO) {
 			printf("Reverting to defaults.\n");
 			state_fini(&s);
 			state_init(&s, options->username);
+
+			/* Use default salting from config */
+			salted = cfg->salt_def;
+			_update_flags(options, cfg, &s, &salted);
 		}
 	} else {
 		/* Failed, state_load might have changed something in struct, reinit. */
 		state_fini(&s);
 		state_init(&s, options->username);
-	}
 
-	s.flags |= options->flag_set_mask;
-
-	int salted = cfg->salt_def;
-	switch (cfg->salt_allow) {
-	case 0:
-		salted = 0;
-		break;
-	case 2:
-		salted = 1;
-		break;
-	default:
-	case 1:
-		salted = options->flag_set_mask & FLAG_NOT_SALTED ? 0 : 1;
-		break;
+		/* Use default salting from config */
+		salted = cfg->salt_def;
+		_update_flags(options, cfg, &s, &salted);
 	}
 
 	if (state_key_generate(&s, salted) != 0) {
@@ -567,6 +614,9 @@ int action_flags(options_t *options, const cfg_t *cfg)
 	switch(options->action) {
 	case 'f':
 		/* Change flags */
+		assert(! (options->flag_set_mask & FLAG_SALTED));
+		assert(! (options->flag_clear_mask & FLAG_SALTED));
+
 		s->flags |= options->flag_set_mask;
 		s->flags &= ~(options->flag_clear_mask);
 
@@ -574,18 +624,32 @@ int action_flags(options_t *options, const cfg_t *cfg)
 			save_state = 1;
 		}
 
-		if (options->set_codelength >= cfg->passcode_min_length &&
-		    options->set_codelength <= cfg->passcode_max_length) {
+		if (options->set_codelength > 0) {
 			s->code_length = options->set_codelength;
 			save_state = 1;
-		} else if (options->set_codelength >= 0) {
-			printf("Illegal passcode length specified\n");
-			save_state = 0;
-			goto cleanup;
 		}
+
+		if (options->set_alphabet > 0) {
+			s->alphabet = options->set_alphabet;
+			save_state = 1;
+		}
+
+		/* Length of contact/label checked in process_cmd_line */
+		if (options->label) {
+			strcpy(s->label, options->label);
+			save_state = 1;
+		}
+		
+		if (options->contact) {
+			strcpy(s->contact, options->contact);
+			save_state = 1;
+		}
+
 		break;
+
 	case 'p':
 	{
+		assert(options->action_arg);
 		const int len = strlen(options->action_arg);
 		unsigned char sha_buf[32];
 		if (len == 0) {
@@ -605,45 +669,16 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		break;
 	}
 
-	case 'd':
-		/* Change label */
-		if (strlen(options->action_arg) + 1 > sizeof(s->label)) {
-			printf("Label can't be longer than %zu characters\n", sizeof(s->label)-1);
-			goto cleanup;
-		}
-
-		if (!state_validate_str(options->action_arg)) {
-			printf(
-			      "Contact contains illegal characters.\n"
-			      "Alphanumeric + ' -+,.@_*' are allowed\n");
-			goto cleanup;
-		}
-
-		strcpy(s->label, options->action_arg);
-		save_state = 1;
-		break;
-
-	case 'c':
-		/* Change contact info */
-		if (strlen(options->action_arg) + 1 > sizeof(s->contact)) {
-			printf("Contact can't be longer than %zu characters\n", sizeof(s->contact)-1);
-			goto cleanup;
-		}
-
-		if (!state_validate_str(options->action_arg)) {
-			printf(
-			      "Contact contains illegal characters.\n"
-			      "Alphanumeric + ' -+,.@_*' are allowed\n");
-			goto cleanup;
-		}
-		strcpy(s->contact, options->action_arg);
-		save_state = 1;
-		break;
-
 	case 'L': /* List */
 		printf("User    = %s\n", s->username);
 		_show_keys(s);
 
+		save_state = 0;
+		retval = 0;
+		goto cleanup;
+
+	case 'A': /* List alphabets */
+		ppp_alphabet_print();
 		save_state = 0;
 		retval = 0;
 		goto cleanup;
@@ -691,6 +726,18 @@ int action_print(options_t *options, const cfg_t *cfg)
 
 	/* And which to look at: 1 - code, 2 - card */
 	int selected = 0; 
+
+	if (options->action == 't' || options->action ==  'l')
+		if (security_is_root() == 0 && cfg->allow_passcode_print == 0) {
+			printf("Passcode printing denied by policy.\n");
+			return 1;
+		}
+
+	if (options->action == 's')
+		if (security_is_root() == 0 && cfg->allow_skipping == 0) {
+			printf("Passcode skipping denied by policy.\n");
+			return 1;
+		}
 
 	ret = _init_state(&s, options, 1);
 	if (ret != 0) {

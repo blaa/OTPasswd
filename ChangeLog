@@ -35,7 +35,11 @@ Trying to sort tasks according to their priority.
         * [+] Removed dependency - OpenSSL
 	* [+] Modify build config to work with CMake v2.4.7
         * [+] Config file revised.
-        * [+] Multiple alphabet support started
+        * [+] Multiple alphabet support
+	* [+] Passing -f, -d, -c along with the -k.
+        * [+] Partial policy implemented.
+              Ensure that if the invalid state is read from file
+              that the authentication will never succeed.
         * [?] Check if lock files are links. if so. fail. Or rather always unlink 
               before overwritting. 
         * [?] Logging into syslog from utility if SUID; Also deny -v.
@@ -56,7 +60,6 @@ Trying to sort tasks according to their priority.
 	      explicitly to manage state information unless something
 	      more fine-grained is necessary. State on the other hand
 	      uses 'db' backend for operating on files/databases.
-	* [-] Passing -f, -d, -c along with the -k.
 	* [-] Scan all FIXME/TODO entries
 	* [-] Manuals
         * [?] Big thing - Move state files to /etc + SUID.

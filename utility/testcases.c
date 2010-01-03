@@ -697,11 +697,11 @@ int ppp_testcase(void)
 
 	/*** Tests with extended alphabet ***/
 	printf("*** Extended alphabet tests:\n");
-	s.flags |= FLAG_ALPHABET_EXTENDED;
+	s.alphabet = 2;
 	_PPP_TEST(0, 4, 'A', 1, "7OPJ");
 	_PPP_TEST(34, 4, 'G', 5, "Y7CB");
 	_PPP_TEST(864197393UL+50UL, 4, 'E', 8, "=sb;");
-	s.flags &= ~FLAG_ALPHABET_EXTENDED;
+	s.alphabet = 1;
 
 	printf("*** Another sequence key tests:\n");
 	/*** Tests with other sequence_key ***/
@@ -734,7 +734,7 @@ int ppp_testcase(void)
 	_PPP_TEST(574734UL, 16, 'A', 8, "vaxZ5sXJryc?KCn8");
 
 	/*** Try second alphabet ***/
-	s.flags |= FLAG_ALPHABET_EXTENDED;
+	s.alphabet = 2;
 	printf("Second alphabet\n");
 	_PPP_TEST(0, 7, 'A', 1, "Y*HJ;,(");
 	_PPP_TEST(70+34, 7, 'A', 7, "Ao_\"e82");

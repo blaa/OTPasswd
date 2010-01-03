@@ -47,6 +47,9 @@ typedef struct {
 	/* Number of bytes used for passcode (2 - 16) */
 	unsigned int code_length;
 
+	/* Alphabet selected */
+	unsigned int alphabet;
+	
 	/* User flags */
 	unsigned int flags;
 

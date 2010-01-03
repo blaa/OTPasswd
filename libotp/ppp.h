@@ -53,6 +53,13 @@ extern void ppp_calculate(state *s);
  * the data could be maliciously changed */
 extern int ppp_verify_range(const state *s);
 
+/* Verify if alphabet is a correct alphabet number
+ * prints warnings to stdout. */
+extern int ppp_alphabet_verify(int id);
+
+/* Print all acceptable alphabets */
+extern void ppp_alphabet_print(void);
+
 /* Generate prompt used for authentication
  * Do not free returned value. It's stored in state
  * and freed in state_fini.

@@ -171,8 +171,11 @@ int state_init(state *s, const char *username)
 	s->code_length = cfg->passcode_def_length;
 	if (cfg->show != 0)
 		s->flags = FLAG_SHOW;
-	if (cfg->alphabet_def == 2)
-		s->flags |= FLAG_ALPHABET_EXTENDED;
+
+	if (cfg->salt_def == 1)
+		s->flags |= FLAG_SALTED;
+	
+	s->alphabet = cfg->alphabet_def;
 
 	/* This will be calculated later by ppp.c */
 	s->codes_on_card = s->codes_in_row = s->current_row =
@@ -287,7 +290,6 @@ int state_key_generate(state *s, const int salt)
 		"or type on keyboard to make the progress faster.\n");
 
 /*
-  Openssl rng:
 	if (crypto_rng(entropy_pool, pseudo_random, 1) != 0) {
 		print(PRINT_ERROR, "Unable to get enough pseudo random bytes\n");
 		return 1;
@@ -319,6 +321,8 @@ int state_key_generate(state *s, const int salt)
 		memset(key_bin, 0, sizeof(key_bin));
 		mpz_set_d(s->counter, 0);
 		mpz_set_d(s->latest_card, 0);
+
+		s->flags &= ~(FLAG_SALTED); 
 	} else {
 		/* Use half of entropy to generate key */
 		crypto_sha256(entropy_pool, sizeof(entropy_pool)/2, key_bin);
@@ -332,10 +336,10 @@ int state_key_generate(state *s, const int salt)
 
 		memset(entropy_pool, 0, sizeof(entropy_pool));
 		memset(key_bin, 0, sizeof(key_bin));
+
+		s->flags |= FLAG_SALTED;
 	}
 
-	if (salt)
-		s->flags &= ~(FLAG_NOT_SALTED); 
 	return 0;
 }
 

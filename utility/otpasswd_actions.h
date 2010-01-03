@@ -24,13 +24,15 @@
 typedef struct {
 	char action;
 	char *action_arg;
+	char *label;
+	char *contact;
 
 	char *username;
 
 	unsigned int flag_set_mask;
 	unsigned int flag_clear_mask;
 	int set_codelength;
-
+	int set_alphabet;
 } options_t;
 
 extern int action_flags(options_t *options, const cfg_t *cfg);

@@ -56,8 +56,8 @@ enum errors {
 enum flags {
 	FLAG_SHOW = 1,
 	/* FLAG_SKIP removed */
-	FLAG_ALPHABET_EXTENDED = 4,
-	FLAG_NOT_SALTED = 8,
+	/* FLAG_ALPHABET_EXTENDED removed */
+	FLAG_SALTED = 8,
 };
 
 #endif

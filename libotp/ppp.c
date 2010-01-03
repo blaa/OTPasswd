@@ -23,32 +23,34 @@
 
 #include "ppp.h"
 #include "print.h"
+#include "config.h"
+
 
 /* Number of combinations calculated for 4 passcodes */
 /* 64 characters -> 16 777 216 */
-const char alphabet_simple[] =
+static const char alphabet_simple[] =
 	"!#%+23456789:=?@"
 	"ABCDEFGHJKLMNPRSTUVWXYZ"
 	"abcdefghijkmnopqrstuvwxyz";
 
 /* 88 characters -> 59 969 536 */
-const char alphabet_extended[] =
+static const char alphabet_extended[] =
 	"!\"#$%&'()*+,-./23456789:;<=>?@ABCDEFGHJKLMNO"
 	"PRSTUVWXYZ[\\]^_abcdefghijkmnopqrstuvwxyz{|}~";
 
 /* 54 chars -> 8 503 056 */
-const char alphabet_simple_no_vowels[] =
+static const char alphabet_simple_no_vowels[] =
 	"!#%+23456789:=?@BCDFGHJKLMNPRSTVWXZbcdfghjkmnpqrstvwxz";
 
 /* 78 chars -> 37 015 056 */
-const char alphabet_extended_no_vowels[] =
+static const char alphabet_extended_no_vowels[] =
 	"!\"#$%&'()*+,-./23456789:;<=>?@BCDFGHJKLMNPRSTVWXZ[\\]^_bcdfghjkmnpqrstvwxz{|}~";
 
 /* 56 chars -> 9 834 496 */
-const char alphabet_alpha[] = 
+static const char alphabet_alpha[] = 
 	"23456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPRSTUVWXYZ";
 
-const char *alphabets[] = {
+static const char *alphabets[] = {
 	NULL, /* Custom */
 	alphabet_simple,
 	alphabet_extended,
@@ -57,11 +59,76 @@ const char *alphabets[] = {
 	alphabet_alpha,
 };
 
-const int alphabet_cnt = sizeof(alphabets);
+static const int alphabet_cnt = sizeof(alphabets) / sizeof(*alphabets);
+
+
+int ppp_alphabet_verify(int id)
+{
+	const cfg_t *cfg = cfg_get();
+	assert(cfg);
+
+	const int min = cfg->alphabet_min_length;
+	const int max = cfg->alphabet_max_length;
+
+	if (id < 0 || id > alphabet_cnt)
+		return 1;
+
+	/* Fail also if changing is denied and this
+	 * alphabet is not default one */
+	if  (cfg->alphabet_allow_change == 0 &&
+	     cfg->alphabet_def != id)
+
+
+		return 1;
+
+
+	const char *alphabet;
+	if (id == 0) {
+		/* 0 - custom */
+		alphabet = cfg->alphabet_custom;
+	} else {
+		alphabet = alphabets[id];
+	}
+
+	const int len = strlen(alphabet);
+
+	if (len>=min && len<=max) 
+		return 0;
+
+	return 1;
+}
+
+void ppp_alphabet_print(void)
+{
+	const cfg_t *cfg = cfg_get();
+	assert(cfg);
+
+	const int min = cfg->alphabet_min_length;
+	const int max = cfg->alphabet_max_length;
+
+	int i;
+
+	for (i=0; i<alphabet_cnt; i++) {
+		int len;
+		const char *alphabet;
+		if (i == 0) {
+			/* 0 - custom */
+			alphabet = cfg->alphabet_custom;
+		} else {
+			alphabet = alphabets[i];
+		}
+
+		len = strlen(alphabet);
+		printf("Alphabet ID = %d (%s by policy):\n", i, 
+		       (len>=min && len<=max) ? "accepted" : "denied");
+		puts(alphabet);
+	}
+}
+
 
 void ppp_add_salt(const state *s, mpz_t passcode)
 {
-	if (!(s->flags & FLAG_NOT_SALTED)) {
+	if (s->flags & FLAG_SALTED) {
 		mpz_t salt;
 		mpz_init_set(salt, s->counter);
 		mpz_and(salt, salt, s->salt_mask);
@@ -107,6 +174,9 @@ int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
 
 	int ret;
 
+	const cfg_t *cfg = cfg_get();
+	assert(cfg);
+
 	/* Assure range during development */
 	assert(mpz_tstbit(counter, 128) == 0);
 
@@ -133,17 +203,18 @@ int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
 	/* Convert result back to number */
 	num_from_bin(cipher, cipher_bin, 16);
 
-	assert(alphabet_cnt > 6);
-
-	int alphabet_len;
-	const char *alphabet;
-	if (s->flags & FLAG_ALPHABET_EXTENDED) {
-		alphabet = alphabet_extended;
-		alphabet_len = sizeof(alphabet_extended) - 1;
-	} else {
-		alphabet = alphabet_simple;
-		alphabet_len = sizeof(alphabet_simple) - 1;
+	if (ppp_alphabet_verify(s->alphabet) != 0) {
+		print(PRINT_ERROR, "State contains invalid alphabet\n");
+		goto clear;
 	}
+
+	const char *alphabet;
+	if (s->alphabet == 0) {
+		alphabet = cfg->alphabet_custom;
+	} else {
+		alphabet = alphabets[s->alphabet];
+	}
+	const int alphabet_len = strlen(alphabet);
 
 	for (i=0; i<s->code_length; i++) {
 		unsigned long int r = mpz_fdiv_q_ui(quotient, cipher, alphabet_len);
@@ -284,7 +355,7 @@ void ppp_calculate(state *s)
 	/* Calculate current card */
 	mpz_t unsalted_counter;
 	mpz_init_set(unsalted_counter, s->counter);
-	if (!(s->flags & FLAG_NOT_SALTED)) {
+	if (s->flags & FLAG_SALTED) {
 		mpz_and(unsalted_counter, unsalted_counter, s->code_mask);
 	}
 
@@ -300,13 +371,13 @@ void ppp_calculate(state *s)
 	s->current_column = columns[current_column];
 
 	/* Calculate max passcard */
-	if (s->flags & FLAG_NOT_SALTED) {
+	if (s->flags & FLAG_SALTED) {
+		mpz_set(s->max_card, s->code_mask);
+	} else {
 		const char max_hex[] =
 			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
 		assert(sizeof(max_hex)  == 33);
 		mpz_set_str(s->max_card, max_hex, 16);
-	} else {
-		mpz_set(s->max_card, s->code_mask);
 	}
 
 	mpz_div_ui(s->max_card, s->max_card, s->codes_on_card);
@@ -369,10 +440,10 @@ int ppp_verify_range(const state *s)
 	/* Retrieve current counter without salt */
 	mpz_t just_counter;
 	mpz_init(just_counter);
-	if (s->flags & FLAG_NOT_SALTED) {
-		mpz_set(just_counter, s->counter);
-	} else {
+	if (s->flags & FLAG_SALTED) {
 		mpz_and(just_counter, s->counter, s->code_mask);
+	} else {
+		mpz_set(just_counter, s->counter);
 	}
 
 	/* Equal is too big because max_code is calculated starting from 1

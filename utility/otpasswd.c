@@ -87,13 +87,25 @@ static void _usage(int argc, const char **argv)
 		"\nConfiguration:\n"
 		"  -f, --flag <arg>\n"
 		"               Manages various user-selectable flags:\n"
+		"               list              print current state data\n"
 		"               show              show passcode while authenticating (default)\n"
 		"               dont-show         do not show passcode\n"
-		"               alphabet-simple   64-character alphabet (default)\n"
-		"               alphabet-extended 88-character alphabet\n"
+		"               alphabet-X        sets used alphabet, X can be a number or\n"
+		"                                 a 'list' command, which will print all\n"
+		"                                 available alphabets.\n"
 		"               codelenght-X      sets passcodes length, X is a number\n"
 		"                                 from 2 to 16 (default: codelength-4)\n"
-		"               list              print current state data\n"
+
+		"\n"
+		"               no-salt           Meaningful only during key generation.\n" 
+		"                                 Disables salting of a passcode counter.\n"
+		"                                 Enabling this option will make program\n"
+		"                                 compatible with PPPv3.1 and will increase\n"
+		"                                 available passcard number at the cost of\n"
+		"                                 (theoretically) less security. (default)\n"
+		"               salt              Enables salting of key if not enabled\n"
+		"                                 by default.\n"
+		"\n"
 		"  -p, --password <pass>\n"
 		"               Set static password. Use empty (i.e. "") to unset.\n"
 		"  -c, --contact <arg>\n"
@@ -104,11 +116,6 @@ static void _usage(int argc, const char **argv)
 		"  -d, --label <arg>\n"
 		"               Set a caption to use on generated passcards.\n"
 		"               Use \"\" to set default (hostname)\n"
-		"  -n, --no-salt\n"
-		"               Meaningful only during key generation. Disables salting\n"
-		"               of a passcode counter. Enabling this option will make program\n"
-		"               compatible with PPPv3 and will increase available passcard number\n"
-		"               at the cost of (theoretically) less security.\n"
 		"\n"
 		"  -u, --user <username|UID>\n"
 		"                Operate on state of specified user. Administrator-only option.\n"
@@ -133,6 +140,76 @@ static void _usage(int argc, const char **argv)
 	);
 }
 
+
+int parse_flag(options_t *options, const char *arg)
+{
+	const cfg_t *cfg = cfg_get();
+	assert(cfg);
+	
+	if (strcmp(arg, "show") == 0)
+		options->flag_set_mask |= FLAG_SHOW;
+	else if (strcmp(arg, "dont-show") == 0)
+		options->flag_clear_mask |= FLAG_SHOW;
+	else if (strcmp(arg, "salt") == 0)
+		options->flag_set_mask |= FLAG_SALTED;
+	else if (strcmp(arg, "no-salt") == 0)
+		options->flag_clear_mask |= FLAG_SALTED;
+	else if (strcmp(arg, "list") == 0) {
+		if (options->action != 'f') {
+			printf("Only one action can be specified on the command line\n"
+			       "and you can't mix 'list' flag with other flags.\n");
+			return 1;
+		}
+		
+		options->action = 'L'; /* List! Instead of changing flags. */
+	} else if (strcmp(arg, "alphabet-list") == 0) {
+		if (options->action != 'f') {
+			printf("Only one action can be specified on the command line\n"
+			       "and you can't mix 'list' flag with other flags.\n");
+			return 1;
+		}
+		options->action = 'A'; /* List alphabets instead of changing flags */
+	} else {
+		int tmp;
+		if (sscanf(arg, "codelength-%d", &tmp) == 1) {
+			if (tmp < 2 || tmp > 16) {
+				printf("Passcode length must be between 2 and 16.\n");
+				return 1;
+			}
+
+			if (tmp < cfg->passcode_min_length ||
+			    tmp > cfg->passcode_max_length) {
+				printf("Passcode length denied by policy.\n");
+				return 1;
+				
+			}
+			options->set_codelength = tmp;
+
+		} if (sscanf(arg, "alphabet-%d", &tmp) == 1) {
+			if (ppp_alphabet_verify(tmp) != 0) {
+				printf("Illegal alphabet specified. See "
+				       "-f alphabet-list\n");
+				return 1;
+			}
+			options->set_alphabet = tmp;
+
+		} else {
+			/* Illegal flag */
+			printf("No such flag %s\n", arg);
+			return 1;
+		}
+	}
+	if (options->flag_set_mask & options->flag_clear_mask) {
+		printf("Illegal set of flags defined.\n");
+		return 1;
+	}
+	
+
+	return 0;
+}
+
+/* Parse command line. Ensure we do not put any wrong data into options,
+ * that is - longer than expected or containing any illegal characters */
 int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 {
 	assert(cfg);
@@ -172,7 +249,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 	while (1) {
 		int option_index = 0;
 
-		int c = getopt_long(argc, argv, "ks:t:l:P:a:wf:p:d:c:nvu:h", long_options, &option_index);
+		int c = getopt_long(argc, argv, "ks:t:l:P:a:wf:p:d:c:vu:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1)
@@ -185,7 +262,8 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		case 'k':
 		case 'x':
 		case 'h':
-			if (options->action != 0) {
+			/* Error unless there was flag defined for key generation */
+			if (options->action != 0 && (options->action != 'f' && c != 'k')) {
 				printf("Only one action can be specified on the command line\n");
 				return 1;
 			}
@@ -199,11 +277,10 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		case 'P':
 		case 'a':
 		case 'p':
-		case 'd':
-		case 'c':
+
 			if (options->action != 0) {
 				printf("Only one action can be specified on the command line\n");
-				exit(EXIT_FAILURE);
+				goto error;
 			}
 			options->action = c;
 
@@ -213,13 +290,77 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 				options->action_arg = NULL;
 			break;
 
-		case 'n':
-			if (options->flag_set_mask != 0) {
-				printf("-n option can only be passed during key creation!\n");
-				exit(EXIT_FAILURE);
+			/* Actions with argument which can be connected with -k */
+		case 'd':
+		case 'c':
+			if (options->action == 0) {
+				options->action = 'f';
+			} else if (options->action == 'k') {
+				/* Don't change action */
+			} else if (options->action == 'f') {
+				/* Keep 'f' if -d or -c not given already */
+			} else {
+				printf("Only one action can be specified on the command line\n");
+				goto error;
 			}
 
-			options->flag_set_mask |= FLAG_NOT_SALTED;
+			assert(optarg);
+			
+			/* Check data correctness */
+			if (!state_validate_str(optarg)) {
+				printf(
+					"%s argument contains illegal characters.\n"
+					"Alphanumeric + ' -+,.@_*' are allowed\n",
+					c=='d' ? "Label" : "Contact");
+				goto error;
+			}
+
+			switch (c) {
+			case 'c':
+				if (options->contact) {
+					printf("Contact already defined\n");
+					goto error;
+				}
+
+				if (!security_is_root() && cfg->allow_contact_change == 0) {
+					printf("Contact changing denied by policy.\n");
+					goto error;
+				}
+
+				if (strlen(optarg) + 1 > STATE_CONTACT_SIZE) {
+					printf("Contact can't be longer than %zu "
+					       "characters\n", STATE_CONTACT_SIZE-1);
+					goto error;
+				}
+
+				/* Store */
+				options->contact = strdup(optarg);
+				break;
+
+			case 'd':
+				if (options->label) {
+					printf("Label already defined\n");
+					goto error;
+				}
+
+				if (!security_is_root() && cfg->allow_label_change == 0) {
+					printf("Contact changing denied by policy.\n");
+					goto error;
+				}
+
+				if (strlen(optarg) + 1 > STATE_LABEL_SIZE) {
+					printf("Label can't be longer than %zu "
+					       "characters\n", STATE_LABEL_SIZE-1);
+					goto error;
+				}
+
+				/* Store */
+				options->label = strdup(optarg);
+				break;
+			default:
+				assert(0);
+			}
+
 			break;
 
 		case 'f':
@@ -228,52 +369,14 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 				goto error;
 			}
 
-			if (options->flag_set_mask & FLAG_NOT_SALTED) {
-				printf("-n option can only be passed during key creation!\n");
-				goto error;
-			}
+			if (options->action == 0)
+				options->action = 'f';
 
 			assert(optarg != NULL);
 
-			if (strcmp(optarg, "show") == 0)
-				options->flag_set_mask |= FLAG_SHOW;
-			else if (strcmp(optarg, "dont-show") == 0)
-				options->flag_clear_mask |= FLAG_SHOW;
-			else if (strcmp(optarg, "alphabet-simple") == 0) {
-				if (cfg->alphabet_min_length > 64) {
-					/* TODO: Check also max */
-					printf("Alphabet length disallowed by configuration\n");
-					goto error;
-				}
-				options->flag_clear_mask |= FLAG_ALPHABET_EXTENDED;
-			} else if (strcmp(optarg, "alphabet-extended") == 0) {
-				if (cfg->alphabet_max_length < 88) {
-					/* TODO: Check also min */
-					printf("Alphabet length disallowed by configuration\n");
-					goto error;
-				}
-				options->flag_set_mask |= FLAG_ALPHABET_EXTENDED;
-			} else if (strcmp(optarg, "list") == 0) {
-				if (options->action != 0) {
-					printf("Only one action can be specified on the command line\n"
-						"and you can't mix 'list' flag with other flags.\n");
-					goto error;
-				}
+			if (parse_flag(options, optarg) != 0)
+				goto error;
 
-				options->action = 'L'; /* List! Instead of changing flags */
-			} else {
-				int tmp;
-				if (sscanf(optarg, "codelength-%d", &tmp) == 1) {
-					options->set_codelength = tmp;
-				} else {
-					/* Illegal flag */
-					printf("No such flag %s\n", optarg);
-					goto error;
-				}
-			}
-
-			if (options->action != 'L')
-				options->action = 'f';
 			break;
 
 		case '?':
@@ -301,6 +404,11 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			break;
 
 		case 'v':
+			if (!security_is_root() && cfg->allow_verbose_output == 0) {
+				printf("Verbose output denied by policy.\n");
+				goto error;
+			}
+
 			cfg->logging = 2;
 			break;
 
@@ -308,6 +416,13 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			printf("Got %d %c\n", c, c);
 			assert(0);
 		}
+	}
+
+	/* Check additional correctness */
+	if (((options->flag_set_mask | options->flag_clear_mask) & FLAG_SALTED)
+	    && (options->action != 'k')) {
+		printf("salt or no-salt flag can only be specified during key creation!\n");
+		goto error;
 	}
 
 	if (!options->username) {
@@ -357,9 +472,8 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 		break;
 
 	case 'L': /* list action */
+	case 'A': /* alphabets list */
 	case 'f':
-	case 'd':
-	case 'c':
 	case 'p':
 		retval = action_flags(options, cfg);
 		break;
@@ -420,6 +534,8 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 
 cleanup:
 	free(options->action_arg);
+	free(options->label);
+	free(options->contact);
 	free(options->username);
 	print_fini();
 	return retval;
@@ -435,12 +551,15 @@ int main(int argc, char **argv)
 	options_t options = {
 		.action = 0,
 		.action_arg = NULL,
+		.label = NULL,
+		.contact = NULL,
 
 		.username = NULL,
 
 		.flag_set_mask = 0,
 		.flag_clear_mask = 0,
-		.set_codelength = -1
+		.set_codelength = -1,
+		.set_alphabet = -1,
 	};
 
 	/* Init environment, store uids, etc. */

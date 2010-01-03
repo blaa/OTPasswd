@@ -173,10 +173,10 @@ static int _db_file_permissions(const state *s)
 }
 
 /* State files constants */
-static const int _version = 5;
+static const int _version = 6;
 static const char *_delim = ":";
 
-static const int fields = 13;
+static const int fields = 14;
 
 enum {
 	FIELD_USER = 0,
@@ -188,6 +188,7 @@ enum {
 	FIELD_RECENT_FAILURES,
 	FIELD_CHANNEL_TIME,
 	FIELD_CODE_LENGTH,
+	FIELD_ALPHABET,
 	FIELD_FLAGS,
 	FIELD_SPASS,
 	FIELD_LABEL,
@@ -408,6 +409,7 @@ int db_file_load(state *s)
 		goto cleanup;
 	}
 
+	/* TODO: Change sscanf to more simple function */
 	if (sscanf(field[FIELD_FAILURES], "%u", &s->failures) != 1) {
 		print(PRINT_ERROR, "Error while parsing failures count\n");
 		goto cleanup;
@@ -425,6 +427,11 @@ int db_file_load(state *s)
 
 	if (sscanf(field[FIELD_CODE_LENGTH], "%u", &s->code_length) != 1) {
 		print(PRINT_ERROR, "Error while parsing passcode length\n");
+		goto cleanup;
+	}
+
+	if (sscanf(field[FIELD_ALPHABET], "%u", &s->alphabet) != 1) {
+		print(PRINT_ERROR, "Error while parsing alphabet\n");
 		goto cleanup;
 	}
 
@@ -495,7 +502,7 @@ int db_file_load(state *s)
 		goto cleanup;
 	}
 
-	if (s->flags > (FLAG_SHOW|FLAG_ALPHABET_EXTENDED|FLAG_NOT_SALTED)) {
+	if (s->flags > (FLAG_SHOW|FLAG_SALTED)) {
 		print(PRINT_ERROR, "Unsupported set of flags. %s is invalid\n",
 		      s->db_path);
 		goto cleanup;
@@ -551,15 +558,15 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 	const char d = _delim[0];
 	tmp = snprintf(buffer, buff_length,
 		      "%s%c%d%c"
-		      "%s%c%s%c%s%c" /* Key, counter, latest_card */
-		      "%u%c%u%c%s%c" /* Failures, recent fails, channel time */
-		      "%u%c%u%c%s%c" /* Codelength, flags, spass */
+		      "%s%c%s%c%s%c"     /* Key, counter, latest_card */
+		      "%u%c%u%c%s%c"     /* Failures, recent fails, channel time */
+		      "%u%c%u%c%u%c%s%c" /* Codelength, alphabet, flags, spass */
 		      "%s%c%s\n",
-		      s->username, d, _version, d,
-		      sequence_key, d, counter, d, latest_card, d,
-		      s->failures, d, s->recent_failures, d, channel_time, d,
-		      s->code_length, d, s->flags, d, spass, d,
-		      s->label, d, s->contact);
+		       s->username, d, _version, d,
+		       sequence_key, d, counter, d, latest_card, d,
+		       s->failures, d, s->recent_failures, d, channel_time, d,
+		       s->code_length, d, s->alphabet, d, s->flags, d, spass, d,
+		       s->label, d, s->contact);
 	if (tmp < 10 || tmp == buff_length) {
 		print(PRINT_ERROR, "Error while writing data to state file.");
 		goto error;
