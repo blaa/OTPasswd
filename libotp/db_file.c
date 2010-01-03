@@ -828,6 +828,7 @@ cleanup:
 		fclose(out);
 	}
 
+	sync(); /* Flush to disk required before rename */
 	if (ret == 0) {
 		/* If everything went fine, rename tmp to normal file */
 		if (rename(tmp, db) != 0) {
@@ -955,16 +956,18 @@ int db_file_unlock(state *s)
 	fl.l_whence = SEEK_SET;
 	fl.l_start = fl.l_len = 0;
 
+	/* First unlink, then unlock to solve race condition */
+	unlink(lck);
+
 	int ret = fcntl(s->lock, F_SETLK, &fl);
 
 	close(s->lock);
 	s->lock = -1;
 
-	unlink(lck);
-
 	if (ret != 0) {
 		print(PRINT_NOTICE, "Strange error while releasing lock\n");
 		/* Strange error while releasing the lock */
+		retval = STATE_LOCK_ERROR;
 		goto error;
 	}
 
