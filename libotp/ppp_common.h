@@ -76,9 +76,12 @@ enum errors {
 
 enum flags {
 	FLAG_SHOW = 1,
+	/* User disabled by administrator */
+	FLAG_DISABLED = 2,
 	/* FLAG_SKIP removed */
 	/* FLAG_ALPHABET_EXTENDED removed */
 	FLAG_SALTED = 8,
+
 };
 
 #endif

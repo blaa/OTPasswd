@@ -46,7 +46,7 @@ int state_validate_str(const char *str)
 		if (isalnum(str[i]))
 			continue;
 		if (str[i] == ' ' || str[i] == '+' || str[i] == '@' || 
-		    str[i] == '-' || str[i] == '.' || str[i] == ',' ||
+		    str[i] == '-' || str[i] == '.' ||
 		    str[i] == '_' || str[i] == '*')
 			continue;
 		return 0; /* False */

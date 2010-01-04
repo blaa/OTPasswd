@@ -166,27 +166,27 @@ static int _is_passcode_in_range(const state *s, const mpz_t passcard)
 static void _show_flags(const state *s)
 {
 	if (s->flags & FLAG_SHOW)
-		printf("show ");
+		printf("show=on ");
 	else
-		printf("dont-show ");
+		printf("show=off ");
 
-	printf("alphabet-%d ", s->alphabet);
-	printf("codelength-%d ", s->code_length);
+	printf("alphabet=%d ", s->alphabet);
+	printf("codelength=%d ", s->code_length);
 
 	if (s->flags & FLAG_SALTED)
-		printf("(salt)\n");
+		printf("(salt=on)\n");
 	else
-		printf("(no-salt)\n");
+		printf("(salt=off)\n");
 
 
 	if (strlen(s->label) > 0) {
-		printf("Passcard label='%s', ", s->label);
+		printf("Passcard label=\"%s\", ", s->label);
 	} else {
 		printf("No label, ");
 	}
 
 	if (strlen(s->contact) > 0) {
-		printf("contact='%s'.\n", s->contact);
+		printf("contact=\"%s\".\n", s->contact);
 	} else {
 		printf("no contact information.\n");
 	}
@@ -695,7 +695,6 @@ int action_flags(options_t *options, const cfg_t *cfg)
 				save_state = 1;
 			}
 			s->code_length = options->set_codelength;
-
 		}
 
 		if (options->set_alphabet >= 0) {
@@ -707,7 +706,6 @@ int action_flags(options_t *options, const cfg_t *cfg)
 				save_state = 1;
 			}
 			s->alphabet = options->set_alphabet;
-
 		}
 
 		/* Length of contact/label checked in process_cmd_line */

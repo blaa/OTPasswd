@@ -58,24 +58,26 @@ static void _usage(int argc, const char **argv)
 	fprintf(stdout,
 		"Usage: %s [options]\n"
 		"Actions:\n"
-		"  -k, --key    Generate a new key. You can pass\n"
-		"               -d, -c and -f options along.\n"
-		"  -r, --remove Remove key, and disable OTP for user.\n"
+		"  -k, --key\n"
+		"           Generate a new key. You can pass\n"
+		"           -d, -c and -f options along.\n"
+		"  -r, --remove\n"
+		"           Remove key, and disable OTP.\n"
 		"\n"
 		"  -s, --skip <which>\n"
-		"               Skip to a card specified as an argument.\n"
+		"           Skip to a card specified as an argument.\n"
 		"  -t, --text <which>\n"
-		"               Generate either one ascii passcard\n"
-		"               or a single passcode depending on argument. \n"
+		"           Generate either one ascii passcard\n"
+		"           or a single passcode depending on argument. \n"
 		"  -l, --latex <which>\n"
-		"               Generate a LaTeX output with 6 passcards\n"
-		"               starting with the specified one\n"
+		"           Generate a LaTeX output with 6 passcards\n"
+		"           starting with the specified one\n"
 		"  -a, --authenticate <passcode>\n"
-		"               Try to authenticate with given passcode\n"
+		"           Try to authenticate with given passcode\n"
 		"  -P, --prompt <which>\n"
-		"               Display authentication prompt for given passcode\n"
+		"           Display authentication prompt for given passcode\n"
 		"  -w, --warning\n"
-		"               Display warnings (ex. user on last passcard)\n"
+		"           Display warnings (ex. user on last passcard)\n"
 		"\n"
 		"Where <which> might be one of:\n"
 		"  number         - a decimal number of a passcode\n"
@@ -88,53 +90,65 @@ static void _usage(int argc, const char **argv)
 
 		"\nConfiguration:\n"
 		"  -f, --flag <arg>\n"
-		"               Manages various user-selectable flags:\n"
-		"               list              print current state data\n"
-		"               show              show passcode while authenticating (default)\n"
-		"               dont-show         do not show passcode\n"
-		"               alphabet-X        sets used alphabet, X can be an ID or\n"
-		"                                 a 'list' command, which will print\n"
-		"                                 IDs of all available alphabets.\n"
-		"               codelenght-X      sets passcodes length, X is a number\n"
-		"                                 from 2 to 16 (default: codelength-4)\n"
-
+		"           Manages various settings:\n"
+		"           list          print current state and configuration.\n"
+		"           show=<on|off> configure visibility of passcode during\n"
+		"                         authentication.\n"
+		"           alphabet=<ID|list>\n"
+		"                         select passcode alphabet. Use 'list' argument\n"
+		"                         to get IDs of available alphabets.\n"
+		"           codelenght=<length>\n"
+		"                         select passcode length.\n"
 		"\n"
-		"               no-salt           Meaningful only during key generation.\n" 
-		"                                 Disables salting of a passcode counter.\n"
-		"                                 Enabling this option will make program\n"
-		"                                 compatible with PPPv3.1 and will increase\n"
-		"                                 available passcard number at the cost of\n"
-		"                                 (theoretically) less security.\n"
-		"               salt              Enables salting of key if not enabled\n"
-		"                                 by default.\n"
+		"           contact=X     Set contact info (e.g. phone number) with\n"
+		"                         which to receive a passcode during authentication.\n"
+		"                         Details depends configuration. Use \"\" to disable.\n"
+
+		"           label=X       Set a caption to use on generated passcards.\n"
+	        "                         Use \"\" to set default (hostname)\n"
+		"\n"
+		"           salt=<on|off>\n"
+		"                         Meaningful only during key generation.\n"
+		"                         Enable/disable salting of a passcode counter.\n"
+		"                         Disabling this option will make program\n"
+		"                         compatible with PPPv3.1 and will increase\n"
+		"                         available passcard number at the cost of\n"
+		"                         (theoretically) less security.\n"
 		"\n"
 		"  -p, --password <pass>\n"
-		"               Set static password. Use empty (i.e. "") to unset.\n"
+		"           Set static password. Use empty (i.e. "") to unset.\n"
+/*
 		"  -c, --contact <arg>\n"
-		"               Set a contact info (e.g. phone number) with which\n"
-		"               you want to receive current passcode during authentication.\n"
-		"               Details depends on pam module configuration. Use \"\"\n"
-		"               to disable.\n"
+		"           Set a contact info (e.g. phone number) with which\n"
+		"           you want to receive current passcode during authentication.\n"
+		"           Details depends on pam module configuration. Use \"\"\n"
+		"           to disable.\n"
 		"  -d, --label <arg>\n"
-		"               Set a caption to use on generated passcards.\n"
-		"               Use \"\" to set default (hostname)\n"
+		"           Set a caption to use on generated passcards.\n"
+		"           Use \"\" to set default (hostname)\n"
+*/
 		"\n"
 		"  -u, --user <username|UID>\n"
-		"                Operate on state of specified user. Administrator-only option.\n"
-		"  -v, --verbose Display more information about what is happening.\n"
-		"  --version     Display license, warranty, version and author information.\n"
-		"  -h, --help    This message\n"
-		"  --check       Run all testcases. Assumes default config file.\n"
+		"           Operate on state of specified user. Administrator-only option.\n"
+		"  -v, --verbose\n"
+		"           Display more information about what is happening.\n"
+		"  --version\n"
+		"           Display license, warranty, version and author information.\n"
+		"  -h, --help\n"
+		"           Display this message\n"
+		"  --check  Run all testcases. Assumes default config file.\n"
 
-
-		"\nNotes:\n"
+		"\n"
+		"Notes:\n"
 		"  Both --text and --latex can get \"next\" as a parameter which\n"
-		"  will print the first not-yet printed passcard\n"
+		"  will print the first not-yet printed passcard. Usage of this argument\n"
+		"  is recommended as it enables OTPasswd to display warnings when user\n"
+		"  reaches his last printed passcard.\n"
 		"\nExamples:\n"
-		"%s --key                generate new (salted) key\n"
+		"%s -f salt=off --key    generate new (not salted) key\n"
 		"%s --text '[3]'         print third passcard to standard output\n"
 		"%s --text current       print current passcode\n"
-		"%s --flag codelength-5  use 5-character long passcodes\n"
+		"%s --flag codelength=5  use 5-character long passcodes\n"
 		"Generate a 6 passcards on A4 page using LaTeX:\n"
 		"%s --latex next > tmp.latex\n"
 		"pdflatex tmp.latex\n",
@@ -147,33 +161,96 @@ int parse_flag(options_t *options, const char *arg)
 {
 	const cfg_t *cfg = cfg_get();
 	assert(cfg);
-	
-	if (strcmp(arg, "show") == 0)
+	assert(arg);
+
+	/*** Booleans/specials support ***/
+	if (strcmp(arg, "show=on") == 0)
 		options->flag_set_mask |= FLAG_SHOW;
-	else if (strcmp(arg, "dont-show") == 0)
+	else if (strcmp(arg, "show=off") == 0)
 		options->flag_clear_mask |= FLAG_SHOW;
-	else if (strcmp(arg, "salt") == 0)
+	else if (strcmp(arg, "salt=on") == 0)
 		options->flag_set_mask |= FLAG_SALTED;
-	else if (strcmp(arg, "no-salt") == 0)
+	else if (strcmp(arg, "salt=off") == 0)
 		options->flag_clear_mask |= FLAG_SALTED;
+
 	else if (strcmp(arg, "list") == 0) {
 		if (options->action != 'f') {
 			printf("Only one action can be specified on the command line\n"
 			       "and you can't mix 'list' flag with other flags.\n");
 			return 1;
 		}
-		
+
 		options->action = 'L'; /* List! Instead of changing flags. */
-	} else if (strcmp(arg, "alphabet-list") == 0) {
+	} else if (strcmp(arg, "alphabet=list") == 0) {
 		if (options->action != 'f') {
 			printf("Only one action can be specified on the command line\n"
 			       "and you can't mix 'list' flag with other flags.\n");
 			return 1;
 		}
 		options->action = 'A'; /* List alphabets instead of changing flags */
+
+		/*** Label and contact support */
+	} else if (strncmp(arg, "contact=", 8) == 0) {
+		const char *contact = arg + 8;
+
+		if (options->contact) {
+			printf("Contact already defined\n");
+			return 1;
+		}
+
+		if (!security_is_root() && cfg->allow_contact_change == 0) {
+			printf("Contact changing denied by policy.\n");
+			return 1;
+		}
+
+		if (!state_validate_str(contact)) {
+			printf(
+				"Contact contains illegal characters.\n"
+				"Only alphanumeric + \" -+.@_*\" are allowed.\n");
+			return 1;
+		}
+
+		if (strlen(contact) + 1 > STATE_CONTACT_SIZE) {
+			printf("Contact can't be longer than %d "
+			       "characters\n", STATE_CONTACT_SIZE-1);
+			return 1;
+		}
+
+		/* Store */
+		options->contact = strdup(contact);
+	} else if (strncmp(arg, "label=", 6) == 0) {
+		const char *label = arg + 6;
+
+		if (options->label) {
+			printf("Label already defined\n");
+			return 1;
+		}
+
+		if (!security_is_root() && cfg->allow_label_change == 0) {
+			printf("Contact changing denied by policy.\n");
+			return 1;
+		}
+
+		if (!state_validate_str(label)) {
+			printf(
+				"Contact contains illegal characters.\n"
+				"Only alphanumeric and \" -+.@_*\" are allowed.\n");
+			return 1;
+		}
+
+		if (strlen(label) + 1 > STATE_LABEL_SIZE) {
+			printf("Label can't be longer than %d "
+			       "characters\n", STATE_LABEL_SIZE-1);
+			return 1;
+		}
+
+		/* Store */
+		options->label = strdup(label);
+
+		/*** Integer argument support */
 	} else {
 		int tmp;
-		if (sscanf(arg, "codelength-%d", &tmp) == 1) {
+		if (sscanf(arg, "codelength=%d", &tmp) == 1) {
 			if (tmp < 2 || tmp > 16) {
 				printf("Passcode length must be between 2 and 16.\n");
 				return 1;
@@ -183,11 +260,11 @@ int parse_flag(options_t *options, const char *arg)
 			    tmp > cfg->passcode_max_length) {
 				printf("Passcode length denied by policy.\n");
 				return 1;
-				
+
 			}
 			options->set_codelength = tmp;
 
-		} else if (sscanf(arg, "alphabet-%d", &tmp) == 1) {
+		} else if (sscanf(arg, "alphabet=%d", &tmp) == 1) {
 			const int ret = ppp_alphabet_verify(tmp);
 			if (ret == 1) {
 				printf("Illegal alphabet specified. See "
@@ -197,7 +274,7 @@ int parse_flag(options_t *options, const char *arg)
 				printf("Alphabet denied by policy. See "
 				       "-f alphabet-list\n");
 				return 2;
-			} else if (ret != 0) 
+			} else if (ret != 0)
 				return 3;
 
 			options->set_alphabet = tmp;
@@ -212,10 +289,34 @@ int parse_flag(options_t *options, const char *arg)
 		printf("Illegal set of flags defined.\n");
 		return 1;
 	}
-	
+
 
 	return 0;
 }
+
+/* Constants used for parsing input data */
+enum {
+	OPTION_KEY     = 'k',
+	OPTION_REMOVE  = 'r',
+	OPTION_SKIP    = 's',
+	OPTION_TEXT    = 't',
+	OPTION_LATEX   = 'l',
+	OPTION_PROMPT  = 'P',
+	OPTION_AUTH    = 'a',
+	OPTION_WARN    = 'w',
+
+	OPTION_FLAGS   = 'f',
+	OPTION_SPASS   = 'p',
+	OPTION_USER    = 'u',
+	OPTION_VERBOSE = 'v',
+	OPTION_CHECK   = 'x',
+	OPTION_VERSION = 'Q',
+	OPTION_HELP    = 'h',
+
+	/* Other which aren't user UI options */
+	OPTION_SHOW_STATE = 'L',
+	OPTION_ALPHABETS = 'A',
+};
 
 /* Parse command line. Ensure we do not put any wrong data into options,
  * that is - longer than expected or containing any illegal characters */
@@ -232,26 +333,26 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 
 	static struct option long_options[] = {
 		/* Action selection */
-		{"key",			no_argument,		0, 'k'},
-		{"remove",		no_argument,		0, 'r'},
-		{"skip",		required_argument,	0, 's'},
-		{"text",		required_argument,	0, 't'},
-		{"latex",		required_argument,	0, 'l'},
-		{"prompt",		required_argument,	0, 'P'},
-		{"authenticate",	required_argument,	0, 'a'},
-		{"warning",		no_argument,		0, 'w'},
+		{"key",			no_argument,		0, OPTION_KEY},
+		{"remove",		no_argument,		0, OPTION_REMOVE},
+		{"skip",		required_argument,	0, OPTION_SKIP},
+		{"text",		required_argument,	0, OPTION_TEXT},
+		{"latex",		required_argument,	0, OPTION_LATEX},
+		{"prompt",		required_argument,	0, OPTION_PROMPT},
+		{"authenticate",	required_argument,	0, OPTION_AUTH},
+		{"warning",		no_argument,		0, OPTION_WARN},
 
 		/* Flags */
-		{"flags",		required_argument,	0, 'f'},
-		{"password",		required_argument,	0, 'p'},
-		{"label",		required_argument,	0, 'd'},
-		{"contact",		required_argument,	0, 'c'},
-		{"no-salt",		no_argument,		0, 'n'},
-		{"user",		required_argument,	0, 'u'},
-		{"verbose",		no_argument,		0, 'v'},
-		{"check",		no_argument,		0, 'x'},
-		{"version",		no_argument,		0, 'Q'},
-		{"help",		no_argument,		0, 'h'},
+		{"flags",		required_argument,	0, OPTION_FLAGS},
+		{"password",		required_argument,	0, OPTION_SPASS},
+/*		{"label",		required_argument,	0, 'd'}, FIXME: REMOVE THIS ENTRIES
+		{"contact",		required_argument,	0, 'c'}, 
+		{"no-salt",		no_argument,		0, 'n'}, */
+		{"user",		required_argument,	0, OPTION_USER},
+		{"verbose",		no_argument,		0, OPTION_VERBOSE},
+		{"check",		no_argument,		0, OPTION_CHECK},
+		{"version",		no_argument,		0, OPTION_VERSION},
+		{"help",		no_argument,		0, OPTION_HELP},
 
 		{0, 0, 0, 0}
 	};
@@ -259,7 +360,9 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 	while (1) {
 		int option_index = 0;
 
-		int c = getopt_long(argc, argv, "krs:t:l:P:a:wf:p:d:c:vu:h", long_options, &option_index);
+/* FIXME: Remove this old entry */
+/*	int c = getopt_long(argc, argv, "krs:t:l:P:a:wf:p:d:c:vu:h", long_options, &option_index); */
+		int c = getopt_long(argc, argv, "krs:t:l:P:a:wf:p:vu:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1) {
@@ -267,7 +370,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 				printf("Garbage on command line. (%s)\n", argv[optind]);
 				goto error;
 			}
-	
+
 			break;
 		}
 
@@ -279,12 +382,12 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 
 		switch (c) {
 			/* Argument-less actions */
-		case 'Q':
-		case 'w':
-		case 'k':
-		case 'r':
-		case 'x':
-		case 'h':
+		case OPTION_VERSION:
+		case OPTION_WARN:
+		case OPTION_KEY:
+		case OPTION_REMOVE:
+		case OPTION_CHECK:
+		case OPTION_HELP:
 			/* Error unless there was flag defined for key generation */
 			if (options->action != 0 && (options->action != 'f' && c != 'k')) {
 				printf("Only one action can be specified on the command line\n");
@@ -294,12 +397,12 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			break;
 
 			/* Actions with argument */
-		case 's':
-		case 't':
-		case 'l':
-		case 'P':
-		case 'a':
-		case 'p':
+		case OPTION_SKIP:
+		case OPTION_TEXT:
+		case OPTION_LATEX:
+		case OPTION_PROMPT:
+		case OPTION_AUTH:
+		case OPTION_SPASS:
 
 			if (options->action != 0) {
 				printf("Only one action can be specified on the command line\n");
@@ -307,13 +410,14 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			}
 			options->action = c;
 
-			if (optarg) 
+			if (optarg)
 				options->action_arg = strdup(optarg);
 			else
 				options->action_arg = NULL;
 			break;
 
 			/* Actions with argument which can be connected with -k */
+#if 0
 		case 'd':
 		case 'c':
 			if (options->action == 0) {
@@ -328,12 +432,12 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			}
 
 			assert(optarg);
-			
+
 			/* Check data correctness */
 			if (!state_validate_str(optarg)) {
 				printf(
 					"%s argument contains illegal characters.\n"
-					"Alphanumeric + ' -+,.@_*' are allowed\n",
+					"Alphanumeric + ' -+.@_*' are allowed\n",
 					c=='d' ? "Label" : "Contact");
 				goto error;
 			}
@@ -385,8 +489,8 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			}
 
 			break;
-
-		case 'f':
+#endif 
+		case OPTION_FLAGS:
 			if (options->action != 0 && options->action != 'f' && options->action != 'k') {
 				printf("Only one action can be specified on the command line\n");
 				goto error;
@@ -407,7 +511,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			_usage(argc, (const char **)argv);
 			goto error;
 
-		case 'u':
+		case OPTION_USER:
 			assert(optarg);
 			if (security_is_root() == 0) {
 				printf("Only root can use the '--user' option\n");
@@ -426,7 +530,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			}
 			break;
 
-		case 'v':
+		case OPTION_VERBOSE:
 			if (!security_is_root() && cfg->allow_verbose_output == 0) {
 				printf("Verbose output denied by policy.\n");
 				goto error;
@@ -471,7 +575,7 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 	int retval;
 
 	/* Initialize logging subsystem */
-	if (print_init(cfg->logging == 1 ? PRINT_WARN : PRINT_NOTICE, 
+	if (print_init(cfg->logging == 1 ? PRINT_WARN : PRINT_NOTICE,
 		       1, 0, NULL) != 0) {
 		printf("Unable to start debugging\n");
 	}
@@ -485,46 +589,46 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 		retval = 1;
 		goto cleanup;
 
-	case 'h':
+	case OPTION_HELP:
 		_usage(argc, (const char **)argv);
 		retval = 0;
 		break;
 
-	case 'k':
-	case 'r':
+	case OPTION_KEY:
+	case OPTION_REMOVE:
 		retval = action_key(options, cfg);
 		break;
 
-	case 'L': /* list action */
-	case 'A': /* alphabets list */
-	case 'f':
-	case 'p':
+	case OPTION_SHOW_STATE: 
+	case OPTION_ALPHABETS:
+	case OPTION_FLAGS:
+	case OPTION_SPASS:
 		retval = action_flags(options, cfg);
 		break;
 
-	case 'a':
+	case OPTION_AUTH:
 		ret = action_authenticate(options, cfg);
 		print_fini();
 		if (ret == 0)
 			retval = 1;
 		break;
-	case 'Q':
+	case OPTION_VERSION:
 		retval = action_license(options, cfg);
 		break;
 
-	case 'w': /* Warning */
-	case 's':
-	case 't':
-	case 'l':
-	case 'P':
+	case OPTION_WARN:
+	case OPTION_SKIP:
+	case OPTION_TEXT:
+	case OPTION_LATEX:
+	case OPTION_PROMPT:
 		retval = action_print(options, cfg);
 		break;
 
-	case 'x':
+	case OPTION_CHECK:
 		printf("*** Running testcases\n");
 		{
 			int failed = 0;
-			
+
 			/* Change DB info so we won't overwrite anything
 			 * important */
 			strcpy(cfg->user_db_path, ".otpasswd_testcase");
@@ -596,7 +700,7 @@ int main(int argc, char **argv)
 	}
 
 	/* TODO:
-	 * If we are SUID and DB=LDAP or DB=MySQL ensure only 
+	 * If we are SUID and DB=LDAP or DB=MySQL ensure only
 	 * we can read config.
 	 */
 
@@ -613,7 +717,7 @@ int main(int argc, char **argv)
 	}
 
 	/* If DB is global, mysql or ldap we should be SGID/SUID */
-	if (cfg->db != CONFIG_DB_USER && 
+	if (cfg->db != CONFIG_DB_USER &&
 	    security_privileged(1, 1) == 0) {
 		/* Something is wrong. We are not SGID nor SUID.
 		 * Or we're run as SUID user which is also bad.
@@ -649,18 +753,18 @@ int main(int argc, char **argv)
 
 
 		/* Otherwise - switch pernamently to SUID user
-		 * so the user can't send us any signals while we 
+		 * so the user can't send us any signals while we
 		 * have state files locked */
 		security_permanent_switch();
 
 
 	}
-	
+
 
 	if (ret != 0)
 		return ret;
 
-	
+
 	ret = perform_action(argc, argv, &options, cfg);
 	return ret;
 }

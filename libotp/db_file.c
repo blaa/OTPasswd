@@ -594,7 +594,7 @@ int db_file_load(state *s)
 		goto cleanup;
 	}
 
-	if (s->flags > (FLAG_SHOW|FLAG_SALTED)) {
+	if (s->flags > (FLAG_SHOW|FLAG_SALTED|FLAG_DISABLED)) {
 		print(PRINT_ERROR, "Unsupported set of flags. %s is invalid\n",
 		      db);
 		goto cleanup;
