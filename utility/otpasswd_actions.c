@@ -687,13 +687,27 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		}
 
 		if (options->set_codelength > 0) {
+			if (s->code_length != options->set_codelength) {
+				printf("Warning: Changing codelength invalidates "
+				       "already printed passcards.\n"
+				       "         If you like, you can switch back "
+				       "to your previous settings.\n\n");
+				save_state = 1;
+			}
 			s->code_length = options->set_codelength;
-			save_state = 1;
+
 		}
 
 		if (options->set_alphabet >= 0) {
+			if (s->alphabet != options->set_alphabet) {
+				printf("Warning: Changing alphabet invalidates "
+				       "already printed passcards.\n"
+				       "         If you like, you can switch back "
+				       "to your previous settings.\n\n");
+				save_state = 1;
+			}
 			s->alphabet = options->set_alphabet;
-			save_state = 1;
+
 		}
 
 		/* Length of contact/label checked in process_cmd_line */
