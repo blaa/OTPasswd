@@ -1,6 +1,6 @@
 /**********************************************************************
  * otpasswd -- One-time password manager and PAM module.
- * Copyright (C) 2009 by Tomasz bla Fortuna <bla@thera.be>
+ * Copyright (C) 2009, 2010 by Tomasz bla Fortuna <bla@thera.be>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -613,7 +613,8 @@ int main(int argc, char **argv)
 	/* If DB is global, mysql or ldap we should be SGID/SUID */
 	if (cfg->db != CONFIG_DB_USER && 
 	    security_privileged(1, 1) == 0) {
-		/* Something is wrong. We are not SGID nor SUID
+		/* Something is wrong. We are not SGID nor SUID.
+		 * Or we're run as SUID user which is also bad.
 		 */
 		printf("Database type set to global/MySQL/LDAP, yet program "
 		       "has no privileges to use it.\n");
@@ -635,6 +636,9 @@ int main(int argc, char **argv)
 		/* After drop we can safely parse user data */
 		ret = process_cmd_line(argc, argv, &options, cfg);
 	} else {
+		/* Ensure our SUID matches config */
+		security_ensure_user(cfg->user_uid, cfg->user_gid);
+
 		/* Before we gain pernamently permissions,
 		 * drop them temporarily and parse user data */
 		security_temporal_drop();

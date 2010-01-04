@@ -1,6 +1,6 @@
 /**********************************************************************
  * otpasswd -- One-time password manager and PAM module.
- * Copyright (C) 2009 by Tomasz bla Fortuna <bla@thera.be>
+ * Copyright (C) 2009, 2010 by Tomasz bla Fortuna <bla@thera.be>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,9 @@ static void _config_defaults(cfg_t *cfg)
 {
 	const cfg_t o = {
 		/* Field description near cfg struct declaration */
+		.user_uid = -1,
+		.user_gid = -1,
+
 		.db = CONFIG_DB_GLOBAL,
 		.global_db_path = "/etc/otpasswd/otshadow",
 		.user_db_path = ".otpasswd",
@@ -216,7 +219,21 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 	} while (0) 
 
 		/* Parsing general configuration */
-		if (_EQ(line_buf, "db")) {
+		if (_EQ(line_buf, "user")) {
+			struct passwd *pwd;
+			/* Ignore if DB=user */
+			if (cfg->db != CONFIG_DB_USER) {
+				pwd = getpwnam(equality);
+				if (pwd == NULL) {
+					print(PRINT_ERROR,
+					      "Illegal user specified in config "
+					      "at line %d.\n", line_count);
+					goto error;
+				}
+				cfg->user_uid = pwd->pw_uid;
+				cfg->user_gid = pwd->pw_gid;
+			}
+		} else if (_EQ(line_buf, "db")) {
 			if (_EQ(equality, "global")) 
 				cfg->db = CONFIG_DB_GLOBAL;
 			else if (_EQ(equality, "user")) 
@@ -284,7 +301,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			pwd = getpwnam(equality);
 			if (pwd == NULL) {
 				print(PRINT_ERROR,
-				      "Illegal user specified in config "
+				      "Illegal OOB user specified in config "
 				      "at line %d.\n", line_count);
 				goto error;
 			}

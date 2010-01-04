@@ -1,6 +1,6 @@
 /**********************************************************************
  * otpasswd -- One-time password manager and PAM module.
- * Copyright (C) 2009 by Tomasz bla Fortuna <bla@thera.be>
+ * Copyright (C) 2009, 2010 by Tomasz bla Fortuna <bla@thera.be>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -131,7 +131,7 @@ static int _db_file_permissions(const char *db_path)
 		}
 	}
 
-	/* 2) It file */
+	/* 2) Is file */
 	if (!S_ISREG(st.st_mode)) {
 		/* Error, not a file */
 		print(PRINT_ERROR, "State file is not a regular file\n");
@@ -429,11 +429,8 @@ int db_file_load(state *s)
 		return ret;
 	}
 
-	retval = _db_file_permissions(db);
-	if (retval != 0) {
-		print(PRINT_NOTICE, "Unable to load state file.\n");
-		goto cleanup1;
-	}
+	/* Permissions will be checked during locking
+	 * now, or was already checked */
 
 	/* DB file should always be locked before changing.
 	 * Locking can only be omitted when we want to discard
@@ -458,10 +455,13 @@ int db_file_load(state *s)
 
 	f = fopen(db, "r");
 	if (!f) {
+		if (errno == ENOENT)
+			retval = STATE_NON_EXISTENT;
+		else 
+			retval = STATE_IO_ERROR;
 		print_perror(PRINT_ERROR,
 			     "Unable to open %s for reading.",
 			     db);
-		retval = STATE_IO_ERROR;
 		goto cleanup;
 	}
 
@@ -880,6 +880,14 @@ int db_file_lock(state *s)
 	if (ret != 0) {
 		return ret;
 	}
+
+	/* Ensure we've got enough permissions to lock/read */
+	ret = _db_file_permissions(db);
+	if (ret == STATE_IO_ERROR) {
+		print(PRINT_NOTICE, "File permission check failed\n");
+		goto error;
+	}
+
 
 	fl.l_type = F_WRLCK;
 	fl.l_whence = SEEK_SET;

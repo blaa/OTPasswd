@@ -1,6 +1,6 @@
 /**********************************************************************
  * otpasswd -- One-time password manager and PAM module.
- * Copyright (C) 2009 by Tomasz bla Fortuna <bla@thera.be>
+ * Copyright (C) 2009, 2010 by Tomasz bla Fortuna <bla@thera.be>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -279,6 +279,14 @@ int security_privileged(int check_suid, int check_sgid)
 		return 1;
 
 	return 0;
+}
+
+void security_ensure_user(uid_t user_uid, uid_t user_gid)
+{
+	if (set_uid != user_uid || set_gid != set_gid) {
+		printf("USER option defined in config doesn't match utility owner\n");
+		exit(EXIT_FAILURE);	
+	}
 }
 
 int security_is_root()

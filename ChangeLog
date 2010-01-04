@@ -53,7 +53,8 @@ Trying to sort tasks according to their priority.
               sync() call inserted after fclose and before rename.
         * [+] First unlink lock file, then unlock to omit race condition?
         * [+] Add -r option to remove key and disable OTP.
-
+        * [-] "Problem solving section" in docs, mentioning use of -v on
+              errors in the first place.
         * [%] Should we start suid root then drop to some config-defined user
               so attacker who breaks otpasswd can't modify the executable?
         * [?] Check custom alphabet correction (whitespaces or multiple

@@ -1,6 +1,6 @@
 /**********************************************************************
  * otpasswd -- One-time password manager and PAM module.
- * Copyright (C) 2009 by Tomasz bla Fortuna <bla@thera.be>
+ * Copyright (C) 2009, 2010 by Tomasz bla Fortuna <bla@thera.be>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,8 @@
 
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
+
+#include <sys/types.h> /* uid_t */
 
 #define CONFIG_DIR		"/etc/otpasswd/"
 #define CONFIG_PATH		(CONFIG_DIR "otpasswd.conf")
@@ -49,6 +51,12 @@ typedef struct {
 	/*** 
 	 * General configuration 
 	 ***/
+
+	/* UID and GID of user we should run */
+	uid_t user_uid;
+	uid_t user_gid;
+
+	/* Database selected */
 	int db;
 
 	/* Location of global database file */
@@ -136,7 +144,7 @@ typedef struct {
 	/* Parameters determined from the environment and
 	 * not options themselves  */
 	/* uid, gid of a safe, non-root user who can run OOB script */
-	int oob_uid, oob_gid; 
+	uid_t oob_uid, oob_gid; 
 
 	/***
 	 * Policy configuration
