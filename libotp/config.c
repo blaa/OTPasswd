@@ -34,7 +34,7 @@ static void _config_defaults(cfg_t *cfg)
 		.user_uid = -1,
 		.user_gid = -1,
 
-		.db = CONFIG_DB_GLOBAL,
+		.db = CONFIG_DB_USER,
 		.global_db_path = "/etc/otpasswd/otshadow",
 		.user_db_path = ".otpasswd",
 
@@ -48,7 +48,7 @@ static void _config_defaults(cfg_t *cfg)
 		.ldap_user = "",
 		.ldap_pass = "",
 
-		.logging = 1,
+		.logging = 2,
 		.silent = 0,
 		.show = 1,
 		.enforce = 0,
@@ -67,6 +67,7 @@ static void _config_defaults(cfg_t *cfg)
 		.oob_gid = -1,
 
 		.allow_key_generation = 1,
+		.allow_key_regeneration = 1,
 		.allow_sourced_key_generation = 0,
 		.allow_key_removal = 1,
 		.allow_passcode_print = 1,
@@ -122,7 +123,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 	}
 
 	if (!f) {
-		print_perror(PRINT_ERROR, "Unable to open config file!");
+		print_perror(PRINT_WARN, "Unable to open config file!");
 		return 1;
 	}
 
@@ -329,6 +330,9 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 		} else if (_EQ(line_buf, "allow_key_generation")) {
 			REQUIRE_ARG(0, 1);
 			cfg->allow_key_generation = arg;
+		} else if (_EQ(line_buf, "allow_key_regeneration")) {
+			REQUIRE_ARG(0, 1);
+			cfg->allow_key_regeneration = arg;
 		} else if (_EQ(line_buf, "allow_sourced_key_generation")) {
 			REQUIRE_ARG(0, 1);
 			cfg->allow_sourced_key_generation = arg;

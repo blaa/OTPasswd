@@ -31,7 +31,8 @@ enum PRINT_LEVEL {
 	PRINT_NOTICE = 1,
 	PRINT_WARN = 2,
 	PRINT_ERROR = 3,
-	PRINT_CRITICAL = 4
+	PRINT_CRITICAL = 4,
+	PRINT_NONE = 50
 };
 
 /* Initialize logging system */

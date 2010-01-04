@@ -154,8 +154,11 @@ typedef struct {
 
 	/* Not-implemented */
 
-	/* User can start key generation */
+	/* User can generate himself a key */
 	int allow_key_generation;
+
+	/* User can reregenerate existing key */
+	int allow_key_regeneration;
 
 	/* User can generate key by using a command line or file entry */
 	int allow_sourced_key_generation;

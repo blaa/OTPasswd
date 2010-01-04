@@ -45,7 +45,7 @@ int ph_parse_module_options(int flags, int argc, const char **argv, cfg_t *cfg)
 {
 	for (; argc-- > 0; argv++) {
 		if (strcmp("debug", *argv) == 0)
-			cfg->logging = 2;
+			cfg->logging = 3;
 		else if (strcmp("silent", *argv) == 0)
 			cfg->silent = 1;
 		else {
@@ -382,9 +382,10 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, cfg_t **
 	/* Initialize correctly internal debugging */
 	int log_level = PRINT_NOTICE;
 	switch ((*cfg)->logging) {
-	case 0: log_level = PRINT_ERROR; break;
-	case 1: log_level = PRINT_WARN; break;
-	case 2: log_level = PRINT_NOTICE; break;
+	case 0: log_level = PRINT_NONE; break;
+	case 1: log_level = PRINT_ERROR; break;
+	case 2: log_level = PRINT_WARN; break;
+	case 3: log_level = PRINT_NOTICE; break;
 	default:
 		print(PRINT_ERROR,
 		      "This should never happen. "

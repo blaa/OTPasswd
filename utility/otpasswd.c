@@ -78,13 +78,13 @@ static void _usage(int argc, const char **argv)
 		"               Display warnings (ex. user on last passcard)\n"
 		"\n"
 		"Where <which> might be one of:\n"
-		"  number      - specify a passcode with a decimal number\n"
-		"  [number]    - a passcard number\n"
-		"  CRR[number] - specify a passcode in passcard of a given number.\n"
-		"                C is its column (A through G), RR - row (1..10)\n"
-		"  current     - passcode used for next time authentication\n"
-		"  [current]   - passcard containing current passcode\n"
-		"  next        - first, not yet printed, passcard\n"
+		"  number         - a decimal number of a passcode\n"
+		"  [number]       - a passcard number\n"
+		"  CRR[number]    - a passcode in passcard of a given number.\n"
+		"                   C is column (A through G), RR - row (1..10)\n"
+		"  current        - passcode used for next time authentication\n"
+		"  [current]      - passcard containing current passcode\n"
+		"  next or [next] - first, not yet printed, passcard\n"
 
 		"\nConfiguration:\n"
 		"  -f, --flag <arg>\n"
@@ -590,7 +590,7 @@ int main(int argc, char **argv)
 	security_init();
 
 	/* Bootstrap logging subsystem. */
-	if (print_init(PRINT_ERROR, 1, 0, NULL) != 0) {
+	if (print_init(PRINT_WARN, 1, 0, NULL) != 0) {
 		printf("ERROR: Unable to start log subsystem\n");
 		exit(EXIT_FAILURE);
 	}
@@ -603,10 +603,12 @@ int main(int argc, char **argv)
 	/* Get global config */
 	cfg = cfg_get();
 
-	print_fini();
 
 	if (!cfg) {
-		printf("Unable to read global config file\n");
+		printf("Unable to read config file from %s\n", CONFIG_PATH);
+		printf("OTPasswd not correctly installed, consult installation manuals.\n");
+		printf("Consult installation manual for detailed information.\n");
+		print_fini();
 		exit(EXIT_FAILURE);
 	}
 
@@ -616,10 +618,11 @@ int main(int argc, char **argv)
 		/* Something is wrong. We are not SGID nor SUID.
 		 * Or we're run as SUID user which is also bad.
 		 */
-		printf("Database type set to global/MySQL/LDAP, yet program "
-		       "has no privileges to use it.\n");
-		exit(EXIT_FAILURE);
+		print(PRINT_WARN, "Database type set to global/MySQL/LDAP, yet program "
+		       "is not a SUID or is incorrectly ran by it's owner.\n");
 	}
+
+	print_fini();
 
 	/* Config is read. We know LDAP/MySQL passwords and
 	 * if DB is not global we must drop permissions now

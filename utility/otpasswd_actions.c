@@ -256,7 +256,8 @@ static int _parse_code_spec(const state *s, const char *spec, mpz_t passcard, mp
 		/* Current passcode */
 		selected = 2;
 		mpz_set(passcard, s->current_card);
-	} else if (strcasecmp(spec, "next") == 0) {
+	} else if ((strcasecmp(spec, "next") == 0) ||
+		   (strcasecmp(spec, "[next]") == 0)) {
 		/* Next passcard. */
 		selected = 2;
 
@@ -269,7 +270,7 @@ static int _parse_code_spec(const state *s, const char *spec, mpz_t passcard, mp
 			mpz_add_ui(passcard, s->latest_card, 1);
 		}
 	} else if (isalpha(spec[0])) {
-		/* Format: CRR[number] */
+		/* Format: CRR[number]; TODO: allow RRC[number] */
 		char column;
 		int row;
 		char number[41];
@@ -481,13 +482,6 @@ int action_key(options_t *options, const cfg_t *cfg)
 
 	int remove = options->action == 'k' ? 0 : 1;
 
-	if (!remove && 
-	    security_is_root() == 0 &&
-	    cfg->allow_key_generation == 0) {
-		printf("Key generation denied by policy.\n");
-		return 1;
-	}
-
 	if (remove && 
 	    security_is_root() == 0 &&
 	    cfg->allow_key_removal == 0) {
@@ -506,6 +500,15 @@ int action_key(options_t *options, const cfg_t *cfg)
 
 	/* Check existance of previous key */
 	if (state_load(&s) == 0) {
+
+		/* Check regeneration policy */
+		if (!remove && 
+		    security_is_root() == 0 &&
+		    cfg->allow_key_regeneration == 0) {
+			printf("Key regeneration denied by policy.\n");
+			goto cleanup;
+		}
+
 		/* We loaded state correctly, key exists */
 		puts(
 			"*************************************************\n"
@@ -560,6 +563,16 @@ int action_key(options_t *options, const cfg_t *cfg)
 			printf("Unable to load your state, nothing to remove.\n");
 			goto cleanup;
 		}
+
+		if (!remove && 
+		    security_is_root() == 0 &&
+		    cfg->allow_key_generation == 0) {
+			printf("Key generation denied by policy.\n");
+			goto cleanup;
+		}
+
+
+
 
 		/* Failed, state_load might have changed something in struct, reinit. */
 		state_fini(&s);
