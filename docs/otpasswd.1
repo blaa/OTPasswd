@@ -29,6 +29,26 @@ for the \fBOTPasswd\fR one-time password authentication package
 for both users and administrators.
 It allows the user to generate a key, print passcards,
 and manage various configuration options.
+.PP
+In general, once \fBOTPasswd\fR has been installed,
+the system administrator must determine where the system will keep
+the user configuration data (user state).
+The administrator will likely also configure the system by making various
+policy choices,
+such as how long passcodes must be, how often keys should be changed,
+which passcode alphabet will be used, etc.
+Subsequently, users will probably also make some configuration choices
+\- to the degree they are permitted by policy \-
+and then they will generate a key and print some passcards.
+All of these activities involve the use of the \fBotpasswd\fR(1) utility.
+Once this initial configuration is complete,
+the \fBOTPasswd\fR system will operate virtually autonomously.
+Each time a user attempts to login to the system,
+or otherwise authenticate with some service which uses
+the \fBpam_otpasswd\fR(8) module,
+the previously configured data is consulted,
+a one-time passcode challenge will be issued,
+and the user will have a chance to authenticate.
 .\"
 .SH OPTIONS
 .SS User Administration

@@ -1,0 +1,293 @@
+.\"
+.\"   otpasswd(5) - One-Time Password Authentication System
+.\"
+.\"   Copyright (c) 2010 Tomasz bla Fortuna
+.\"
+.\"   This document is licensed under some as-yet to-be-determined
+.\"   Anti-Draconian licensing scheme.  Stay tuned.
+.\"
+.\"   Author:  R Hannes Beinert & Tomasz bla Fortuna
+.\"   Version: otpasswd v0.5beta
+.\"   Update:  04-Jan-10
+.\"
+.\"
+.TH OTPASSWD 5 2010-01-04 "OTPasswd v0.5beta" "OTPasswd User Manual"
+.\"
+.SH NAME
+~/.otpasswd - OTPasswd user state information file
+.\"
+.\"  SYNOPSIS
+.\"  CONFIGURATION      [Normally only in Section 4]
+.\"
+.SH DESCRIPTION
+This file is used to store the user state information in the user's $HOME
+directory for the \fBOTPasswd\fR one-time password authentication system.
+It is \fIonly\fR used when the \fIDB=user\fR parameter setting has been
+specified in the \fBotpasswd.conf\fR(5) system configuration file.
+.PP
+The \fB~/.otpasswd\fR file contains all state information required for the
+\fBOTPasswd\fR system to properly authenticate a user.
+.PP
+Note that the system-wide user state information database \fBotshadow\fR(5)
+is formatted in exactly the same manner as the \fB~/.otpasswd\fR file
+described here, with the exception that the system-wide database contains
+records for all users with \fBOTPasswd\fR state information.
+.\"
+.SH FORMAT
+\fBOTPasswd\fR user state information is formatted as a single line of
+plain text with 14 fields delimited by colons (':').
+Note that the currently documented database format version is \fI6\fR.
+The fields are as follow:
+.PP
+.PD 0
+.RS
+.IP " 1."
+Login name
+.IP " 2."
+State file version number
+.IP " 3."
+Sequence Key
+.IP " 4."
+Passcode Counter
+.IP " 5."
+Last Passcard
+.IP " 6."
+Total Authentication Failures
+.IP " 7."
+Recent Authentication Failures
+.IP " 8."
+Time of Last OOB Channel Use
+.IP " 9."
+Passcode Length
+.IP "10."
+Alphabet ID
+.IP "11."
+Operation Flags
+.IP "12."
+Static Password Hash
+.IP "13."
+Passcard Label
+.IP "14."
+Channel Contact Information
+.RE
+.PD
+.\"
+.SH FIELD DEFINITIONS
+.TP
+\fBLogin name\fR
+The standard symbolic system username.
+[Type: string]
+(FIELD_USER)
+.\"
+.TP
+\fBState file version number\fR
+This version number determines the format and interpretation for
+subsequent fields, and allows for \fBOTPasswd\fR software version
+interoperability.
+[Type: decimal]
+(FIELD_VERSION)
+.\"
+.TP
+\fBSequence Key\fR
+The cryptographic sequence key which is used as one input to the
+Rijndael (AES) cipher to generate passcodes.
+[Type: hex]
+(FIELD_KEY)
+.\"
+.TP
+\fBPasscode Counter\fR
+The sequential passcode counter which is used as the other input
+to the AES cipher for passcode generation.
+Depending on the configuration, this counter may either start
+with one (1), or a 96-bit cryptographic salt may be added to it
+to increase entropy.
+See \fBotpasswd\fR(1) for more information.
+[Type: hex]
+(FIELD_COUNTER)
+.\"
+.TP
+\fBLast Passcard\fR
+The number of the last printed passcard.
+This value allows for simple management of the next passcards that must be
+printed, as well as provides the ability to issue warnings that the
+passcard supply is dwindling.
+[Type: hex]
+(FIELD_LATEST_CARD)
+.\"
+.TP
+\fBTotal Authentication Failures\fR
+A cumulative total of the number of \fBOTPasswd\fR authentication failures.
+Useful to obtain a subjective feeling for general system performance.
+[Type: decimal]
+(FIELD_FAILURES)
+.\"
+.TP
+\fBRecent Authentication Failures\fR
+Total authentication failures since last reset.
+Useful measure to get an idea of whether user's login password has
+been compromised.
+[Type: decimal]
+(FIELD_RECENT_FAILURES)
+.\"
+.TP
+\fBTime of Last OOB Channel Use\fR
+Timestamp of the last out-of-band (OOB) channel use.
+If a passcode is sent via an OOB channel, this timestamp allows
+expiration of the passcode after a policy-determined time has elapsed.
+[Type: hex]
+(FIELD_CHANNEL_TIME)
+.\"
+.TP
+\fBPasscode Length\fR
+The length of the passcodes is required in a number of situations,
+such as when the number of passcodes per passcard is computed.
+[Type: decimal]
+(FIELD_CODE_LENGTH)
+.\"
+.TP
+\fBAlphabet ID\fR
+The alphabet identification number.
+This value determines the precise symbol alphabet to be used
+for passcode generation.
+[Type: decimal]
+(FIELD_ALPHABET)
+.\"
+.TP
+\fBOperation Flags\fR
+Bit-wise encoded operation flags.
+These flags determine various aspects of \fBOTPasswd\fR operation,
+such as whether the passcode counter has salt, or whether to
+display the actual passcode when typed during a login session.
+For a full listing of available flags, see the description of the
+\fB\-\-flag\fR option in \fBotpasswd\fR(1).
+(FIXME: Eventually should list flags here)
+[Type: decimal]
+(FIELD_FLAGS)
+.\"
+.TP
+\fBStatic Password Hash\fR
+Cryptographic hash of the \fIstatic password\fR.
+The actual plaintext password is not stored in any file,
+hence cannot be easily compromised.
+This hash enables recognition of the password if correctly provided
+by user.
+[Type: hex]
+(FIELD_SPASS)
+.\"
+.TP
+\fBPasscard Label\fR
+Label text to be printed on each passcard.
+The hostname of the system is used by default, however it may
+be set to any value of the user's choice.
+[Type: string]
+(FIELD_LABEL)
+.\"
+.TP
+\fBChannel Contact Information\fR
+This field contains whatever information is necessary to contact
+a user when an OOB channel is used.
+The precise interpretation of this field is determined by the
+type of channel that is used, but it may be a phone number,
+an IM (instant messenger) or IRC username, an email address, etc.
+This field may be subdivided to allow any, or all of these
+types of information to be present.
+[Type: string]
+(FIELD_CONTACT)
+.\"
+.\"  OPTIONS            [Normally only in Sections 1, 8]
+.\"
+.SH SECURITY NOTES
+When the \fBOTPasswd\fR system operates by keeping user state information
+in the user's $HOME directory, it presents a fundamental security problem.
+Since the user has write permission for the \fB~/.otpasswd\fR file, the
+user is able to modify this file at will.
+From a security perspective, the best possible outcome of such a modification
+is that the user will be unable to login by having corrupted the state
+information.
+The slightly less ideal situation is that the user may have "rolled-back"
+the passcode counter value, and thereby allowed "one-time passwords" to
+be reused.
+.PP
+There are a number of possible remedies to this issue.
+First, a hash could be computed for each user's state
+file and kept in a system-level database.
+Second, each user's state file could be cryptographically signed with
+a system-level key.
+And third, the user's state information could be taken out of the
+user's control.
+.PP
+The first option would require a system-wide database.
+The second option would require a system-wide secret, with the
+additional headaches of a periodic key-change.
+The third option therefore appears the most reasonable.
+\fBOTPasswd\fR is able to maintain such a system-wide database
+if the \fBotpasswd.conf\fR(5) system configuration file contains
+the \fIDB=global\fR parameter setting.
+.PP
+This is not to say that user-located state information is without merit.
+Specifically, it allows the \fBotpasswd\fR(1) utility to be run in the
+user context, without escalated privileges.
+It also allows user state information to be easily migrated with the
+user's home directory hierarchy, thereby giving the user significant
+continuity in passcard usage, especially when the home directories
+are NFS mounted on different hosts.
+.PP
+The primary realization when keeping user state information under the
+user's control is that \fBOTPasswd\fR security policy cannot be enforced.
+That means that system security will be no worse than the security
+afforded by the standard system login password, but if users diligently
+maintain their state information and don't compromise their own security,
+then system security could actually be better.
+The implicit security policy by operating in this manner is that
+\fBone-time password security is optional\fR.
+.\"
+.\"  EXIT STATUS        [Normally only in Sections 1, 8]
+.\"  RETURN VALUE       [Normally only in Sections 2, 3]
+.\"  ERRORS             [Typically only in Sections 2, 3]
+.\"  ENVIRONMENT
+.\"  FILES
+.\"  VERSIONS           [Normally only in Sections 2, 3]
+.\" *COMPATIBILITY
+.\"  CONFORMING TO
+.\"
+.SH NOTES
+See \fBotpasswd\fR(1) for further information about the
+\fBOTPasswd\fR one-time password authentication system.
+.\"
+.\"  BUGS
+.\"  EXAMPLE(S)
+.\"
+.SH SEE ALSO
+\fBotpasswd\fR(1),
+\fBpam_otpasswd\fR(8),
+\fBotpasswd.conf\fR(5),
+\fBotshadow\fR(5),
+.\"
+.\" *DOCUMENTATION
+.\" *AUTHORS
+.\" *HISTORY
+.\"
+.SH LICENSE
+Copyright (c) 2009, 2010 Tomasz bla Fortuna
+.PP
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+.PP
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+.PP
+You should have received a copy of the GNU General Public License
+along with this program in a LICENSE file.
+.\"
+.SH AVAILABILITY
+The latest version of the \fBOTPasswd\fR package is available in source form
+at the project website
+.nh
+https://savannah.nongnu.org/projects/otpasswd
+.hy 1
+.\"
+.\" End of Manual: otpasswd(5)

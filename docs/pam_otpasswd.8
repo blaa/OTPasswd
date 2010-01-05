@@ -32,14 +32,14 @@ and the PAM module essentially makes it happen.
 In general, once \fBOTPasswd\fR has been installed,
 the system administrator must determine where the system will keep
 the user configuration data (user state).
-The administator will likely also configure the system by making various
+The administrator will likely also configure the system by making various
 policy choices,
 such as how long passcodes must be, how often keys should be changed,
 which passcode alphabet will be used, etc.
 Subsequently, users will probably also make some configuration choices
 \- to the degree they are permitted by policy \-
 and then they will generate a key and print some passcards.
-All of these activites involve the use of the \fBotpasswd\fR(1) utility.
+All of these activities involve the use of the \fBotpasswd\fR(1) utility.
 Once this initial configuration is complete,
 the \fBOTPasswd\fR system will operate virtually autonomously.
 Each time a user attempts to login to the system,
@@ -266,11 +266,11 @@ In this example, the \fIrequisite\fR keyword is used for the \fBpam_unix\fR(8)
 module, which means that if the user fails to enter the proper system password,
 the entire \fBauth\fR stack will fail immediately.
 In particular, this means that the user will never be asked for a
-one-time password (OTP) by the \fBpam_otpasswd\fR module.
+passcode by the \fBpam_otpasswd\fR module.
 To change this behavior, merely replace the \fIrequisite\fR keyword,
 with the \fIrequired\fR keyword.
 This forces the entire \fBauth\fR stack to complete first,
-and the user will be asked for an OTP every time,
+and the user will be asked for a passcode every time,
 regardless of whether the user specified the system password correctly.
 .PP
 Note that the \fIaudit\fR option was specified in the \fBauth\fR configuration
