@@ -55,6 +55,8 @@ Trying to sort tasks according to their priority.
         * [+] Add -r option to remove key and disable OTP.
         * [+] Fix user interface a bit.
 	* [?] Key quality checking (duplicates)
+	* [%] In some cases salt flag might be changed if policy changes 
+	      creating strange behaviour
         * [-] "Problem solving section" in docs, mentioning use of -v on
               errors in the first place.
         * [%] Should we start suid root then drop to some config-defined user

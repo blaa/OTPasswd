@@ -235,6 +235,169 @@ static void _show_keys(const state *s)
 
 }
 
+/* Update state flags. Checks policy. If generation is 1 we allow salt changes. */
+static int _update_flags(options_t *options, state *s, int generation)
+{
+	int ret;
+	cfg_t *cfg = cfg_get();
+	assert(options);
+	assert(cfg);
+	assert(s);
+
+	/* User tries to change salt when he has key generated? */
+	if ((generation == 0) && 
+	    (options->flag_set_mask & FLAG_SALTED || 
+	     options->flag_clear_mask & FLAG_SALTED)) {
+		printf("Salt configuration can be changed only during key creation.\n");
+		return 1;
+	}
+
+	/* Tries to disable/enable himself when not allowed? */
+	if (cfg->allow_disabling == 0) {
+		if (options->flag_set_mask & FLAG_DISABLED ||
+		    options->flag_clear_mask & FLAG_DISABLED) {
+			printf("Changing a \"disable\" flag disallowed by policy.\n");
+			return 1;
+		}
+	}
+
+	/* Check policy of salt */
+	switch (cfg->salt_allow) {
+	case 0:
+		if (options->flag_set_mask & FLAG_SALTED) {
+			printf("Policy disallows salted keys.\n");
+			return 1;
+		}
+		break;
+	case 2:
+		if (options->flag_clear_mask & FLAG_SALTED) {
+			printf("Policy enforces salted keys.\n");
+			return 1;
+		}
+		break;
+	case 1:
+	default:
+		break;
+	}
+
+	/* Copy all user-selected values to state
+	 * but check if they match policy */
+
+	/* Length of contact/label is ensured in process_cmd_line */
+	if (options->contact) {
+		ret = ppp_set_str(s, PPP_FIELD_CONTACT, options->contact, !security_is_root());
+
+		switch (ret) {
+		case PPP_ERROR_ILL_CHAR:
+			printf(
+				"Contact contains illegal characters.\n"
+				"Only alphanumeric + \" -+.@_*\" are allowed.\n");
+			return ret;
+
+		case PPP_ERROR_TOO_LONG:
+			printf("Contact can't be longer than %d "
+			       "characters\n", STATE_CONTACT_SIZE-1);
+			return ret;
+
+		case PPP_ERROR_POLICY:
+			printf("Contact changing denied by policy.\n");
+			return ret;
+
+		case 0:
+			break;
+		default:
+			printf("Unexpected error while setting contact information.\n");
+			return 1;
+		}
+		printf("Warning: Changing codelength invalidates "
+		       "already printed passcards.\n"
+		       "         If you like, you can switch back "
+		       "to your previous settings.\n\n");
+	}
+
+	if (options->label) {
+		ret = ppp_set_str(s, PPP_FIELD_LABEL, options->label, !security_is_root());
+		switch (ret) {
+		case PPP_ERROR_ILL_CHAR:
+			printf(
+				"Label contains illegal characters.\n"
+				"Only alphanumeric + \" -+.@_*\" are allowed.\n");
+			return ret;
+
+		case PPP_ERROR_TOO_LONG:
+			printf("Label can't be longer than %d "
+			       "characters\n", STATE_LABEL_SIZE-1);
+			return ret;
+
+		case PPP_ERROR_POLICY:
+			printf("Label changing denied by policy.\n");
+			return ret;
+
+		case 0:
+			break;
+
+		default:
+			printf("Unexpected error while setting label information.\n");
+			return 1;
+		}
+
+		printf("Warning: Changing alphabet invalidates "
+		       "already printed passcards.\n"
+		       "         If you like, you can switch back "
+		       "to your previous settings.\n\n");
+	}
+
+	/* Code length + alphabet */
+	if (options->set_codelength != -1) {
+		ret = ppp_set_int(s, PPP_FIELD_CODELENGTH, options->set_codelength);
+		switch (ret) {
+		case PPP_ERROR_RANGE:
+			printf("Passcode length must be between 2 and 16.\n");
+			return ret;
+
+		case PPP_ERROR_POLICY:
+			printf("Setting passcode length denied by policy.\n");
+			return ret;
+		case 0:
+			break;
+		default: 
+			printf("Unexpected error while setting code length.\n");
+			return 1;
+		}
+
+	}
+
+	if (options->set_alphabet != -1) {
+		ret = ppp_set_int(s, PPP_FIELD_ALPHABET, options->set_alphabet);
+		switch (ret) { 
+		case PPP_ERROR_RANGE:
+			printf("Illegal alphabet ID specified. See "
+			       "-f alphabet-list\n");
+			return ret;
+		case PPP_ERROR_POLICY:
+			printf("Alphabet denied by policy. See "
+			       "-f alphabet-list\n");
+			return ret;
+		case 0:
+			
+			break;
+		default:
+			printf("Unexpected error while setting code length.\n");
+			return 1;
+		} 
+	}
+
+	if (ret != 0) {
+		print(PRINT_ERROR, "Error while settings flags.\n");
+		return 1;
+	}
+
+	/* Change flags */
+	ppp_flag_add(s, options->flag_set_mask);
+	ppp_flag_del(s, options->flag_clear_mask);
+	return 0;
+}
+
 /* Parse specification of passcode or passcard from "spec" string
  * Result save to passcode (and return 1) or to passcard (and return 2)
  * any other return value means error 
@@ -431,61 +594,6 @@ cleanup:
 	return retval;
 }
 
-static void _update_flags(const options_t *options, const cfg_t *cfg, state *s, int *salted)
-{
-	int ret;
-	assert(options);
-	assert(cfg);
-	assert(s);
-
-	/* Copy all user-selected values to state
-	 * but check if they match policy */
-
-	/* Length of contact/label is ensured in process_cmd_line */
-	if (options->contact)
-		ret = ppp_set_str(s, PPP_FIELD_CONTACT, options->contact, !security_is_root());
-
-	if (options->label)
-		ret = ppp_set_str(s, PPP_FIELD_LABEL, options->label, !security_is_root());
-
-	/* Flags */
-	unsigned int flags =  ppp_get_int(s, PPP_FIELD_FLAGS);
-	flags |= options->flag_set_mask;
-	flags &= options->flag_clear_mask;
-	ret = ppp_set_int(s, PPP_FIELD_FLAGS, flags);
-
-	/* Code length + alphabet */
-	if (options->set_codelength != -1)
-		ret += ppp_set_int(s, PPP_FIELD_CODELENGTH, options->set_codelength);
-
-	if (options->set_alphabet != -1)
-		ret += ppp_set_int(s, PPP_FIELD_ALPHABET, options->set_alphabet);
-
-	if (ret != 0) {
-		print(PRINT_ERROR, "Error while settings flags.\n");
-		return;
-	}
-
-
-	switch (cfg->salt_allow) {
-	case 0:
-		*salted = 0;
-		break;
-	case 2:
-		*salted = 1;
-		break;
-	default:
-		if (options->flag_set_mask & FLAG_SALTED) 
-			*salted = 1;
-		if (options->flag_clear_mask & FLAG_SALTED) 
-			*salted = 0;
-		break;
-	}
-
-	if (*salted)
-		s->flags |= FLAG_SALTED;
-}
-
 /* Generate new key */
 int action_key(options_t *options, const cfg_t *cfg)
 {
@@ -502,7 +610,6 @@ int action_key(options_t *options, const cfg_t *cfg)
 
 	int ret;
 	state s;
-	int salted; /* Do we salt the key? */
 
 	if (state_init(&s, options->username) != 0) {
 		print(PRINT_ERROR, "Unable to initialize state\n");
@@ -548,14 +655,11 @@ int action_key(options_t *options, const cfg_t *cfg)
 
 		/* We are not removing, read flags, update them
 		 * with user options and ask if he likes it */
-
-		/* Use default from previous state */
-		if (s.flags & FLAG_SALTED)
-			salted = 1;
-		else 
-			salted = 0;
-
-		_update_flags(options, cfg, &s, &salted);
+		ret = _update_flags(options, &s, 1);
+		if (ret != 0) {
+			retval = 1;
+			goto cleanup;
+		}
 
 		printf("Your current flags (updated with command line options):\n");
 		_show_flags(&s);
@@ -566,8 +670,13 @@ int action_key(options_t *options, const cfg_t *cfg)
 			state_init(&s, options->username);
 
 			/* Use default salting from config */
-			salted = cfg->salt_def;
-			_update_flags(options, cfg, &s, &salted);
+			ret = _update_flags(options, &s, 1);
+			if (ret != 0) {
+				retval = 1;
+				goto cleanup;
+			}
+
+
 		}
 	} else {
 		if (remove) {
@@ -582,19 +691,19 @@ int action_key(options_t *options, const cfg_t *cfg)
 			goto cleanup;
 		}
 
-
-
-
 		/* Failed, state_load might have changed something in struct, reinit. */
 		state_fini(&s);
 		state_init(&s, options->username);
 
 		/* Use default salting from config */
-		salted = cfg->salt_def;
-		_update_flags(options, cfg, &s, &salted);
+		ret = _update_flags(options, &s, 1);
+		if (ret != 0) {
+			retval = 1;
+			goto cleanup;
+		}
 	}
 
-	if (state_key_generate(&s, salted) != 0) {
+	if (state_key_generate(&s) != 0) {
 		print(PRINT_ERROR, "Unable to generate new key\n");
 		goto cleanup;
 	}
@@ -644,7 +753,7 @@ cleanup:
 int action_license(options_t *options, const cfg_t *cfg)
 {
 	printf(
-		"otpasswd -- One-time password manager and PAM module.\n"
+		"OTPasswd - One-Time Password Authentication System.\n"
 		"Version " PROG_VERSION "\n"
 		"Copyright (C) 2009 Tomasz bla Fortuna <bla@thera.be>\n"
 		"\n"
@@ -686,50 +795,15 @@ int action_flags(options_t *options, const cfg_t *cfg)
 
 	switch(options->action) {
 	case OPTION_FLAGS:
-		/* Change flags */
-		assert(! (options->flag_set_mask & FLAG_SALTED));
-		assert(! (options->flag_clear_mask & FLAG_SALTED));
+		ret = _update_flags(options, s, 0);
+		if (ret != 0)
+			return ret;
 
-		s->flags |= options->flag_set_mask;
-		s->flags &= ~(options->flag_clear_mask);
-
-		if (options->flag_set_mask || options->flag_clear_mask) {
+		if (options->flag_set_mask || options->flag_clear_mask ||
+		    options->set_codelength || options->set_alphabet ||
+		    options->label || options->contact) {
 			save_state = 1;
 		}
-
-		if (options->set_codelength > 0) {
-			if (s->code_length != options->set_codelength) {
-				printf("Warning: Changing codelength invalidates "
-				       "already printed passcards.\n"
-				       "         If you like, you can switch back "
-				       "to your previous settings.\n\n");
-				save_state = 1;
-			}
-			s->code_length = options->set_codelength;
-		}
-
-		if (options->set_alphabet >= 0) {
-			if (s->alphabet != options->set_alphabet) {
-				printf("Warning: Changing alphabet invalidates "
-				       "already printed passcards.\n"
-				       "         If you like, you can switch back "
-				       "to your previous settings.\n\n");
-				save_state = 1;
-			}
-			s->alphabet = options->set_alphabet;
-		}
-
-		/* Length of contact/label checked in process_cmd_line */
-		if (options->label) {
-			strcpy(s->label, options->label);
-			save_state = 1;
-		}
-		
-		if (options->contact) {
-			strcpy(s->contact, options->contact);
-			save_state = 1;
-		}
-
 		break;
 
 	case OPTION_SPASS:

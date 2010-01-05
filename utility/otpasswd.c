@@ -26,6 +26,9 @@
 
 #include "security.h"
 
+#define PPP_INTERNAL
+#include "ppp.h"
+
 #include "print.h"
 #include "crypto.h"
 #include "num.h"
@@ -33,8 +36,6 @@
 
 #include "passcards.h"
 
-#define PPP_INTERNAL
-#include "ppp.h"
 
 #include "otpasswd_actions.h"
 #include "testcases.h"
@@ -115,6 +116,9 @@ static void _usage(int argc, const char **argv)
 		"                         available passcard number at the cost of\n"
 		"                         (theoretically) less security.\n"
 		"\n"
+		"           disable=<on|off>\n"
+		"                         Disable user without removing his data.\n"
+		"\n"
 		"  -p, --password <pass>\n"
 		"           Set static password. Use empty (i.e. "") to unset.\n"
 /*
@@ -156,7 +160,7 @@ static void _usage(int argc, const char **argv)
 	);
 }
 
-
+/* Parsing is done here, policy checking in _update_flags */
 int parse_flag(options_t *options, const char *arg)
 {
 	const cfg_t *cfg = cfg_get();
@@ -172,11 +176,14 @@ int parse_flag(options_t *options, const char *arg)
 		options->flag_set_mask |= FLAG_SALTED;
 	else if (strcmp(arg, "salt=off") == 0)
 		options->flag_clear_mask |= FLAG_SALTED;
-
+	else if (strcmp(arg, "disable=off") == 0)
+		options->flag_clear_mask |= FLAG_DISABLED;
+	else if (strcmp(arg, "disable=on") == 0)
+		options->flag_set_mask |= FLAG_DISABLED;
 	else if (strcmp(arg, "list") == 0) {
 		if (options->action != OPTION_FLAGS) {
 			printf("Only one action can be specified on the command line\n"
-			       "and you can't mix 'list' flag with other flags.\n");
+			       "and you can't mix \"list\" flag with other flags.\n");
 			return 1;
 		}
 
@@ -185,7 +192,7 @@ int parse_flag(options_t *options, const char *arg)
 	} else if (strcmp(arg, "alphabet=list") == 0) {
 		if (options->action != OPTION_FLAGS) {
 			printf("Only one action can be specified on the command line\n"
-			       "and you can't mix 'list' flag with other flags.\n");
+			       "and you can't mix alphabet listing with other flags.\n");
 			return 1;
 		}
 		options->action = OPTION_ALPHABETS; /* List alphabets instead of changing flags */
@@ -199,24 +206,6 @@ int parse_flag(options_t *options, const char *arg)
 			return 1;
 		}
 
-		if (!security_is_root() && cfg->allow_contact_change == 0) {
-			printf("Contact changing denied by policy.\n");
-			return 1;
-		}
-
-		if (!state_validate_str(contact)) {
-			printf(
-				"Contact contains illegal characters.\n"
-				"Only alphanumeric + \" -+.@_*\" are allowed.\n");
-			return 1;
-		}
-
-		if (strlen(contact) + 1 > STATE_CONTACT_SIZE) {
-			printf("Contact can't be longer than %d "
-			       "characters\n", STATE_CONTACT_SIZE-1);
-			return 1;
-		}
-
 		/* Store */
 		options->contact = strdup(contact);
 	} else if (strncmp(arg, "label=", 6) == 0) {
@@ -227,24 +216,6 @@ int parse_flag(options_t *options, const char *arg)
 			return 1;
 		}
 
-		if (!security_is_root() && cfg->allow_label_change == 0) {
-			printf("Contact changing denied by policy.\n");
-			return 1;
-		}
-
-		if (!state_validate_str(label)) {
-			printf(
-				"Contact contains illegal characters.\n"
-				"Only alphanumeric and \" -+.@_*\" are allowed.\n");
-			return 1;
-		}
-
-		if (strlen(label) + 1 > STATE_LABEL_SIZE) {
-			printf("Label can't be longer than %d "
-			       "characters\n", STATE_LABEL_SIZE-1);
-			return 1;
-		}
-
 		/* Store */
 		options->label = strdup(label);
 
@@ -252,45 +223,23 @@ int parse_flag(options_t *options, const char *arg)
 	} else {
 		int tmp;
 		if (sscanf(arg, "codelength=%d", &tmp) == 1) {
-			const int ret = ppp_verify_code_length(tmp);
-			switch (ret) {
-			case 1:
-				printf("Passcode length must be between 2 and 16.\n");
-				return 1;
-			case 2:
-				printf("Passcode length must be between 2 and 16.\n");
-				return 1;
-			case 0:
-				options->set_codelength = tmp;
-				break;
-			default: 
-				assert(0);
-				return 1;
-			}
+			if (tmp == -1)    /* Also illegal, but we use */
+				tmp = -2; /* -1 to mark it's not set */
+
+			options->set_codelength = tmp;
 		} else if (sscanf(arg, "alphabet=%d", &tmp) == 1) {
-			const int ret = ppp_verify_alphabet(tmp);
-			switch (ret) { 
-			case 1:
-				printf("Illegal alphabet ID specified. See "
-				       "-f alphabet-list\n");
-				return 1;
-			case 2:
-				printf("Alphabet denied by policy. See "
-				       "-f alphabet-list\n");
-				return 2;
-			case 0:
-				options->set_alphabet = tmp;
-				break;
-			default:
-				assert(0);
-				return 3;
-			} 
+			if (tmp == -1)    /* Also illegal, but we use */
+				tmp = -2; /* -1 to mark it's not set */
+
+			options->set_alphabet = tmp;
 		} else {
 			/* Illegal flag */
-			printf("No such flag %s\n", arg);
+			printf("No such flag or illegal option (%s).\n", arg);
 			return 1;
 		}
 	}
+
+	/* Verify user don't want to unset and set at the same time */
 	if (options->flag_set_mask & options->flag_clear_mask) {
 		printf("Illegal set of flags defined.\n");
 		return 1;
@@ -534,7 +483,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 	/* Check additional correctness */
 	if (((options->flag_set_mask | options->flag_clear_mask) & FLAG_SALTED)
 	    && (options->action != 'k')) {
-		printf("salt or no-salt flag can only be specified during key creation!\n");
+		printf("The \"salt\" flag can only be specified during key creation!\n");
 		goto error;
 	}
 
@@ -542,7 +491,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		/* User not specified, use the one who has ran us */
 		options->username = security_get_current_user();
 		if (!options->username) {
-			printf("Unable to determine current username!\n");
+			printf("Unable to determine name of current user!\n");
 			goto error;
 		}
 	}

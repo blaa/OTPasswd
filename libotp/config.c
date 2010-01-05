@@ -68,6 +68,7 @@ static void _config_defaults(cfg_t *cfg)
 
 		.allow_key_generation = 1,
 		.allow_key_regeneration = 1,
+		.allow_disabling = 0,
 		.allow_sourced_key_generation = 0,
 		.allow_key_removal = 1,
 		.allow_passcode_print = 1,
@@ -333,6 +334,9 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 		} else if (_EQ(line_buf, "allow_key_regeneration")) {
 			REQUIRE_ARG(0, 1);
 			cfg->allow_key_regeneration = arg;
+		} else if (_EQ(line_buf, "allow_disabling")) {
+			REQUIRE_ARG(0, 1);
+			cfg->allow_disabling = arg;
 		} else if (_EQ(line_buf, "allow_sourced_key_generation")) {
 			REQUIRE_ARG(0, 1);
 			cfg->allow_sourced_key_generation = arg;

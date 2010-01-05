@@ -120,7 +120,7 @@ extern int state_init(state *s, const char *username);
 extern void state_fini(state *s);
 
 /* Generate new key */
-extern int state_key_generate(state *s, const int salt);
+extern int state_key_generate(state *s);
 
 /* Validate contact / label data */
 extern int state_validate_str(const char *str);

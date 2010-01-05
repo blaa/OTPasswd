@@ -68,11 +68,11 @@ int ppp_verify_code_length(int length)
 	assert(cfg);
 
 	if (length < 2 || length > 16)
-		return 1;
+		return PPP_ERROR_RANGE;
 
 	if (length < cfg->passcode_min_length ||
 	    length > cfg->passcode_max_length) {
-		return 2;
+		return PPP_ERROR_POLICY;
 	}
 
 	return 0;
@@ -88,13 +88,13 @@ int ppp_verify_alphabet(int id)
 
 	/* Check if it's legal */
 	if (id < 0 || id > alphabet_cnt)
-		return 1;
+		return PPP_ERROR_RANGE;
 
 	/* Fail also if changing is denied and this
 	 * alphabet is not default one */
 	if  (cfg->alphabet_allow_change == 0 &&
 	     cfg->alphabet_def != id)
-		return 2;
+		return PPP_ERROR_POLICY;
 
 
 	const char *alphabet;
@@ -108,7 +108,7 @@ int ppp_verify_alphabet(int id)
 	const int len = strlen(alphabet);
 
 	if (len<min || len>max)
-		return 2;
+		return PPP_ERROR_POLICY;
 
 	/* OK */
 	return 0;
@@ -516,7 +516,23 @@ const char *ppp_get_error_desc(int error)
 		return "No user entry. Have you created key with --key option?";
 
 	case STATE_NO_SUCH_USER:
-		return "No such Unix user in passwd database. Unable to locate home.\n";
+		return "No such Unix user in passwd database. Unable to locate home.";
+
+		
+	case PPP_ERROR:
+		return "Generic PPP error. (Try -v to get details)";
+
+	case PPP_ERROR_POLICY:
+		return "Action denied by policy.";
+
+	case PPP_ERROR_RANGE:
+		return "Argument out of range.";
+
+	case PPP_ERROR_ILL_CHAR:
+		return "Illegal character in input.";
+
+	case PPP_ERROR_TOO_LONG:
+		return "Input too long.";
 
 	default:
 		return "Error occured while reading state. Use -v to determine which.";
@@ -701,12 +717,13 @@ unsigned int ppp_get_int(const state *s, int field)
 	default:
 		print(PRINT_CRITICAL, "Illegal field passed to ppp_get_int\n");
 		assert(0);
-		return 1;
+		return PPP_ERROR;
 	}
 }
 
 int ppp_set_int(state *s, int field, unsigned int arg)
 {
+	int ret;
 	switch (field) {
 	case PPP_FIELD_FAILURES:
 		s->failures = arg;
@@ -717,29 +734,34 @@ int ppp_set_int(state *s, int field, unsigned int arg)
 		break;
 
 	case PPP_FIELD_CODELENGTH:
-		if (ppp_verify_code_length(arg) != 0)
-			return 2;
+		ret = ppp_verify_code_length(arg);
+		if (ret != 0)
+			return ret;
 
 		s->code_length = arg;
 		break;
 
 	case PPP_FIELD_ALPHABET:
-		if (ppp_verify_alphabet(arg) != 0)
-			return 2;
+		ret = ppp_verify_alphabet(arg);
+		if (ret != 0)
+			return ret;
+
 
 		s->alphabet = arg;
 		break;
 
 	case PPP_FIELD_FLAGS:
-		if (arg > (FLAG_SHOW|FLAG_SALTED|FLAG_DISABLED))
-			return 2;
+		if (arg > (FLAG_SHOW|FLAG_SALTED|FLAG_DISABLED)) {
+			print(PRINT_WARN, "Illegal set of flags.\n");
+			return PPP_ERROR;
+		}
 		s->flags = arg;
 		break;
 
 	default:
 		print(PRINT_CRITICAL, "Illegal field passed to ppp_set_int\n");
 		assert(0);
-		return 1;
+		return PPP_ERROR;
 	}
 
 	return 0;
@@ -752,23 +774,27 @@ int ppp_get_mpz(const state *s, int field, mpz_t arg)
 	switch (field) {
 	case PPP_FIELD_KEY:
 		mpz_set(arg, s->sequence_key);
-		return 0;
+		break;
 
 	case PPP_FIELD_COUNTER:
 		mpz_set(arg, s->counter);
-		return 0;
+		break;
 
 	case PPP_FIELD_LATEST_CARD:
 		mpz_set(arg, s->latest_card);
-		return 0;
+		break;
+
 	default:
 		print(PRINT_CRITICAL, "Illegal field passed to ppp_get_mpz\n");
 		mpz_set_ui(arg, 0);
 		assert(0);
-		return 1;
+		return PPP_ERROR;
 	}
+
+	return 0;
 }
 
+/* ppp_get_str helpers! */
 static void _ppp_dispose_prompt(state *s)
 {
 	if (!s->prompt)
@@ -779,8 +805,6 @@ static void _ppp_dispose_prompt(state *s)
 	free(s->prompt);
 	s->prompt = NULL;
 }
-
-/* ppp_get_str helpers! */
 
 /* Generate prompt used for authentication
  * Do not free returned value. It's stored in state
@@ -848,7 +872,7 @@ int ppp_get_str(state *s, int field, const char **arg)
 	default:
 		print(PRINT_CRITICAL, "Illegal field passed to ppp_get_str\n");
 		assert(0);
-		return 1;
+		return PPP_ERROR;
 	}
 
 	return 0;
@@ -871,11 +895,15 @@ int ppp_set_str(state *s, int field, const char *arg, int check_policy)
 	switch (field) {
 	case PPP_FIELD_CONTACT:
 		if (check_policy && cfg->allow_contact_change == 0) {
-			return 2;
+			return PPP_ERROR_POLICY;
 		}
 
 		if (length + 1 > STATE_CONTACT_SIZE) {
-			return 3;
+			return PPP_ERROR_TOO_LONG;
+		}
+
+		if (!state_validate_str(arg)) {
+			return PPP_ERROR_ILL_CHAR;
 		}
 
 		if (length == 0)
@@ -886,11 +914,15 @@ int ppp_set_str(state *s, int field, const char *arg, int check_policy)
 
 	case PPP_FIELD_LABEL:
 		if (check_policy && cfg->allow_label_change == 0) {
-			return 2;
+			return PPP_ERROR_POLICY;
 		}
 
 		if (length + 1 > STATE_LABEL_SIZE) {
-			return 3;
+			return PPP_ERROR_TOO_LONG;
+		}
+
+		if (!state_validate_str(arg)) {
+			return PPP_ERROR_ILL_CHAR;
 		}
 
 		if (length == 0)
@@ -903,7 +935,7 @@ int ppp_set_str(state *s, int field, const char *arg, int check_policy)
 	default:
 		print(PRINT_CRITICAL, "Illegal field passed to ppp_set_str\n");
 		assert(0);
-		return 1;
+		return PPP_ERROR;
 	}
 
 	return 0;

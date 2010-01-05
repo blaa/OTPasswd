@@ -160,6 +160,9 @@ typedef struct {
 	/* User can reregenerate existing key */
 	int allow_key_regeneration;
 
+	/* User can disable his state */
+	int allow_disabling; 
+
 	/* User can generate key by using a command line or file entry */
 	int allow_sourced_key_generation;
 	

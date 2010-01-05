@@ -147,6 +147,11 @@ extern int ppp_set_int(state *s, int field, unsigned int arg);
  */
 extern int ppp_set_str(state *s, int field, const char *arg, int check_policy);
 
+/* Setter/getter/checker for flag fields. No policy checking now */
+/* Check if flag is set in state, add flag and remove flag. */
+extern int ppp_flag_check(const state *s, int flag);
+extern void ppp_flag_add(state *s, int flag);
+extern void ppp_flag_del(state *s, int flag);
 
 /*******************************************
  * High level functions for state management
@@ -157,11 +162,6 @@ extern int ppp_init(state **s, const char *user);
 
 /* Deinitialize state and free it's memory */
 extern void ppp_fini(state *s);
-
-/* Check if flag is set in state, add flag and remove flag. */
-extern int ppp_flag_check(const state *s, int flag);
-extern void ppp_flag_add(state *s, int flag);
-extern void ppp_flag_del(state *s, int flag);
 
 /*
  * Lock state and load state.

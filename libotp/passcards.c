@@ -23,10 +23,10 @@
 #include <gmp.h>
 
 #define PPP_INTERNAL 1
+#include "ppp.h"
 #include "print.h"
 #include "num.h"
 #include "crypto.h"
-#include "ppp.h"
 #include "passcards.h"
 
 char *card_ascii(const state *s, const mpz_t passcard)

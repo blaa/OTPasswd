@@ -71,6 +71,23 @@ enum ppp_errors {
 	 * user entry. Always causes ignore if enforce=0
 	 */
 	STATE_NO_USER_ENTRY = 56,
+
+	/*** PPP Errors ***/
+
+	/* Generic error. Should not happen usually. */
+	PPP_ERROR = 100,
+
+	/* Action denied by policy */
+	PPP_ERROR_POLICY = 101,
+
+	/* Input too long */
+	PPP_ERROR_TOO_LONG = 102,
+
+	/* Input contains illegal characters */
+	PPP_ERROR_ILL_CHAR = 103,
+
+	/* Value out of range */
+	PPP_ERROR_RANGE = 104,
 };
 
 
@@ -78,10 +95,11 @@ enum flags {
 	FLAG_SHOW = 1,
 	/* User disabled by administrator */
 	FLAG_DISABLED = 2,
+	FLAG_SALTED = 4,
+
 	/* FLAG_SKIP removed */
 	/* FLAG_ALPHABET_EXTENDED removed */
-	FLAG_SALTED = 8,
-
 };
 
 #endif
+

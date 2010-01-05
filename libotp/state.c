@@ -162,13 +162,15 @@ void state_fini(state *s)
 	memset(s, 0, sizeof(*s));
 }
 
-int state_key_generate(state *s, const int salt)
+int state_key_generate(state *s)
 {
 	unsigned char entropy_pool[1024]; /* 160 + 8032 bits */
 	unsigned char key_bin[32];
 
 	const int real_random = 20;
 	const int pseudo_random = sizeof(entropy_pool) - real_random;
+
+	const int salt = s->flags & FLAG_SALTED;
 
 	printf("Generating new %s key.\n\n", salt ? "salted" : "not salted");
 	puts(

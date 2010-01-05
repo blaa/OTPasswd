@@ -257,7 +257,7 @@ error:
 }
 
 /* State files constants */
-static const int _version = 6;
+static const int _version = 7;
 static const char *_delim = ":";
 
 static const int fields = 14;

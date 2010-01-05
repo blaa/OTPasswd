@@ -290,7 +290,8 @@ int state_testcase(void)
 	test++; if (state_init(&s2, current_user) != 0)
 		printf("state_testcase[%2d] failed(%d)\n", test, failed++);
 
-	test++; if (state_key_generate(&s1, 0) != 0)
+	ppp_flag_del(&s1, FLAG_SALTED);
+	test++; if (state_key_generate(&s1) != 0)
 		printf("state_testcase[%2d] failed(%d)\n", test, failed++);
 	mpz_set_ui(s1.counter, 321323211UL);
 
