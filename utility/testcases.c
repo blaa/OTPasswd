@@ -614,7 +614,14 @@ static int _ppp_testcase_authenticate(const char *passcode)
 
 	/* Generate prompt */
 	ppp_calculate(&s);
-	prompt = ppp_get_prompt(&s);
+	retval = ppp_get_str(&s, PPP_FIELD_PROMPT, &prompt);
+	if (retval != 0) {
+		printf("ppp_get_str FAILED\n");
+		goto cleanup;
+	}
+
+	retval = 1;
+
 	if (!prompt) {
 		printf("GET_PROMPT FAILED\n");
 		goto cleanup;

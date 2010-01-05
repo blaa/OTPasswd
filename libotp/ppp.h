@@ -30,50 +30,34 @@ typedef struct state state;
 #endif
 
 /* Decode external card number and XY code position into a counter 
- * This function decreases passcard by one.
+ * This function decreases passcard by one so counting starts at '1'.
+ * Counter is created with salt included.
  */
 extern int ppp_get_passcode_number(
 	const state *s, const mpz_t passcard,
 	mpz_t passcode, char column, char row);
 
-/* Adds a salt to given passcode if salt is used */
-/* In other words: converts from user supplied passcode
- * into system passcode number */
+/* Adds a salt to given passcode if salt is used
+ * In other words: converts from user supplied passcode
+ * into system passcode number. */
 extern void ppp_add_salt(const state *s, mpz_t passcode);
 
-/* Calculate a single passcode of the given number using state key */
+/* Calculate a single passcode using Perfect Paper Passwords
+ * algorithm. Key is taken from state, and counter passes as argument
+ * (which is not further mangled. That is - it has to have a salt included). */
 extern int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode);
 
-/* Calculate card parameters and save them in state.  Required by many 
- * (ppp_get_prompt, ppp_verify_range) functions to work. */
-extern void ppp_calculate(state *s);
-
-/* Verify that counter (and key) is in correct range 
- * done usually after reading from the state file, when 
- * the data could be maliciously changed */
-extern int ppp_verify_range(const state *s);
-
-/* Verify if alphabet is a correct alphabet number
- * prints warnings to stdout. */
-extern int ppp_alphabet_verify(int id);
-
-/* Print all acceptable alphabets */
-extern void ppp_alphabet_print(void);
-
-/* Generate prompt used for authentication
- * Do not free returned value. It's stored in state
- * and freed in state_fini.
- */
-extern const char *ppp_get_prompt(state *s);
-
-/* Clear and free prompt */
-extern void ppp_dispose_prompt(state *s);
-
-/* Return current passcode */
+/* Return current passcode. Helper for ppp_get_passcode function. */
 extern int ppp_get_current(const state *s, char *passcode);
 
-/* Get contact info */
-const char *ppp_get_contact(const state *s);
+/* Calculate card parameters and save them in state.  Required by many 
+ * (ppp_get_prompt, ppp_verify_range) functions to work.
+ * Should be called to update information after any flag, 
+ * counter, etc. change */
+extern void ppp_calculate(state *s);
+
+/* Print to stdout all acceptable alphabets with IDs */
+extern void ppp_alphabet_print(void);
 
 enum ppp_warning{
 	PPP_WARN_OK = 0,		/* No warning condition */
@@ -91,37 +75,107 @@ extern int ppp_get_warning_conditions(const state *s);
  */
 extern const char *ppp_get_warning_message(const state *s, int *warning);
 
-/* Decode error */
+/* Decode ppp_error (see ppp_common.h for list) */
 extern const char *ppp_get_error_desc(int error);
 
 /* Try to authenticate user; returns 0 on successful authentication */
 extern int ppp_authenticate(const state *s, const char *passcode);
 
+/**************************************
+ * State/Policy verification 
+ *************************************/
+
+/* Verify that counter (and key) is in correct range 
+ * done usually after reading from the state file, when 
+ * the data could be maliciously changed */
+extern int ppp_verify_range(const state *s);
+
+/* Verify if an alphabet given as ID is correct 
+ * and allowed by policy. */
+extern int ppp_verify_alphabet(int id);
+
+/* Verify code length */
+extern int ppp_verify_code_length(int length);
+
+/*******************************************
+ * State Getters / Setters
+ ******************************************/
+enum {
+	PPP_FIELD_FAILURES = 1,		/* unsigned int */
+	PPP_FIELD_RECENT_FAILURES,	/* unsigned int */
+	PPP_FIELD_CODELENGTH,		/* unsigned int */
+	PPP_FIELD_ALPHABET,		/* unsigned int */
+	PPP_FIELD_FLAGS,		/* unsigned int */
+
+	PPP_FIELD_KEY,			/* mpz */
+	PPP_FIELD_COUNTER, 		/* mpz */
+	PPP_FIELD_LATEST_CARD,		/* mpz */
+
+	PPP_FIELD_USERNAME,		/* char * */
+	PPP_FIELD_PROMPT,		/* char * */
+	PPP_FIELD_CONTACT,		/* char * */
+	PPP_FIELD_LABEL,		/* char * */
+};
+
+/* Setters return '2' if argument is invalid 
+ * (because of policy for example), both 
+ * setters and getters return '1' if field is invalid 
+ * and take the liberty to call assert(0) then. */
+
+/* Get a value out of state and place at "arg" memory location.
+ * In some cases this can also be int, not unsigned int.
+ */
+extern unsigned int ppp_get_int(const state *s, int field);
+
+/* Get long number from state. */
+extern int ppp_get_mpz(const state *s, int field, mpz_t arg);
+
+/* Get character string from state. This sets "arg" memory 
+ * to a pointer to state data. This data musn't be altered.
+ * Returns 0 on success and 1 if field is incorrect. */
+extern int ppp_get_str(state *s, int field, const char **arg);
+
+/* Int argument setter */
+extern int ppp_set_int(state *s, int field, unsigned int arg);
+
+/* Copy nul-terminated data passed as arg into state.
+ * This function checks length of destination buffer
+ * and policies (ignores policy if check_policy = 0). 
+ * May return 1 if field is wrong (but will rather die).
+ * Will return 2 if denied by policy
+ * Will return 3 if too big 
+ */
+extern int ppp_set_str(state *s, int field, const char *arg, int check_policy);
+
+
 /*******************************************
  * High level functions for state management
  *******************************************/
 
-/* Currently just call low-level interface */
+/* Allocate state information and initialize it. */
 extern int ppp_init(state **s, const char *user);
+
+/* Deinitialize state and free it's memory */
 extern void ppp_fini(state *s);
 
-extern int ppp_is_flag(const state *s, int flag);
+/* Check if flag is set in state, add flag and remove flag. */
+extern int ppp_flag_check(const state *s, int flag);
+extern void ppp_flag_add(state *s, int flag);
+extern void ppp_flag_del(state *s, int flag);
 
 /*
- * Lock state
- * Load state 
+ * Lock state and load state.
  * Calculate PPP data (passcard sizes etc.)
+ * Lock is left set.
  */
 extern int ppp_load(state *s);
 
 /*
- * Assert lock
- * Store file if requested
- * Unlock if requested
+ * Will ensure that the state was locked before
+ * If store = 1 will update db with state information
+ * If unlock = 1 will unlock state after writting.
  */
 extern int ppp_release(state *s, int store, int unlock);
-
-extern const char *ppp_get_username(const state *s);
 
 /*
  * 1. Lock file
@@ -135,13 +189,11 @@ extern const char *ppp_get_username(const state *s);
  */
 extern int ppp_increment(state *s);
 
-/* THIS WAS USED FOR SKIPPING. NOT USED NOW.
- * Lock
- * Read
- * Decrement counter
- * Compare with current
- * Store decremented if nobody tried to authenticate in the meantime
+/* Lock & Read
+ * If zero = 0 then increment failure and recent_failures count.
+ * If zero = 1 then clear recent_failures.
+ * Store & unlock
  */
-extern int ppp_decrement(state *s);
+extern int ppp_failures(const state *s, int zero);
 
 #endif

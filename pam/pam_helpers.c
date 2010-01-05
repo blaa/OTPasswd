@@ -132,8 +132,9 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 	if (retval != 0)
 		return retval;
 
-	const char *c = ppp_get_contact(s);
-	if (!c || strlen(c) == 0) {
+	const char *c;
+	retval = ppp_get_str(s, PPP_FIELD_CONTACT, &c);
+	if (retval != 0 || !c || strlen(c) == 0) {
 		print(PRINT_WARN,
 			    "User without contact data "
 			    "required OOB transmission\n");
@@ -332,7 +333,7 @@ struct pam_response *ph_query_user(
 	/* Echo on if enforced by "show" option or enabled by user
 	 * and not disabled by "noshow" option
 	 */
-	if ((show == 2) || (show == 1 && (ppp_is_flag(s, FLAG_SHOW)))) {
+	if ((show == 2) || (show == 1 && (ppp_flag_check(s, FLAG_SHOW)))) {
 		message.msg_style = PAM_PROMPT_ECHO_ON;
 	} else {
 		message.msg_style = PAM_PROMPT_ECHO_OFF;
@@ -413,8 +414,11 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, cfg_t **
 	}
 
 	/* Initialize state with given username */
-	if (ppp_init(s, user) != 0) {
-		/* This will fail if we're unable to locate home directory */
+	retval = ppp_init(s, user); 
+	if (retval != 0) {
+		/* This will fail if, for example, we're 
+		 * unable to locate home directory */
+		retval = PAM_USER_UNKNOWN;
 		goto error;
 	}
 

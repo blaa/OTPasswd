@@ -431,6 +431,13 @@ int db_file_load(state *s)
 
 	/* Permissions will be checked during locking
 	 * now, or was already checked */
+	/* TODO: We must die nice if state doesn't exists on DB=user */
+	ret = _db_file_permissions(db);
+	if (ret == STATE_IO_ERROR) {
+		print(PRINT_NOTICE, "File permission check failed\n");
+		return ret;
+	}
+
 
 	/* DB file should always be locked before changing.
 	 * Locking can only be omitted when we want to discard

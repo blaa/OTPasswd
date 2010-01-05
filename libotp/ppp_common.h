@@ -39,7 +39,7 @@
  * Depending on db used and enforce option sometimes we
  * should ignore OTP login and sometimes we should hard-fail.
  */
-enum errors {
+enum ppp_errors {
 	STATE_NOMEM = 40,
 
 	/*** ALWAYS FAIL ***/

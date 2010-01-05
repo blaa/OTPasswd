@@ -35,8 +35,12 @@ cp examples/otpasswd-testcase /etc/pam.d/
 
 # additional testcases which will create a state
 rm -rf ~/.otpasswd
-yes no | ./otpasswd -v -k
-yes yes | ./otpasswd -v -k
+yes no | ./otpasswd -f salt=off -f codelength=5 -f alphabet=3 -v -f contact=ble -f label=blebla -k
+yes yes | ./otpasswd -v -f salt=on -f codelength=6 -f alphabet=2 -f contact=ble -f label=lala -k
+yes yes | ./otpasswd -v -r
+
+# Pam tests on safe defaults please.
+yes yes | ./otpasswd -v -f salt=on -f alphabet=1 -f codelength=4 -k
 
 # This should run --check atleast once
 make test 
@@ -45,6 +49,13 @@ echo "Building PAM testcase"
 (cd tests; make pam_test) || exit 5
 
 ./tests/pam_test root $(./otpasswd -t current)
+
+# Cause funny error:
+otpasswd -s 4294967260 # Skip to the last
+otpasswd -a 1234 # Use it up!
+
+./tests/pam_test root $(./otpasswd -t current)
+
 
 # GCOV version:
 

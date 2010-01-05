@@ -74,10 +74,10 @@ static void _usage(int argc, const char **argv)
 		"           starting with the specified one\n"
 		"  -a, --authenticate <passcode>\n"
 		"           Try to authenticate with given passcode\n"
-		"  -P, --prompt <which>\n"
-		"           Display authentication prompt for given passcode\n"
 		"  -w, --warning\n"
 		"           Display warnings (ex. user on last passcard)\n"
+		"  -P, --prompt <which>\n"
+		"           Display authentication prompt for given passcode\n"
 		"\n"
 		"Where <which> might be one of:\n"
 		"  number         - a decimal number of a passcode\n"
@@ -87,8 +87,8 @@ static void _usage(int argc, const char **argv)
 		"  current        - passcode used for next time authentication\n"
 		"  [current]      - passcard containing current passcode\n"
 		"  next or [next] - first, not yet printed, passcard\n"
-
-		"\nConfiguration:\n"
+		"\n"
+		"Configuration:\n"
 		"  -f, --flag <arg>\n"
 		"           Manages various settings:\n"
 		"           list          print current state and configuration.\n"
@@ -174,20 +174,21 @@ int parse_flag(options_t *options, const char *arg)
 		options->flag_clear_mask |= FLAG_SALTED;
 
 	else if (strcmp(arg, "list") == 0) {
-		if (options->action != 'f') {
+		if (options->action != OPTION_FLAGS) {
 			printf("Only one action can be specified on the command line\n"
 			       "and you can't mix 'list' flag with other flags.\n");
 			return 1;
 		}
 
-		options->action = 'L'; /* List! Instead of changing flags. */
+		/* List! Instead of changing flags. */
+		options->action = OPTION_SHOW_STATE;
 	} else if (strcmp(arg, "alphabet=list") == 0) {
-		if (options->action != 'f') {
+		if (options->action != OPTION_FLAGS) {
 			printf("Only one action can be specified on the command line\n"
 			       "and you can't mix 'list' flag with other flags.\n");
 			return 1;
 		}
-		options->action = 'A'; /* List alphabets instead of changing flags */
+		options->action = OPTION_ALPHABETS; /* List alphabets instead of changing flags */
 
 		/*** Label and contact support */
 	} else if (strncmp(arg, "contact=", 8) == 0) {
@@ -251,34 +252,39 @@ int parse_flag(options_t *options, const char *arg)
 	} else {
 		int tmp;
 		if (sscanf(arg, "codelength=%d", &tmp) == 1) {
-			if (tmp < 2 || tmp > 16) {
+			const int ret = ppp_verify_code_length(tmp);
+			switch (ret) {
+			case 1:
 				printf("Passcode length must be between 2 and 16.\n");
 				return 1;
-			}
-
-			if (tmp < cfg->passcode_min_length ||
-			    tmp > cfg->passcode_max_length) {
-				printf("Passcode length denied by policy.\n");
+			case 2:
+				printf("Passcode length must be between 2 and 16.\n");
 				return 1;
-
+			case 0:
+				options->set_codelength = tmp;
+				break;
+			default: 
+				assert(0);
+				return 1;
 			}
-			options->set_codelength = tmp;
-
 		} else if (sscanf(arg, "alphabet=%d", &tmp) == 1) {
-			const int ret = ppp_alphabet_verify(tmp);
-			if (ret == 1) {
-				printf("Illegal alphabet specified. See "
+			const int ret = ppp_verify_alphabet(tmp);
+			switch (ret) { 
+			case 1:
+				printf("Illegal alphabet ID specified. See "
 				       "-f alphabet-list\n");
 				return 1;
-			} else if (ret == 2) {
+			case 2:
 				printf("Alphabet denied by policy. See "
 				       "-f alphabet-list\n");
 				return 2;
-			} else if (ret != 0)
+			case 0:
+				options->set_alphabet = tmp;
+				break;
+			default:
+				assert(0);
 				return 3;
-
-			options->set_alphabet = tmp;
-
+			} 
 		} else {
 			/* Illegal flag */
 			printf("No such flag %s\n", arg);
@@ -293,30 +299,6 @@ int parse_flag(options_t *options, const char *arg)
 
 	return 0;
 }
-
-/* Constants used for parsing input data */
-enum {
-	OPTION_KEY     = 'k',
-	OPTION_REMOVE  = 'r',
-	OPTION_SKIP    = 's',
-	OPTION_TEXT    = 't',
-	OPTION_LATEX   = 'l',
-	OPTION_PROMPT  = 'P',
-	OPTION_AUTH    = 'a',
-	OPTION_WARN    = 'w',
-
-	OPTION_FLAGS   = 'f',
-	OPTION_SPASS   = 'p',
-	OPTION_USER    = 'u',
-	OPTION_VERBOSE = 'v',
-	OPTION_CHECK   = 'x',
-	OPTION_VERSION = 'Q',
-	OPTION_HELP    = 'h',
-
-	/* Other which aren't user UI options */
-	OPTION_SHOW_STATE = 'L',
-	OPTION_ALPHABETS = 'A',
-};
 
 /* Parse command line. Ensure we do not put any wrong data into options,
  * that is - longer than expected or containing any illegal characters */
@@ -389,7 +371,10 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		case OPTION_CHECK:
 		case OPTION_HELP:
 			/* Error unless there was flag defined for key generation */
-			if (options->action != 0 && (options->action != 'f' && c != 'k')) {
+			if (options->action != 0 && (
+				    options->action != OPTION_FLAGS 
+				    && c != OPTION_KEY
+			)) {
 				printf("Only one action can be specified on the command line\n");
 				return 1;
 			}
@@ -403,7 +388,6 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		case OPTION_PROMPT:
 		case OPTION_AUTH:
 		case OPTION_SPASS:
-
 			if (options->action != 0) {
 				printf("Only one action can be specified on the command line\n");
 				goto error;
@@ -491,13 +475,15 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			break;
 #endif 
 		case OPTION_FLAGS:
-			if (options->action != 0 && options->action != 'f' && options->action != 'k') {
+			if (options->action != 0 && 
+			    options->action != OPTION_FLAGS &&
+			    options->action != OPTION_KEY) {
 				printf("Only one action can be specified on the command line\n");
 				goto error;
 			}
 
 			if (options->action == 0)
-				options->action = 'f';
+				options->action = OPTION_FLAGS;
 
 			assert(optarg != NULL);
 

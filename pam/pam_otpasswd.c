@@ -57,6 +57,32 @@ PAM_EXTERN int pam_sm_authenticate(
 	retval = ph_init(pamh, flags, argc, argv, &cfg, &s);
 	if (retval != 0)
 		return retval;
+	
+	const char *username;
+	retval = ppp_get_str(s, PPP_FIELD_USERNAME, &username);
+	if (retval != 0 || !username) {
+		print(PRINT_ERROR, "Internal error: Unable to"
+		      " read username data from state.\n");
+		retval = PAM_AUTH_ERR;
+		goto cleanup;
+	}
+
+	/* If user disabled and we're enforcing - fail. */
+	if (ppp_flag_check(s, FLAG_DISABLED)) {
+		if (cfg->enforce) {
+			print(PRINT_WARN, 
+			      "Authentication failure, because user state "
+			      "is disabled; user=%s\n",
+			      username);
+			retval = PAM_AUTH_ERR;
+		} else {
+			/* Not enforcing */
+			retval = PAM_IGNORE;
+		}
+		goto cleanup;
+	}
+
+
 
 	/* Retry = 0 - do not retry, 1 - with changing passcodes */
 	int tries;
@@ -69,8 +95,8 @@ PAM_EXTERN int pam_sm_authenticate(
 
 			/* Generate prompt */
 			ppp_calculate(s);
-			prompt = ppp_get_prompt(s);
-			if (!prompt) {
+			retval = ppp_get_str(s, PPP_FIELD_PROMPT, &prompt);
+			if (retval != 0 || !prompt) {
 				print(PRINT_ERROR, "Error while generating prompt\n");
 				retval = PAM_AUTH_ERR;
 				goto cleanup;
@@ -115,20 +141,27 @@ PAM_EXTERN int pam_sm_authenticate(
 
 			/* Correctly authenticated */
 			retval = PAM_SUCCESS;
+
 			print(PRINT_WARN,
 			      "Accepted otp authentication for user %s\n",
-			      ppp_get_username(s));
+			      username);
 			goto cleanup;
 		}
 
 		_pam_drop_reply(resp, 1);
+
+
+		retval = ppp_failures(s, 0);
+		if (retval != 0) {
+			print(PRINT_WARN, "Unable to increment failure count\n");
+		}
 
 		/* Error during authentication */
 		retval = PAM_AUTH_ERR;
 
 		print(PRINT_WARN, 
 		      "Authentication failure; user=%s; try=%d/%d\n",
-		      ppp_get_username(s), tries+1, cfg->retries);
+		      username, tries+1, cfg->retries);
 	}
 
 cleanup:
@@ -140,6 +173,9 @@ PAM_EXTERN int pam_sm_open_session(
 	pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
 	int retval;
+
+	/* Should we store state after printing? */
+	int store = 0;
 
 	/* OTP State */
 	state *s;
@@ -166,8 +202,13 @@ PAM_EXTERN int pam_sm_open_session(
 		goto cleanup;
 	}
 
-	const char *msg;
+	/* Will we print warning about recent failures? */
+	if (err & PPP_WARN_RECENT_FAILURES) {
+		if (ppp_set_int(s, PPP_FIELD_RECENT_FAILURES, 0) != 0)
+			print(PRINT_WARN, "Unable to clear recent failures\n");
+	}
 
+	const char *msg;
 	while ((msg = ppp_get_warning_message(s, &err)) != NULL) {
 		/* Generate message */
 		char buff_msg[300];
@@ -182,8 +223,10 @@ PAM_EXTERN int pam_sm_open_session(
 		ph_show_message(pamh, cfg, buff_msg);
 	}
 
+
+
 cleanup:
-	ppp_release(s, 0, 1); /* Unlock, do not store */
+	ppp_release(s, store, 1);
 exit:
 	ph_fini(s);
 

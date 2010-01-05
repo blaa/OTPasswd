@@ -45,7 +45,7 @@ static const char alphabet_extended_no_vowels[] =
 	"!\"#$%&'()*+,-./23456789:;<=>?@BCDFGHJKLMNPRSTVWXZ[\\]^_bcdfghjkmnpqrstvwxz{|}~";
 
 /* 56 chars -> 9 834 496 */
-static const char alphabet_alpha[] = 
+static const char alphabet_alpha[] =
 	"23456789ABCDEFGHJKLMNPRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 static const char *alphabets[] = {
@@ -59,8 +59,26 @@ static const char *alphabets[] = {
 
 static const int alphabet_cnt = sizeof(alphabets) / sizeof(*alphabets);
 
+/***********************
+ * Verification group 
+ ***********************/
+int ppp_verify_code_length(int length)
+{
+	cfg_t *cfg = cfg_get();
+	assert(cfg);
 
-int ppp_alphabet_verify(int id)
+	if (length < 2 || length > 16)
+		return 1;
+
+	if (length < cfg->passcode_min_length ||
+	    length > cfg->passcode_max_length) {
+		return 2;
+	}
+
+	return 0;
+}
+
+int ppp_verify_alphabet(int id)
 {
 	const cfg_t *cfg = cfg_get();
 	assert(cfg);
@@ -89,10 +107,68 @@ int ppp_alphabet_verify(int id)
 
 	const int len = strlen(alphabet);
 
-	if (len<min || len>max) 
+	if (len<min || len>max)
 		return 2;
 
 	/* OK */
+	return 0;
+}
+
+int ppp_verify_range(const state *s)
+{
+	/* First verify two conditions that should never happen
+	 * then check something theoretically possible */
+
+	/* ppp_calculate must've been called before */
+	assert(s->codes_on_card > 0);
+
+	/* Verify key size */
+	const char max_key_hex[] =
+		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+	mpz_t max_key;
+	mpz_init_set_str(max_key, max_key_hex, 16);
+
+	if (mpz_cmp(s->sequence_key, max_key) > 0) {
+		print(PRINT_ERROR, "State file corrupted. Key number too big\n");
+		mpz_clear(max_key);
+		return STATE_PARSE_ERROR;
+	}
+	mpz_clear(max_key);
+
+	/* Verify counter size */
+	const char max_counter_hex[] =
+		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+	mpz_t max_counter;
+	mpz_init_set_str(max_counter, max_counter_hex, 16);
+
+	if (mpz_cmp(s->counter, max_counter) > 0) {
+		print(PRINT_ERROR, "State file corrupted. Counter number too big\n");
+		mpz_clear(max_counter);
+		return STATE_PARSE_ERROR;
+	}
+	mpz_clear(max_counter);
+
+	/* Check if we have runned out of available passcodes */
+
+	/* Retrieve current counter without salt */
+	mpz_t just_counter;
+	mpz_init(just_counter);
+	if (s->flags & FLAG_SALTED) {
+		mpz_and(just_counter, s->counter, s->code_mask);
+	} else {
+		mpz_set(just_counter, s->counter);
+	}
+
+	/* Equal is too big because max_code is calculated starting from 1
+	 * whereas counter starts from 0 */
+	if (mpz_cmp(just_counter, s->max_code) >= 0) {
+		/* Whoops */
+		mpz_clear(just_counter);
+		return STATE_NUMSPACE;
+	}
+
+	mpz_clear(just_counter);
 	return 0;
 }
 
@@ -117,12 +193,11 @@ void ppp_alphabet_print(void)
 		}
 
 		len = strlen(alphabet);
-		printf("Alphabet ID = %d (%s by policy):\n", i, 
+		printf("Alphabet ID = %d (%s by policy):\n", i,
 		       (len>=min && len<=max) ? "accepted" : "denied");
 		puts(alphabet);
 	}
 }
-
 
 void ppp_add_salt(const state *s, mpz_t passcode)
 {
@@ -201,7 +276,7 @@ int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
 	/* Convert result back to number */
 	num_from_bin(cipher, cipher_bin, 16);
 
-	if (ppp_alphabet_verify(s->alphabet) != 0) {
+	if (ppp_verify_alphabet(s->alphabet) != 0) {
 		print(PRINT_ERROR, "State contains invalid alphabet\n");
 		goto clear;
 	}
@@ -233,54 +308,6 @@ clear:
 	return ret;
 }
 
-void ppp_dispose_prompt(state *s)
-{
-	if (!s->prompt)
-		return;
-
-	const int length = strlen(s->prompt);
-	memset(s->prompt, 0, length);
-	free(s->prompt);
-	s->prompt = NULL;
-}
-
-const char *ppp_get_prompt(state *s)
-{
-	/* "Passcode RRC [number]: " */
-	const char intro[] = "Passcode ";
-	int length = sizeof(intro)-1 + 3 + 5 + 1;
-	char *num;
-
-	if (s->prompt)
-		ppp_dispose_prompt(s);
-
-	/* Ensure ppp_calculate was called already! */
-	assert(s->codes_on_card != 0);
-
-	num = mpz_get_str(NULL, 10, s->current_card);
-	length += strlen(num);
-
-	s->prompt = malloc(length);
-	if (!s->prompt)
-		return NULL;
-
-	int ret = sprintf(s->prompt, "%s%2d%c [%s]: ", intro, s->current_row, s->current_column, num);
-
-	memset(num, 0, strlen(num));
-	free(num);
-	num = NULL;
-
-	assert(ret+1 == length);
-
-	if (ret <= 0) {
-		memset(s->prompt, 0, length);
-		free(s->prompt);
-		s->prompt = NULL;
-		return NULL;
-	}
-	return s->prompt;
-}
-
 int ppp_get_current(const state *s, char *passcode)
 {
 	if (passcode == NULL)
@@ -290,11 +317,6 @@ int ppp_get_current(const state *s, char *passcode)
 		return 2;
 
 	return 0;
-}
-
-const char *ppp_get_contact(const state *s)
-{
-	return s->contact;
 }
 
 int ppp_authenticate(const state *s, const char *passcode)
@@ -398,64 +420,6 @@ void ppp_calculate(state *s)
 	mpz_mul_ui(s->max_code, s->max_code, s->codes_on_card);
 }
 
-int ppp_verify_range(const state *s)
-{
-	/* First verify two conditions that should never happen
-	 * then check something theoretically possible */
-
-	/* ppp_calculate must've been called before */
-	assert(s->codes_on_card > 0);
-
-	/* Verify key size */
-	const char max_key_hex[] =
-		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
-	mpz_t max_key;
-	mpz_init_set_str(max_key, max_key_hex, 16);
-
-	if (mpz_cmp(s->sequence_key, max_key) > 0) {
-		print(PRINT_ERROR, "State file corrupted. Key number too big\n");
-		mpz_clear(max_key);
-		return STATE_PARSE_ERROR;
-	}
-	mpz_clear(max_key);
-
-	/* Verify counter size */
-	const char max_counter_hex[] =
-		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
-	mpz_t max_counter;
-	mpz_init_set_str(max_counter, max_counter_hex, 16);
-
-	if (mpz_cmp(s->counter, max_counter) > 0) {
-		print(PRINT_ERROR, "State file corrupted. Counter number too big\n");
-		mpz_clear(max_counter);
-		return STATE_PARSE_ERROR;
-	}
-	mpz_clear(max_counter);
-
-	/* Check if we have runned out of available passcodes */
-
-	/* Retrieve current counter without salt */
-	mpz_t just_counter;
-	mpz_init(just_counter);
-	if (s->flags & FLAG_SALTED) {
-		mpz_and(just_counter, s->counter, s->code_mask);
-	} else {
-		mpz_set(just_counter, s->counter);
-	}
-
-	/* Equal is too big because max_code is calculated starting from 1
-	 * whereas counter starts from 0 */
-	if (mpz_cmp(just_counter, s->max_code) >= 0) {
-		/* Whoops */
-		mpz_clear(just_counter);
-		return STATE_NUMSPACE;
-	}
-
-	mpz_clear(just_counter);
-	return 0;
-}
-
 /******************
  * Warning support
  ******************/
@@ -481,9 +445,9 @@ const char *ppp_get_warning_message(const state *s, int *warning)
 {
 	const char *nothing_left = "You have no printed passcodes left!";
 	const char *last_card = "You are on your last printed passcard!";
-	const char *failures_template = 
+	const char *failures_template =
 		"There were %d recent auth failures! Is your static password broken?";
-	const char *failure_template = 
+	const char *failure_template =
 		"There was 1 recent auth failure! Is your static password broken?";
 
 	static char failures_buff[sizeof(failures_template) + 10];
@@ -503,7 +467,7 @@ const char *ppp_get_warning_message(const state *s, int *warning)
 
 		ret = snprintf(failures_buff, sizeof(failures_buff),
 			       failures_template, s->recent_failures);
-		if (ret < 10) 
+		if (ret < 10)
 			return NULL;
 
 		failures_buff[sizeof(failures_buff) - 1] = '\0';
@@ -616,10 +580,21 @@ cleanup1:
 	return retval;
 }
 
-int ppp_is_flag(const state *s, int flag)
+int ppp_flag_check(const state *s, int flag)
 {
 	return s->flags & flag;
 }
+
+void ppp_flag_add(state *s, int flag)
+{
+	s->flags |= flag;
+}
+
+void ppp_flag_del(state *s, int flag)
+{
+	s->flags &= ~flag;
+}
+
 
 int ppp_release(state *s, int store, int unlock)
 {
@@ -641,16 +616,8 @@ int ppp_release(state *s, int store, int unlock)
 	return retval;
 }
 
-/********************
- * Accessors 
- *******************/
-const char *ppp_get_username(const state *s)
-{
-	return s->username;
-}
-
 /*******************
- * Atomic combos 
+ * Atomic combos
  *******************/
 
 /* Lock, load, increment, save, unlock */
@@ -680,34 +647,30 @@ int ppp_increment(state *s)
 	return ret;
 }
 
-int ppp_decrement(state *s)
+
+int ppp_failures(const state *s, int zero)
 {
-	state *s_tmp; /* Second state, so we won't clobber current one */
+	state *s_tmp; /* Second state. We don't want to clobber current one
+		       * also we must read failure count from disk. */
 	int ret = 1;
 
 	if (ppp_init(&s_tmp, s->username) != 0)
 		return 1;
 
-	/* Load state from disk */
+	/* Lock&Load state from disk */
 	ret = ppp_load(s_tmp);
 	if (ret != 0)
 		goto cleanup;
 
-	/* Freshly read counter must be bigger by 1
-	 * to continue, so decrement it and compare... */
-	mpz_sub_ui(s_tmp->counter, s_tmp->counter, 1);
-
-	if (mpz_cmp(s_tmp->counter, s->counter) != 0) {
-		/* Whoops, in the meantime somebody else
-		 * tried to authenticate! */
-		print(PRINT_NOTICE,
-		      "Load/decrement failed, file "
-		      "modified in the meantime!\n");
-		ret = 2;
-		goto cleanup;
+	/* Increment failure counters */
+	if (zero == 0) {
+		s_tmp->failures++;
+		s_tmp->recent_failures++;
+	} else {
+		s_tmp->recent_failures = 0;
 	}
 
-	/* Didn't changed, store state with decremented counter */
+	/* Store changes and unlock */
 	ret = ppp_release(s_tmp, 1, 1);
 	if (ret != 0) {
 		print(PRINT_WARN, "Unable to save decremented state\n");
@@ -722,4 +685,226 @@ cleanup:
 	return ret;
 }
 
+/**************************************
+ * Getters / Setters
+ **************************************/
 
+unsigned int ppp_get_int(const state *s, int field)
+{
+	switch (field) {
+	case PPP_FIELD_FAILURES:        return s->failures;
+	case PPP_FIELD_RECENT_FAILURES: return s->recent_failures;
+	case PPP_FIELD_CODELENGTH:      return s->code_length;
+	case PPP_FIELD_ALPHABET:        return s->alphabet;
+	case PPP_FIELD_FLAGS:           return s->flags;
+
+	default:
+		print(PRINT_CRITICAL, "Illegal field passed to ppp_get_int\n");
+		assert(0);
+		return 1;
+	}
+}
+
+int ppp_set_int(state *s, int field, unsigned int arg)
+{
+	switch (field) {
+	case PPP_FIELD_FAILURES:
+		s->failures = arg;
+		break;
+
+	case PPP_FIELD_RECENT_FAILURES: 
+		s->recent_failures = arg;
+		break;
+
+	case PPP_FIELD_CODELENGTH:
+		if (ppp_verify_code_length(arg) != 0)
+			return 2;
+
+		s->code_length = arg;
+		break;
+
+	case PPP_FIELD_ALPHABET:
+		if (ppp_verify_alphabet(arg) != 0)
+			return 2;
+
+		s->alphabet = arg;
+		break;
+
+	case PPP_FIELD_FLAGS:
+		if (arg > (FLAG_SHOW|FLAG_SALTED|FLAG_DISABLED))
+			return 2;
+		s->flags = arg;
+		break;
+
+	default:
+		print(PRINT_CRITICAL, "Illegal field passed to ppp_set_int\n");
+		assert(0);
+		return 1;
+	}
+
+	return 0;
+}
+
+
+int ppp_get_mpz(const state *s, int field, mpz_t arg)
+{
+	assert(arg);
+	switch (field) {
+	case PPP_FIELD_KEY:
+		mpz_set(arg, s->sequence_key);
+		return 0;
+
+	case PPP_FIELD_COUNTER:
+		mpz_set(arg, s->counter);
+		return 0;
+
+	case PPP_FIELD_LATEST_CARD:
+		mpz_set(arg, s->latest_card);
+		return 0;
+	default:
+		print(PRINT_CRITICAL, "Illegal field passed to ppp_get_mpz\n");
+		mpz_set_ui(arg, 0);
+		assert(0);
+		return 1;
+	}
+}
+
+static void _ppp_dispose_prompt(state *s)
+{
+	if (!s->prompt)
+		return;
+
+	const int length = strlen(s->prompt);
+	memset(s->prompt, 0, length);
+	free(s->prompt);
+	s->prompt = NULL;
+}
+
+/* ppp_get_str helpers! */
+
+/* Generate prompt used for authentication
+ * Do not free returned value. It's stored in state
+ * and freed in state_fini.
+ */
+static const char *_ppp_get_prompt(state *s)
+{
+	/* "Passcode RRC [number]: " */
+	const char intro[] = "Passcode ";
+	int length = sizeof(intro)-1 + 3 + 5 + 1;
+	char *num;
+
+	if (s->prompt)
+		_ppp_dispose_prompt(s);
+
+	/* Ensure ppp_calculate was called already! */
+	assert(s->codes_on_card != 0);
+
+	num = mpz_get_str(NULL, 10, s->current_card);
+	length += strlen(num);
+
+	s->prompt = malloc(length);
+	if (!s->prompt)
+		return NULL;
+
+	int ret = sprintf(s->prompt, "%s%2d%c [%s]: ", intro, s->current_row, s->current_column, num);
+
+	memset(num, 0, strlen(num));
+	free(num);
+	num = NULL;
+
+	assert(ret+1 == length);
+
+	if (ret <= 0) {
+		memset(s->prompt, 0, length);
+		free(s->prompt);
+		s->prompt = NULL;
+		return NULL;
+	}
+	return s->prompt;
+}
+
+int ppp_get_str(state *s, int field, const char **arg)
+{
+	assert(s && arg);
+
+	switch (field) {
+
+	case PPP_FIELD_USERNAME:
+		*arg = s->username;
+		break;
+
+	case PPP_FIELD_PROMPT:
+		*arg = _ppp_get_prompt(s);
+		break;
+
+	case PPP_FIELD_CONTACT:
+		*arg = s->contact;
+		break;
+
+	case PPP_FIELD_LABEL:
+		*arg = s->label;
+		break;
+
+	default:
+		print(PRINT_CRITICAL, "Illegal field passed to ppp_get_str\n");
+		assert(0);
+		return 1;
+	}
+
+	return 0;
+}
+
+int ppp_set_str(state *s, int field, const char *arg, int check_policy)
+{
+	cfg_t *cfg = cfg_get();
+
+	assert(cfg);
+	assert(s);
+
+	int length;
+
+	if (arg)
+		length = strlen(arg);
+	else
+		length = 0;
+
+	switch (field) {
+	case PPP_FIELD_CONTACT:
+		if (check_policy && cfg->allow_contact_change == 0) {
+			return 2;
+		}
+
+		if (length + 1 > STATE_CONTACT_SIZE) {
+			return 3;
+		}
+
+		if (length == 0)
+			s->contact[0] = '\0';
+		else 
+			strcpy(s->contact, arg); 
+		break;
+
+	case PPP_FIELD_LABEL:
+		if (check_policy && cfg->allow_label_change == 0) {
+			return 2;
+		}
+
+		if (length + 1 > STATE_LABEL_SIZE) {
+			return 3;
+		}
+
+		if (length == 0)
+			s->label[0] = '\0';
+		else 
+			strcpy(s->label, arg); 
+
+		break;
+
+	default:
+		print(PRINT_CRITICAL, "Illegal field passed to ppp_set_str\n");
+		assert(0);
+		return 1;
+	}
+
+	return 0;
+}

@@ -276,7 +276,7 @@ static int _parse_code_spec(const state *s, const char *spec, mpz_t passcard, mp
 		char number[41];
 		ret = sscanf(spec, "%c%d[%40s]", &column, &row, number);
 		column = toupper(column);
-		if (ret != 3 || (column < 'A' || column > 'J')) {
+		if (ret != 3 || (column < OPTION_ALPHABETS || column > 'J')) {
 			printf("Incorrect passcode specification. (%d)\n", ret);
 			goto error;
 		}
@@ -433,6 +433,7 @@ cleanup:
 
 static void _update_flags(const options_t *options, const cfg_t *cfg, state *s, int *salted)
 {
+	int ret;
 	assert(options);
 	assert(cfg);
 	assert(s);
@@ -442,18 +443,28 @@ static void _update_flags(const options_t *options, const cfg_t *cfg, state *s, 
 
 	/* Length of contact/label is ensured in process_cmd_line */
 	if (options->contact)
-		strcpy(s->contact, options->contact); 
+		ret = ppp_set_str(s, PPP_FIELD_CONTACT, options->contact, !security_is_root());
+
 	if (options->label)
-		strcpy(s->label, options->label);
+		ret = ppp_set_str(s, PPP_FIELD_LABEL, options->label, !security_is_root());
 
-	s->flags |= options->flag_set_mask;
-	s->flags &= options->flag_clear_mask;
+	/* Flags */
+	unsigned int flags =  ppp_get_int(s, PPP_FIELD_FLAGS);
+	flags |= options->flag_set_mask;
+	flags &= options->flag_clear_mask;
+	ret = ppp_set_int(s, PPP_FIELD_FLAGS, flags);
 
+	/* Code length + alphabet */
 	if (options->set_codelength != -1)
-		s->code_length = options->set_codelength;
+		ret += ppp_set_int(s, PPP_FIELD_CODELENGTH, options->set_codelength);
 
 	if (options->set_alphabet != -1)
-		s->alphabet = options->set_alphabet;
+		ret += ppp_set_int(s, PPP_FIELD_ALPHABET, options->set_alphabet);
+
+	if (ret != 0) {
+		print(PRINT_ERROR, "Error while settings flags.\n");
+		return;
+	}
 
 
 	switch (cfg->salt_allow) {
@@ -480,7 +491,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 {
 	int retval = 1;
 
-	int remove = options->action == 'k' ? 0 : 1;
+	int remove = options->action == OPTION_KEY ? 0 : 1;
 
 	if (remove && 
 	    security_is_root() == 0 &&
@@ -549,7 +560,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 		printf("Your current flags (updated with command line options):\n");
 		_show_flags(&s);
 		if (_enforced_yes_or_no(
-			    "Type 'yes' to use those, or 'no' to start with updated defaults?") == QUERY_NO) {
+			    "Type \"yes\" to use those, or \"no\" to start with updated defaults?") == QUERY_NO) {
 			printf("Reverting to defaults.\n");
 			state_fini(&s);
 			state_init(&s, options->username);
@@ -661,7 +672,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 	int save_state = 0;
 	state *s;
 
-	if (options->action == 'A') {
+	if (options->action == OPTION_ALPHABETS) {
 		/* This does not require state. */
 		ppp_alphabet_print();
 		return 0;
@@ -674,7 +685,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 	}
 
 	switch(options->action) {
-	case 'f':
+	case OPTION_FLAGS:
 		/* Change flags */
 		assert(! (options->flag_set_mask & FLAG_SALTED));
 		assert(! (options->flag_clear_mask & FLAG_SALTED));
@@ -721,7 +732,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 
 		break;
 
-	case 'p':
+	case OPTION_SPASS:
 	{
 		assert(options->action_arg);
 		const int len = strlen(options->action_arg);
@@ -743,7 +754,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		break;
 	}
 
-	case 'L': /* List */
+	case OPTION_SHOW_STATE: /* List */
 		printf("User    = %s\n", s->username);
 		_show_keys(s);
 
@@ -751,7 +762,8 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		retval = 0;
 		goto cleanup;
 
-	case 'A': /* List alphabets ought be done before */
+	case OPTION_ALPHABETS:
+		/* List alphabets ought be done before */
 		assert(0);
 
 	default:
@@ -761,7 +773,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 
 	retval = 0;
 cleanup:
-	if (retval == 0 && options->action != 'A') {
+	if (retval == 0 && options->action != OPTION_ALPHABETS) {
 		printf("Your current flags:\n");
 		_show_flags(s);
 	}
@@ -798,13 +810,13 @@ int action_print(options_t *options, const cfg_t *cfg)
 	/* And which to look at: 1 - code, 2 - card */
 	int selected = 0; 
 
-	if (options->action == 't' || options->action ==  'l')
+	if (options->action == OPTION_TEXT || options->action == OPTION_LATEX)
 		if (security_is_root() == 0 && cfg->allow_passcode_print == 0) {
 			printf("Passcode printing denied by policy.\n");
 			return 1;
 		}
 
-	if (options->action == 's')
+	if (options->action == OPTION_SKIP)
 		if (security_is_root() == 0 && cfg->allow_skipping == 0) {
 			printf("Passcode skipping denied by policy.\n");
 			return 1;
@@ -820,7 +832,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 	mpz_init(passcode_num);
 
 	/* Do we have to just show any warnings? */
-	if (options->action == 'w') {
+	if (options->action == OPTION_WARN) {
 		int e = ppp_get_warning_conditions(s);
 		const char *warn;
 		while ((warn = ppp_get_warning_message(s, &e)) != NULL) {
@@ -844,7 +856,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 	if (selected == 2) { /* Card */
 		char *card;
 		switch (options->action) {
-		case 't':
+		case OPTION_TEXT:
 			card = card_ascii(s, passcard_num);
 			if (!card) {
 				print(PRINT_ERROR, "Error while printing "
@@ -855,7 +867,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 			free(card);
 			break;
 
-		case 'l':
+		case OPTION_LATEX:
 			card = card_latex(s, passcard_num);
 			if (!card) {
 				print(PRINT_ERROR, "Error while printing "
@@ -866,7 +878,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 			free(card);
 			break;
 
-		case 's':
+		case OPTION_SKIP:
 			/* Skip to passcard... */
 			ret = ppp_get_passcode_number(s, passcard_num,
 						      passcode_num, 'A', 1);
@@ -889,7 +901,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 			save_state = 1;
 			break;
 
-		case 'P':
+		case OPTION_PROMPT:
 			print(PRINT_ERROR, "Option requires passcode as argument\n");
 			break;
 		}
@@ -897,7 +909,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 		char passcode[17];
 		const char *prompt;
 		switch (options->action) {
-		case 't':
+		case OPTION_TEXT:
 			/* ppp_get_passcode wants internal
 			 * passcodes (with salt) */
 			ret = ppp_get_passcode(s, passcode_num, passcode);
@@ -908,13 +920,13 @@ int action_print(options_t *options, const cfg_t *cfg)
 			printf("%s\n", passcode);
 			break;
 
-		case 'l':
+		case OPTION_LATEX:
 			printf(
 			      "LaTeX parameter works only with"
 			      " passcard specification\n");
 			break;
 
-		case 's':
+		case OPTION_SKIP:
 			/* Skip to passcode */
 			if (mpz_cmp(s->counter, passcode_num) > 0) {
 				printf(
@@ -928,11 +940,11 @@ int action_print(options_t *options, const cfg_t *cfg)
 			save_state = 1;
 			break;
 
-		case 'P':
+		case OPTION_PROMPT:
 			/* Don't save state after this operation */
 			mpz_set(s->counter, passcode_num);
 			ppp_calculate(s);
-			prompt = ppp_get_prompt(s);
+			ppp_get_str(s, PPP_FIELD_PROMPT, &prompt);
 			printf("%s\n", prompt);
 			assert(save_state == 0);
 			break;
@@ -946,7 +958,8 @@ int action_print(options_t *options, const cfg_t *cfg)
 	 */
 	int do_increment = 0;
 	if (strcasecmp(options->action_arg, "next") == 0) {
-		if (options->action == 'l' || options->action == 't')
+		if (options->action == OPTION_LATEX || 
+		    options->action == OPTION_TEXT)
 			do_increment = 1;
 	}
 
@@ -957,7 +970,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 		 * from current_card */
 		if (mpz_cmp(s->current_card, s->latest_card) > 0) {
 			/* Set next to current, or current + 5 for LaTeX */
-			if (options->action == 'l') {
+			if (options->action == OPTION_LATEX) {
 				mpz_add_ui(s->latest_card, s->current_card, 5);
 			} else {
 				mpz_set(s->latest_card, s->current_card);
@@ -967,7 +980,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 			mpz_add_ui(
 				s->latest_card,
 				s->latest_card,
-				options->action == 'l' ? 6 : 1);
+				options->action == OPTION_LATEX ? 6 : 1);
 		}
 		save_state = 1;
 	}
