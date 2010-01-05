@@ -203,7 +203,7 @@ So.
       a) PAM module                       'pam_otpasswd.so' -> /lib/security/
       b) Utility program                         'otpasswd' -> /usr/bin/
       c) Example PAM configuration 'example/otpasswd-login' -> /etc/pam.d/
-      d) OTPasswd configuration    'example/otpasswd.conf'  -> /etc/security/
+      d) OTPasswd configuration    'example/otpasswd.conf'  -> /etc/otpasswd/
 
    NOTE: Depending on the DB backend that is being used (see the next
    section), it may be necessary to create a unique system user exclusively
@@ -251,7 +251,7 @@ So.
       --------
       (Not currently implemented) The user state information is stored
       in a MySQL database.  The database access password is stored in the
-      OTPasswd configuration file /etc/security/otpasswd.conf, so this file
+      OTPasswd configuration file /etc/otpasswd/otpasswd.conf, so this file
       must be readable only by the special OTPasswd UID described above.
       The OTPasswd utility must be run with SUID privilege to gain access
       the configuration file, however privileges are dropped promptly
@@ -279,13 +279,15 @@ So.
    Be aware that OTPasswd, by default, generates a key which is not
    compatible with the PPPv3.1 specification.  If you would like to
    retain compatibility with the specification and thereby also retain
-   interoperability with other PPPv3 applications, you can either change
-   default behaviour by editing SALT_DEF parameter in the config, or,
-   add no-salt flag during key creation as in the following example:
+   interoperability with other PPPv3 applications, you may either change
+   the default behaviour by modifying the SALT_DEF parameter in the
+   otpasswd.conf configuration file, or add the no-salt flag during key
+   generation as in the following example:
 
       $ otpasswd --flag no-salt --key
 
-   You can combine also other flags, contact and label parameters like this:
+   You may also combine other flags with key generation (-k), such as the
+   contact (-c), label (-d) and flag (-f) options, like this:
 
       $ otpasswd -f salt -d Home -f alphabet-2 -f codelength-6 -k
 

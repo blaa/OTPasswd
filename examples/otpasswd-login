@@ -5,6 +5,6 @@ auth            required        pam_env.so
 auth            requisite       pam_unix.so try_first_pass likeauth nullok
 
 # You can pass 'debug' or 'silent' options here.
-# Rest of the configuration is done in /etc/security/otpasswd.conf
+# Rest of the configuration is done in /etc/otpasswd/otpasswd.conf
 auth            required        pam_otpasswd.so 
 session		optional	pam_otpasswd.so

@@ -1,0 +1,324 @@
+.\"
+.\"   pam_otpasswd(8) - One-Time Password Authentication System
+.\"
+.\"   Copyright (c) 2010 Tomasz bla Fortuna
+.\"
+.\"   This document is licensed under some as-yet to-be-determined
+.\"   Anti-Draconian licensing scheme.  Stay tuned.
+.\"
+.\"   Author:  R Hannes Beinert & Tomasz bla Fortuna
+.\"   Version: otpasswd v0.5beta
+.\"   Update:  04-Jan-10
+.\"
+.\"
+.TH PAM_OTPASSWD 8 2010-01-04 "OTPasswd v0.5beta" "OTPasswd User Manual"
+.\"
+.SH NAME
+pam_otpasswd \- Module for OTPasswd one-time password authentication
+.\"
+.SH SYNOPSIS
+pam_otpasswd.so [\fIoptions\fR]
+.\"
+.\"  CONFIGURATION      [Normally only in Section 4]
+.\"
+.SH DESCRIPTION
+This module allows the authentication of one-time passwords
+with the \fBOTPasswd\fR system.
+\fBOTPasswd\fR consists of two primary components, this PAM module
+and the \fBotpasswd\fR(1) utility.
+The utility is used to control the operation of the system,
+and the PAM module essentially makes it happen.
+.PP
+In general, once \fBOTPasswd\fR has been installed,
+the system administrator must determine where the system will keep
+the user configuration data (user state).
+The administator will likely also configure the system by making various
+policy choices,
+such as how long passcodes must be, how often keys should be changed,
+which passcode alphabet will be used, etc.
+Subsequently, users will probably also make some configuration choices
+\- to the degree they are permitted by policy \-
+and then they will generate a key and print some passcards.
+All of these activites involve the use of the \fBotpasswd\fR(1) utility.
+Once this initial configuration is complete,
+the \fBOTPasswd\fR system will operate virtually autonomously.
+Each time a user attempts to login to the system,
+or otherwise authenticate with some service which uses this module,
+the previously configured data is consulted,
+a one-time passcode challenge will be issued,
+and the user will have a chance to authenticate.
+.PP
+The \fBPAM\fR(7) authentication system supports four independent management
+groups, of which this module only supports two:
+\fBauth\fRentication management and \fBsession\fR management.
+The \fBaccount\fR and \fBpassword\fR management groups are not supported.
+.PP
+In typical usage,
+the \fBauth\fRentication component of the \fBpam_otpasswd\fR module
+performs the task of issuing a challenge to the user for a one-time passcode,
+validating it against the user state information, and advancing the
+counter to the next passcode for subsequent authentications.
+Other more advanced tasks involve the validation of the user's
+\fIstatic password\fR and accepting some simple authentication-related
+commands, such as sending a passcode to the user by text message (SMS).
+.PP
+The \fBsession\fR component of this module is primarily intended to
+provide the user with warnings of unusual \fBOTPasswd\fR system
+conditions when a user session is initially established
+(see \fBotpasswd\fR(1) for more details).
+(FIXME: verify previous)
+This module's session management functions will never cause a
+user session to be denied.
+.PP
+The \fBpam_otpasswd\fR module may optionally be provided with a
+series of options in the PAM configuration file
+(see EXAMPLE section below),
+each of which may alter the behavior of some components of the
+module.
+Any legal options which have no relevance to the specific management
+context in which this module is called will be silently ignored.
+Unrecognized options will be logged as errors through \fBsyslog\fR(3).
+.\"
+.SH OPTIONS
+.TP +4m
+\fBdebug\fR
+Maximize module \fBsyslog\fR(3) logging output.
+While this is useful for developers, it is not typically what you want.
+.\"
+.TP +4m
+\fBaudit\fR
+Increased amount of logging to the system log.
+This option is appropriate for system administrators who
+desire to more carefully monitor \fBOTPasswd\fR activity
+without excessive log spam.
+(FIXME: Good idea, huh?)
+.\"
+.TP +4m
+\fBsilent\fR
+No text or messages are sent to the calling program,
+and the PAM conversation function is not used.
+This option causes the module to behave in the same manner as though the
+\fBPAM_SILENT\fR flag had been passed by the application.
+.\"
+.TP +4m
+\fBuse_first_pass\fR
+This option is ignored.
+.\"
+.PP
+Invalid arguments are logged with \fBsyslog\fR(3),
+but are otherwise ignored.
+(FIXME: This is currently not true.
+Currently the module returns a \fBPAM_AUTH_ERR\fR)
+.\"
+.SH MODULE SERVICES PROVIDED
+\fBPAM\fR(7) supports four independent management groups, which are implemented as follows:
+.PP
+.PD 0
+.RS
+.TP +16m
+\fBAuthentication\fR
+Supported, except \fBpam_setcred\fR(3)
+.TP +16m
+\fBSession\fR
+Fully supported
+.TP +16m
+\fBAccount\fR
+Not supported
+.TP +16m
+\fBPassword\fR
+Not supported
+.RE
+.PD
+.\"
+.\" *SECURITY NOTES
+.\"  EXIT STATUS        [Normally only in Sections 1, 8]
+.\"
+.SH RETURN VALUES
+.TP +4m
+\fBPAM_SUCCESS\fR
+User one-time passcode authentication was successful.
+\fBpam_open_session\fR(3) will always return this value.
+.TP +4m
+\fBPAM_IGNORE\fR
+Returned by \fBpam_sm_setcred\fR(3) when any attempt is made to alter
+the user's credentials.
+.\"
+.TP +4m
+\fBPAM_AUTH_ERR\fR
+One of the following conditions has occurred:
+.PD 0
+.RS +8m
+.IP \(bu +2m
+User failed to properly provide the expected passcode
+.IP \(bu +2m
+\fBOTPasswd\fR use is enforced by policy but user has no configuration
+.IP \(bu +2m
+A parsing error occurred on the module command line
+.IP \(bu +2m
+User state information was not successfully locked
+.IP \(bu +2m
+Passcode counter value could not be incremented
+.IP \(bu +2m
+Passcode prompt could not be generated
+.IP \(bu +2m
+Application provided no user response to a passcode query
+.IP \(bu +2m
+An unforeseen error occurred
+.RE
+.PD
+.\"
+.TP +4m
+\fBPAM_SERVICE_ERR\fR
+\fBOTPasswd\fR system configuration error.
+This value is returned when any function in this PAM module is unable
+to read the \fBotpasswd.conf\fR(5) system configuration file.
+(FIXME: How does this return code translate into the success/failure of the auth stack?)
+.\"
+.TP +4m
+\fBPAM_USER_UNKNOWN\fR
+The \fBPAM\fR(7) system is unable to provide this module with the name
+of the user for whom authentication has been requested.
+See \fBpam_get_user\fR(3) for details.
+.\"
+.PP
+In those situations where an error status was returned to the calling
+application, the \fBpam_otpasswd\fR module uses the \fBsyslog\fR(3)
+facility to log additional details.
+Check your system log.
+.\"
+.\"  ERRORS             [Typically only in Sections 2, 3]
+.\"  ENVIRONMENT
+.\"
+.SH FILES
+.TP
+/etc/otpasswd
+The directory for \fBOTPasswd\fR configuration files.
+If \fBOTPasswd\fR is configured to use a global flat-file
+database, then this file resides here, also.
+The directory should be owned by the special \fIotpasswd\fR
+system user,
+and should not be accessible for normal users (mode 0700).
+.\"
+.TP
+/etc/otpasswd/otpasswd.conf
+The main \fBOTPasswd\fR system configuration file.
+This file contains key-value configuration parameters that
+govern the operation of the system.
+In particular, it contains the state database configuration,
+system-wide defaults, PAM configuration and policy configuration.
+When the backend user database is configured to use MySQL or LDAP,
+this file will contain privileged information and
+must be not be accessible for normal users.
+.\"
+.TP
+/etc/otpasswd/otshadow
+The system-wide user database, used only when the \fBotpasswd.conf\fR(5)
+configuration file specifies the use of a global database backend.
+The file contains state information for all users,
+including keys, flags, etc, and must not be accessible
+to normal users.
+.\"
+.TP
+$HOME/.otpasswd
+This file is only used when the system configuration file
+\fBotpasswd.conf\fR(5) specifies that state information is
+to be maintained in user home directories.
+This has the same format as the \fBotshadow\fR(5) file above,
+except it only contains information for a single user.
+.\"
+.TP
+/etc/pam.d/otpasswd_login
+The PAM prototype configuration for \fBOTPasswd\fR.
+If this file is \fIinclude\fRd in a PAM configuration for any
+service (like \fBSSH\fR), the \fBpam_otpasswd\fR(8) PAM module will be
+used to ask the user for a passcode just after the normal \fBpam_unix\fR(8)
+authentication mechanisms are applied.
+.\"
+.\"  VERSIONS           [Normally only in Sections 2, 3]
+.\" *COMPATIBILITY
+.\"  CONFORMING TO
+.\"
+.SH NOTES
+See \fBotpasswd\fR(1) for further information regarding the
+\fBOTPasswd\fR one-time password authentication system.
+In particular, the reader is directed to the sections entitled
+COMPATIBILITY, DOCUMENTATION, and HISTORY.
+.\"
+.\"  BUGS
+.\"
+.SH EXAMPLE
+A typical PAM \fBauth\fR stack for \fBOTPasswd\fR use would be:
+.PP
+.RS
+.nf
+auth      required    pam_tally.so onerr=succeed
+auth      required    pam_shells.so
+auth      required    pam_nologin.so
+auth      required    pam_env.so
+auth      requisite   pam_unix.so try_first_pass likeauth nullok
+
+auth      required    pam_otpasswd.so audit
+session   optional    pam_otpasswd.so
+.fi
+.RE
+.PP
+In this example, the \fIrequisite\fR keyword is used for the \fBpam_unix\fR(8)
+module, which means that if the user fails to enter the proper system password,
+the entire \fBauth\fR stack will fail immediately.
+In particular, this means that the user will never be asked for a
+one-time password (OTP) by the \fBpam_otpasswd\fR module.
+To change this behavior, merely replace the \fIrequisite\fR keyword,
+with the \fIrequired\fR keyword.
+This forces the entire \fBauth\fR stack to complete first,
+and the user will be asked for an OTP every time,
+regardless of whether the user specified the system password correctly.
+.PP
+Note that the \fIaudit\fR option was specified in the \fBauth\fR configuration
+for the \fBpam_otpasswd\fR module above.
+This will cause an increased number of messages to be placed in the system log,
+allowing system administrators to more
+carefully monitor \fBOTPasswd\fR authentication activity.
+.PP
+This example also highlights the typical way in which \fBpam_otpasswd\fR
+is used in the \fBsession\fR management stack.
+The primary facility provided by this module's session management
+functions is to provide warnings of unusual \fBOTPasswd\fR system
+conditions when a user session is initially established
+(see \fBotpasswd\fR(1) for more details).
+(FIXME: verify previous)
+No \fBpam_otpasswd\fR session management function will ever fail.
+.\"
+.SH SEE ALSO
+\fBotpasswd\fR(1),
+\fBotpasswd.conf\fR(5),
+\fBotshadow\fR(5),
+\fBotpasswd\fR(5)
+.\"
+.\" *DOCUMENTATION
+.\" *AUTHORS
+.\" *HISTORY
+.\"
+.SH LICENSE
+Copyright (c) 2009, 2010 Tomasz bla Fortuna
+.PP
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+.PP
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+.PP
+You should have received a copy of the GNU General Public License
+along with this program in a LICENSE file.
+.\"
+.SH AVAILABILITY
+The latest version of the \fBOTPasswd\fR package is available in
+source form at the project website
+.nh
+https://savannah.nongnu.org/projects/otpasswd
+.hy 1
+.\"
+.\" End of Manual: pam_otpasswd(8)
