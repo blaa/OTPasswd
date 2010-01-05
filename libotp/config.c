@@ -19,12 +19,82 @@
 #include <stdio.h>
 #include <string.h>
 
+/* For alphabet tests */
+#include <ctype.h>
+
 /* getpwnam */
 #include <sys/types.h>
 #include <pwd.h>
 
 #include "print.h"
 #include "config.h"
+
+
+static int _alphabet_check(const char *alphabet) {
+	/* Check duplicates and character range. */
+	char count[128] = {0};
+	const char *ptr;
+
+	for (ptr = alphabet; *ptr; ptr++) {
+		const unsigned int tmp = *ptr;
+
+		if (!isascii(tmp)) {
+			print(PRINT_ERROR,
+			      "Config error: Custom alphabet contains "
+			      "non-ascii character.\n");
+			return 1;
+		}
+
+		if (!isgraph(tmp)) {
+			if (isspace(tmp))
+				print(PRINT_ERROR,
+				      "Config error: Custom alphabet contains "
+				      "whitespace character.\n");
+			else
+				print(PRINT_ERROR,
+				      "Config error: Custom alphabet contains "
+				      "non-printable, non-whitespace character.\n");
+			return 1;
+		}
+
+		if (count[tmp]) {
+			print(PRINT_ERROR,
+			      "Config error: Custom alphabet contains "
+			      "duplicate character: %c.\n", tmp);
+			return 1;
+		}
+		count[tmp]++;
+	}
+	return 0;
+}
+
+static void _right_trim(char *arg)
+{
+	char *ptr;
+
+	/* Nothing to do, empty string? */
+	if (!arg)
+		return;
+
+	if (*arg == '\0')
+		return;
+
+	/* Find end */
+	for (ptr = arg; *ptr; ptr++);
+
+	/* Point it at last character */
+	ptr--;
+
+	/* Go to the beginning until non-whitespace
+	 * is found or first character */
+	for (; ptr > arg && isspace(*ptr); ptr--);
+
+	/* Cut string here */
+	ptr++;
+	*ptr = '\0';
+
+	
+}
 
 /* Set all fields to default values */
 static void _config_defaults(cfg_t *cfg)
@@ -59,7 +129,7 @@ static void _config_defaults(cfg_t *cfg)
 		.failure_boundary = 3,
 		.failure_delay = 5,
 		.spass_require = 0,
-		
+
 		.oob = 0,
 		.oob_path = "/etc/otpasswd/otpasswd_oob.sh",
 		.oob_uid = -1,
@@ -86,7 +156,7 @@ static void _config_defaults(cfg_t *cfg)
 		.spass_require_digit  = 1,
 		.spass_require_special = 1,
 		.spass_require_uppercase = 1,
-		
+
 		.passcode_def_length = 4,
 		.passcode_min_length = 2,
 		.passcode_max_length = 16,
@@ -107,7 +177,7 @@ static void _config_defaults(cfg_t *cfg)
 	*cfg = o;
 }
 
-/* Parse config file and set fields in struct 
+/* Parse config file and set fields in struct
  * config_path might be NULL to read default config.
  */
 static int _config_parse(cfg_t *cfg, const char *config_path)
@@ -118,7 +188,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 	FILE *f;
 
 	char line_buf[CONFIG_MAX_LINE_LEN];
-	
+
 	if (config_path) {
 		f = fopen(config_path, "r");
 	} else {
@@ -139,7 +209,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 
 		/* Check line too long condition */
 		line_length = strlen(line_buf);
-		if (line_length == sizeof(line_buf) - 1 && 
+		if (line_length == sizeof(line_buf) - 1 &&
 		    line_buf[line_length-1] != '\n') {
 			print(PRINT_ERROR, "Line in config file to long.\n");
 			goto error;
@@ -148,7 +218,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 		/* Remove trailing \n */
 		line_length--;
 		line_buf[line_length] = '\0';
-		
+
 		line_count++;
 
 		/* Omit comments */
@@ -169,11 +239,11 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 		char *equality = strchr(line_buf, '=');
 
 		if (!equality) {
-			print(PRINT_ERROR, "Syntax error on line %d in config file.", 
+			print(PRINT_ERROR, "Syntax error on line %d in config file.",
 			      line_count);
 			goto error;
 		}
-		
+
 		/* After those two lines equality points to the start
 		 * of argument, and buf_line to the name of variable
 		 * we are setting (nul-terminated)
@@ -220,7 +290,8 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			goto error;				\
 		}						\
 		strncpy(to, from, sizeof(to)-1);		\
-	} while (0) 
+		_right_trim(to);				\
+	} while (0)
 
 		/* Parsing general configuration */
 		if (_EQ(line_buf, "user")) {
@@ -230,7 +301,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 				pwd = getpwnam(equality);
 				if (pwd == NULL) {
 					print(PRINT_ERROR,
-					      "Illegal user specified in config "
+					      "Config Error: Illegal user specified in config "
 					      "at line %d.\n", line_count);
 					goto error;
 				}
@@ -238,13 +309,13 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 				cfg->user_gid = pwd->pw_gid;
 			}
 		} else if (_EQ(line_buf, "db")) {
-			if (_EQ(equality, "global")) 
+			if (_EQ(equality, "global"))
 				cfg->db = CONFIG_DB_GLOBAL;
-			else if (_EQ(equality, "user")) 
+			else if (_EQ(equality, "user"))
 				cfg->db = CONFIG_DB_USER;
-			else if (_EQ(equality, "mysql")) 
+			else if (_EQ(equality, "mysql"))
 				cfg->db = CONFIG_DB_MYSQL;
-			else if (_EQ(equality, "ldap")) 
+			else if (_EQ(equality, "ldap"))
 				cfg->db = CONFIG_DB_LDAP;
 			else {
 				print(PRINT_ERROR,
@@ -302,7 +373,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			pwd = getpwnam(equality);
 			if (pwd == NULL) {
 				print(PRINT_ERROR,
-				      "Illegal OOB user specified in config "
+				      "Config Error: Illegal OOB user specified in config "
 				      "at line %d.\n", line_count);
 				goto error;
 			}
@@ -408,6 +479,9 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			REQUIRE_ARG(5, 88);
 			cfg->alphabet_max_length = arg;
 		} else if (_EQ(line_buf, "alphabet_custom")) {
+			if (_alphabet_check(equality) != 0) {
+				goto error;
+			}
 			_COPY(cfg->alphabet_custom, equality);
 
 		} else if (_EQ(line_buf, "spass_allow_change")) {
@@ -436,8 +510,8 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 	} while (!feof(f));
 
 
-	/* TODO Check obvious errors like default value
-	 * out of max/min values */
+	/* TODO Check obvious errors like default value */
+
 	retval = 2;
 	if (cfg->show_allow == 0) {
 		if (cfg->show_def == 1) {
@@ -467,6 +541,12 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 		}
 	}
 
+	if (cfg->passcode_def_length > cfg->passcode_max_length ||
+	    cfg->passcode_def_length < cfg->passcode_min_length) {
+		print(PRINT_ERROR, "Config error: Default passcode length "
+		      "inconsistent with policy.\n");
+		goto error;
+	}
 
 
 
@@ -507,9 +587,8 @@ cfg_t *cfg_get(void)
 	retval = _config_init(&cfg, CONFIG_PATH);
 	if (retval != 0)
 		return NULL;
-	
+
 	cfg_init = &cfg;
 
 	return cfg_init;
 }
-

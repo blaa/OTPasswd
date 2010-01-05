@@ -54,9 +54,9 @@ Trying to sort tasks according to their priority.
         * [+] First unlink lock file, then unlock to omit race condition?
         * [+] Add -r option to remove key and disable OTP.
         * [+] Fix user interface a bit.
+        * [+] Keeping track of failures.
+	      Implemented, but not tested.
 	* [?] Key quality checking (duplicates)
-	* [%] In some cases salt flag might be changed if policy changes 
-	      creating strange behaviour
         * [-] "Problem solving section" in docs, mentioning use of -v on
               errors in the first place.
         * [%] Should we start suid root then drop to some config-defined user
@@ -72,8 +72,6 @@ Trying to sort tasks according to their priority.
         * [?] Security: Do we need to change something regarding ulimits?
         * [?] Add error_t and bool_t to differentiate differently
               used ints?
-        * [-] Keeping track of failures.
-              Started (place in state files created)
         * [-] Implement static passwords;
               They might be required always or just to perform some commands
               like second-channel usage.
@@ -84,6 +82,7 @@ Trying to sort tasks according to their priority.
               explicitly to manage state information unless something
               more fine-grained is necessary. State on the other hand
               uses 'db' backend for operating on files/databases.
+	      * Lots of things done in direction to finish this task
         * [-] Scan all FIXME/TODO entries
         * [?] Use locales for user messages [_("")? ]
         * [-] right trim values from config?
