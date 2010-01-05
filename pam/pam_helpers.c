@@ -266,13 +266,22 @@ void ph_show_message(pam_handle_t *pamh, const cfg_t *cfg, const char *msg)
 		_pam_drop_reply(resp, 1);
 }
 
-int ph_increment(pam_handle_t *pamh, const cfg_t *cfg, state *s)
+int ph_increment(pam_handle_t *pamh, const cfg_t *cfg, const char *username, state *s)
 {
-	const char enforced_msg[] = "otpasswd: Key not generated, unable to login.";
-	const char lock_msg[] = "otpasswd: Unable to lock user state file.";
-	const char numspace_msg[] =
-		"otpasswd: Passcode counter overflowed or state "
+	const char *enforced_msg = "OTPasswd: Key not generated, unable to login.";
+	const char *lock_msg = "OTPasswd: Unable to lock user state file.";
+	const char *numspace_msg =
+		"OTPasswd: Passcode counter overflowed or state "
 		"file corrupted. Regenerate key.";
+	const char *invalid_msg =
+		"OTPasswd: Your state is invalid. "
+		"Contact administrator.";
+	const char *disabled_msg = 
+		"OTPasswd: Your state is disabled. Unable to authenticate. "
+		"Contact administrator.";
+	const char *policy_msg = 
+		"OTPasswd: Your state is inconsistent with "
+		"system policy. Contact administrator.";
 
 	switch (ppp_increment(s)) {
 	case 0:
@@ -303,6 +312,40 @@ int ph_increment(pam_handle_t *pamh, const cfg_t *cfg, state *s)
 			return PAM_IGNORE;
 		else
 			goto enforced_fail;
+
+	case PPP_ERROR_POLICY:
+		print(PRINT_WARN, "State of \"%s\" contains data "
+		      "contradictory to current policy. Update state.\n",
+		      username);
+		ph_show_message(pamh, cfg, policy_msg);
+		return PAM_AUTH_ERR;
+
+	case PPP_ERROR_RANGE:
+		print(PRINT_WARN,
+		      "State of \"%s\" contains invalid data.\n",
+		      username);
+
+		ph_show_message(pamh, cfg, invalid_msg);
+		return PAM_AUTH_ERR;
+
+	case PPP_ERROR_DISABLED:
+		if (cfg->enforce) {
+			print(PRINT_WARN, 
+			      "Authentication failure; user \"%s\" state "
+			      "is disabled\n", username);
+
+			ph_show_message(pamh, cfg, disabled_msg);
+			return PAM_AUTH_ERR;
+		} else {
+			/* Not enforcing */
+			print(PRINT_WARN, 
+			      "Authentication ignored; user \"%s\" state "
+			      "is disabled\n", username);
+
+			return PAM_IGNORE;
+		}
+
+
 
 	default: /* Any other problem - error */
 		return PAM_AUTH_ERR;
@@ -344,7 +387,8 @@ struct pam_response *ph_query_user(
 	return resp;
 }
 
-int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, cfg_t **cfg, state **s)
+int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
+            cfg_t **cfg, state **s, const char **username)
 {
 	/* User info from PAM */
 	const char *user = NULL;
@@ -416,6 +460,15 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, cfg_t **
 		/* This will fail if, for example, we're 
 		 * unable to locate home directory */
 		retval = PAM_USER_UNKNOWN;
+		goto error;
+	}
+
+	/* Read username back. Our local state-bound copy */
+	retval = ppp_get_str(*s, PPP_FIELD_USERNAME, username);
+	if (retval != 0 || !**username) {
+		print(PRINT_ERROR, "Internal error: Unable to"
+		      " read username data from state.\n");
+		retval = PAM_AUTH_ERR;
 		goto error;
 	}
 

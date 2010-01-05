@@ -56,6 +56,7 @@ Trying to sort tasks according to their priority.
         * [+] Fix user interface a bit.
         * [+] Keeping track of failures.
 	      Implemented, but not tested.
+	* [?] Logging warnings printed to user at WARN level
 	* [?] Key quality checking (duplicates)
         * [-] "Problem solving section" in docs, mentioning use of -v on
               errors in the first place.

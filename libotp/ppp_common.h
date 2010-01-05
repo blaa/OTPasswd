@@ -88,6 +88,10 @@ enum ppp_errors {
 
 	/* Value out of range */
 	PPP_ERROR_RANGE = 104,
+
+	/* User disabled, while trying some 
+	 * action like authentication */
+	PPP_ERROR_DISABLED = 105,
 };
 
 enum ppp_flags {
@@ -112,6 +116,8 @@ enum ppp_warning {
 /* Flag-like options to some ppp functions */
 enum ppp_options {
 	PPP_CHECK_POLICY = 1,
+	PPP_STORE = 2,
+	PPP_UNLOCK = 4,
 };
 
 

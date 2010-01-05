@@ -121,16 +121,6 @@ static void _usage(int argc, const char **argv)
 		"\n"
 		"  -p, --password <pass>\n"
 		"           Set static password. Use empty (i.e. "") to unset.\n"
-/*
-		"  -c, --contact <arg>\n"
-		"           Set a contact info (e.g. phone number) with which\n"
-		"           you want to receive current passcode during authentication.\n"
-		"           Details depends on pam module configuration. Use \"\"\n"
-		"           to disable.\n"
-		"  -d, --label <arg>\n"
-		"           Set a caption to use on generated passcards.\n"
-		"           Use \"\" to set default (hostname)\n"
-*/
 		"\n"
 		"  -u, --user <username|UID>\n"
 		"           Operate on state of specified user. Administrator-only option.\n"
@@ -276,9 +266,6 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		/* Flags */
 		{"flags",		required_argument,	0, OPTION_FLAGS},
 		{"password",		required_argument,	0, OPTION_SPASS},
-/*		{"label",		required_argument,	0, 'd'}, FIXME: REMOVE THIS ENTRIES
-		{"contact",		required_argument,	0, 'c'}, 
-		{"no-salt",		no_argument,		0, 'n'}, */
 		{"user",		required_argument,	0, OPTION_USER},
 		{"verbose",		no_argument,		0, OPTION_VERBOSE},
 		{"check",		no_argument,		0, OPTION_CHECK},
@@ -350,79 +337,6 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			break;
 
 			/* Actions with argument which can be connected with -k */
-#if 0
-		case 'd':
-		case 'c':
-			if (options->action == 0) {
-				options->action = 'f';
-			} else if (options->action == 'k') {
-				/* Don't change action */
-			} else if (options->action == 'f') {
-				/* Keep 'f' if -d or -c not given already */
-			} else {
-				printf("Only one action can be specified on the command line\n");
-				goto error;
-			}
-
-			assert(optarg);
-
-			/* Check data correctness */
-			if (!state_validate_str(optarg)) {
-				printf(
-					"%s argument contains illegal characters.\n"
-					"Alphanumeric + ' -+.@_*' are allowed\n",
-					c=='d' ? "Label" : "Contact");
-				goto error;
-			}
-
-			switch (c) {
-			case 'c':
-				if (options->contact) {
-					printf("Contact already defined\n");
-					goto error;
-				}
-
-				if (!security_is_root() && cfg->allow_contact_change == 0) {
-					printf("Contact changing denied by policy.\n");
-					goto error;
-				}
-
-				if (strlen(optarg) + 1 > STATE_CONTACT_SIZE) {
-					printf("Contact can't be longer than %d "
-					       "characters\n", STATE_CONTACT_SIZE-1);
-					goto error;
-				}
-
-				/* Store */
-				options->contact = strdup(optarg);
-				break;
-
-			case 'd':
-				if (options->label) {
-					printf("Label already defined\n");
-					goto error;
-				}
-
-				if (!security_is_root() && cfg->allow_label_change == 0) {
-					printf("Contact changing denied by policy.\n");
-					goto error;
-				}
-
-				if (strlen(optarg) + 1 > STATE_LABEL_SIZE) {
-					printf("Label can't be longer than %d "
-					       "characters\n", STATE_LABEL_SIZE-1);
-					goto error;
-				}
-
-				/* Store */
-				options->label = strdup(optarg);
-				break;
-			default:
-				assert(0);
-			}
-
-			break;
-#endif 
 		case OPTION_FLAGS:
 			if (options->action != 0 && 
 			    options->action != OPTION_FLAGS &&
@@ -581,6 +495,8 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 					"***********************************************\n"
 					"*         !!! %d testcases failed !!!         *\n"
 					"* Don't use this release until this is fixed! *\n"
+					"* Note: Testcases should be run with default  *\n"
+					"* If unsure, reinstall and rerun --check      *\n"
 					"***********************************************\n",
 					failed);
 				retval = 1;

@@ -90,6 +90,12 @@ extern int ppp_verify_alphabet(int id);
 /* Verify code length */
 extern int ppp_verify_code_length(int length);
 
+/* Verify user flags */
+extern int ppp_verify_flags(int flags);
+
+/* Verify all parts of user state */
+extern int ppp_verify_state(const state *s);
+
 /*******************************************
  * State Getters / Setters
  ******************************************/

@@ -25,15 +25,16 @@
 extern int ph_parse_module_options(int flags, int argc, const char **argv, cfg_t *cfg);
 
 /* Send out of band message by calling external script.
- * s parameter is generally const, but child will 
+ * s parameter is generally const, but child will
  * clean it up */
 extern int ph_out_of_band(const cfg_t *opt, state *s);
 
 /* Display user a message; disabled if in "silent mode" */
 extern void ph_show_message(pam_handle_t *pamh, const cfg_t *opt, const char *msg);
 
-/* Load state, increment save, handle errors if any */
-extern int ph_increment(pam_handle_t *pamh, const cfg_t *opt, state *s);
+/* Load state, increment Save, handle errors if any */
+extern int ph_increment(pam_handle_t *pamh, const cfg_t *opt,
+                        const char *username, state *s);
 
 /* Function which automates a bit talking with a user */
 extern struct pam_response *ph_query_user(
@@ -41,7 +42,9 @@ extern struct pam_response *ph_query_user(
 	const char *prompt, const state *s);
 
 /* Function performing PAM initialization */
-extern int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv, cfg_t **opt, state **s);
+extern int ph_init(pam_handle_t *pamh, int flags,
+                   int argc, const char **argv,
+                   cfg_t **cfg, state **s, const char **username);
 
 /* Deinitialize whatever ph_init initialized */
 extern void ph_fini(state *s);

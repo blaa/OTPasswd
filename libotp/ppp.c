@@ -172,6 +172,49 @@ int ppp_verify_range(const state *s)
 	return 0;
 }
 
+int ppp_verify_flags(int flags)
+{
+	const cfg_t *cfg = cfg_get();
+	assert(cfg);
+
+	/* Show */
+	if (flags & FLAG_SHOW && cfg->show_allow == 0) {
+		return PPP_ERROR_POLICY;
+	}
+
+	if (!(flags & FLAG_SHOW) && cfg->show_allow == 2) {
+		return PPP_ERROR_POLICY;
+	}
+
+	/* Salted */
+	if (flags & FLAG_SALTED && cfg->salt_allow == 0) {
+		return PPP_ERROR_POLICY;
+	}
+
+	if (!(flags & FLAG_SALTED) && cfg->salt_allow == 2) {
+		return PPP_ERROR_POLICY;
+	}
+
+	return 0;
+}
+
+int ppp_verify_state(const state *s)
+{
+	if (ppp_verify_flags(s->flags) != 0)
+		return PPP_ERROR_POLICY;
+
+	if (ppp_verify_alphabet(s->alphabet) != 0)
+		return PPP_ERROR_POLICY;
+
+	if (ppp_verify_code_length(s->code_length) != 0)
+		return PPP_ERROR_POLICY;
+
+	if (ppp_verify_range(s) != 0)
+		return PPP_ERROR_POLICY;
+
+	return 0;
+}
+
 void ppp_alphabet_print(void)
 {
 	const cfg_t *cfg = cfg_get();
@@ -321,17 +364,32 @@ int ppp_get_current(const state *s, char *passcode)
 
 int ppp_authenticate(const state *s, const char *passcode)
 {
-	char current_passcode[17];
+	int retval;
+	char current_passcode[17] = {0};
 
 	if (passcode == NULL)
 		return 1;
 
+	/* Disabled user can't authenticate */
+	if (ppp_flag_check(s, FLAG_DISABLED)) {
+		return PPP_ERROR_DISABLED;
+	}
+
+	/* User with state inconsistent with policy can't authenticate */
+	retval = ppp_verify_state(s);
+	if (retval != 0) {
+		return retval;
+	}
+
+	/* Read current passcode */
 	if (ppp_get_passcode(s, s->counter, current_passcode) != 0)
 		return 2;
 
+	/* Check if it matches */
 	if (strcmp(passcode, current_passcode) != 0)
 		return 3;
 
+	/* Success */
 	return 0;
 }
 
@@ -445,12 +503,14 @@ const char *ppp_get_warning_message(const state *s, int *warning)
 {
 	const char *nothing_left = "You have no printed passcodes left!";
 	const char *last_card = "You are on your last printed passcard!";
-	const char *failures_template =
-		"There were %d recent auth failures! Is your static password broken?";
 	const char *failure_template =
-		"There was 1 recent auth failure! Is your static password broken?";
+		"There was 1 recent auth failure!";
+	const char failures_template[] =
+		"There were %d recent auth failures! Are your static passwords compromised?";
 
 	static char failures_buff[sizeof(failures_template) + 10];
+
+	assert(sizeof(failures_buff) > 50);
 
 	if (*warning == PPP_WARN_OK)
 		return NULL;
@@ -534,6 +594,9 @@ const char *ppp_get_error_desc(int error)
 	case PPP_ERROR_TOO_LONG:
 		return "Input too long.";
 
+	case PPP_ERROR_DISABLED:
+		return "User state disabled.";
+
 	default:
 		return "Error occured while reading state. Use -v to determine which.";
 	}
@@ -583,6 +646,11 @@ int ppp_load(state *s)
 	/* Calculation and validation */
 	ppp_calculate(s);
 
+	/* We can't check whole state for policy because 
+	 * we'd make it impossible to fix state files. 
+	 * Check whole policy before authentication only.
+	 * Here just ensure most important things like key/counter.
+	 */
 	retval = ppp_verify_range(s);
 	if (retval != 0) {
 		goto cleanup1;
@@ -648,6 +716,18 @@ int ppp_increment(state *s)
 	if (ret != 0)
 		return ret;
 
+	/* Verify state correctness before trying anything more */
+	ret = ppp_verify_state(s);
+	if (ret != 0) {
+		goto error;
+	}
+
+	/* Do not increment anything if user is disabled */
+	if (ppp_flag_check(s, FLAG_DISABLED)) {
+		ret = PPP_ERROR_DISABLED;
+		goto error;
+	}
+
 	/* Hold temporarily current counter */
 	mpz_t tmp;
 	mpz_init_set(tmp, s->counter);
@@ -662,6 +742,11 @@ int ppp_increment(state *s)
 	mpz_set(s->counter, tmp);
 
 	mpz_clear(tmp);
+	return ret;
+
+error:
+	/* Unlock. And ignore unlocking errors */
+	(void) ppp_release(s, 0, 1);
 	return ret;
 }
 

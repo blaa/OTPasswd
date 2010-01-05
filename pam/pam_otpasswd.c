@@ -51,45 +51,22 @@ PAM_EXTERN int pam_sm_authenticate(
 	/* Parameters */
 	cfg_t *cfg = NULL;
 
+	/* Username */
+	const char *username = NULL;
+
 	/* Perform initialization:
-	 * parse options, start logging, initialize state
+	 * parse options, start logging, initialize state,
 	 */
-	retval = ph_init(pamh, flags, argc, argv, &cfg, &s);
+	retval = ph_init(pamh, flags, argc, argv, &cfg, &s, &username);
 	if (retval != 0)
 		return retval;
 	
-	const char *username;
-	retval = ppp_get_str(s, PPP_FIELD_USERNAME, &username);
-	if (retval != 0 || !username) {
-		print(PRINT_ERROR, "Internal error: Unable to"
-		      " read username data from state.\n");
-		retval = PAM_AUTH_ERR;
-		goto cleanup;
-	}
-
-	/* If user disabled and we're enforcing - fail. */
-	if (ppp_flag_check(s, FLAG_DISABLED)) {
-		if (cfg->enforce) {
-			print(PRINT_WARN, 
-			      "Authentication failure, because user state "
-			      "is disabled; user=%s\n",
-			      username);
-			retval = PAM_AUTH_ERR;
-		} else {
-			/* Not enforcing */
-			retval = PAM_IGNORE;
-		}
-		goto cleanup;
-	}
-
-
-
 	/* Retry = 0 - do not retry, 1 - with changing passcodes */
 	int tries;
 	for (tries = 0; tries < (cfg->retry == 0 ? 1 : cfg->retries); tries++) {
 		if (tries == 0 || cfg->retry == 1) {
 			/* First time or we are retrying while changing the password */
-			retval = ph_increment(pamh, cfg, s);
+			retval = ph_increment(pamh, cfg, username, s);
 			if (retval != 0)
 				goto cleanup;
 
@@ -123,13 +100,21 @@ PAM_EXTERN int pam_sm_authenticate(
 		/* We must free resp after this point ourselves. */
 
 		/* Hook up OOB request */
-		if (strlen(resp[0].resp) == 1 && resp[0].resp[0] == '.') {
+		if (strcmp(resp[0].resp, ".") == 0) {
 			switch (cfg->oob) {
 			case OOB_REQUEST:
 				ph_out_of_band(cfg, s);
-				/* Restate question about passcode */
+
+				/* Drop reply + restate question about passcode */
 				_pam_drop_reply(resp, 1);
 				resp = ph_query_user(pamh, flags, ppp_flag_check(s, FLAG_SHOW), prompt, s);
+
+				if (!resp) {
+					/* No response? */
+					print(PRINT_NOTICE, "No response from user during auth.\n");
+					goto cleanup;
+				}
+
 				break;
 			case OOB_SECURE_REQUEST:
 				/* TODO: To be implemented */
@@ -138,6 +123,7 @@ PAM_EXTERN int pam_sm_authenticate(
 		}
 
 		if (ppp_authenticate(s, resp[0].resp) == 0) {
+			/* Authenticated */
 			_pam_drop_reply(resp, 1);
 
 			/* Correctly authenticated */
@@ -151,7 +137,7 @@ PAM_EXTERN int pam_sm_authenticate(
 
 		_pam_drop_reply(resp, 1);
 
-
+		/* Increment count of failures */
 		retval = ppp_failures(s, 0);
 		if (retval != 0) {
 			print(PRINT_WARN, "Unable to increment failure count\n");
@@ -184,8 +170,11 @@ PAM_EXTERN int pam_sm_open_session(
 	/* Parameters */
 	cfg_t *cfg;
 
+	/* Username */
+	const char *username;
+
 	/* Initialize */
-	retval = ph_init(pamh, flags, argc, argv, &cfg, &s);
+	retval = ph_init(pamh, flags, argc, argv, &cfg, &s, &username);
 	if (retval != 0)
 		return retval;
 
@@ -196,21 +185,17 @@ PAM_EXTERN int pam_sm_open_session(
 
 	print(PRINT_NOTICE, "(session) state loaded\n");
 
-	int err = ppp_get_warning_conditions(s);
+	const int err = ppp_get_warning_conditions(s);
 	if (err == 0) {
 		/* No warnings! */
 		print(PRINT_NOTICE, "(session) no warning to be printed\n");
 		goto cleanup;
 	}
 
-	/* Will we print warning about recent failures? */
-	if (err & PPP_WARN_RECENT_FAILURES) {
-		if (ppp_set_int(s, PPP_FIELD_RECENT_FAILURES, 0, 1) != 0)
-			print(PRINT_WARN, "Unable to clear recent failures\n");
-	}
 
 	const char *msg;
-	while ((msg = ppp_get_warning_message(s, &err)) != NULL) {
+	int err_copy = err;
+	while ((msg = ppp_get_warning_message(s, &err_copy)) != NULL) {
 		/* Generate message */
 		char buff_msg[300];
 		int len;
@@ -224,6 +209,12 @@ PAM_EXTERN int pam_sm_open_session(
 		ph_show_message(pamh, cfg, buff_msg);
 	}
 
+	/* Have we printed warning about recent failures? */
+	if (err & PPP_WARN_RECENT_FAILURES) {
+		if (ppp_set_int(s, PPP_FIELD_RECENT_FAILURES, 0, PPP_CHECK_POLICY) != 0)
+			print(PRINT_WARN, "Unable to clear recent failures\n");
+		store = 1;
+	}
 
 
 cleanup:
