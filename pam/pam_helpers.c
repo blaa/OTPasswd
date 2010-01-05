@@ -44,14 +44,15 @@
 int ph_parse_module_options(int flags, int argc, const char **argv, cfg_t *cfg)
 {
 	for (; argc-- > 0; argv++) {
-		if (strcmp("debug", *argv) == 0)
+		if (strcmp("audit", *argv) == 0)
+			cfg->logging = 2;
+		else if (strcmp("debug", *argv) == 0)
 			cfg->logging = 3;
 		else if (strcmp("silent", *argv) == 0)
 			cfg->silent = 1;
 		else {
-			print(PRINT_ERROR, 
+			print(PRINT_WARN, 
 				"Invalid parameter %s\n", *argv);
-			goto error;
 		}
 	}
 

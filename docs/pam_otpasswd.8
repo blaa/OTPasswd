@@ -34,7 +34,7 @@ the system administrator must determine where the system will keep
 the user configuration data (user state).
 The administrator will likely also configure the system by making various
 policy choices,
-such as how long passcodes must be, how often keys should be changed,
+such as how long passcodes must be, how complicated static password should be,
 which passcode alphabet will be used, etc.
 Subsequently, users will probably also make some configuration choices
 \- to the degree they are permitted by policy \-
@@ -63,21 +63,27 @@ Other more advanced tasks involve the validation of the user's
 commands, such as sending a passcode to the user by text message (SMS).
 .PP
 The \fBsession\fR component of this module is primarily intended to
-provide the user with warnings of unusual \fBOTPasswd\fR system
-conditions when a user session is initially established
+provide the user with warnings when a user session is initially established.
+This include some of \fBOTPasswd\fR system conditions user should be aware of
+like the fact that he is running out of printed passcodes
 (see \fBotpasswd\fR(1) for more details).
-(FIXME: verify previous)
+
 This module's session management functions will never cause a
 user session to be denied.
 .PP
-The \fBpam_otpasswd\fR module may optionally be provided with a
-series of options in the PAM configuration file
-(see EXAMPLE section below),
+The \fBpam_otpasswd\fR module for compatibility with interfaces of
+other modules may optionally be provided with a series of options 
+in the PAM configuration file (see EXAMPLE section below),
 each of which may alter the behavior of some components of the
 module.
+
+This options duplicates functionality of otpasswd.conf, and enabling
+any of them overrides settings in configuration file.
+
 Any legal options which have no relevance to the specific management
 context in which this module is called will be silently ignored.
-Unrecognized options will be logged as errors through \fBsyslog\fR(3).
+Unrecognized options will be logged as warnings through \fBsyslog\fR(3).
+
 .\"
 .SH OPTIONS
 .TP +4m
@@ -91,12 +97,12 @@ Increased amount of logging to the system log.
 This option is appropriate for system administrators who
 desire to more carefully monitor \fBOTPasswd\fR activity
 without excessive log spam.
-(FIXME: Good idea, huh?)
 .\"
 .TP +4m
 \fBsilent\fR
-No text or messages are sent to the calling program,
-and the PAM conversation function is not used.
+No unnecessary text or messages are sent to the calling program,
+and the PAM conversation function is only used to ask for passcode.
+Passing this option to \fBsession\fR stack effectively turns it off.
 This option causes the module to behave in the same manner as though the
 \fBPAM_SILENT\fR flag had been passed by the application.
 .\"
@@ -107,8 +113,6 @@ This option is ignored.
 .PP
 Invalid arguments are logged with \fBsyslog\fR(3),
 but are otherwise ignored.
-(FIXME: This is currently not true.
-Currently the module returns a \fBPAM_AUTH_ERR\fR)
 .\"
 .SH MODULE SERVICES PROVIDED
 \fBPAM\fR(7) supports four independent management groups, which are implemented as follows:
@@ -153,8 +157,6 @@ User failed to properly provide the expected passcode
 .IP \(bu +2m
 \fBOTPasswd\fR use is enforced by policy but user has no configuration
 .IP \(bu +2m
-A parsing error occurred on the module command line
-.IP \(bu +2m
 User state information was not successfully locked
 .IP \(bu +2m
 Passcode counter value could not be incremented
@@ -194,10 +196,15 @@ Check your system log.
 /etc/otpasswd
 The directory for \fBOTPasswd\fR configuration files.
 If \fBOTPasswd\fR is configured to use a global flat-file
-database, then this file resides here, also.
-The directory should be owned by the special \fIotpasswd\fR
-system user,
-and should not be accessible for normal users (mode 0700).
+database, then this file resides here, and therefore,
+the directory should be owned by the special system user 
+(set in otpasswd.conf, a default value is \fIotpasswd\fR),
+and should not be accessible for normal users 
+(mode 0700 recommended). The otpasswd(1) utility has to be
+Set-UID to that user to be able to read and modify configuration and
+state data.
+
+Name of this directory can only be configured during compilation.
 .\"
 .TP
 /etc/otpasswd/otpasswd.conf
@@ -208,7 +215,10 @@ In particular, it contains the state database configuration,
 system-wide defaults, PAM configuration and policy configuration.
 When the backend user database is configured to use MySQL or LDAP,
 this file will contain privileged information and
-must be not be accessible for normal users.
+must be not be accessible for normal users. This requires utility
+to be Set-UID to user who owns /etc/otpasswd/otpasswd.conf.
+
+Name of this file can only be configured during compilation.
 .\"
 .TP
 /etc/otpasswd/otshadow
@@ -225,6 +235,9 @@ This file is only used when the system configuration file
 to be maintained in user home directories.
 This has the same format as the \fBotshadow\fR(5) file above,
 except it only contains information for a single user.
+
+As users have full permissions to modify those files, policy can't 
+be enforced in this mode.
 .\"
 .TP
 /etc/pam.d/otpasswd_login
@@ -232,7 +245,8 @@ The PAM prototype configuration for \fBOTPasswd\fR.
 If this file is \fIinclude\fRd in a PAM configuration for any
 service (like \fBSSH\fR), the \fBpam_otpasswd\fR(8) PAM module will be
 used to ask the user for a passcode just after the normal \fBpam_unix\fR(8)
-authentication mechanisms are applied.
+authentication mechanisms are applied. This stack is prepared to be used
+instead of previous authentication state. 
 .\"
 .\"  VERSIONS           [Normally only in Sections 2, 3]
 .\" *COMPATIBILITY
