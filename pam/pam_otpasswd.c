@@ -109,8 +109,9 @@ PAM_EXTERN int pam_sm_authenticate(
 			ph_out_of_band(cfg, s);
 		}
 
-
-		resp = ph_query_user(pamh, flags, cfg->show, prompt, s);
+		resp = ph_query_user(pamh, flags,
+				     ppp_flag_check(s, FLAG_SHOW),
+				     prompt, s);
 
 		retval = PAM_AUTH_ERR;
 		if (!resp) {
@@ -128,7 +129,7 @@ PAM_EXTERN int pam_sm_authenticate(
 				ph_out_of_band(cfg, s);
 				/* Restate question about passcode */
 				_pam_drop_reply(resp, 1);
-				resp = ph_query_user(pamh, flags, cfg->show, prompt, s);
+				resp = ph_query_user(pamh, flags, ppp_flag_check(s, FLAG_SHOW), prompt, s);
 				break;
 			case OOB_SECURE_REQUEST:
 				/* TODO: To be implemented */
@@ -204,7 +205,7 @@ PAM_EXTERN int pam_sm_open_session(
 
 	/* Will we print warning about recent failures? */
 	if (err & PPP_WARN_RECENT_FAILURES) {
-		if (ppp_set_int(s, PPP_FIELD_RECENT_FAILURES, 0) != 0)
+		if (ppp_set_int(s, PPP_FIELD_RECENT_FAILURES, 0, 1) != 0)
 			print(PRINT_WARN, "Unable to clear recent failures\n");
 	}
 

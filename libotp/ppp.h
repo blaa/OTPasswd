@@ -136,7 +136,7 @@ extern int ppp_get_mpz(const state *s, int field, mpz_t arg);
 extern int ppp_get_str(state *s, int field, const char **arg);
 
 /* Int argument setter */
-extern int ppp_set_int(state *s, int field, unsigned int arg);
+extern int ppp_set_int(state *s, int field, unsigned int arg, int check_policy);
 
 /* Copy nul-terminated data passed as arg into state.
  * This function checks length of destination buffer

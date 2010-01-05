@@ -280,6 +280,25 @@ static int _update_flags(options_t *options, state *s, int generation)
 		break;
 	}
 
+	/* Check policy of salt */
+	switch (cfg->show_allow) {
+	case 0:
+		if (options->flag_set_mask & FLAG_SHOW) {
+			printf("Policy disallows showing entered passcodes.\n");
+			return 1;
+		}
+		break;
+	case 2:
+		if (options->flag_clear_mask & FLAG_SHOW) {
+			printf("Policy enforces entered passcode visibility.\n");
+			return 1;
+		}
+		break;
+	case 1:
+	default:
+		break;
+	}
+
 	/* Copy all user-selected values to state
 	 * but check if they match policy */
 
@@ -349,7 +368,7 @@ static int _update_flags(options_t *options, state *s, int generation)
 
 	/* Code length + alphabet */
 	if (options->set_codelength != -1) {
-		ret = ppp_set_int(s, PPP_FIELD_CODELENGTH, options->set_codelength);
+		ret = ppp_set_int(s, PPP_FIELD_CODELENGTH, options->set_codelength, 1);
 		switch (ret) {
 		case PPP_ERROR_RANGE:
 			printf("Passcode length must be between 2 and 16.\n");
@@ -368,7 +387,7 @@ static int _update_flags(options_t *options, state *s, int generation)
 	}
 
 	if (options->set_alphabet != -1) {
-		ret = ppp_set_int(s, PPP_FIELD_ALPHABET, options->set_alphabet);
+		ret = ppp_set_int(s, PPP_FIELD_ALPHABET, options->set_alphabet, 1);
 		switch (ret) { 
 		case PPP_ERROR_RANGE:
 			printf("Illegal alphabet ID specified. See "
@@ -385,11 +404,6 @@ static int _update_flags(options_t *options, state *s, int generation)
 			printf("Unexpected error while setting code length.\n");
 			return 1;
 		} 
-	}
-
-	if (ret != 0) {
-		print(PRINT_ERROR, "Error while settings flags.\n");
-		return 1;
 	}
 
 	/* Change flags */

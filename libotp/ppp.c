@@ -603,11 +603,13 @@ int ppp_flag_check(const state *s, int flag)
 
 void ppp_flag_add(state *s, int flag)
 {
+	/* TODO: Check policy */
 	s->flags |= flag;
 }
 
 void ppp_flag_del(state *s, int flag)
 {
+	/* TODO: Check policy */
 	s->flags &= ~flag;
 }
 
@@ -721,7 +723,7 @@ unsigned int ppp_get_int(const state *s, int field)
 	}
 }
 
-int ppp_set_int(state *s, int field, unsigned int arg)
+int ppp_set_int(state *s, int field, unsigned int arg, int check_policy)
 {
 	int ret;
 	switch (field) {
@@ -755,6 +757,7 @@ int ppp_set_int(state *s, int field, unsigned int arg)
 			print(PRINT_WARN, "Illegal set of flags.\n");
 			return PPP_ERROR;
 		}
+		/* TODO: Check policy */
 		s->flags = arg;
 		break;
 

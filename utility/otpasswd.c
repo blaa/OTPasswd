@@ -644,7 +644,7 @@ int main(int argc, char **argv)
 
 
 	if (!cfg) {
-		printf("Unable to read config file from %s\n", CONFIG_PATH);
+		printf("\nUnable to read config file from %s\n", CONFIG_PATH);
 		printf("OTPasswd not correctly installed, consult installation manuals.\n");
 		printf("Consult installation manual for detailed information.\n");
 		print_fini();

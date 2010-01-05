@@ -333,7 +333,7 @@ struct pam_response *ph_query_user(
 	/* Echo on if enforced by "show" option or enabled by user
 	 * and not disabled by "noshow" option
 	 */
-	if ((show == 2) || (show == 1 && (ppp_flag_check(s, FLAG_SHOW)))) {
+	if (show) {
 		message.msg_style = PAM_PROMPT_ECHO_ON;
 	} else {
 		message.msg_style = PAM_PROMPT_ECHO_OFF;

@@ -41,7 +41,7 @@ option(DEBUG "Enable additional debug information" OFF)
 # option( LDAP "Generate code for LDAP" OFF )
 
 
-# If Debug option given - enable coverage tests
+# If PROFILE option given - enable coverage tests
 IF (PROFILE)
   ADD_DEFINITIONS("-static -fprofile-arcs -ftest-coverage")
   LINK_LIBRARIES(gcov)

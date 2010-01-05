@@ -50,7 +50,6 @@ static void _config_defaults(cfg_t *cfg)
 
 		.logging = 2,
 		.silent = 0,
-		.show = 1,
 		.enforce = 0,
 		.retry = 0,
 		.retries = 3,
@@ -101,6 +100,9 @@ static void _config_defaults(cfg_t *cfg)
 
 		.salt_allow = 1,
 		.salt_def = 1,
+
+		.show_def = 1,
+		.show_allow = 1,
 	};
 	*cfg = o;
 }
@@ -277,9 +279,6 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			_COPY(cfg->ldap_dn, equality);
 
 		/* Parsing PAM configuration */
-		} else if (_EQ(line_buf, "show")) {
-			REQUIRE_ARG(0,2);
-			cfg->show = arg;
 		} else if (_EQ(line_buf, "enforce")) {
 			REQUIRE_ARG(0, 1);
 			cfg->enforce = arg;
@@ -366,6 +365,13 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			REQUIRE_ARG(0, 1);
 			cfg->salt_def = arg;
 
+		} else if (_EQ(line_buf, "show_allow")) {
+			REQUIRE_ARG(0, 2);
+			cfg->show_allow = arg;
+		} else if (_EQ(line_buf, "show_def")) {
+			REQUIRE_ARG(0, 1);
+			cfg->show_def = arg;
+
 		} else if (_EQ(line_buf, "allow_state_import")) {
 			REQUIRE_ARG(0, 1);
 			cfg->allow_state_import = arg;
@@ -432,6 +438,37 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 
 	/* TODO Check obvious errors like default value
 	 * out of max/min values */
+	retval = 2;
+	if (cfg->show_allow == 0) {
+		if (cfg->show_def == 1) {
+			print(PRINT_ERROR, "Config error: Default for SHOW inconsistent with policy.\n");
+			goto error;
+		}
+	}
+
+	if (cfg->show_allow == 2) {
+		if (cfg->show_def == 0) {
+			print(PRINT_ERROR, "Config error: Default for SHOW inconsistent with policy.\n");
+			goto error;
+		}
+	}
+
+	if (cfg->salt_allow == 0) {
+		if (cfg->salt_def == 1) {
+			print(PRINT_ERROR, "Config error: Default for SALT inconsistent with policy.\n");
+			goto error;
+		}
+	}
+
+	if (cfg->salt_allow == 2) {
+		if (cfg->salt_def == 0) {
+			print(PRINT_ERROR, "Config error: Default for SALT inconsistent with policy.\n");
+			goto error;
+		}
+	}
+
+
+
 
 	/* All ok? */
 	if (fail)

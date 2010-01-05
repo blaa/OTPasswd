@@ -98,7 +98,7 @@ int state_init(state *s, const char *username)
 	memset(s->contact, 0x00, sizeof(s->contact));
 
 	s->code_length = cfg->passcode_def_length;
-	if (cfg->show != 0)
+	if (cfg->show_def == 1)
 		s->flags = FLAG_SHOW;
 
 	if (cfg->salt_def == 1)

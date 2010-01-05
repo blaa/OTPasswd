@@ -106,13 +106,6 @@ typedef struct {
 	/* How many retries are allowed */
 	int retries;
 
-	/* Shall we echo entered passcode?
-	 * 1 - user selected
-	 * 0 - (noshow) echo disabled
-	 * 2 - (show) echo enabled
-	 */
-	int show;
-
 	/* Do we allow key regeneration (,) prompt? */
 	int key_regeneration_prompt;
 
@@ -224,6 +217,14 @@ typedef struct {
 
 	/* Enabled (1), disabled (1) */
 	int salt_def;
+
+	/* Passcode show policy: 
+	 * Disallow (0) display, allow (1) or enforce (2) display 
+	 */
+	int show_allow;
+
+	/* Show passcodes: Enabled (1), disabled (1) */
+	int show_def;
 } cfg_t;
 
 /* Get options structure or NULL if error happens */
