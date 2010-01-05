@@ -66,8 +66,10 @@ Operation Flags
 .IP "12."
 Static Password Hash
 .IP "13."
-Passcard Label
+Time of Static Password Change
 .IP "14."
+Passcard Label
+.IP "15."
 Channel Contact Information
 .RE
 .PD
@@ -173,6 +175,12 @@ This hash enables recognition of the password if correctly provided
 by user.
 [Type: hex]
 (FIELD_SPASS)
+.\"
+.TP
+\fBTime of Static Password Change\fR
+Timestamp of the last static password change.
+[Type: decimal]
+(FIELD_SPASS_TIME)
 .\"
 .TP
 \fBPasscard Label\fR

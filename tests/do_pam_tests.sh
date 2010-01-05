@@ -16,8 +16,8 @@ sleep 2
 echo "This command WILL DESTROY your state!"
 echo 'We will also remove two directories: ./lcov and ./gcov.'
 echo
-echo 'Starting in 10 seconds'
-sleep 10
+echo 'Starting in 5 seconds'
+sleep 5
 echo Starting...
 sleep 1
 
@@ -48,14 +48,24 @@ make test
 echo "Building PAM testcase"
 (cd tests; make pam_test) || exit 5
 
+# Regenerate state
+yes yes | ./otpasswd -v -f salt=on -f alphabet=1 -f codelength=4 -k
+
+./tests/pam_test root $(./otpasswd -t current)
+
+otpasswd -s 5000 # After last passcode
+
 ./tests/pam_test root $(./otpasswd -t current)
 
 # Cause funny error:
 otpasswd -s 4294967260 # Skip to the last
 otpasswd -a 1234 # Use it up!
+otpasswd -f show=off
 
 ./tests/pam_test root $(./otpasswd -t current)
 
+# Regenerate safe defaults
+yes yes | ./otpasswd -v -f salt=on -f alphabet=1 -f codelength=4 -k
 
 # GCOV version:
 

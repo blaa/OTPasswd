@@ -257,10 +257,10 @@ error:
 }
 
 /* State files constants */
-static const int _version = 7;
-static const char *_delim = ":";
+static const int _version = 8;
+static const char *_delim = ":"; /* Change it also in snprintf in store */
 
-static const int fields = 14;
+static const int fields = 15;
 
 enum {
 	FIELD_USER = 0,
@@ -275,6 +275,7 @@ enum {
 	FIELD_ALPHABET,
 	FIELD_FLAGS,
 	FIELD_SPASS,
+	FIELD_SPASS_TIME,
 	FIELD_LABEL,
 	FIELD_CONTACT,
 };
@@ -519,7 +520,7 @@ int db_file_load(state *s)
 		goto cleanup;
 	}
 
-	if (mpz_set_str(s->channel_time, field[FIELD_CHANNEL_TIME], STATE_BASE) != 0) {
+	if (sscanf(field[FIELD_CHANNEL_TIME], "%zu", &s->channel_time) != 1) {
 		print(PRINT_ERROR, "Error while parsing channel use time.\n");
 		goto cleanup;
 	}
@@ -546,6 +547,12 @@ int db_file_load(state *s)
 			print(PRINT_ERROR, "Error while parsing static password.\n");
 			goto cleanup;
 		}
+
+		if (sscanf(field[FIELD_SPASS_TIME], "%zu", &s->spass_time) != 1) {
+			print(PRINT_ERROR, "Error while parsing static password change time.\n");
+			goto cleanup;
+		}
+
 		s->spass_set = 1;
 	}
 
@@ -639,8 +646,6 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 	char *counter = NULL;
 	char *latest_card = NULL;
 	char *spass = NULL;
-	char *channel_time = NULL;
-
 
 	/* Write using ascii-safe approach */
 	sequence_key = mpz_get_str(NULL, STATE_BASE, s->sequence_key);
@@ -652,25 +657,24 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 	else
 		spass = strdup("");
 
-	channel_time = mpz_get_str(NULL, STATE_BASE, s->channel_time);
-
-	if (!sequence_key || !counter || !latest_card || !channel_time || !spass) {
+	if (!sequence_key || !counter || !latest_card || !spass) {
 		print(PRINT_ERROR, "Error while converting numbers\n");
 		goto error;
 	}
 
-	const char d = _delim[0];
 	tmp = snprintf(buffer, buff_length,
-		      "%s%c%d%c"
-		      "%s%c%s%c%s%c"     /* Key, counter, latest_card */
-		      "%u%c%u%c%s%c"     /* Failures, recent fails, channel time */
-		      "%u%c%u%c%u%c%s%c" /* Codelength, alphabet, flags, spass */
-		      "%s%c%s\n",
-		       s->username, d, _version, d,
-		       sequence_key, d, counter, d, latest_card, d,
-		       s->failures, d, s->recent_failures, d, channel_time, d,
-		       s->code_length, d, s->alphabet, d, s->flags, d, spass, d,
-		       s->label, d, s->contact);
+		       "%s:%d:"	       /* User, version */
+		       "%s:%s:%s:"     /* Key, counter, latest_card */
+		       "%u:%u:%zu:"    /* Failures, recent fails, channel time */
+		       "%u:%u:%u:%s:"  /* Codelength, alphabet, flags, spass */
+		       "%zu:"	       /* Time of spass change */
+		       "%s:%s\n",      /* label, contact */
+		       s->username, _version,
+		       sequence_key, counter, latest_card,
+		       s->failures, s->recent_failures, s->channel_time, 
+		       s->code_length, s->alphabet, s->flags, spass, 
+		       s->spass_time,  
+		       s->label, s->contact);
 	if (tmp < 10 || tmp == buff_length) {
 		print(PRINT_ERROR, "Error while writing data to state file.");
 		goto error;
@@ -681,7 +685,6 @@ error:
 	free(sequence_key);
 	free(counter);
 	free(latest_card);
-	free(channel_time);
 	free(spass);
 	return retval;
 }

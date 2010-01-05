@@ -20,6 +20,7 @@
 #define _STATE_H_
 
 #include <gmp.h>
+#include <time.h>
 #include "ppp_common.h"
 
 /*** Config ***/
@@ -55,6 +56,9 @@ typedef struct {
 	mpz_t spass;
 	int spass_set; /* Bool: 0 - not set, 1 - set */
 
+	/* Timestamp of the last change of static password */
+	time_t spass_time;
+
 	/* Card label (might be zeroed, then hostname is used) */
 	char label[STATE_LABEL_SIZE];
 
@@ -69,7 +73,7 @@ typedef struct {
 	unsigned int recent_failures;
 
 	/* UNIX timestamp of latest channel usage */
-	mpz_t channel_time;
+	time_t channel_time;
 
 	/*** Temporary / not-saved data ***/
 	char *prompt; /* Keep it here so we can safely dispose of it */

@@ -723,7 +723,7 @@ unsigned int ppp_get_int(const state *s, int field)
 	}
 }
 
-int ppp_set_int(state *s, int field, unsigned int arg, int check_policy)
+int ppp_set_int(state *s, int field, unsigned int arg, int options)
 {
 	int ret;
 	switch (field) {
@@ -736,6 +736,7 @@ int ppp_set_int(state *s, int field, unsigned int arg, int check_policy)
 		break;
 
 	case PPP_FIELD_CODELENGTH:
+		/* Always check policy */
 		ret = ppp_verify_code_length(arg);
 		if (ret != 0)
 			return ret;
@@ -744,6 +745,7 @@ int ppp_set_int(state *s, int field, unsigned int arg, int check_policy)
 		break;
 
 	case PPP_FIELD_ALPHABET:
+		/* Always check policy */
 		ret = ppp_verify_alphabet(arg);
 		if (ret != 0)
 			return ret;
@@ -757,7 +759,11 @@ int ppp_set_int(state *s, int field, unsigned int arg, int check_policy)
 			print(PRINT_WARN, "Illegal set of flags.\n");
 			return PPP_ERROR;
 		}
-		/* TODO: Check policy */
+
+		if (options & PPP_CHECK_POLICY) {
+			/* TODO: Check policy */
+		}
+
 		s->flags = arg;
 		break;
 
@@ -881,8 +887,9 @@ int ppp_get_str(state *s, int field, const char **arg)
 	return 0;
 }
 
-int ppp_set_str(state *s, int field, const char *arg, int check_policy)
+int ppp_set_str(state *s, int field, const char *arg, int options)
 {
+	const int check_policy = options & PPP_CHECK_POLICY;
 	cfg_t *cfg = cfg_get();
 
 	assert(cfg);

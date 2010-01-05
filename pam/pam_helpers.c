@@ -61,10 +61,6 @@ int ph_parse_module_options(int flags, int argc, const char **argv, cfg_t *cfg)
 	}
 
 	return 0;
-
-error:
-	print(PRINT_ERROR, "Error while parsing parameters\n");
-	return PAM_AUTH_ERR;
 }
 
 int ph_out_of_band(const cfg_t *cfg, state *s)

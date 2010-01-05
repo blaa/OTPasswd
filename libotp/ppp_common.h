@@ -90,8 +90,7 @@ enum ppp_errors {
 	PPP_ERROR_RANGE = 104,
 };
 
-
-enum flags {
+enum ppp_flags {
 	FLAG_SHOW = 1,
 	/* User disabled by administrator */
 	FLAG_DISABLED = 2,
@@ -100,6 +99,21 @@ enum flags {
 	/* FLAG_SKIP removed */
 	/* FLAG_ALPHABET_EXTENDED removed */
 };
+
+/* Warning conditions which may happen */
+enum ppp_warning {
+	PPP_WARN_OK = 0,		/* No warning condition */
+	PPP_WARN_LAST_CARD = 1,		/* User on last printed card */
+	PPP_WARN_NOTHING_LEFT = 2,	/* Used up all printed passcodes */
+	PPP_WARN_RECENT_FAILURES = 4,	/* There were some failures */	
+};
+
+
+/* Flag-like options to some ppp functions */
+enum ppp_options {
+	PPP_CHECK_POLICY = 1,
+};
+
 
 #endif
 

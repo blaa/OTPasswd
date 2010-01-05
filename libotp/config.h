@@ -139,6 +139,9 @@ typedef struct {
 	/* uid, gid of a safe, non-root user who can run OOB script */
 	uid_t oob_uid, oob_gid; 
 
+	/* Delay in seconds between two consecutive uses of oob */
+	int oob_delay;
+
 	/***
 	 * Policy configuration
 	 * 1 - enable, 0 - disable

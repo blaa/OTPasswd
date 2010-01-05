@@ -134,6 +134,7 @@ static void _config_defaults(cfg_t *cfg)
 		.oob_path = "/etc/otpasswd/otpasswd_oob.sh",
 		.oob_uid = -1,
 		.oob_gid = -1,
+		.oob_delay = 10,
 
 		.allow_key_generation = 1,
 		.allow_key_regeneration = 1,
@@ -368,6 +369,9 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 		} else if (_EQ(line_buf, "oob")) {
 			REQUIRE_ARG(0, 2);
 			cfg->oob = arg;
+		} else if (_EQ(line_buf, "oob_delay")) {
+			REQUIRE_ARG(0, 172800);
+			cfg->oob_delay = arg;
 		} else if (_EQ(line_buf, "oob_user")) {
 			struct passwd *pwd;
 			pwd = getpwnam(equality);

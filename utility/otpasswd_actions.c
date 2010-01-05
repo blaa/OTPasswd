@@ -214,7 +214,7 @@ static void _show_keys(const state *s)
 	mpz_add_ui(unsalted_counter, unsalted_counter, 1);
 
 	if (cfg->allow_key_print == 1 || security_is_root()) {
-		/* Print key in LSB as PPP likes */
+		/* Print key in LSB as PPPv3 likes */
 		printf("Key     = "); num_print(s->sequence_key, 64);
 		printf("\n");
 
@@ -304,7 +304,8 @@ static int _update_flags(options_t *options, state *s, int generation)
 
 	/* Length of contact/label is ensured in process_cmd_line */
 	if (options->contact) {
-		ret = ppp_set_str(s, PPP_FIELD_CONTACT, options->contact, !security_is_root());
+		ret = ppp_set_str(s, PPP_FIELD_CONTACT, options->contact,
+				  security_is_root() ? 0 : PPP_CHECK_POLICY);
 
 		switch (ret) {
 		case PPP_ERROR_ILL_CHAR:
@@ -335,7 +336,8 @@ static int _update_flags(options_t *options, state *s, int generation)
 	}
 
 	if (options->label) {
-		ret = ppp_set_str(s, PPP_FIELD_LABEL, options->label, !security_is_root());
+		ret = ppp_set_str(s, PPP_FIELD_LABEL, options->label,
+				  security_is_root() ? 0 : PPP_CHECK_POLICY);
 		switch (ret) {
 		case PPP_ERROR_ILL_CHAR:
 			printf(
@@ -835,6 +837,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 			crypto_sha256((unsigned char *)options->action_arg, len, sha_buf);
 			num_from_bin(s->spass, sha_buf, sizeof(sha_buf));
 			s->spass_set = 1;
+			s->spass_time = time(NULL);
 			printf("Static password set.\n\n");
 		}
 

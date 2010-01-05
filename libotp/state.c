@@ -90,6 +90,8 @@ int state_init(state *s, const char *username)
 	s->failures = 0;
 	s->recent_failures = 0;
 	s->spass_set = 0;
+	s->spass_time = 0;
+	s->channel_time = 0;
 	s->lock = -1;
 
 	s->prompt = NULL;
@@ -118,7 +120,6 @@ int state_init(state *s, const char *username)
 	mpz_init(s->sequence_key);
 	mpz_init(s->latest_card);
 	mpz_init(s->current_card);
-	mpz_init(s->channel_time);
 
 	mpz_init(s->max_card);
 	mpz_init(s->max_code);
@@ -143,7 +144,6 @@ void state_fini(state *s)
 	mpz_clear(s->latest_card);
 	mpz_clear(s->current_card);
 	mpz_clear(s->spass);
-	mpz_clear(s->channel_time);
 	mpz_clear(s->salt_mask);
 	mpz_clear(s->code_mask);
 	mpz_clear(s->max_card);

@@ -59,13 +59,6 @@ extern void ppp_calculate(state *s);
 /* Print to stdout all acceptable alphabets with IDs */
 extern void ppp_alphabet_print(void);
 
-enum ppp_warning{
-	PPP_WARN_OK = 0,		/* No warning condition */
-	PPP_WARN_LAST_CARD = 1,		/* User on last printed card */
-	PPP_WARN_NOTHING_LEFT = 2,	/* Used up all printed passcodes */
-	PPP_WARN_RECENT_FAILURES = 4,	/* There were some failures */
-	
-};
 /* Returns an ORed mask of warning conditions */
 extern int ppp_get_warning_conditions(const state *s);
 
@@ -135,8 +128,8 @@ extern int ppp_get_mpz(const state *s, int field, mpz_t arg);
  * Returns 0 on success and 1 if field is incorrect. */
 extern int ppp_get_str(state *s, int field, const char **arg);
 
-/* Int argument setter */
-extern int ppp_set_int(state *s, int field, unsigned int arg, int check_policy);
+/* Int argument setter. options might equal PPP_CHECK_POLICY. */
+extern int ppp_set_int(state *s, int field, unsigned int arg, int options);
 
 /* Copy nul-terminated data passed as arg into state.
  * This function checks length of destination buffer
@@ -144,8 +137,9 @@ extern int ppp_set_int(state *s, int field, unsigned int arg, int check_policy);
  * May return 1 if field is wrong (but will rather die).
  * Will return 2 if denied by policy
  * Will return 3 if too big 
+ * "options" might equal PPP_CHECK_POLICY.
  */
-extern int ppp_set_str(state *s, int field, const char *arg, int check_policy);
+extern int ppp_set_str(state *s, int field, const char *arg, int options);
 
 /* Setter/getter/checker for flag fields. No policy checking now */
 /* Check if flag is set in state, add flag and remove flag. */
