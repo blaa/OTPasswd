@@ -120,8 +120,9 @@ static void _usage(int argc, const char **argv)
 		"           disable=<on|off>\n"
 		"                         Disable user without removing his data.\n"
 		"\n"
-		"  -p, --password <pass>\n"
-		"           Set static password. Use empty (i.e. "") to unset.\n"
+		"  -p=<pass>, --password=<pass>\n"
+		"           Set static password. Equal sign is obligatory as the argument\n"
+	        "           is optional. Use without argument and equal-sign to unset password\n"
 		"\n"
 		"  -u, --user <username|UID>\n"
 		"           Operate on state of specified user. Administrator-only option.\n"
@@ -258,7 +259,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		/* Flags */
 		{"info",		no_argument,		0, OPTION_INFO},
 		{"flags",		required_argument,	0, OPTION_FLAGS},
-		{"password",		required_argument,	0, OPTION_SPASS},
+		{"password",		optional_argument,	0, OPTION_SPASS},
 		{"user",		required_argument,	0, OPTION_USER},
 		{"verbose",		no_argument,		0, OPTION_VERBOSE},
 		{"check",		no_argument,		0, OPTION_CHECK},
@@ -273,7 +274,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 
 /* FIXME: Remove this old entry */
 /*	int c = getopt_long(argc, argv, "krs:t:l:P:a:wf:p:d:c:vu:h", long_options, &option_index); */
-		int c = getopt_long(argc, argv, "krs:t:l:P:a:wif:p:vu:h", long_options, &option_index);
+		int c = getopt_long(argc, argv, "krs:t:l:P:a:wif:p::vu:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1) {
@@ -301,10 +302,8 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		case OPTION_HELP:
 		case OPTION_INFO:
 			/* Error unless there was flag defined for key generation */
-			if (options->action != 0 && (
-				    options->action != OPTION_FLAGS 
-				    && c != OPTION_KEY
-			)) {
+			if (options->action != 0 &&
+			    !(options->action == OPTION_FLAGS && c == OPTION_KEY)) {
 				printf("Only one action can be specified on the command line\n");
 				return 1;
 			}

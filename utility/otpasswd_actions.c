@@ -824,13 +824,18 @@ int action_flags(options_t *options, const cfg_t *cfg)
 
 	case OPTION_SPASS:
 	{
-		assert(options->action_arg);
-		const int len = strlen(options->action_arg);
+		int len;
 		unsigned char sha_buf[32];
+
+		if (options->action_arg)
+			len = strlen(options->action_arg);
+		else
+			len = 0;
+
 		if (len == 0) {
 			s->spass_set = 0;
 			mpz_set_ui(s->spass, 0);
-			printf("Turning off static password.\n\n");
+			printf("Turning off static password.\n");
 		} else {
 			/* Change static password */
 			/* TODO: Ensure its length/difficulty */
@@ -838,7 +843,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 			num_from_bin(s->spass, sha_buf, sizeof(sha_buf));
 			s->spass_set = 1;
 			s->spass_time = time(NULL);
-			printf("Static password set.\n\n");
+			printf("Static password set.\n");
 		}
 
 		save_state = 1;
@@ -858,17 +863,12 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		assert(0);
 
 	default:
-		printf("You should never end up here\n");
+		printf("You should never end up here.\n");
 		assert(0);
 	}
 
 	retval = 0;
 cleanup:
-	if (retval == 0 && options->action != OPTION_ALPHABETS) {
-		printf("Your current flags:\n");
-		_show_flags(s);
-	}
-
 	/* save_state musn't be true if retval is */
 	assert(!(retval && save_state));
 
