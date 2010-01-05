@@ -845,7 +845,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		break;
 	}
 
-	case OPTION_SHOW_STATE: /* List */
+	case OPTION_INFO: /* State info */
 		printf("User    = %s\n", s->username);
 		_show_keys(s);
 

@@ -32,6 +32,7 @@ enum {
 	OPTION_AUTH    = 'a',
 	OPTION_WARN    = 'w',
 
+	OPTION_INFO    = 'i',
 	OPTION_FLAGS   = 'f',
 	OPTION_SPASS   = 'p',
 	OPTION_USER    = 'u',
@@ -41,7 +42,6 @@ enum {
 	OPTION_HELP    = 'h',
 
 	/* Other which aren't user UI options */
-	OPTION_SHOW_STATE = 'L',
 	OPTION_ALPHABETS = 'A',
 };
 

@@ -90,9 +90,10 @@ static void _usage(int argc, const char **argv)
 		"  next or [next] - first, not yet printed, passcard\n"
 		"\n"
 		"Configuration:\n"
+	        "  -i, --info\n"
+	        "           Print current state and configuration.\n"
 		"  -f, --flag <arg>\n"
 		"           Manages various settings:\n"
-		"           list          print current state and configuration.\n"
 		"           show=<on|off> configure visibility of passcode during\n"
 		"                         authentication.\n"
 		"           alphabet=<ID|list>\n"
@@ -170,16 +171,7 @@ int parse_flag(options_t *options, const char *arg)
 		options->flag_clear_mask |= FLAG_DISABLED;
 	else if (strcmp(arg, "disable=on") == 0)
 		options->flag_set_mask |= FLAG_DISABLED;
-	else if (strcmp(arg, "list") == 0) {
-		if (options->action != OPTION_FLAGS) {
-			printf("Only one action can be specified on the command line\n"
-			       "and you can't mix \"list\" flag with other flags.\n");
-			return 1;
-		}
-
-		/* List! Instead of changing flags. */
-		options->action = OPTION_SHOW_STATE;
-	} else if (strcmp(arg, "alphabet=list") == 0) {
+	else if (strcmp(arg, "alphabet=list") == 0) {
 		if (options->action != OPTION_FLAGS) {
 			printf("Only one action can be specified on the command line\n"
 			       "and you can't mix alphabet listing with other flags.\n");
@@ -264,6 +256,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		{"warning",		no_argument,		0, OPTION_WARN},
 
 		/* Flags */
+		{"info",		no_argument,		0, OPTION_INFO},
 		{"flags",		required_argument,	0, OPTION_FLAGS},
 		{"password",		required_argument,	0, OPTION_SPASS},
 		{"user",		required_argument,	0, OPTION_USER},
@@ -280,7 +273,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 
 /* FIXME: Remove this old entry */
 /*	int c = getopt_long(argc, argv, "krs:t:l:P:a:wf:p:d:c:vu:h", long_options, &option_index); */
-		int c = getopt_long(argc, argv, "krs:t:l:P:a:wf:p:vu:h", long_options, &option_index);
+		int c = getopt_long(argc, argv, "krs:t:l:P:a:wif:p:vu:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1) {
@@ -306,6 +299,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		case OPTION_REMOVE:
 		case OPTION_CHECK:
 		case OPTION_HELP:
+		case OPTION_INFO:
 			/* Error unless there was flag defined for key generation */
 			if (options->action != 0 && (
 				    options->action != OPTION_FLAGS 
@@ -448,10 +442,10 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 		retval = action_key(options, cfg);
 		break;
 
-	case OPTION_SHOW_STATE: 
 	case OPTION_ALPHABETS:
 	case OPTION_FLAGS:
 	case OPTION_SPASS:
+	case OPTION_INFO:
 		retval = action_flags(options, cfg);
 		break;
 
