@@ -141,10 +141,11 @@ static void _usage(int argc, const char **argv)
 		"  is recommended as it enables OTPasswd to display warnings when user\n"
 		"  reaches his last printed passcard.\n"
 		"\nExamples:\n"
-		"%s -f salt=off --key    generate new (not salted) key\n"
-		"%s --text '[3]'         print third passcard to standard output\n"
-		"%s --text current       print current passcode\n"
-		"%s --flag codelength=5  use 5-character long passcodes\n"
+		"%s --flagf salt=off --key    generate new (not salted) key\n"
+		"%s --text next               print first not-yet-printed passcard\n"
+		"%s --text '[3]'              print third passcard to standard output\n"
+		"%s --text current            print current passcode\n"
+		"%s --flag codelength=5       use 5-character long passcodes\n"
 		"Generate a 6 passcards on A4 page using LaTeX:\n"
 		"%s --latex next > tmp.latex\n"
 		"pdflatex tmp.latex\n",
@@ -378,8 +379,9 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			break;
 
 		default:
-			printf("Got %d %c\n", c, c);
+			printf("Program error. You shouldn't end up here.\n");
 			assert(0);
+			goto error;
 		}
 	}
 
@@ -499,6 +501,12 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 				retval = 0;
 			}
 		}
+
+	default:
+		printf("Program error. You shouldn't end up here.\n");
+		assert(0);
+		retval = 1;
+		goto cleanup;
 	}
 
 

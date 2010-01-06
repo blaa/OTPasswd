@@ -914,13 +914,13 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		retval = 0;
 		goto cleanup;
 
+	default:
 	case OPTION_ALPHABETS:
 		/* List alphabets ought be done before */
+		printf("Program error. You should never end up here.\n");
 		assert(0);
-
-	default:
-		printf("You should never end up here.\n");
-		assert(0);
+		retval = 1;
+		goto cleanup;
 	}
 
 	retval = 0;

@@ -328,6 +328,12 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 		} else if (_EQ(line_buf, "db_global")) {
 			_COPY(cfg->global_db_path, equality);
 		} else if (_EQ(line_buf, "db_user")) {
+			if (strchr(equality, '/') != NULL) {
+				print(PRINT_ERROR,
+				      "DB_USER config option musn't contain slashes. "
+				      "Error at %d line in config file\n", line_count);
+				goto error;
+			}
 			_COPY(cfg->user_db_path, equality);
 
 		/* SQL Configuration */

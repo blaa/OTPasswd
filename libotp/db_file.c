@@ -227,6 +227,8 @@ static int _db_path(const char *username, char **db, char **lck, char **tmp)
 	default:
 		/* We should not be called with this options never */
 		assert(0);
+		retval = 1;
+		goto error;
 	}
 
 	const int db_len = strlen(*db);
