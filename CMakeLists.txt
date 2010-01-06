@@ -108,6 +108,10 @@ INSTALL(TARGETS pam_otpasswd otpasswd
 INSTALL(FILES examples/otpasswd-login DESTINATION /etc/pam.d)
 INSTALL(FILES examples/otpasswd.conf DESTINATION /etc/otpasswd)
 
+INSTALL(FILES docs/otpasswd.1 DESTINATION /usr/share/man/man1)
+INSTALL(FILES docs/otpasswd.5 DESTINATION /usr/share/man/man5)
+INSTALL(FILES docs/pam_otpasswd.8 DESTINATION /usr/share/man/man8)
+
 
 ##
 # Tests / Coverage

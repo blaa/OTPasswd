@@ -13,4 +13,4 @@ pam_test: pam_test.c
 	gcc -o $@ -Wall -lpam -O0 -ggdb $<
 
 clean:
-	rm -f lock suid test_lck *.o
+	rm -f lock suid test_lck *.o pam_test

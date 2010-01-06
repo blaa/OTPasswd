@@ -11,6 +11,7 @@ ChangeLog / TODO
 Trying to sort tasks according to their priority.
 
 2009-12-13 v0.5
+Done:
         * [+] Check bit distribution for alphabets not divisible by 2
         * [+] Remove dont-skip option.
         * [+] GMP might leak information with reallocs of it's mpz_t
@@ -56,6 +57,14 @@ Trying to sort tasks according to their priority.
         * [+] Fix user interface a bit.
         * [+] Keeping track of failures.
 	      Implemented, but not tested.
+        * [+] Any possibility to change directory from /etc/otpasswd?
+	      This is going to be compile time option. Also otshadow 
+	      will be required to reside inside.
+        * [+] right trim values from config?
+        * [+] Check custom alphabet correction (whitespaces or multiple
+              occurences of same character not allowed.
+
+TODO Major:
 	* [?] Logging warnings printed to user at WARN level
 	* [?] Key quality checking (duplicates)
 	* [?] Verify SIGCHLD won't clobber anything.
@@ -63,17 +72,12 @@ Trying to sort tasks according to their priority.
               errors in the first place.
         * [%] Should we start suid root then drop to some config-defined user
               so attacker who breaks otpasswd can't modify the executable?
-        * [?] Check custom alphabet correction (whitespaces or multiple
-              occurences of same character not allowed.
-        * [?] Any possibility to change directory from /etc/otpasswd?
-              There's config so it can't be defined there.
+	      Probably yes. Two modes of operation.
         * [?] Global DB should work with users which aren't in passwd.
         * [?] Check if lock files are links. if so. fail. Or rather always unlink
               before overwritting.
         * [?] Logging into syslog from utility if SUID; Also deny -v.
         * [?] Security: Do we need to change something regarding ulimits?
-        * [?] Add error_t and bool_t to differentiate differently
-              used ints?
         * [-] Implement static passwords;
               They might be required always or just to perform some commands
               like second-channel usage.
@@ -87,11 +91,12 @@ Trying to sort tasks according to their priority.
 	      * Lots of things done in direction to finish this task
         * [-] Scan all FIXME/TODO entries
         * [?] Use locales for user messages [_("")? ]
-        * [-] right trim values from config?
         * [?] SELinux compatibility.
         * [?] Import/export of ascii state lines...
 
-        Low-priority:
+Todo Minor:
+        * [?] Add error_t and bool_t to differentiate differently
+              used ints?
         * [?] Improve LaTeX output (some colors, borders?)
         * [?] Incorporate SSH key fingerprints on passcards?
 	      Use some file as passcard background, allow hook

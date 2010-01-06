@@ -10,5 +10,6 @@ install_manifest.txt
 CTestTestfile.cmake
 lcov
 gcov
+Testing
 otpasswd.info
 patches

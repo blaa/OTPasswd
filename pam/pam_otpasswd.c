@@ -223,7 +223,7 @@ exit:
 	ph_fini(s);
 
 	/* Ignore us, even if we fail. */
-	return PAM_SUCCESS;
+	return PAM_IGNORE;
 }
 
 
