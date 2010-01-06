@@ -732,10 +732,11 @@ int action_key(options_t *options, const cfg_t *cfg)
 			goto cleanup;
 		}
 
-		printf("Your current flags (updated with command line options):\n");
+		printf("This is your previous configuration updated with command line options:\n");
 		_show_flags(&s);
+		printf("You can either use it, or start with default one (modified by any --config options).\n");
 		if (_enforced_yes_or_no(
-			    "Type \"yes\" to use those, or \"no\" to start with updated defaults?") == QUERY_NO) {
+			    "Do you want to keep this configuration?") == QUERY_NO) {
 			printf("Reverting to defaults.\n");
 			state_fini(&s);
 			state_init(&s, options->username);
@@ -794,7 +795,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 	free(card);
 
 	do {
-		ret = _yes_or_no("Are you ready to start using one-time passwords?");
+		ret = _yes_or_no("Are you ready to start using this one-time passwords?");
 		if (ret == 1) {
 			printf("Please answer 'yes' or 'no'.\n");
 			continue;
@@ -935,9 +936,9 @@ cleanup:
 		/* If we were supposed to change something print the result... */
 		if (options->action != OPTION_INFO) {
 			if (save_state)
-				printf("Flags updated.\n");
+				printf("Configuration updated.\n");
 			else
-				printf("Flags not changed.\n");
+				printf("Configuration not changed.\n");
 		}
 	}
 	return retval;

@@ -141,15 +141,15 @@ static void _usage(int argc, const char **argv)
 		"  is recommended as it enables OTPasswd to display warnings when user\n"
 		"  reaches his last printed passcard.\n"
 		"\nExamples:\n"
-		"%s --flagf salt=off --key    generate new (not salted) key\n"
+		"%s --config salt=off --key   generate new (not salted) key\n"
 		"%s --text next               print first not-yet-printed passcard\n"
 		"%s --text '[3]'              print third passcard to standard output\n"
 		"%s --text current            print current passcode\n"
-		"%s --flag codelength=5       use 5-character long passcodes\n"
+		"%s --config codelength=5     use 5-character long passcodes\n"
 		"Generate a 6 passcards on A4 page using LaTeX:\n"
 		"%s --latex next > tmp.latex\n"
 		"pdflatex tmp.latex\n",
-		prog_name, prog_name, prog_name, prog_name, prog_name, prog_name
+	        prog_name, prog_name, prog_name, prog_name, prog_name, prog_name, prog_name
 	);
 }
 
@@ -223,7 +223,7 @@ int parse_flag(options_t *options, const char *arg)
 
 	/* Verify user don't want to unset and set at the same time */
 	if (options->flag_set_mask & options->flag_clear_mask) {
-		printf("Illegal set of flags defined.\n");
+		printf("Illegal configuration defined.\n");
 		return 1;
 	}
 

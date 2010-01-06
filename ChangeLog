@@ -93,6 +93,8 @@ TODO Major:
         * [?] Use locales for user messages [_("")? ]
         * [?] SELinux compatibility.
         * [?] Import/export of ascii state lines...
+	* [%] User can always remove DISABLED flag if he can regenerate state.
+	      Should he be allowed to do this?
 
 Todo Minor:
         * [?] Add error_t and bool_t to differentiate differently
