@@ -155,8 +155,6 @@ static void _usage(int argc, const char **argv)
 /* Parsing is done here, policy checking in _update_flags */
 int parse_flag(options_t *options, const char *arg)
 {
-	const cfg_t *cfg = cfg_get();
-	assert(cfg);
 	assert(arg);
 
 	/*** Booleans/specials support ***/
@@ -451,6 +449,8 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 		print_fini();
 		if (ret == 0)
 			retval = 1;
+		else
+			retval = 0;
 		break;
 	case OPTION_VERSION:
 		retval = action_license(options, cfg);
@@ -555,7 +555,15 @@ int main(int argc, char **argv)
 		printf("OTPasswd not correctly installed, consult installation manuals.\n");
 		printf("Consult installation manual for detailed information.\n");
 		print_fini();
-		exit(EXIT_FAILURE);
+		return 1;
+	}
+
+	/* Database unconfigured */
+	if (cfg->db == CONFIG_DB_UNCONFIGURED) {
+		printf("Configuration error. You have to "
+		       "edit otpasswd.conf and select DB option.\n");
+		print_fini();
+		return 1;
 	}
 
 	/* If DB is global, mysql or ldap we should be SGID/SUID */
@@ -602,10 +610,8 @@ int main(int argc, char **argv)
 
 	}
 
-
 	if (ret != 0)
 		return ret;
-
 
 	ret = perform_action(argc, argv, &options, cfg);
 	return ret;

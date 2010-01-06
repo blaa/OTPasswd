@@ -37,6 +37,7 @@ enum CONFIG_DB_TYPE {
 	/* Feature database backends */
 	CONFIG_DB_MYSQL = 2,
 	CONFIG_DB_LDAP = 3,
+	CONFIG_DB_UNCONFIGURED = 10
 };
 
 /* Fields */

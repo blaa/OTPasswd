@@ -420,9 +420,20 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
 
 	if (!*cfg) {
 		print(PRINT_ERROR, "Unable to read config file\n");
+		/* FIXME: Should incorrect config lock out from logging? */
 		retval = PAM_SERVICE_ERR;
 		goto error;
 	}
+
+	/* Database unconfigured */
+	if ((*cfg)->db == CONFIG_DB_UNCONFIGURED) {
+		retval = PAM_IGNORE;
+		print(PRINT_ERROR,
+		      "Configuration error. You have to "
+		      "edit otpasswd.conf and select DB\n");
+		goto error;
+	}
+
 
 	/* Parse additional options passed to module */
 	retval = ph_parse_module_options(flags, argc, argv, *cfg);
