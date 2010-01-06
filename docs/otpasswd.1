@@ -3,18 +3,26 @@
 .\"
 .\"   Copyright (c) 2010 Tomasz bla Fortuna
 .\"
-.\"   Permission is granted to copy, distribute and/or modify this document
-.\"   under the terms of the GNU Free Documentation License, Version 1.3
-.\"   or any later version published by the Free Software Foundation;
-.\"   with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
-.\"   A copy of the license is included in the main directory of the OTPasswd
-.\"   source package in the LICENSE.FDL file.
+.\"   This file is part of OTPasswd.
+.\"
+.\"   OTPasswd is free software: you can redistribute it and/or modify
+.\"   it under the terms of the GNU General Public License as published
+.\"   by the Free Software Foundation, either version 3 of the License,
+.\"   or any later version.
+.\"
+.\"   OTPasswd is distributed in the hope that it will be useful, but
+.\"   WITHOUT ANY WARRANTY; without even the implied warranty of
+.\"   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\"   GNU General Public License for more details.
+.\"
+.\"   You should have received a copy of the GNU General Public License
+.\"   along with OTPasswd.  If not, see <http://www.gnu.org/licenses/>.
 .\"
 .\"   Author:  R Hannes Beinert & Tomasz bla Fortuna
 .\"   Version: otpasswd v0.5beta
-.\"   Update:  04-Jan-10
+.\"   Update:  06-Jan-10
 .\"
-.TH OTPASSWD 1 2010-01-04 "OTPasswd v0.5beta" "OTPasswd User Manual"
+.TH OTPASSWD 1 2010-01-06 "OTPasswd v0.5beta" "OTPasswd User Manual"
 .\"
 .SH NAME
 otpasswd \- One-time password management utility
@@ -35,7 +43,7 @@ the system administrator must determine where the system will keep
 the user configuration data (user state).
 The administrator will likely also configure the system by making various
 policy choices,
-such as how long passcodes must be, how often keys should be changed,
+such as how long passcodes must be, how complicated the static password should be,
 which passcode alphabet will be used, etc.
 Subsequently, users will probably also make some configuration choices
 \- to the degree they are permitted by policy \-
@@ -55,10 +63,7 @@ and the user will have a chance to authenticate.
 .TP
 \fB\-k\fR, \fB\-\-key\fR
 Generate a new key.
-May be combined with
-\fB\-\-flag\fR (\fB\-f\fR),
-\fB\-\-label\fR (\fB\-d\fR) and
-\fB\-\-contact\fR (\fB\-c\fR).
+May be combined with the \fB\-\-config\fR (\fB\-c\fR) option.
 If the user already has state information present,
 \fBotpasswd\fR can either use the system default user state configuration,
 or it can continue to use the the previously configured user state.
@@ -113,64 +118,62 @@ affect the user's ability to login.
 .\"
 .SS Configuration
 .TP
-\fB\-f\fR, \fB\-\-flag\fR \fIflag\fR
+\fB\-i\fR, \fB\-\-info\fR
+Display current user state configuration.
+\."
+.TP
+\fB\-c\fR, \fB\-\-config\fR \fIitem\fR
 Set various flags which regulate \fBOTPasswd\fR system behavior:
-.PD 0
 .RS
 .RS +4m
-.TP +16m
-\fBshow\fR
-Show passcode when authenticating. (default)
-.TP +16m
-\fBdont\-show\fR
-Do not show passcode when authenticating.
-.TP +16m
-\fBalphabet\-\fIX\fR
-Sets the alphabet to be used,
-where \fIX\fR can be an \fIID\fR or the '\fIlist\fR' command,
-which will print the \fIID\fRs of all available alphabets.
-By default, the 64-character alphabet is used.
-.TP +16m
-\fBcodelength\-\fInum\fR
-Set passcode length to \fInum\fR characters,
-where \fInum\fR may be between 2 and 16.
-(Default: \fBcodelength\-4\fR)
-.TP +16m
-\fBno\-salt\fR
+.TP +8m
+\fBshow=\fR( \fIon\fR | \fIoff\fR )
+Configure passcode visibility during authentication.
+.TP +8m
+\fBalphabet=\fR( \fIID\fR | \fIlist\fR )
+Sets the \fIID\fR of the alphabet to be used.
+The \fIlist\fR keyword may be used to display
+a list of all available alphabets.
+By default, a 64-character alphabet is used.
+.TP +8m
+\fBcodelength=\fR\fIlength\fR
+Set the number of passcode characters to \fIlength\fR.
+\fIlength\fR may be any value between 2 and 16.
+Four (4) character passcodes are used by default.
+.TP +8m
+\fBsalt=\fR( \fIon\fR | \fIoff\fR )
 Meaningful only during key generation.
-Disables salting of the passcode counter.
-Enabling this option will make \fBOTPasswd\fR compatible with the
-PPPv3.1 specification.
-It has the additional consequence of increasing the number of
-available passcards while (theoretically) lowering the security of the system.
-.TP +16m
-\fBsalt\fR
-Enables salting of key if not enabled by default.
-.TP +16m
-\fBlist\fR
-Display current user state information.
-.RE
-.RE
-.PD
-.\"
-.TP
-\fB\-p\fR, \fB\-\-password\fR \fIpassword\fR
-Set the static password.
-To clear it, use an empty string ("").
-.\"
-.TP
-\fB\-c\fR, \fB\-\-contact\fR \fIstring\fR
+Enables or disables salting of the passcode counter.
+Setting this option to \fIoff\fR will make \fBOTPasswd\fR
+compatible with the PPPv3.1 specification.
+This has the additional consequence of increasing the number
+of available passcards while (theoretically) lowering the
+security of the system.
+.TP +8m
+\fBdisable=\fR( \fIon\fR | \fIoff\fR )
+Disable the user.
+Unlike \fB--remove\fR, this will \fInot\fR delete the user's state information.
+.TP +8m
+\fBcontact=\fR\fIstring\fR
 Set contact information to \fIstring\fR.
 This is used when passcodes are sent via an out-of-band channel.
 The exact interpretation of \fIstring\fR will depend on the user configuration,
-but could be a phone number, IM username, or email address.
+but could be a phone number, IM username, email address, etc.
 Use an empty string ("") to unset this value.
-.\"
-.TP
-\fB\-d\fR, \fB\-\-label\fR \fItitle\fR
+.TP +8m
+\fBlabel=\fR\fItitle\fR
 Set a title for the generated passcards.
 This will be displayed at the top of every passcard.
-If no value has been set, the current hostname will be used by default.
+Use an empty string ("") to clear this value,
+in which case the current hostname will be used by default.
+.RE
+.RE
+.\"
+.TP
+\fB\-p=\fR\fIpassword\fR, \fB\-\-password=\fR\fIpassword\fR
+Set the static password.
+Use an empty string ("") to delete the password.
+(FIXME: This must change :-)
 .\"
 .TP
 \fB\-u\fR, \fB\-\-user\fR ( \fIusername\fR | \fIUID\fR )
@@ -196,6 +199,7 @@ Program usage and option help information.
 .TP
 \fB\-\-check\fR
 Run \fBotpasswd\fR internal self-tests.
+Note that this assumes a default configuration.
 .\"
 .SS Parameter References
 When an option accepts a passcode reference (\fIcode\fR),
@@ -234,6 +238,7 @@ The passcard containing the current passcode.
 .TP +10m
 \fB[next]\fR
 The first unprinted passcard.
+Brackets are optional.
 .RE
 .PD
 .\"
@@ -314,7 +319,7 @@ See DOCUMENTATION, below.
 .PP
 Note that for \fBOTPasswd\fR to operate in a manner which is
 strictly compatible with PPPv3, it is important to specify
-the \fB\-\-flag no\-salt\fR option during key generation.
+the \fB\-\-config salt=no\fR option during key generation.
 A compatible key will generate passcards and passcodes
 which are interoperable with other PPPv3-compliant applications.
 For a list of such applications, see
@@ -332,13 +337,21 @@ Every user must generate a key in order to use \fBOTPasswd\fR.
 Depending on the value of the \fBSALT_DEF\fR parameter in the
 \fBotpasswd.conf\fR(5) file, a cryptographic salt may be used
 to generate the passcode counter by default.
-The use of a salt may also be affected by the \fB\-\-flag salt\fR or
-\fB\-\-flag no\-salt\fR options to \fBotpasswd\fR.
+The use of a salt may also be affected by the \fBsalt\fR parameter
+to the \fBotpasswd\fR \fB\-\-config\fR option.
 A salted key is not compatible with the PPPv3 specification, however.
 To generate a new salted key and print the first passcard, use:
 .PP
 .ti +4m
-$ otpasswd \-\-flag salt \-\-key
+$ otpasswd \-\-config salt=on \-\-key
+.PP
+To inspect the current user state configuration, which contains
+information relating to the passcode length, contact information,
+passcode alphabet choice, passcard label, etc, 
+you may use the following command:
+.PP
+.ti +4m
+$ otpasswd \-\-info
 .PP
 Typically, to use the \fBOTPasswd\fR authentication system,
 a user will carry a series of passcards to consult during system login.
@@ -358,9 +371,9 @@ $ otpasswd \-\-text '[current]'
 To configure a passcode length of five (5) characters, use:
 .PP
 .ti +4m
-$ otpasswd \-\-flag codelength\-5
+$ otpasswd \-\-config codelength=5
 .PP
-You can use this option at any time, including key generation.
+The \fB\-\-config\fR option may be used at any time, including during key generation.
 .PP
 While plain ASCII passcards are perfectly useful,
 LaTeX enables much more attractively formatted passcards and
@@ -383,6 +396,7 @@ $ rm tmp.latex tmp.pdf
 .RE
 .\"
 .SH SEE ALSO
+\fBotpasswd\fR(7),
 \fBpam_otpasswd\fR(8),
 \fBotpasswd.conf\fR(5),
 \fBotshadow\fR(5),
@@ -401,12 +415,21 @@ source to this package.
 Depending upon the \fBOTPasswd\fR package that was installed,
 these documents may be available in the /usr/share hierarchy of your system.
 .PP
+An excellent description of PPPv3 is available on the Gibson Research Corporation
+website at <https://www.grc.com/ppp.htm>.
+.PP
 The evolving design of \fIPerfect Paper Passwords\fR was discussed extensively
 by Steve Gibson and Leo LaPorte on the TWiT \fISecurity Now!\fR netcast in
 episodes #113, #115, and #117 during the fall of 2007.
 .PP
-An excellent description of PPPv3 is available on the Gibson Research Corporation
-website at <https://www.grc.com/ppp.htm>.
+The GRC \fIgrc.thinktank\fR newsgroup was the site of a great deal of
+activity regarding the design and development of \fIPerfect Paper Passwords\fR
+during this same time period.
+Quite a number of developers posted articles, as did Steve Gibson, himself.
+More information regarding GRC newsgroups is available at
+<http://www.grc.com/discussions.htm>.
+To view the \fIgrc.thinktank\fR newsgroup itself, point your favorite
+NNTP newsreader at <news://news.grc.com/grc.thinktank>.
 .\"
 .\"  *AUTHORS
 .\"
