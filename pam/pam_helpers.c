@@ -51,7 +51,7 @@ int ph_parse_module_options(int flags, int argc, const char **argv, cfg_t *cfg)
 		else if (strcmp("silent", *argv) == 0)
 			cfg->silent = 1;
 		else {
-			print(PRINT_WARN, 
+			print(PRINT_ERROR, 
 				"Invalid parameter %s\n", *argv);
 		}
 	}
@@ -269,7 +269,7 @@ void ph_show_message(pam_handle_t *pamh, const cfg_t *cfg, const char *msg)
 int ph_increment(pam_handle_t *pamh, const cfg_t *cfg, const char *username, state *s)
 {
 	const char *enforced_msg = "OTPasswd: Key not generated, unable to login.";
-	const char *lock_msg = "OTPasswd: Unable to lock user state file.";
+	const char *lock_msg = "OTPasswd: Unable to lock state file.";
 	const char *numspace_msg =
 		"OTPasswd: Passcode counter overflowed or state "
 		"file corrupted. Regenerate key.";
@@ -291,37 +291,46 @@ int ph_increment(pam_handle_t *pamh, const cfg_t *cfg, const char *username, sta
 	case STATE_NUMSPACE:
 		/* Strange error, might happen, but, huh! */
 		ph_show_message(pamh, cfg, numspace_msg);
+		print(PRINT_WARN,
+		      "User \"%s\" runned out of passcodes.\n", username);
 		return PAM_AUTH_ERR;
 
 	case STATE_LOCK_ERROR:
 		ph_show_message(pamh, cfg, lock_msg);
+		print(PRINT_WARN, "Lock error while authenticating user");
 		return PAM_AUTH_ERR;
 
 	case STATE_NON_EXISTENT:
-		/* Fail only if db=user! */
-		if (cfg->enforce == 1 && cfg->db == CONFIG_DB_USER) {
+		/* TODO: Fail only if db=user? This shouldn't happen on GLOBAL. */
+		if (cfg->enforce == 1 && cfg->db == CONFIG_DB_USER)
 			goto enforced_fail;
-		}
 
 		/* Otherwise we are just not configured correctly
 		 * or we are not enforcing. */
+		print(PRINT_WARN, 
+		      "OTPasswd ignored. User \"%s\" not configured.\n",
+		      username);
 		return PAM_IGNORE;
 
 	case STATE_NO_USER_ENTRY:
-		if (cfg->enforce == 0)
-			return PAM_IGNORE;
-		else
+		if (cfg->enforce == 1)
 			goto enforced_fail;
 
+		print(PRINT_WARN, 
+		      "OTPasswd ignored. User \"%s\" not configured.\n",
+		      username);
+
+		return PAM_IGNORE;
+
 	case PPP_ERROR_POLICY:
-		print(PRINT_WARN, "State of \"%s\" contains data "
+		print(PRINT_ERROR, "State of \"%s\" contains data "
 		      "contradictory to current policy. Update state.\n",
 		      username);
 		ph_show_message(pamh, cfg, policy_msg);
 		return PAM_AUTH_ERR;
 
 	case PPP_ERROR_RANGE:
-		print(PRINT_WARN,
+		print(PRINT_ERROR,
 		      "State of \"%s\" contains invalid data.\n",
 		      username);
 
@@ -345,15 +354,17 @@ int ph_increment(pam_handle_t *pamh, const cfg_t *cfg, const char *username, sta
 			return PAM_IGNORE;
 		}
 
-
-
 	default: /* Any other problem - error */
 		return PAM_AUTH_ERR;
 	}
 
 enforced_fail:
+	print(PRINT_WARN, 
+	      "Authentication failed because of enforcement;"
+	      " user \"%s\"\n", username);
 	ph_show_message(pamh, cfg, enforced_msg);
 	return PAM_AUTH_ERR;
+
 
 }
 

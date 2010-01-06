@@ -102,7 +102,7 @@ extern int ppp_verify_state(const state *s);
 enum {
 	PPP_FIELD_FAILURES = 1,		/* unsigned int */
 	PPP_FIELD_RECENT_FAILURES,	/* unsigned int */
-	PPP_FIELD_CODELENGTH,		/* unsigned int */
+	PPP_FIELD_CODE_LENGTH,		/* unsigned int */
 	PPP_FIELD_ALPHABET,		/* unsigned int */
 	PPP_FIELD_FLAGS,		/* unsigned int */
 
@@ -132,7 +132,7 @@ extern int ppp_get_mpz(const state *s, int field, mpz_t arg);
 /* Get character string from state. This sets "arg" memory 
  * to a pointer to state data. This data musn't be altered.
  * Returns 0 on success and 1 if field is incorrect. */
-extern int ppp_get_str(state *s, int field, const char **arg);
+extern int ppp_get_str(const state *s, int field, const char **arg);
 
 /* Int argument setter. options might equal PPP_CHECK_POLICY. */
 extern int ppp_set_int(state *s, int field, unsigned int arg, int options);

@@ -92,7 +92,7 @@ static void _usage(int argc, const char **argv)
 		"Configuration:\n"
 	        "  -i, --info\n"
 	        "           Print current state and configuration.\n"
-		"  -f, --flag <arg>\n"
+		"  -c, --config <arg>\n"
 		"           Manages various settings:\n"
 		"           show=<on|off> configure visibility of passcode during\n"
 		"                         authentication.\n"
@@ -173,7 +173,7 @@ int parse_flag(options_t *options, const char *arg)
 	else if (strcmp(arg, "disable=on") == 0)
 		options->flag_set_mask |= FLAG_DISABLED;
 	else if (strcmp(arg, "alphabet=list") == 0) {
-		if (options->action != OPTION_FLAGS) {
+		if (options->action != OPTION_CONFIG) {
 			printf("Only one action can be specified on the command line\n"
 			       "and you can't mix alphabet listing with other flags.\n");
 			return 1;
@@ -258,7 +258,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 
 		/* Flags */
 		{"info",		no_argument,		0, OPTION_INFO},
-		{"flags",		required_argument,	0, OPTION_FLAGS},
+		{"config",		required_argument,	0, OPTION_CONFIG},
 		{"password",		optional_argument,	0, OPTION_SPASS},
 		{"user",		required_argument,	0, OPTION_USER},
 		{"verbose",		no_argument,		0, OPTION_VERBOSE},
@@ -272,9 +272,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 	while (1) {
 		int option_index = 0;
 
-/* FIXME: Remove this old entry */
-/*	int c = getopt_long(argc, argv, "krs:t:l:P:a:wf:p:d:c:vu:h", long_options, &option_index); */
-		int c = getopt_long(argc, argv, "krs:t:l:P:a:wif:p::vu:h", long_options, &option_index);
+		int c = getopt_long(argc, argv, "krs:t:l:P:a:wic:p::vu:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1) {
@@ -303,7 +301,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		case OPTION_INFO:
 			/* Error unless there was flag defined for key generation */
 			if (options->action != 0 &&
-			    !(options->action == OPTION_FLAGS && c == OPTION_KEY)) {
+			    !(options->action == OPTION_CONFIG && c == OPTION_KEY)) {
 				printf("Only one action can be specified on the command line\n");
 				return 1;
 			}
@@ -330,16 +328,16 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			break;
 
 			/* Actions with argument which can be connected with -k */
-		case OPTION_FLAGS:
+		case OPTION_CONFIG:
 			if (options->action != 0 && 
-			    options->action != OPTION_FLAGS &&
+			    options->action != OPTION_CONFIG &&
 			    options->action != OPTION_KEY) {
 				printf("Only one action can be specified on the command line\n");
 				goto error;
 			}
 
 			if (options->action == 0)
-				options->action = OPTION_FLAGS;
+				options->action = OPTION_CONFIG;
 
 			assert(optarg != NULL);
 
@@ -442,7 +440,7 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 		break;
 
 	case OPTION_ALPHABETS:
-	case OPTION_FLAGS:
+	case OPTION_CONFIG:
 	case OPTION_SPASS:
 	case OPTION_INFO:
 		retval = action_flags(options, cfg);

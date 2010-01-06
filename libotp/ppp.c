@@ -797,7 +797,7 @@ unsigned int ppp_get_int(const state *s, int field)
 	switch (field) {
 	case PPP_FIELD_FAILURES:        return s->failures;
 	case PPP_FIELD_RECENT_FAILURES: return s->recent_failures;
-	case PPP_FIELD_CODELENGTH:      return s->code_length;
+	case PPP_FIELD_CODE_LENGTH:     return s->code_length;
 	case PPP_FIELD_ALPHABET:        return s->alphabet;
 	case PPP_FIELD_FLAGS:           return s->flags;
 
@@ -820,7 +820,7 @@ int ppp_set_int(state *s, int field, unsigned int arg, int options)
 		s->recent_failures = arg;
 		break;
 
-	case PPP_FIELD_CODELENGTH:
+	case PPP_FIELD_CODE_LENGTH:
 		/* Always check policy */
 		ret = ppp_verify_code_length(arg);
 		if (ret != 0)
@@ -941,7 +941,7 @@ static const char *_ppp_get_prompt(state *s)
 	return s->prompt;
 }
 
-int ppp_get_str(state *s, int field, const char **arg)
+int ppp_get_str(const state *s, int field, const char **arg)
 {
 	assert(s && arg);
 
@@ -952,7 +952,9 @@ int ppp_get_str(state *s, int field, const char **arg)
 		break;
 
 	case PPP_FIELD_PROMPT:
-		*arg = _ppp_get_prompt(s);
+		/* Prompt might change state a bit, but 
+		 * this should be transparent */
+		*arg = _ppp_get_prompt((state *)s);
 		break;
 
 	case PPP_FIELD_CONTACT:

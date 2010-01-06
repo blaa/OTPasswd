@@ -66,6 +66,12 @@ static int _init_state(state **s, const options_t *options, int load)
 	switch (ret) {
 	case 0:
 		/* All right */
+		ret = ppp_verify_state(*s);
+		if (ret != 0) {
+			printf("WARNING: Your state is inconsistent with system policy.\n"
+			       "         Fix it or you will be unable to login.\n"
+			       "         For details use --info command.\n");
+		}
 		return 0;
 
 	default:
@@ -165,28 +171,42 @@ static int _is_passcode_in_range(const state *s, const mpz_t passcard)
 
 static void _show_flags(const state *s)
 {
-	if (s->flags & FLAG_SHOW)
+	cfg_t *cfg = cfg_get();
+	int flags = ppp_get_int(s, PPP_FIELD_FLAGS);
+	int alphabet = ppp_get_int(s, PPP_FIELD_ALPHABET);
+	int code_length = ppp_get_int(s, PPP_FIELD_CODE_LENGTH);
+	const char *label = NULL;
+	const char *contact = NULL;
+	ppp_get_str(s, PPP_FIELD_LABEL, &label);
+	ppp_get_str(s, PPP_FIELD_LABEL, &contact);
+
+
+	if (flags & FLAG_SHOW)
 		printf("show=on ");
 	else
 		printf("show=off ");
 
-	printf("alphabet=%d ", s->alphabet);
-	printf("codelength=%d ", s->code_length);
+	if (flags & FLAG_DISABLED)
+		printf("disabled=on ");
+	else
+		printf("disabled=off ");
 
-	if (s->flags & FLAG_SALTED)
+	printf("alphabet=%d ", alphabet);
+	printf("codelength=%d ", code_length);
+
+	if (flags & FLAG_SALTED)
 		printf("(salt=on)\n");
 	else
 		printf("(salt=off)\n");
 
-
-	if (strlen(s->label) > 0) {
-		printf("Passcard label=\"%s\", ", s->label);
+	if (label && strlen(label) > 0) {
+		printf("Passcard label=\"%s\", ", label);
 	} else {
 		printf("No label, ");
 	}
 
-	if (strlen(s->contact) > 0) {
-		printf("contact=\"%s\".\n", s->contact);
+	if (contact && strlen(contact) > 0) {
+		printf("contact=\"%s\".\n", contact);
 	} else {
 		printf("no contact information.\n");
 	}
@@ -195,6 +215,41 @@ static void _show_flags(const state *s)
 		printf("Static password is set.\n");
 	} else {
 		printf("Static password is not set.\n");
+	}
+
+	/* Verify policy and inform user what's wrong */
+
+	if (ppp_verify_alphabet(alphabet) != 0) {
+		printf("WARNING: Current alphabet setting is "
+		       "inconsistent with the policy!\n");
+	}
+
+	if (ppp_verify_code_length(code_length) != 0) {
+		printf("WARNING: Current passcode length setting is "
+		       "inconsistent with the policy!\n");
+	}
+
+	/* Show */
+	if (flags & FLAG_SHOW && cfg->show_allow == 0) {
+		printf("WARNING: Show flag is enabled, but policy "
+		       "denies it's use!\n");
+	}
+
+	if (!(flags & FLAG_SHOW) && cfg->show_allow == 2) {
+		printf("WARNING: Show flag is disabled, but policy "
+		       "enforces it's use!\n");
+	}
+
+	/* Salted */
+	if (flags & FLAG_SALTED && cfg->salt_allow == 0) {
+		printf("WARNING: Key is salted, but policy "
+		       "denies such configuration. Regenerate key!\n");
+
+	}
+
+	if (!(flags & FLAG_SALTED) && cfg->salt_allow == 2) {
+		printf("WARNING: Key is not salted, but policy "
+		       "denies such configuration. Regenerate key!\n");
 	}
 }
 
@@ -370,7 +425,7 @@ static int _update_flags(options_t *options, state *s, int generation)
 
 	/* Code length + alphabet */
 	if (options->set_codelength != -1) {
-		ret = ppp_set_int(s, PPP_FIELD_CODELENGTH, options->set_codelength, 1);
+		ret = ppp_set_int(s, PPP_FIELD_CODE_LENGTH, options->set_codelength, 1);
 		switch (ret) {
 		case PPP_ERROR_RANGE:
 			printf("Passcode length must be between 2 and 16.\n");
@@ -810,7 +865,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 	}
 
 	switch(options->action) {
-	case OPTION_FLAGS:
+	case OPTION_CONFIG:
 		ret = _update_flags(options, s, 0);
 		if (ret != 0)
 			return ret;
@@ -853,6 +908,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 	case OPTION_INFO: /* State info */
 		printf("User    = %s\n", s->username);
 		_show_keys(s);
+		_show_flags(s);
 
 		save_state = 0;
 		retval = 0;
@@ -876,10 +932,13 @@ cleanup:
 	if (_fini_state(&s, save_state) != 0) {
 		retval = 1;
 	} else {
-		if (save_state)
-			printf("Flags updated.\n");
-		else
-			printf("Flags not changed.\n");
+		/* If we were supposed to change something print the result... */
+		if (options->action != OPTION_INFO) {
+			if (save_state)
+				printf("Flags updated.\n");
+			else
+				printf("Flags not changed.\n");
+		}
 	}
 	return retval;
 }

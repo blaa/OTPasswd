@@ -33,7 +33,7 @@ enum {
 	OPTION_WARN    = 'w',
 
 	OPTION_INFO    = 'i',
-	OPTION_FLAGS   = 'f',
+	OPTION_CONFIG  = 'c',
 	OPTION_SPASS   = 'p',
 	OPTION_USER    = 'u',
 	OPTION_VERBOSE = 'v',
