@@ -96,8 +96,9 @@ int state_init(state *s, const char *username)
 
 	s->prompt = NULL;
 
-	memset(s->label, 0x00, sizeof(s->label));
-	memset(s->contact, 0x00, sizeof(s->contact));
+	memset(s->sequence_key, 0, sizeof(s->sequence_key));
+	memset(s->label, 0, sizeof(s->label));
+	memset(s->contact, 0, sizeof(s->contact));
 
 	s->code_length = cfg->passcode_def_length;
 	if (cfg->show_def == 1)
@@ -117,7 +118,6 @@ int state_init(state *s, const char *username)
 
 	/** GMP numbers initialization */
 	mpz_init(s->counter);
-	mpz_init(s->sequence_key);
 	mpz_init(s->latest_card);
 	mpz_init(s->current_card);
 
@@ -140,7 +140,6 @@ void state_fini(state *s)
 		state_unlock(s);
 
 	mpz_clear(s->counter);
-	mpz_clear(s->sequence_key);
 	mpz_clear(s->latest_card);
 	mpz_clear(s->current_card);
 	mpz_clear(s->spass);
@@ -158,14 +157,13 @@ void state_fini(state *s)
 
 	free(s->username);
 
-	/* Clear the rest of memory */
+	/* Clear the rest of memory, this includes sequence_key */
 	memset(s, 0, sizeof(*s));
 }
 
 int state_key_generate(state *s)
 {
 	unsigned char entropy_pool[1024]; /* 160 + 8032 bits */
-	unsigned char key_bin[32];
 
 	const int real_random = 20;
 	const int pseudo_random = sizeof(entropy_pool) - real_random;
@@ -202,28 +200,26 @@ int state_key_generate(state *s)
 	printf("DONE\n");
 
 	if (salt == 0) {
-		crypto_sha256(entropy_pool, sizeof(entropy_pool), key_bin);
+		crypto_sha256(entropy_pool, sizeof(entropy_pool), s->sequence_key);
 		memset(entropy_pool, 0, sizeof(entropy_pool));
 
-		num_from_bin(s->sequence_key, key_bin, sizeof(key_bin));
-		memset(key_bin, 0, sizeof(key_bin));
 		mpz_set_d(s->counter, 0);
 		mpz_set_d(s->latest_card, 0);
 
 		s->flags &= ~(FLAG_SALTED); 
 	} else {
 		/* Use half of entropy to generate key */
-		crypto_sha256(entropy_pool, sizeof(entropy_pool)/2, key_bin);
-		num_from_bin(s->sequence_key, key_bin, sizeof(key_bin));
+		crypto_sha256(entropy_pool, sizeof(entropy_pool)/2, s->sequence_key);
 
 		/* And half to initialize counter */
-		crypto_sha256(entropy_pool+sizeof(entropy_pool)/2, sizeof(entropy_pool)/2, key_bin);
-		num_from_bin(s->counter, key_bin, 16); /* Counter is 128 bit only */
+		unsigned char cnt_bin[32];
+		crypto_sha256(entropy_pool + sizeof(entropy_pool)/2, sizeof(entropy_pool)/2, cnt_bin);
+		num_from_bin(s->counter, cnt_bin, 16); /* Counter is 128 bit only */
 		mpz_and(s->counter, s->counter, s->salt_mask);
 		mpz_set_ui(s->latest_card, 0);
 
 		memset(entropy_pool, 0, sizeof(entropy_pool));
-		memset(key_bin, 0, sizeof(key_bin));
+		memset(cnt_bin, 0, sizeof(cnt_bin));
 
 		s->flags |= FLAG_SALTED;
 	}

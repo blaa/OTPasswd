@@ -302,8 +302,13 @@ int state_testcase(void)
 		printf("state_testcase[%2d] failed(%d)\n", test, failed++);
 
 	/* Compare */
-	test++; if (mpz_cmp(s1.sequence_key, s2.sequence_key) != 0)
-		printf("state_testcase[%2d] failed(%d)\n", test, failed++);
+	test++; if (memcmp(s1.sequence_key, s2.sequence_key, 32) != 0) {
+		printf("state_testcase[%2d] failed (seq key) (%d)\n", test, failed++);
+		printf("Orig: ");
+		crypto_print_hex(s1.sequence_key, sizeof(s1.sequence_key));
+		printf("Read: ");
+		crypto_print_hex(s2.sequence_key, sizeof(s2.sequence_key));
+	}
 
 	test++; if (mpz_cmp(s1.counter, s2.counter) != 0)
 		printf("state_testcase[%2d] failed(%d)\n", test, failed++);
@@ -349,7 +354,6 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 	/* 6 is number of bits in a
 	 * character of 64-letter alphabet */
 
-	unsigned char key_bin[32];
 	unsigned char cnt_bin[16];
 	unsigned char cipher_bin[16];
 	mpz_t counter;
@@ -365,16 +369,13 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 	mpz_init(quotient);
 	mpz_init(cipher);
 
-	/* Convert numbers to binary */
-	num_to_bin(s->sequence_key, key_bin, 32);
-
 	printf("ppp_testcase_stat: Evaluating %d bits distribution in %u passcodes\n", bits_to_test, tests);
 	for (cnt = 0; cnt < tests; cnt++) {
 		mpz_add_ui(counter, counter, 1);
 		num_to_bin(counter, cnt_bin, 16);
 
 		/* Encrypt counter with key */
-		ret = crypto_aes_encrypt(key_bin, cnt_bin, cipher_bin);
+		ret = crypto_aes_encrypt(s->sequence_key, cnt_bin, cipher_bin);
 		if (ret != 0) {
 			printf("AES ERROR\n");
 			goto clear;
@@ -441,7 +442,6 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 	printf("\n");
 
 clear:
-	memset(key_bin, 0, sizeof(key_bin));
 	memset(cnt_bin, 0, sizeof(cnt_bin));
 	memset(cipher_bin, 0, sizeof(cipher_bin));
 
@@ -465,7 +465,6 @@ static int _ppp_testcase_stat_2(const state *s,
 	/* 130 >= alphabet_length */
 	unsigned long char_count[130] = {0};
 
-	unsigned char key_bin[32];
 	unsigned char cnt_bin[16];
 	unsigned char cipher_bin[16];
 	mpz_t counter;
@@ -481,9 +480,6 @@ static int _ppp_testcase_stat_2(const state *s,
 	mpz_init(quotient);
 	mpz_init(cipher);
 
-	/* Convert numbers to binary */
-	num_to_bin(s->sequence_key, key_bin, 32);
-
 	printf("ppp_testcase_stat: Evaluating character distribution in %u passcodes\n", tests);
 	for (cnt = 0; cnt < tests; cnt++) {
 		/* Increment counter */
@@ -493,7 +489,7 @@ static int _ppp_testcase_stat_2(const state *s,
 		num_to_bin(counter, cnt_bin, 16);
 
 		/* Encrypt counter with key */
-		ret = crypto_aes_encrypt(key_bin, cnt_bin, cipher_bin);
+		ret = crypto_aes_encrypt(s->sequence_key, cnt_bin, cipher_bin);
 		if (ret != 0) {
 			printf("AES ERROR\n");
 			goto clear;
@@ -549,7 +545,6 @@ static int _ppp_testcase_stat_2(const state *s,
 	printf("\n");
 
 clear:
-	memset(key_bin, 0, sizeof(key_bin));
 	memset(cnt_bin, 0, sizeof(cnt_bin));
 	memset(cipher_bin, 0, sizeof(cipher_bin));
 
@@ -669,6 +664,18 @@ int ppp_testcase(void)
 	char passcode[17] = {0};
 	char *current_user = security_get_current_user();
 
+	const unsigned char ex_bin[32] = {
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x50, 0x2d, 0x00, 0x3f, /* 1345126463UL = 0x502d003f */
+	};
+
+
 	/* Check calculations */
 	state s;
 	state_init(&s, current_user);
@@ -677,21 +684,21 @@ int ppp_testcase(void)
 		printf("*** Performing statistical tests with your key\n");
 	} else {
 		printf("*** Performing statistical tests with generated key\n");
-		mpz_set_ui(s.sequence_key, 1345126463UL);
+		memcpy(s.sequence_key, ex_bin, sizeof(s.sequence_key));
 	}
 
 	/* Statistical tests using following key */
-	mpz_set_ui(s.sequence_key, 1345126463UL);
-	failed += _ppp_testcase_statistical(&s, 64, 16, 200);
+	memcpy(s.sequence_key, ex_bin, sizeof(s.sequence_key));
+	failed += _ppp_testcase_statistical(&s, 64, 16, 200000);
 	/* Following test should fail using norms from first test */
 	// failed += _ppp_testcase_statistical(&s, 88, 16, 500000);
 
 	printf("Character count stats:\n");
-	failed += _ppp_testcase_stat_2(&s, 88, 16, 200);
+	failed += _ppp_testcase_stat_2(&s, 88, 16, 200000);
 
 	printf("*** PPPv3 compatibility tests\n");
 	printf("* Sequence key = 0.\n");
-	mpz_set_ui(s.sequence_key, 0UL);
+	memset(s.sequence_key, 0, sizeof(s.sequence_key));
 	_PPP_TEST(0, 4, 'A', 1, "NH7j");
 	_PPP_TEST(34, 4, 'G', 5, "EXh5");
 	_PPP_TEST(864197393UL+50UL, 4, 'E', 8, "u2Yp");
@@ -713,7 +720,7 @@ int ppp_testcase(void)
 
 	printf("*** Another sequence key tests:\n");
 	/*** Tests with other sequence_key ***/
-	const unsigned char key_bin[32] = {
+	const unsigned char ex2_bin[32] = {
 		0x80, 0x45, 0x32, 0x22,
 		0x10, 0xFF, 0xEE, 0x00,
 		0x00, 0x00, 0x00, 0x00,
@@ -724,10 +731,10 @@ int ppp_testcase(void)
 		0x65, 0x75, 0x86, 0x98,
 	};
 	// 8045322210FFEE00000000000000000000000000000000000000000065758698
-	num_from_bin(s.sequence_key, key_bin, 32);
+	memcpy(s.sequence_key, ex2_bin, sizeof(s.sequence_key));
 
 	printf("New key: ");
-	crypto_print_hex(key_bin, 32);
+	crypto_print_hex(s.sequence_key, 32);
 	/* length = 4 */
 	_PPP_TEST(0, 4, 'A', 1, ":LJ%");
 

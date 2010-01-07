@@ -72,6 +72,8 @@ static inline void num_print(const mpz_t num, const unsigned int length)
 
 	for (i = 0; i < bin_len; i++)
 		printf("%02X", bin[i]);
+
+	memset(bin, 0, sizeof(bin));
 }
 
 

@@ -123,6 +123,7 @@ int ppp_verify_range(const state *s)
 	assert(s->codes_on_card > 0);
 
 	/* Verify key size */
+/* FIXME: Not needed anymore 
 	const char max_key_hex[] =
 		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
 		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
@@ -135,6 +136,7 @@ int ppp_verify_range(const state *s)
 		return STATE_PARSE_ERROR;
 	}
 	mpz_clear(max_key);
+*/
 
 	/* Verify counter size */
 	const char max_counter_hex[] =
@@ -281,7 +283,6 @@ int ppp_get_passcode_number(const state *s, const mpz_t passcard, mpz_t passcode
 
 int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
 {
-	unsigned char key_bin[32];
 	unsigned char cnt_bin[16];
 	unsigned char cipher_bin[16];
 	mpz_t cipher;
@@ -307,11 +308,10 @@ int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
 	mpz_init(cipher);
 
 	/* Convert numbers to binary */
-	num_to_bin(s->sequence_key, key_bin, 32);
 	num_to_bin(counter, cnt_bin, 16);
 
 	/* Encrypt counter with key */
-	ret = crypto_aes_encrypt(key_bin, cnt_bin, cipher_bin);
+	ret = crypto_aes_encrypt(s->sequence_key, cnt_bin, cipher_bin);
 	if (ret != 0) {
 		goto clear;
 	}
@@ -342,7 +342,6 @@ int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
 	passcode[i] = '\0';
 
 clear:
-	memset(key_bin, 0, sizeof(key_bin));
 	memset(cnt_bin, 0, sizeof(cnt_bin));
 	memset(cipher_bin, 0, sizeof(cipher_bin));
 
@@ -866,10 +865,6 @@ int ppp_get_mpz(const state *s, int field, mpz_t arg)
 {
 	assert(arg);
 	switch (field) {
-	case PPP_FIELD_KEY:
-		mpz_set(arg, s->sequence_key);
-		break;
-
 	case PPP_FIELD_COUNTER:
 		mpz_set(arg, s->counter);
 		break;

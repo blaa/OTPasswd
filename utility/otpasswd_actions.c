@@ -270,8 +270,7 @@ static void _show_keys(const state *s)
 
 	if (cfg->allow_key_print == 1 || security_is_root()) {
 		/* Print key in LSB as PPPv3 likes */
-		printf("Key     = "); num_print(s->sequence_key, 64);
-		printf("\n");
+		printf("Key     = "); crypto_print_hex(s->sequence_key, 32);
 
 		/* This prints data MSB */
 		/* gmp_printf("Key     = %064ZX\n", s->sequence_key); */

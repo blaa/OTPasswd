@@ -106,7 +106,6 @@ enum {
 	PPP_FIELD_ALPHABET,		/* unsigned int */
 	PPP_FIELD_FLAGS,		/* unsigned int */
 
-	PPP_FIELD_KEY,			/* mpz */
 	PPP_FIELD_COUNTER, 		/* mpz */
 	PPP_FIELD_LATEST_CARD,		/* mpz */
 

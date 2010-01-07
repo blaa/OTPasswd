@@ -37,7 +37,8 @@ typedef struct {
 	mpz_t counter;
 
 	/* User secret sequence key */
-	mpz_t sequence_key;
+//	mpz_t sequence_key;
+	unsigned char sequence_key[32];
 
 	/* Furthest printed passcode
 	 * used for warnings */

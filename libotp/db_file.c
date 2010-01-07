@@ -259,7 +259,7 @@ error:
 }
 
 /* State files constants */
-static const int _version = 8;
+static const int _version = 9;
 static const char *_delim = ":"; /* Change it also in snprintf in store */
 
 static const int fields = 15;
@@ -493,9 +493,20 @@ int db_file_load(state *s)
 	/* Parse fields, if anybody bad happens return parse error */
 	retval = STATE_PARSE_ERROR;
 
-	if (mpz_set_str(s->sequence_key, field[FIELD_KEY], STATE_BASE) != 0) {
-		print(PRINT_ERROR, "Error while parsing sequence key.\n");
-		goto cleanup;
+	/* Parse sequence key */
+	int i;
+	for (i = 0; i < 32; i++) {
+		char *pos = &field[FIELD_KEY][i*2];
+		int tmp;
+		if (!pos) {
+			print(PRINT_ERROR, "Error while parsing sequence key.\n");
+			goto cleanup;
+		}
+		if (sscanf(pos, "%02X", &tmp) != 1) {
+			print(PRINT_ERROR, "Error while parsing sequence key.\n");
+			goto cleanup;
+		}
+		s->sequence_key[i] = tmp;
 	}
 
 	if (mpz_set_str(s->counter, field[FIELD_COUNTER], STATE_BASE) != 0) {
@@ -583,13 +594,6 @@ int db_file_load(state *s)
 	}
 
 	/* Everything is read. Now - check if it's correct */
-	if (mpz_sgn(s->sequence_key) == -1) {
-		print(PRINT_ERROR,
-		      "Read a negative sequence key. "
-		      "State file is invalid\n");
-		goto cleanup;
-	}
-
 	if (mpz_sgn(s->counter) == -1) {
 		print(PRINT_ERROR,
 		      "Read a negative counter. "
@@ -644,13 +648,20 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 	int tmp;
 
 	/* Converted state parts */
-	char *sequence_key = NULL;
+	char sequence_key[65];
 	char *counter = NULL;
 	char *latest_card = NULL;
 	char *spass = NULL;
 
 	/* Write using ascii-safe approach */
-	sequence_key = mpz_get_str(NULL, STATE_BASE, s->sequence_key);
+	int i;
+	for (i = 0; i < 32; i++) {
+		const int tmp = s->sequence_key[i];
+		snprintf(&sequence_key[i*2], 3, "%02X", tmp);
+	}
+	sequence_key[64] = '\0';
+
+
 	counter = mpz_get_str(NULL, STATE_BASE, s->counter);
 	latest_card = mpz_get_str(NULL, STATE_BASE, s->latest_card);
 
@@ -659,7 +670,7 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 	else
 		spass = strdup("");
 
-	if (!sequence_key || !counter || !latest_card || !spass) {
+	if (!counter || !latest_card || !spass) {
 		print(PRINT_ERROR, "Error while converting numbers\n");
 		goto error;
 	}
@@ -684,7 +695,7 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 
 	retval = 0;
 error:
-	free(sequence_key);
+	memset(sequence_key, 0, sizeof(sequence_key));
 	free(counter);
 	free(latest_card);
 	free(spass);
