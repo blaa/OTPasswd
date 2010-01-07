@@ -384,10 +384,6 @@ static int _update_flags(options_t *options, state *s, int generation)
 			printf("Unexpected error while setting contact information.\n");
 			return 1;
 		}
-		printf("Warning: Changing codelength invalidates "
-		       "already printed passcards.\n"
-		       "         If you like, you can switch back "
-		       "to your previous settings.\n\n");
 	}
 
 	if (options->label) {
@@ -416,11 +412,6 @@ static int _update_flags(options_t *options, state *s, int generation)
 			printf("Unexpected error while setting label information.\n");
 			return 1;
 		}
-
-		printf("Warning: Changing alphabet invalidates "
-		       "already printed passcards.\n"
-		       "         If you like, you can switch back "
-		       "to your previous settings.\n\n");
 	}
 
 	/* Code length + alphabet */
@@ -441,6 +432,10 @@ static int _update_flags(options_t *options, state *s, int generation)
 			return 1;
 		}
 
+		printf("Warning: Changing codelength invalidates "
+		       "already printed passcards.\n"
+		       "         If you like, you can switch back "
+		       "to your previous settings.\n\n");
 	}
 
 	if (options->set_alphabet != -1) {
@@ -461,6 +456,11 @@ static int _update_flags(options_t *options, state *s, int generation)
 			printf("Unexpected error while setting code length.\n");
 			return 1;
 		} 
+
+		printf("Warning: Changing alphabet invalidates "
+		       "already printed passcards.\n"
+		       "         If you like, you can switch back "
+		       "to your previous settings.\n\n");
 	}
 
 	/* Change flags */
