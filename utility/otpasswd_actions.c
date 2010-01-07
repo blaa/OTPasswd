@@ -868,8 +868,10 @@ int action_flags(options_t *options, const cfg_t *cfg)
 	switch(options->action) {
 	case OPTION_CONFIG:
 		ret = _update_flags(options, s, 0);
-		if (ret != 0)
-			return ret;
+		if (ret != 0) {
+			retval = ret;
+			goto cleanup;
+		}
 
 		if (options->flag_set_mask || options->flag_clear_mask ||
 		    options->set_codelength || options->set_alphabet ||

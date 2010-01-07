@@ -500,6 +500,7 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 					"**********************************\n");
 				retval = 0;
 			}
+			break;
 		}
 
 	default:

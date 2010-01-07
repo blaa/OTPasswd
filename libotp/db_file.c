@@ -897,7 +897,8 @@ int db_file_lock(state *s)
 	ret = _db_file_permissions(db);
 	if (ret == STATE_IO_ERROR) {
 		print(PRINT_NOTICE, "File permission check failed\n");
-		goto error;
+		ret = STATE_LOCK_ERROR;
+		goto cleanup;
 	}
 
 
@@ -911,7 +912,8 @@ int db_file_lock(state *s)
 	if (fd == -1) {
 		/* Unable to create file, therefore unable to obtain lock */
 		print_perror(PRINT_NOTICE, "Unable to create %s lock file", lck);
-		goto error;
+		ret = STATE_LOCK_ERROR;
+		goto cleanup;
 	}
 
 	/*
@@ -936,20 +938,21 @@ int db_file_lock(state *s)
 		/* Unable to lock for 10 times */
 		close(fd);
 		print(PRINT_NOTICE, "Unable to lock opened state file\n");
-		goto error;
+		ret = STATE_LOCK_ERROR;
+		goto cleanup;
 	}
 
 	s->lock = fd;
 	print(PRINT_NOTICE, "Got lock on state file\n");
 
-	return 0; /* Got lock */
+	ret = 0; /* Got lock  */
 
-error:
+cleanup:
 	free(db);
 	free(lck);
 	free(tmp);
 
-	return STATE_LOCK_ERROR;
+	return ret;
 }
 
 
