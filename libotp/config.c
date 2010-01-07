@@ -367,7 +367,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			REQUIRE_ARG(2, 5);
 			cfg->retries = arg;
 		} else if (_EQ(line_buf, "logging")) {
-			REQUIRE_ARG(0, 2);
+			REQUIRE_ARG(0, 3);
 			cfg->logging = arg;
 		} else if (_EQ(line_buf, "silent")) {
 			REQUIRE_ARG(0, 1);
