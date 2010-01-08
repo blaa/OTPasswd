@@ -310,6 +310,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 				cfg->user_gid = pwd->pw_gid;
 			}
 		} else if (_EQ(line_buf, "db")) {
+			_right_trim(equality);
 			if (_EQ(equality, "global"))
 				cfg->db = CONFIG_DB_GLOBAL;
 			else if (_EQ(equality, "user"))
@@ -325,8 +326,11 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 				goto error;
 			}
 
+/*
+ Turned off for practical and security reasons. 
 		} else if (_EQ(line_buf, "db_global")) {
 			_COPY(cfg->global_db_path, equality);
+*/
 		} else if (_EQ(line_buf, "db_user")) {
 			if (strchr(equality, '/') != NULL) {
 				print(PRINT_ERROR,
