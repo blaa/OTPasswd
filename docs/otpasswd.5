@@ -20,10 +20,10 @@
 .\"
 .\"   Author:  R Hannes Beinert & Tomasz bla Fortuna
 .\"   Version: otpasswd v0.5beta
-.\"   Update:  04-Jan-10
+.\"   Update:  07-Jan-10
 .\"
 .\"
-.TH OTPASSWD 5 2010-01-04 "OTPasswd v0.5beta" "OTPasswd User Manual"
+.TH OTPASSWD 5 2010-01-07 "OTPasswd v0.5beta" "OTPasswd User Manual"
 .\"
 .SH NAME
 ~/.otpasswd - OTPasswd user state information file
@@ -48,7 +48,7 @@ records for all users with \fBOTPasswd\fR state information.
 .SH FORMAT
 \fBOTPasswd\fR user state information is formatted as a single line of
 plain text with 14 fields delimited by colons (':').
-Note that the currently documented database format version is \fI6\fR.
+Note that the currently documented database format version is \fI8\fR.
 The fields are as follow:
 .PP
 .PD 0
@@ -145,10 +145,13 @@ been compromised.
 .\"
 .TP
 \fBTime of Last OOB Channel Use\fR
-Timestamp of the last out-of-band (OOB) channel use.
-If a passcode is sent via an OOB channel, this timestamp allows
-expiration of the passcode after a policy-determined time has elapsed.
-[Type: hex]
+Timestamp of the last out-of-band (OOB) channel use in seconds.
+This timestamp allows throttling the rate at which OOB passcodes are sent,
+as well as allowing the expiration of the OOB passcodes.
+Both the rate of OOB transmission and OOB expiration are determined by policy.
+(FIXME: Note that this feature is as yet unimplemented,
+hence the precise definition may change)
+[Type: decimal]
 (FIELD_CHANNEL_TIME)
 .\"
 .TP
@@ -165,6 +168,29 @@ This value determines the precise symbol alphabet to be used
 for passcode generation.
 [Type: decimal]
 (FIELD_ALPHABET)
+.PP
+.PD 0
+.RS
+.RS +4m
+.IP \fIValue\fR +8m
+\fIDescription\fR
+.RS +2m
+.IP 0 +6m
+Custom alphabet, defined in \fBotpasswd.conf\fR(5)
+.IP 1 +6m
+64 characters ("PPP standard")
+.IP 2 +6m
+88 characters ("PPP standard")
+.IP 3 +6m
+54 characters, no vowels
+.IP 4 +6m
+78 characters, no vowels
+.IP 5 +6m
+56 characters, only alphanumeric + digits
+.RE
+.RE
+.RE
+.PD
 .\"
 .TP
 \fBOperation Flags\fR
@@ -173,10 +199,23 @@ These flags determine various aspects of \fBOTPasswd\fR operation,
 such as whether the passcode counter has salt, or whether to
 display the actual passcode when typed during a login session.
 For a full listing of available flags, see the description of the
-\fB\-\-flag\fR option in \fBotpasswd\fR(1).
-(FIXME: Eventually should list flags here)
+\fB\-\-config\fR option in \fBotpasswd\fR(1).
+(FIXME: This field should probably be of type hex or octal)
 [Type: decimal]
 (FIELD_FLAGS)
+.PP
+.RS
+.RS +4m
+.TS
+tab(;);
+li li li, l l l.
+Value;Flag Name;Description
+0x00000001;FLAG_SHOW;Show passcode during entry
+0x00000002;FLAG_DISABLED;User disabled
+0x00000004;FLAG_SALTED;Passcode counter salt used
+.TE
+.RE
+.RE
 .\"
 .TP
 \fBStatic Password Hash\fR
@@ -190,15 +229,16 @@ by user.
 .\"
 .TP
 \fBTime of Static Password Change\fR
-Timestamp of the last static password change.
+Timestamp of the last static password change in seconds.
+This value is used to force a password change if dictated by policy.
 [Type: decimal]
 (FIELD_SPASS_TIME)
 .\"
 .TP
 \fBPasscard Label\fR
 Label text to be printed on each passcard.
-The hostname of the system is used by default, however it may
-be set to any value of the user's choice.
+The hostname of the system is used by default,
+however it may be set to any value of the user's choice.
 [Type: string]
 (FIELD_LABEL)
 .\"
@@ -271,7 +311,7 @@ The implicit security policy by operating in this manner is that
 .\"  CONFORMING TO
 .\"
 .SH NOTES
-See \fBotpasswd\fR(1) for further information about the
+See \fBotpasswd\fR(7) for further information about the
 \fBOTPasswd\fR one-time password authentication system.
 .\"
 .\"  BUGS
