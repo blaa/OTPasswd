@@ -996,7 +996,6 @@ int action_print(options_t *options, const cfg_t *cfg)
 		goto cleanup;
 	}
 
-
 	/* Parse argument */
 	selected = _parse_code_spec(s, options->action_arg, passcard_num, passcode_num);
 	if ((selected != 1) && (selected != 2)) {
@@ -1041,12 +1040,24 @@ int action_print(options_t *options, const cfg_t *cfg)
 				goto cleanup;
 			}
 
-			if (mpz_cmp(s->counter, passcode_num) > 0) {
-				printf(
-					"**********************************\n"
-					"* WARNING: You should never skip *\n"
-					"* backwards to reuse your codes! *\n"
-					"**********************************\n");
+			ret = mpz_cmp(s->counter, passcode_num);
+			if (ret > 0) {
+				/* Skipping backwards */
+				if (cfg->allow_backward_skipping 
+				    || security_is_root()) {
+					/* Allowed or root */
+					printf(
+						"**********************************\n"
+						"* WARNING: You should never skip *\n"
+						"* backwards to reuse your codes! *\n"
+						"**********************************\n");
+				} else {
+					printf("Skipping backwards denied by policy.\n");
+					break;
+				}
+			} else if (ret == 0) {
+				printf("Ignoring skip to the current passcode.\n");
+				break;
 			}
 
 			printf("Skipped to specified passcard.\n");
@@ -1081,13 +1092,26 @@ int action_print(options_t *options, const cfg_t *cfg)
 
 		case OPTION_SKIP:
 			/* Skip to passcode */
-			if (mpz_cmp(s->counter, passcode_num) > 0) {
-				printf(
-					"**********************************\n"
-					"* WARNING: You should never skip *\n"
-					"* backwards to reuse your codes! *\n"
-					"**********************************\n");
+			ret = mpz_cmp(s->counter, passcode_num);
+			if (ret > 0) {
+				/* Skipping backwards */
+				if (cfg->allow_backward_skipping 
+				    || security_is_root()) {
+					/* Allowed or root */
+					printf(
+						"**********************************\n"
+						"* WARNING: You should never skip *\n"
+						"* backwards to reuse your codes! *\n"
+						"**********************************\n");
+				} else {
+					printf("Skipping backwards denied by policy.\n");
+					break;
+				}
+			} else if (ret == 0) {
+				printf("Ignoring skip to the current passcode.\n");
+				break;
 			}
+
 			printf("Skipped to specified passcode.\n");
 			mpz_set(s->counter, passcode_num);
 			save_state = 1;

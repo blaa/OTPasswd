@@ -144,6 +144,7 @@ static void _config_defaults(cfg_t *cfg)
 		.allow_passcode_print = 1,
 		.allow_key_print = 1,
 		.allow_skipping = 1,
+		.allow_backward_skipping = 0,
 
 		.allow_shell_auth = 1,
 		.allow_verbose_output = 1,
@@ -430,6 +431,9 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 		} else if (_EQ(line_buf, "allow_skipping")) {
 			REQUIRE_ARG(0, 1);
 			cfg->allow_skipping = arg;
+		} else if (_EQ(line_buf, "allow_backward_skipping")) {
+			REQUIRE_ARG(0, 1);
+			cfg->allow_backward_skipping = arg;
 		} else if (_EQ(line_buf, "allow_verbose_output")) {
 			REQUIRE_ARG(0, 1);
 			cfg->allow_verbose_output = arg;

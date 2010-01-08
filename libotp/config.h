@@ -173,6 +173,10 @@ typedef struct {
 
 	/* User can skip further in passcodes */
 	int allow_skipping;
+
+	/* User can skip backwards in passcodes */
+	int allow_backward_skipping;
+
 	/* User can print passcards/passcodes */
 	int allow_passcode_print;
 	/* User can see his key/counter */
