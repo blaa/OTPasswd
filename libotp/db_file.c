@@ -259,7 +259,7 @@ error:
 }
 
 /* State files constants */
-static const int _version = 9;
+static const int _version = 1;
 static const char *_delim = ":"; /* Change it also in snprintf in store */
 
 static const int fields = 15;
@@ -548,7 +548,7 @@ int db_file_load(state *s)
 		goto cleanup;
 	}
 
-	if (sscanf(field[FIELD_FLAGS], "%u", &s->flags) != 1) {
+	if (sscanf(field[FIELD_FLAGS], "%x", &s->flags) != 1) {
 		print(PRINT_ERROR, "Error while parsing flags\n");
 		goto cleanup;
 	}
@@ -679,7 +679,7 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 		       "%s:%d:"	       /* User, version */
 		       "%s:%s:%s:"     /* Key, counter, latest_card */
 		       "%u:%u:%ju:"    /* Failures, recent fails, channel time */
-		       "%u:%u:%u:%s:"  /* Codelength, alphabet, flags, spass */
+		       "%u:%u:%x:%s:"  /* Codelength, alphabet, flags, spass */
 		       "%ju:"	       /* Time of spass change */
 		       "%s:%s\n",      /* label, contact */
 		       s->username, _version,
