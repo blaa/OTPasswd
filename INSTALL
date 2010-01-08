@@ -2,7 +2,7 @@
               OTPasswd - One-Time Password Authentication System
               --------------------------------------------------
                 https://savannah.nongnu.org/projects/otpasswd
-                        Updated: 07-Jan-10 (v0.5beta)
+                        Updated: 08-Jan-10 (v0.5beta)
 
                               INSTALLATION GUIDE
 
@@ -68,17 +68,24 @@ trusted, competent, and conversant in IT security issues, this may not be
 a relevant concern.  In any event, the USER DB mode effectively implies
 that OTPasswd security is optional.
 
-The second operational mode, the 'GLOBAL DB' mode, every user's configuration
-is stored in a single database under system control.  This operational
-mode may use a number of backend database interfaces, such as a flat-file
-in the /etc filesystem hierarchy, an LDAP database, or a MySQL database.
-The user has no read/write access to the configuration data, and hence the
-system is capable of enforcing OTPasswd security policies.  As an example,
-GLOBAL DB mode ensures that passcodes are never reused.  This mode of
-operation does require that the OTPasswd utility be installed as SUID root,
-which may be viewed by some as being undesirable, since this may present a
-security exposure in its own right.  The GLOBAL DB mode allows the system
-administrator to choose whether OTPasswd security is optional, or mandatory.
+In the second operational mode, the 'GLOBAL DB' mode, every user's
+configuration is stored in a single database under system control.
+This operational mode may use a number of backend database interfaces,
+such as a flat-file in the /etc filesystem hierarchy, an LDAP database, or a
+MySQL database.  The user has no read/write access to the configuration data,
+and hence the system is capable of enforcing OTPasswd security policies.
+As an example, GLOBAL DB mode ensures that passcodes are never reused.
+This mode of operation does require that the OTPasswd utility be installed
+as SUID root, which may be viewed by some as being undesirable since this
+may present a security exposure in its own right.  It should be stressed,
+however, that the OTPasswd software was written in a manner observant of
+secure coding practices, and while the utility is installed SUID root,
+it merely uses these privileges to read its configuration files and then
+it promptly drops the root privileges.  Or, put another way, the OTPasswd
+utility only holds root privileges for a brief time during which it never
+processes any user input.  The benefit of this approach is that the GLOBAL
+DB mode allows the system administrator to choose whether OTPasswd security
+is optional, or mandatory.
 
 It is important to note that this is the first critical decision that
 a system administrator must make in configuring OTPasswd.  No default
