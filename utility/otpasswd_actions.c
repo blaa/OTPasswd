@@ -269,7 +269,7 @@ static void _show_keys(const state *s)
 	/* Convert to user numbering */
 	mpz_add_ui(unsalted_counter, unsalted_counter, 1);
 
-	if (cfg->allow_key_print == 1 || security_is_root()) {
+	if (cfg->allow_key_print == 1 || security_is_privileged()) {
 		/* Print key in LSB as PPPv3 likes */
 		printf("Key     = "); crypto_print_hex(s->sequence_key, 32);
 
@@ -360,7 +360,7 @@ static int _update_flags(options_t *options, state *s, int generation)
 	/* Length of contact/label is ensured in process_cmd_line */
 	if (options->contact) {
 		ret = ppp_set_str(s, PPP_FIELD_CONTACT, options->contact,
-				  security_is_root() ? 0 : PPP_CHECK_POLICY);
+				  security_is_privileged() ? 0 : PPP_CHECK_POLICY);
 
 		switch (ret) {
 		case PPP_ERROR_ILL_CHAR:
@@ -388,7 +388,7 @@ static int _update_flags(options_t *options, state *s, int generation)
 
 	if (options->label) {
 		ret = ppp_set_str(s, PPP_FIELD_LABEL, options->label,
-				  security_is_root() ? 0 : PPP_CHECK_POLICY);
+				  security_is_privileged() ? 0 : PPP_CHECK_POLICY);
 		switch (ret) {
 		case PPP_ERROR_ILL_CHAR:
 			printf(
@@ -673,7 +673,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 	int remove = options->action == OPTION_KEY ? 0 : 1;
 
 	if (remove && 
-	    security_is_root() == 0 &&
+	    security_is_privileged() == 0 &&
 	    cfg->allow_key_removal == 0) {
 		printf("Key removal denied by policy.\n");
 		return 1;
@@ -692,7 +692,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 
 		/* Check regeneration policy */
 		if (!remove && 
-		    security_is_root() == 0 &&
+		    security_is_privileged() == 0 &&
 		    cfg->allow_key_regeneration == 0) {
 			printf("Key regeneration denied by policy.\n");
 			goto cleanup;
@@ -757,7 +757,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 		}
 
 		if (!remove && 
-		    security_is_root() == 0 &&
+		    security_is_privileged() == 0 &&
 		    cfg->allow_key_generation == 0) {
 			printf("Key generation denied by policy.\n");
 			goto cleanup;
@@ -964,13 +964,13 @@ int action_print(options_t *options, const cfg_t *cfg)
 	int selected = 0; 
 
 	if (options->action == OPTION_TEXT || options->action == OPTION_LATEX)
-		if (security_is_root() == 0 && cfg->allow_passcode_print == 0) {
+		if (security_is_privileged() == 0 && cfg->allow_passcode_print == 0) {
 			printf("Passcode printing denied by policy.\n");
 			return 1;
 		}
 
 	if (options->action == OPTION_SKIP)
-		if (security_is_root() == 0 && cfg->allow_skipping == 0) {
+		if (security_is_privileged() == 0 && cfg->allow_skipping == 0) {
 			printf("Passcode skipping denied by policy.\n");
 			return 1;
 		}
@@ -1044,7 +1044,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 			if (ret > 0) {
 				/* Skipping backwards */
 				if (cfg->allow_backward_skipping 
-				    || security_is_root()) {
+				    || security_is_privileged()) {
 					/* Allowed or root */
 					printf(
 						"**********************************\n"
@@ -1096,7 +1096,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 			if (ret > 0) {
 				/* Skipping backwards */
 				if (cfg->allow_backward_skipping 
-				    || security_is_root()) {
+				    || security_is_privileged()) {
 					/* Allowed or root */
 					printf(
 						"**********************************\n"

@@ -483,13 +483,10 @@ int db_file_load(state *s)
 
 	/* Permissions will be checked during locking
 	 * now, or was already checked */
-	/* TODO: We must die nice if state doesn't exists on DB=user */
 	ret = _db_file_permissions(db);
-	if (ret == STATE_IO_ERROR) {
-		print(PRINT_NOTICE, "File permission check failed\n");
+	if (ret != 0) {
 		return ret;
 	}
-
 
 	/* DB file should always be locked before changing.
 	 * Locking can only be omitted when we want to discard
@@ -909,9 +906,8 @@ cleanup:
 				     "file and save state.");
 			ret = STATE_IO_ERROR;
 		} else {
-			/* It might fail, but shouldn't
-			 * Also we just want to ensure others
-			 * can't read this file */
+			/* When state updated via PAM (root) 
+			 * we must set correct file owner. */
 			if (_db_file_permissions(db) != 0) {
 				print(PRINT_WARN,
 				      "Unable to set state file permissions. "
@@ -953,14 +949,16 @@ int db_file_lock(state *s)
 		return ret;
 	}
 
-	/* Ensure we've got enough permissions to lock/read */
+	/* TODO: This has to be called here only when DB=global
+	 * to ensure we've got enough permissions to create lock
+	 * inside /etc/otpasswd and inform user nicely 
+	 */
 	ret = _db_file_permissions(db);
 	if (ret == STATE_IO_ERROR) {
 		print(PRINT_NOTICE, "File permission check failed\n");
 		ret = STATE_LOCK_ERROR;
 		goto cleanup;
 	}
-
 
 	fl.l_type = F_WRLCK;
 	fl.l_whence = SEEK_SET;

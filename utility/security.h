@@ -19,34 +19,31 @@
 #ifndef _SECURITY_H_
 #define _SECURITY_H_
 
-/* Init environment for SUID/SGID program */
+/* Init environment for SUID program */
 extern void security_init(void);
 
 /* Temporary drop our effective rights */
-extern void security_temporal_drop(void);
-
-/* Pernamently drop rights */
-extern void security_permanent_drop(void);
-
-/* Pernamently switch user */
-extern void security_permanent_switch(void);
+/* extern void security_temporal_drop(void); */
 
 /* Restore rights which were dropped temporarily */
-extern void security_restore(void);
+/* extern void security_restore(void); */
 
-/* Are we SGID or SUID? Check ones defined in argument. */
-extern int security_privileged(int check_suid, int check_sgid);
+/* Pernamently drop rights back to the user who called us */
+extern void security_permanent_drop(void);
 
-/* Check if our SUID/SGID matches ones given and fail otherwise */
-extern void security_ensure_user(uid_t user_uid, uid_t user_gid);
+/* Pernamently switch user to given uid/gid */
+extern void security_permanent_switch(uid_t uid, uid_t gid);
 
-/* Are we root? */
-extern int security_is_root();
+/* Are we SUID? Check ones defined in argument. */
+extern int security_is_suid();
+
+/* Are we run by root? */
+extern int security_is_privileged();
 
 /* Parse user specification (name or UID) ensure it exists */
 extern char *security_parse_user(const char *spec);
 
 /* Get username of the user who runned current process */
-extern char *security_get_current_user(void);
+extern char *security_get_calling_user(void);
 
 #endif

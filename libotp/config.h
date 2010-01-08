@@ -238,6 +238,6 @@ typedef struct {
 /* Get options structure or NULL if error happens */
 extern cfg_t *cfg_get(void);
 
-
+extern int cfg_permissions(void);
 
 #endif

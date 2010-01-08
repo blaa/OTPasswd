@@ -198,7 +198,7 @@ int card_testcase(void)
 	int failed = 0;
 
 	mpz_init(cnt);
-	char *current_user = security_get_current_user();
+	char *current_user = security_get_calling_user();
 	state_init(&s, current_user);
 	free(current_user), current_user = NULL;
 	strcpy(s.label, "hostname long");
@@ -282,7 +282,7 @@ int state_testcase(void)
 	state s1, s2;
 	int failed = 0;
 	int test = 0;
-	char *current_user = security_get_current_user();
+	char *current_user = security_get_calling_user();
 
 	if (state_init(&s1, current_user) != 0)
 		printf("state_testcase[%2d] failed (%d)\n", test, failed++);
@@ -562,7 +562,7 @@ static int _ppp_testcase_authenticate(const char *passcode)
 	int retval = 0;
 
 	const char *prompt = NULL;
-	char *current_user = security_get_current_user();
+	char *current_user = security_get_calling_user();
 
 	/* OTP State */
 	state s;
@@ -662,7 +662,7 @@ int ppp_testcase(void)
 	char *buf1, *buf2;
 	int test = 1;
 	char passcode[17] = {0};
-	char *current_user = security_get_current_user();
+	char *current_user = security_get_calling_user();
 
 	const unsigned char ex_bin[32] = {
 		0x00, 0x00, 0x00, 0x00,

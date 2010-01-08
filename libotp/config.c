@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 /* For alphabet tests */
 #include <ctype.h>
@@ -25,6 +26,10 @@
 /* getpwnam */
 #include <sys/types.h>
 #include <pwd.h>
+
+/* stat */
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "print.h"
 #include "config.h"
@@ -311,6 +316,12 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 				}
 				cfg->user_uid = pwd->pw_uid;
 				cfg->user_gid = pwd->pw_gid;
+
+				if (cfg->user_uid == 0) {
+					print(PRINT_ERROR,
+					      "Config Error: USER variable is set to root.");
+					goto error;
+				}
 			}
 		} else if (_EQ(line_buf, "db")) {
 			_right_trim(equality);
@@ -529,9 +540,6 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 
 	} while (!feof(f));
 
-
-	/* TODO Check obvious errors like default value */
-
 	retval = 2;
 	if (cfg->show_allow == 0) {
 		if (cfg->show_def == 1) {
@@ -615,4 +623,34 @@ cfg_t *cfg_get(void)
 	cfg_init = &cfg;
 
 	return cfg_init;
+}
+
+int cfg_permissions(void)
+{
+	struct stat st;
+	if (stat(CONFIG_PATH, &st) != 0) {
+		printf("Unable to check config file permissions\n");
+		return 1;
+	}
+
+	if (st.st_uid != 0 || st.st_gid != 0) {
+		printf("Config file not owned by root!\n");
+		return 1;
+	}
+
+	cfg_t *cfg = cfg_get();
+	assert(cfg);
+
+	switch (cfg->db) {
+	case CONFIG_DB_MYSQL:
+	case CONFIG_DB_LDAP:
+		if (st.st_mode & (S_IRWXO)) {
+			printf("Config file is readable by others in LDAP/MySQL mode!\n");
+			return 1;
+		}
+	default:
+		break;
+	}
+
+	return 0;
 }

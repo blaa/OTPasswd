@@ -352,25 +352,25 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 
 		case OPTION_USER:
 			assert(optarg);
-			if (security_is_root() == 0) {
+			if (security_is_privileged() == 0) {
 				printf("Only root can use the '--user' option\n");
-				exit(EXIT_SUCCESS);
+				exit(EXIT_FAILURE);
 			}
 
 			if (options->username) {
 				printf("Multiple '--user' options passed\n");
-				exit(EXIT_SUCCESS);
+				exit(EXIT_FAILURE);
 			}
 
 			options->username = security_parse_user(optarg);
 			if (!options->username) {
 				printf("Illegal user specified on command prompt\n");
-				exit(EXIT_SUCCESS);
+				exit(EXIT_FAILURE);
 			}
 			break;
 
 		case OPTION_VERBOSE:
-			if (!security_is_root() && cfg->allow_verbose_output == 0) {
+			if (!security_is_privileged() && cfg->allow_verbose_output == 0) {
 				printf("Verbose output denied by policy.\n");
 				goto error;
 			}
@@ -394,7 +394,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 
 	if (!options->username) {
 		/* User not specified, use the one who has ran us */
-		options->username = security_get_current_user();
+		options->username = security_get_calling_user();
 		if (!options->username) {
 			printf("Unable to determine name of current user!\n");
 			goto error;
@@ -541,23 +541,32 @@ int main(int argc, char **argv)
 		.set_alphabet = -1,
 	};
 
-	/* Init environment, store uids, etc. */
+	/* 1) Init safe environment, store current uids, etc. */
 	security_init();
 
-	/* Bootstrap logging subsystem. */
+	/* After this point we can use stdout. 
+	 * We might be:
+	 * a) Run by root.
+	 * b) Set-uid root. (On DB=global or user)
+	 * c) Not set-uid. (DB=user)
+	 *
+	 * Now, try to read config file.
+	 */
+
+	/* 2a) Bootstrap logging subsystem. */
 	if (print_init(PRINT_WARN, 1, 0, NULL) != 0) {
 		printf("ERROR: Unable to start log subsystem\n");
-		exit(EXIT_FAILURE);
+		return 1;
 	}
 
 	/* TODO:
 	 * If we are SUID and DB=LDAP or DB=MySQL ensure only
 	 * we can read config.
+	 * TODO: Ensure config is owned by root.
 	 */
 
-	/* Get global config */
+	/* 2b) Get global config */
 	cfg = cfg_get();
-
 
 	if (!cfg) {
 		printf("\nUnable to read config file from %s\n", CONFIG_PATH);
@@ -567,7 +576,13 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	/* Database unconfigured */
+	/* 3) Check common configuration errors */
+
+	if (cfg_permissions() != 0) {
+		return 1;
+	}
+
+	/* Check if configuration was done. Database unconfigured */
 	if (cfg->db == CONFIG_DB_UNCONFIGURED) {
 		printf("Configuration error. You have to "
 		       "edit otpasswd.conf and select DB option.\n");
@@ -575,50 +590,51 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	/* If DB is global, mysql or ldap we should be SGID/SUID */
-	if (cfg->db != CONFIG_DB_USER &&
-	    security_privileged(1, 1) == 0) {
-		/* Something is wrong. We are not SGID nor SUID.
+	/* If DB is global, mysql or ldap, utility must be SUID root. 
+	 * We can't detect this easily if we are run by root. So, 
+	 * treat root as run by suid.
+	 */
+	if (security_is_suid() == 0 && 
+	    cfg->db != CONFIG_DB_USER &&
+	    security_is_privileged() == 0) {
+		/* Something is wrong. We are not SUID.
 		 * Or we're run as SUID user which is also bad.
 		 */
-		print(PRINT_WARN, "Database type set to global/MySQL/LDAP, yet program "
-		       "is not a SUID or is incorrectly ran by it's owner.\n");
+		print(PRINT_ERROR, 
+		      "Database type set to global, MySQL or LDAP, yet program "
+		       "is not a SUID root.\n");
+		print_fini();
+		return 1;
 	}
 
+	/* 4) We must drop permissions now. 
+	 * If DB=user - drop to the user who called us.
+	 * If DB=global - drop to cfg->user_uid
+	 */
+	switch (cfg->db) {
+	case CONFIG_DB_GLOBAL:
+		/* Drop root permanently to the cfg->user_uid 
+		 * We do this even if we are run as root. */
+		security_permanent_switch(cfg->user_uid, cfg->user_gid);
+		break;
+		
+	case CONFIG_DB_MYSQL:
+	case CONFIG_DB_LDAP:
+	case CONFIG_DB_USER:
+		/* Drop permanently back to the user who called us */
+		/* FIXME: User won't be able to ptrace us 
+		   rather and get passwords... */
+		if (!security_is_privileged()) {
+			/* We don't drop if we are root, so the --user
+			 * option will work. */
+			security_permanent_drop();
+		}
+		break;
+	}
 	print_fini();
 
-	/* Config is read. We know LDAP/MySQL passwords and
-	 * if DB is not global we must drop permissions now
-	 * as our SUID user might not be able to read state
-	 * file from user directory
-	 *
-	 *
-	 * FIXME: Can signal from user while connecting to LDAP/MySQL
-	 * cause problems?
-	 */
-	if (cfg->db != CONFIG_DB_GLOBAL) {
-		security_permanent_drop();
-
-		/* After drop we can safely parse user data */
-		ret = process_cmd_line(argc, argv, &options, cfg);
-	} else {
-		/* Ensure our SUID matches config */
-		security_ensure_user(cfg->user_uid, cfg->user_gid);
-
-		/* Before we gain pernamently permissions,
-		 * drop them temporarily and parse user data */
-		security_temporal_drop();
-		ret = process_cmd_line(argc, argv, &options, cfg);
-
-
-		/* Otherwise - switch pernamently to SUID user
-		 * so the user can't send us any signals while we
-		 * have state files locked */
-		security_permanent_switch();
-
-
-	}
-
+	/* 5) Config read. Privileges dropped. Parse user data. */
+	ret = process_cmd_line(argc, argv, &options, cfg);
 	if (ret != 0)
 		return ret;
 

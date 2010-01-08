@@ -85,17 +85,15 @@ void security_init(void)
 		exit(EXIT_FAILURE);
 	}
 
-	/* Set umask so others won't read our files */
-	/* Normal or SUID */
+	/* Set umask to 700 so others/group won't read our files */
 	umask(S_IWOTH | S_IROTH | S_IXOTH | S_IWGRP | S_IRGRP | S_IXGRP);
 
-
 	/* Just check if everything is all right... */
-	if (real_uid != 0 && set_uid == 0) {
+/*	if (real_uid != 0 && set_uid == 0) {
 		printf("OTPasswd is set-uid root. And it shouldn't. Fix it.\n");
 		exit(EXIT_FAILURE);
 	}
-
+*/
 	if (real_gid != set_gid) {
 		printf("We're not supposed to work as SGID program. SUID or nothing.\n");
 		exit(EXIT_FAILURE);
@@ -103,7 +101,6 @@ void security_init(void)
 
 	if (real_uid != set_uid) {
 		is_suid = 1;
-
 	}
 
 	if (is_suid) {
@@ -142,10 +139,21 @@ void security_init(void)
 		if (signal(SIGTTOU, SIG_IGN) == SIG_ERR)
 			ret++;
 		if (ret) {
-			printf("Unable to disable signals. Quitting before we touch state files\n");
+			printf("Unable to disable signals. Quitting before we touch state files.\n");
 			exit(EXIT_FAILURE);
 		}
 
+		/* We support running as SUID root program
+		 * or non-suid at all */
+		if (set_uid != 0) {
+			printf(
+				"This program is intended for use either without a Set-UID bit set,\n"
+				"or suid-root. In the first mode you're limited to DB=user setting.\n");
+			printf("Configuration error, exiting.\n");
+			exit(EXIT_FAILURE);
+		}
+
+		/* We are suid-root. TODO: Drop capabilities. */
 	}
 }
 
@@ -191,7 +199,7 @@ error:
 	exit(EXIT_FAILURE);
 }
 
-void security_permanent_switch(void)
+void security_permanent_switch(uid_t uid, uid_t gid)
 {
 	assert(real_gid != -1);
 
@@ -200,15 +208,17 @@ void security_permanent_switch(void)
 	 * seteuid(drop_to); - drop
 	 * ensure correctness
 	 */
-
-	if (setresuid(set_uid, set_uid, set_uid) != 0) {
+	if (setresgid(gid, gid, gid) != 0) {
 		goto error;
 	}
 
-	/* Ignoring GID */
+
+	if (setresuid(uid, uid, uid) != 0) {
+		goto error;
+	}
 
 	/* Paranoid check */
-	if (geteuid() != set_uid) {
+	if (geteuid() != uid) {
 		goto error;
 	}
 	
@@ -270,35 +280,23 @@ error:
 	exit(EXIT_FAILURE);
 }
 
-int security_privileged(int check_suid, int check_sgid)
+int security_is_privileged()
 {
-	if (check_suid && (real_uid != set_uid || real_uid == 0))
-		return 1;
-
-	if (check_sgid && (real_gid != set_gid))
-		return 1;
-
-	return 0;
-}
-
-void security_ensure_user(uid_t user_uid, uid_t user_gid)
-{
-	if (set_uid != user_uid || set_gid != set_gid) {
-		printf("USER option defined in config doesn't match utility owner\n");
-		exit(EXIT_FAILURE);	
-	}
-}
-
-int security_is_root()
-{
-	if (real_uid == 0)
+	if (real_uid == 0) 
 		return 1;
 	else
 		return 0;
 }
 
+int security_is_suid()
+{
+	if (is_suid) 
+		return 1;
+	else
+		return 0;
+}
 
-char *security_get_current_user(void)
+char *security_get_calling_user(void)
 {
 	const struct passwd *pwdata;
 	const uid_t uid = real_uid;
