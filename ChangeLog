@@ -101,6 +101,7 @@ TODO Major:
               skipping count of passcards?
 
 Todo Minor:
+        * [?] Will we be pppv3 compatible on big-endian?
         * [?] Sourced key generation (from file, string...)
         * [?] Add error_t and bool_t to differentiate differently
               used ints?

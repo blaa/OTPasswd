@@ -191,6 +191,8 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 
 	char line_buf[CONFIG_MAX_LINE_LEN];
 
+	/* TODO/FIXME: Check if config is owned by root */
+
 	if (config_path) {
 		f = fopen(config_path, "r");
 	} else {
@@ -566,7 +568,8 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 		goto error;
 	}
 
-
+	/* TODO/FIXME: Check if config readable by others and 
+	 * DB=mysql/ldap */
 
 	/* All ok? */
 	if (fail)

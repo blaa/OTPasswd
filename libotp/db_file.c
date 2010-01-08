@@ -55,20 +55,42 @@ static char *_strtok(char *input, const char *delim)
 	return token;
 }
 
-/* Check if db exists, and enforce permissions.
- * - enforce it's correct permissions */
+/* We might be run by root (from PAM) or suid to cfg->user_uid.
+ *
+ * 1) Check if db exists
+ * 2) Check if it has correct permissions.
+ * print warning if anything is wrong, but don't fix permissions.
+ * If we will be unable to continue in general sense (directory
+ * not owned by us - fail. 
+ *
+ * Mode 1. DB=user. 
+ * Check ownership and see if others can read it.
+ *
+ * Mode 2. DB=global or other
+ * We're run as root then we drop rights to match cfg->user_uid.
+ *
+ * State files are created with PAM also. Because of this
+ * we must ensure correct owner of file.
+ */
 static int _db_file_permissions(const char *db_path)
 {
+	/* Limit number of warnings printed */
+	static int printed = 0;
+
 	const uid_t uid = getuid();
 	struct stat st;
 	cfg_t *cfg = cfg_get();
 
-	if (uid != 0 && cfg->db == CONFIG_DB_GLOBAL) {
-		/* Not root. So we're run as utility, most probably.
-		 * Then our uid must match directory uid,
-		 * and db uid. */
+	/* Ensure permissions were changed */
+	if (uid != 0) {
+		if (cfg->db != CONFIG_DB_USER) {
+			assert(getuid() == cfg->user_uid);
+		}
+	}
 
-		/* Start with directory */
+	switch (cfg->db) {
+	case CONFIG_DB_GLOBAL:
+		/*** Start with directory ***/
 		if (stat(CONFIG_DIR, &st) != 0) {
 			/* Might be caused by some weird race condition.
 			 * Just fail */
@@ -84,92 +106,119 @@ static int _db_file_permissions(const char *db_path)
 			return STATE_IO_ERROR;
 		}
 
-		/* 2) Owned by us */
-		if (st.st_uid != uid) {
+		/* 2) Owned by user defined in config */
+		if (st.st_uid != cfg->user_uid) {
 			/* Not ok. */
 			print(PRINT_ERROR, 
-			      "Owner of DB file must match owner "
-			      "of SUID utility.\n");
+			      "Owner of \"%s\" file must match USER field defined in config.\n", 
+			      CONFIG_DIR);
 			return STATE_IO_ERROR;
 		}
 
 		/* 3) No "write" rights for group or others too */
 		if (st.st_mode & (S_IWGRP | S_IWOTH)) {
-			/* If were wrong enforce rwx --- --- */
-			if (chmod(CONFIG_DIR, S_IRWXU) != 0) {
-				print_perror(PRINT_NOTICE, "Unable to enforce "
-					     "mode of global state directory.\n");
-				return STATE_IO_ERROR;
+			/* If were wrong show it. */
+			print(PRINT_ERROR, 
+			      "Directory \"%s\" has write permissions "
+			      "for others or group. Fix it and try again.\n",
+			      CONFIG_DIR);
+			return STATE_IO_ERROR;
+		}
+
+		/*** Directory checked, now check file itself ***/
+		if (stat(db_path, &st) != 0) {
+			/* Does not exists */
+			print(PRINT_NOTICE, "Database \"%s\" does not exists.\n",
+				db_path);
+			return STATE_NON_EXISTENT;
+		}
+
+		/* Is DB a regular file? */
+		if (!S_ISREG(st.st_mode)) {
+			print(PRINT_ERROR, "Database \"%s\" is not a regular file.\n",
+				db_path);
+			return STATE_IO_ERROR;
+		}
+
+		/* Is it at most 700? */
+		if (st.st_mode & (S_IWGRP | S_IWOTH)) {
+
+			print(PRINT_ERROR, 
+			      "Database \"%s\" has write permissions "
+			      "for others or group. Fix it and try again.\n",
+			      CONFIG_DIR);
+			return STATE_IO_ERROR;
+		}
+
+		/* Is it owned by user from config? */
+		if (st.st_uid != cfg->user_uid) {
+			/* Not it's not */
+			if (uid == 0) {
+				/* Ok. It might be created by PAM. Then - fix */
+				print(PRINT_ERROR, "PAM FIXING! REMOVE THIS!\n");
+				if (chown(db_path, cfg->user_uid, cfg->user_gid) != 0) {
+					print(PRINT_ERROR,
+					      "Fixing perms of global DB failed while root.\n");
+					return STATE_IO_ERROR;
+				}
+				/* OK */
 			} else {
-				print(PRINT_WARN, 
-				      "State directory had write permissions "
-				      "for others or group.\n");
+				print(PRINT_ERROR, "Database \"%s\" not owned by user defined in config.\n",
+				      db_path);
+				return STATE_IO_ERROR;
 			}
 		}
-		
-	}
 
+		break;
 
-	/* Now we consider state file itself. Either user or global */
+	case CONFIG_DB_USER:
+		/* Be much more lenient than in GLOBAL_DB mode. */
 
-	/* 1) If state doesn't exist return appropriate error.
-	 * 2) It must be a file
-	 * 3) Others should never have rwx.
-	 *
-	 * We can be run as either from PAM as uid=0,
-	 * or from the utility with credentials of either
-	 * the user or special SUID otpasswd user. 
-	 */
-
-	/* 1) Check if state file exists and read it's parameters */
-	if (stat(db_path, &st) != 0) {
-		/* Does not exists */
-		if (cfg->db == CONFIG_DB_USER)
-			return STATE_NON_EXISTENT;
-		else {
-			return STATE_NO_USER_ENTRY;
-		}
-	}
-
-	/* 2) Is file */
-	if (!S_ISREG(st.st_mode)) {
-		/* Error, not a file */
-		print(PRINT_ERROR, "State file is not a regular file\n");
-		return STATE_IO_ERROR;
-	}
-
-	/* 3) Others/Group */
-	if (st.st_mode & (S_IRWXG | S_IRWXO)) {
-		if (chmod(db_path, S_IRUSR|S_IWUSR) != 0) {
-			print_perror(PRINT_NOTICE, 
-				     "Unable to enforce state file permissions.\n");
-			return STATE_IO_ERROR;
-		} else {
-			print(PRINT_WARN,
-			      "State file had incorrect permissions "
-			      "for others or group.\n");
-		}
-	}
-
-	/* Now differentiate configurations and ensure details */
-	if (cfg->db == CONFIG_DB_USER) {
-		/* TODO: Enforce uid of file matches uid of s->username uid */
-	} else 	if (cfg->db == CONFIG_DB_GLOBAL) {
-		/* If we are not root, then we're run as SUID utility:
-		 * - File must be owned by our uid
+		/* 1) If state doesn't exist return appropriate error.
+		 * 2) It must be a file
+		 * 3) Others should never have rwx - notice.
+		 *
+		 * We can be run as either from PAM as uid=0,
+		 * or from the utility with credentials of either
+		 * the user or special SUID otpasswd user. 
 		 */
 
-		if (uid != 0) {
-			if (st.st_uid != uid) {
-				/* Not ok... */
-				print(PRINT_ERROR, 
-				      "Owner of state file must match owner "
-				      "of SUID utility.\n");
-				return STATE_IO_ERROR;
-			}
-		} 
-	}
+		/* 1) Check if state file exists and read it's parameters */
+		if (stat(db_path, &st) != 0) {
+			/* Does not exists */
+			print(PRINT_NOTICE, "User state doesn't exists.\n");
+			return STATE_NON_EXISTENT;
+		}
 
+		/* 2) Is file */
+		if (!S_ISREG(st.st_mode)) {
+			/* Error, not a file */
+			print(PRINT_ERROR, "User state is not a regular file\n");
+			return STATE_IO_ERROR;
+		}
+
+		/* 3) Others/Group */
+		if (st.st_mode & (S_IRWXG | S_IRWXO)) {
+			if (!printed)
+				print(PRINT_WARN,
+				      "User state file is readable by others or by a group.\n");
+		}
+
+		/* TODO: Enforce uid of file matches uid of s->username uid */
+		if (uid != 0 && st.st_uid != uid) {
+			if (!printed)
+				print(PRINT_WARN, "User state not owned by user "
+				      "running the utility.\n");
+		}  
+		break;
+
+	default:
+		print(PRINT_ERROR, "You should never end up here\n");
+		assert(0);
+		return 1;
+		break;
+	}
+	printed++;
 	return 0;
 }
 
