@@ -56,23 +56,23 @@ Done:
         * [+] Add -r option to remove key and disable OTP.
         * [+] Fix user interface a bit.
         * [+] Keeping track of failures.
-	      Implemented, but not tested.
+              Implemented, but not tested.
         * [+] Any possibility to change directory from /etc/otpasswd?
-	      This is going to be compile time option. Also otshadow 
-	      will be required to reside inside.
+              This is going to be compile time option. Also otshadow 
+              will be required to reside inside.
         * [+] right trim values from config?
         * [+] Check custom alphabet correction (whitespaces or multiple
               occurences of same character not allowed.
 
 TODO Major:
-	* [?] Logging warnings printed to user at WARN level
-	* [?] Key quality checking (duplicates)
-	* [?] Verify SIGCHLD won't clobber anything.
+        * [?] Logging warnings printed to user at WARN level
+        * [?] Key quality checking (duplicates)
+        * [?] Verify SIGCHLD won't clobber anything.
         * [-] "Problem solving section" in docs, mentioning use of -v on
               errors in the first place.
         * [%] Should we start suid root then drop to some config-defined user
               so attacker who breaks otpasswd can't modify the executable?
-	      Probably yes. Two modes of operation.
+              Probably yes. Two modes of operation.
         * [?] Global DB should work with users which aren't in passwd.
         * [?] Check if lock files are links. if so. fail. Or rather always unlink
               before overwritting.
@@ -88,23 +88,25 @@ TODO Major:
               explicitly to manage state information unless something
               more fine-grained is necessary. State on the other hand
               uses 'db' backend for operating on files/databases.
-	      * Lots of things done in direction to finish this task
+              * Lots of things done in direction to finish this task
         * [-] Scan all FIXME/TODO entries
         * [?] Use locales for user messages [_("")? ]
         * [?] SELinux compatibility.
         * [?] Import/export of ascii state lines...
-	* [%] User can always remove DISABLED flag if he can regenerate state.
-	      Should he be allowed to do this?
+        * [%] User can always remove DISABLED flag if he can regenerate state.
+              Should he be allowed to do this?
         * [?] Make otpasswd work with su (there's additional information 'who
-	      is trying to get authenticated'. Just test it.
+              is trying to get authenticated'. Just test it.
+        * [?] Skip policy; deny skipping backwards. Add some semantic for
+              skipping count of passcards?
 
 Todo Minor:
         * [?] Add error_t and bool_t to differentiate differently
               used ints?
         * [?] Improve LaTeX output (some colors, borders?)
         * [?] Incorporate SSH key fingerprints on passcards?
-	      Use some file as passcard background, allow hook
-	      regenerating this passcard
+              Use some file as passcard background, allow hook
+              regenerating this passcard
         * [-] Keep lines below 75 columns? Or 80?
 
 2009-12-13 v0.4
@@ -252,3 +254,5 @@ Todo Minor:
         * [-] Calling external script for mailing/sms
         * [-] Share objects between targets (CMake)
         * [-] Using Gecos field for phone information?
+
+vim: expandtab:ts=8

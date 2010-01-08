@@ -20,7 +20,7 @@
 #define _STATE_H_
 
 #include <gmp.h>
-#include <time.h>
+#include <inttypes.h>
 #include "ppp_common.h"
 
 /*** Config ***/
@@ -29,6 +29,7 @@
 /* Base for storing big numbers inside STATE_FILENAME */
 #define STATE_BASE	16
 
+typedef intmax_t state_time_t;
 
 /*** State ***/
 typedef struct {
@@ -58,7 +59,7 @@ typedef struct {
 	int spass_set; /* Bool: 0 - not set, 1 - set */
 
 	/* Timestamp of the last change of static password */
-	time_t spass_time;
+	state_time_t spass_time;
 
 	/* Card label (might be zeroed, then hostname is used) */
 	char label[STATE_LABEL_SIZE];
@@ -74,7 +75,7 @@ typedef struct {
 	unsigned int recent_failures;
 
 	/* UNIX timestamp of latest channel usage */
-	time_t channel_time;
+	state_time_t channel_time;
 
 	/*** Temporary / not-saved data ***/
 	char *prompt; /* Keep it here so we can safely dispose of it */

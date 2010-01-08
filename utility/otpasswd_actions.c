@@ -17,13 +17,14 @@
  **********************************************************************/
 
 #ifndef PROG_VERSION
-#define PROG_VERSION "v0.5b1"
+#define PROG_VERSION "v0.5b3"
 #endif
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 #include <gmp.h>
 
 #include <assert.h>

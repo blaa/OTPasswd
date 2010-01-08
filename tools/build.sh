@@ -1,7 +1,7 @@
 #!/bin/sh
 echo Cleaning...
 make clean
-rm -rf ./CMakeFiles ./CMakeCache.txt CTestTestfile.cmake
+rm -rf ./CMakeFiles ./CMakeCache.txt CTestTestfile.cmake Makefile
 echo OK
 sleep 1
 echo Configuring...

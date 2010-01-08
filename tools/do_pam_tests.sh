@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ ! -e CMakeLists.txt ]; then
-	echo "Run this script from main project directory: ./tests/do_pam_tests.sh"
+	echo "Run this script from main project directory: ./tools/do_pam_tests.sh"
 	exit 2
 fi
 
@@ -31,41 +31,43 @@ make || (echo "Build failed"; exit 1)
 
 echo "Installing into the system"
 make install || exit 1
+cat /etc/otpasswd/otpasswd.conf | sed 's/# DB=/DB=/g' > /etc/otpasswd/otpasswd.conf.2
+mv /etc/otpasswd/otpasswd.conf.2 /etc/otpasswd/otpasswd.conf
 cp examples/otpasswd-testcase /etc/pam.d/
 
 # additional testcases which will create a state
 rm -rf ~/.otpasswd
-yes no | ./otpasswd -f salt=off -f codelength=5 -f alphabet=3 -v -f contact=ble -f label=blebla -k
-yes yes | ./otpasswd -v -f salt=on -f codelength=6 -f alphabet=2 -f contact=ble -f label=lala -k
+yes no | ./otpasswd -c salt=off -c codelength=5 -c alphabet=3 -v -c contact=ble -c label=blebla -k
+yes yes | ./otpasswd -v -c salt=on -c codelength=6 -c alphabet=2 -c contact=ble -c label=lala -k
 yes yes | ./otpasswd -v -r
 
 # Pam tests on safe defaults please.
-yes yes | ./otpasswd -v -f salt=on -f alphabet=1 -f codelength=4 -k
+yes yes | ./otpasswd -v -c salt=on -c alphabet=1 -c codelength=4 -k
 
 # This should run --check atleast once
 make test 
 
 echo "Building PAM testcase"
-(cd tests; make pam_test) || exit 5
+(cd tools; make pam_test) || exit 5
 
 # Regenerate state
-yes yes | ./otpasswd -v -f salt=on -f alphabet=1 -f codelength=4 -k
+yes yes | ./otpasswd -v -c salt=on -c alphabet=1 -c codelength=4 -k
 
-./tests/pam_test root $(./otpasswd -t current)
+./tools/pam_test root $(./otpasswd -t current)
 
 otpasswd -s 5000 # After last passcode
 
-./tests/pam_test root $(./otpasswd -t current)
+./tools/pam_test root $(./otpasswd -t current)
 
 # Cause funny error:
 otpasswd -s 4294967260 # Skip to the last
 otpasswd -a 1234 # Use it up!
-otpasswd -f show=off
+otpasswd -c show=off
 
-./tests/pam_test root $(./otpasswd -t current)
+./tools/pam_test root $(./otpasswd -t current)
 
 # Regenerate safe defaults
-yes yes | ./otpasswd -v -f salt=on -f alphabet=1 -f codelength=4 -k
+yes yes | ./otpasswd -v -c salt=on -c alphabet=1 -c codelength=4 -k
 
 # GCOV version:
 

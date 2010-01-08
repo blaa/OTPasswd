@@ -498,7 +498,7 @@ int db_file_load(state *s)
 	for (i = 0; i < 32; i++) {
 		char *pos = &field[FIELD_KEY][i*2];
 		int tmp;
-		if (!pos) {
+		if (!*pos || !*(pos+1)) {
 			print(PRINT_ERROR, "Error while parsing sequence key.\n");
 			goto cleanup;
 		}
@@ -533,7 +533,7 @@ int db_file_load(state *s)
 		goto cleanup;
 	}
 
-	if (sscanf(field[FIELD_CHANNEL_TIME], "%zu", &s->channel_time) != 1) {
+	if (sscanf(field[FIELD_CHANNEL_TIME], "%ju", &s->channel_time) != 1) {
 		print(PRINT_ERROR, "Error while parsing channel use time.\n");
 		goto cleanup;
 	}
@@ -561,7 +561,7 @@ int db_file_load(state *s)
 			goto cleanup;
 		}
 
-		if (sscanf(field[FIELD_SPASS_TIME], "%zu", &s->spass_time) != 1) {
+		if (sscanf(field[FIELD_SPASS_TIME], "%ju", &s->spass_time) != 1) {
 			print(PRINT_ERROR, "Error while parsing static password change time.\n");
 			goto cleanup;
 		}
@@ -678,9 +678,9 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 	tmp = snprintf(buffer, buff_length,
 		       "%s:%d:"	       /* User, version */
 		       "%s:%s:%s:"     /* Key, counter, latest_card */
-		       "%u:%u:%zu:"    /* Failures, recent fails, channel time */
+		       "%u:%u:%ju:"    /* Failures, recent fails, channel time */
 		       "%u:%u:%u:%s:"  /* Codelength, alphabet, flags, spass */
-		       "%zu:"	       /* Time of spass change */
+		       "%ju:"	       /* Time of spass change */
 		       "%s:%s\n",      /* label, contact */
 		       s->username, _version,
 		       sequence_key, counter, latest_card,
