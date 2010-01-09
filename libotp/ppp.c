@@ -869,8 +869,24 @@ int ppp_get_mpz(const state *s, int field, mpz_t arg)
 		mpz_set(arg, s->counter);
 		break;
 
+	case PPP_FIELD_UNSALTED_COUNTER:
+		mpz_set(arg, s->counter);
+		if (s->flags & FLAG_SALTED) {
+			mpz_and(arg, arg, s->code_mask);
+		}
+		mpz_add_ui(arg, arg, 1);
+		break;
+
 	case PPP_FIELD_LATEST_CARD:
 		mpz_set(arg, s->latest_card);
+		break;
+
+	case PPP_FIELD_MAX_CARD:
+		mpz_set(arg, s->max_card);
+		break;
+
+	case PPP_FIELD_MAX_CODE:
+		mpz_set(arg, s->max_code);
 		break;
 
 	default:

@@ -107,7 +107,11 @@ enum {
 	PPP_FIELD_FLAGS,		/* unsigned int */
 
 	PPP_FIELD_COUNTER, 		/* mpz */
+	PPP_FIELD_UNSALTED_COUNTER, 	/* mpz */
 	PPP_FIELD_LATEST_CARD,		/* mpz */
+	PPP_FIELD_MAX_CARD,		/* mpz */
+	PPP_FIELD_MAX_CODE,		/* mpz */
+	
 
 	PPP_FIELD_USERNAME,		/* char * */
 	PPP_FIELD_PROMPT,		/* char * */

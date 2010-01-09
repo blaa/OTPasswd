@@ -173,33 +173,35 @@ static int _is_passcode_in_range(const state *s, const mpz_t passcard)
 static void _show_flags(const state *s)
 {
 	cfg_t *cfg = cfg_get();
-	int flags = ppp_get_int(s, PPP_FIELD_FLAGS);
 	int alphabet = ppp_get_int(s, PPP_FIELD_ALPHABET);
 	int code_length = ppp_get_int(s, PPP_FIELD_CODE_LENGTH);
-	const char *label = NULL;
-	const char *contact = NULL;
-	ppp_get_str(s, PPP_FIELD_LABEL, &label);
-	ppp_get_str(s, PPP_FIELD_LABEL, &contact);
 
 	/* Calculate unsalted counter so we can show it user */
-	mpz_t unsalted_counter;
-	mpz_init_set(unsalted_counter, s->counter);
-	if (s->flags & FLAG_SALTED) {
-		mpz_and(unsalted_counter, unsalted_counter, s->code_mask);
-	}
-	mpz_add_ui(unsalted_counter, unsalted_counter, 1);
+	mpz_t tmp;
+	mpz_init(tmp);
 
 	printf("Current state:\n");
 	gmp_printf("Current card        = %Zd\n", s->current_card);
-	gmp_printf("Current code        = %Zd\n", unsalted_counter);
-	gmp_printf("Latest printed card = %Zd\n", s->latest_card);
-	gmp_printf("Max card            = %Zd\n", s->max_card);
-	gmp_printf("Max code            = %Zd\n", s->max_code);
 
-	mpz_clear(unsalted_counter);
+	/* Counter */
+	ppp_get_mpz(s, PPP_FIELD_UNSALTED_COUNTER, tmp);
+	gmp_printf("Current code        = %Zd\n", tmp);
+
+	ppp_get_mpz(s, PPP_FIELD_LATEST_CARD, tmp);
+	gmp_printf("Latest printed card = %Zd\n", tmp);
+
+	ppp_get_mpz(s, PPP_FIELD_MAX_CARD, tmp);
+	gmp_printf("Max card            = %Zd\n", tmp);
+
+	ppp_get_mpz(s, PPP_FIELD_MAX_CODE, tmp);
+	gmp_printf("Max code            = %Zd\n", tmp);
+
+	mpz_clear(tmp);
 
 
+	int flags = ppp_get_int(s, PPP_FIELD_FLAGS);
 	printf("Configuration:\n");
+
 	/* Display flags */
 	if (flags & FLAG_SHOW)
 		printf("show=on ");
@@ -219,6 +221,12 @@ static void _show_flags(const state *s)
 	else
 		printf("(salt=off)\n");
 
+
+	const char *label = NULL;
+	const char *contact = NULL;
+	ppp_get_str(s, PPP_FIELD_LABEL, &label);
+	ppp_get_str(s, PPP_FIELD_LABEL, &contact);
+
 	if (label && strlen(label) > 0) {
 		printf("Passcard label=\"%s\", ", label);
 	} else {
@@ -237,7 +245,7 @@ static void _show_flags(const state *s)
 		printf("Static password is not set.\n");
 	}
 
-	/* Verify policy and inform user what's wrong */
+	/* Verify policy and inform user what's wrong, so he can fix it. */
 
 	if (ppp_verify_alphabet(alphabet) != 0) {
 		printf("WARNING: Current alphabet setting is "
