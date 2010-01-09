@@ -24,20 +24,13 @@
 #include <assert.h>
 #include <unistd.h> /* chdir, environ */
 
-#include "security.h"
-#include "nls.h"
-
+/* libotp header */
 #define PPP_INTERNAL
 #include "ppp.h"
 
-#include "print.h"
-#include "crypto.h"
-#include "num.h"
-#include "config.h"
-
-#include "passcards.h"
-
-
+/* Utility headers */
+#include "security.h"
+#include "nls.h"
 #include "otpasswd_actions.h"
 #include "testcases.h"
 

@@ -101,32 +101,6 @@ void security_init(void)
 	}
 
 	if (is_suid) {
-#if 0
-		/* Remember needed environment settings */
-		char *tmp;
-		char LC_ALL[30] = {0}, LC_MESSAGES[30] = {0}, LANG[30] = {0};
-
-		tmp = getenv("LC_ALL");
-		if (strlen(tmp) >= sizeof(LC_ALL)) {
-			printf("LC_ALL environment variable irrationaly long. Quitting.\n");
-			exit(EXIT_FAILURE);
-		}
-		strcpy(LC_ALL, tmp);
-
-		tmp = getenv("LC_MESSAGES");
-		if (strlen(tmp) >= sizeof(LC_MESSAGES)) {
-			printf("LC_MESSAGES environment variable irrationaly long. Quitting.\n");
-			exit(EXIT_FAILURE);
-		}
-		strcpy(LC_MESSAGES, tmp);
-
-		tmp = getenv("LANG");
-		if (strlen(tmp) >= sizeof(LANG)) {
-			printf(_("LANG environment variable irrationaly long. Quitting.\n");
-			exit(EXIT_FAILURE);
-		}
-		strcpy(LANG, tmp);
-#endif
 		/* Clear the environment. */
 		ret = clearenv();
 		if (ret != 0) {
@@ -144,11 +118,6 @@ void security_init(void)
 		putenv("IFS= \t\n");
 		putenv("TZ=UTC"); /* TODO: Verify this */
 
-#if 0
-		setenv("LC_ALL", LC_ALL, 1);
-		setenv("LC_MESSAGES", LC_MESSAGES, 1);
-		setenv("LANG", LANG, 1);
-#endif
 		/* Disable signals */
 		ret = 0;
 		if (signal(SIGTERM, SIG_IGN) == SIG_ERR)
@@ -198,33 +167,6 @@ static void _ensure_no_privileges()
 	return;
 error:
 	printf("Privilege check failed. Dying.\n");
-	exit(EXIT_FAILURE);
-}
-
-void security_temporal_drop(void)
-{
-	assert(real_gid != -1);
-
-	/* Draft of setre version:
-	 * setreuid(real_uid, set_uid); - copy euid to suid
-	 * seteuid(drop_to); - drop
-	 * ensure correctness
-	 */
-
-	if (setresuid(real_uid, real_uid, set_uid) != 0) {
-		goto error;
-	}
-
-	/* We're not SGID, we can omit GID setting */
-
-	/* Paranoid check */
-	if (geteuid() != real_uid) {
-		goto error;
-	}
-
-	return;
-error:
-	printf("Temporal privilege drop failed. Dying.\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -286,26 +228,6 @@ void security_permanent_drop(void)
 	return;
 error:
 	printf("Permanent privilege drop failed. Dying.\n");
-	exit(EXIT_FAILURE);
-}
-
-void security_restore(void)
-{
-	assert(real_gid != -1);
-
-	if (setresuid(real_uid, set_uid, set_uid) != 0)
-		goto error;
-	if (setresgid(real_gid, set_gid, set_gid) != 0)
-		goto error;
-
-	/* Paranoid check */
-	if (geteuid() != set_uid || getegid() != set_gid) {
-		goto error;
-	}
-
-	return;
-error:
-	printf("Privilege restore failed. Dying.\n");
 	exit(EXIT_FAILURE);
 }
 

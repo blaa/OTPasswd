@@ -14,6 +14,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * DESC:
+ *   Set of helper functions used during PAM authentication. All are 
+ *   called explicitly by pam_otpasswd.c. Used to group libotp interface
+ *   into bigger tasks.
  **********************************************************************/
 
 #include <string.h>
@@ -34,12 +39,12 @@
 /* FreeBSD */
 #include <pam_appl.h>
 
+/* PAM declarations */
 #include "pam_macros.h"
-
-#include "print.h"
-#include "num.h"
-#include "ppp.h"
 #include "pam_helpers.h"
+
+/* libotp interface */
+#include "ppp.h"
 
 int ph_parse_module_options(int flags, int argc, const char **argv, cfg_t *cfg)
 {
@@ -149,11 +154,6 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 	}
 
 	if (new_pid == 0) {
-		// TODO/FIXME: dangerous print, remove it 
-		print(PRINT_NOTICE,
-			    "Executing OOB transmission of %s to %s\n", 
-			    current_passcode, contact);
-
 		/* We don't want to leave state in memory! */
 		/* TODO/FIXME: What with the locks? DB may unlock
 		 * data if it was locked. */

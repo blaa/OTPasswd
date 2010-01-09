@@ -14,6 +14,10 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * DESC:
+ *   Low-level interface for (un)locking database reading from it
+ *   updating and saving.
  **********************************************************************/
 
 #ifndef _DB_H_

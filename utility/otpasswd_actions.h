@@ -14,6 +14,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * DESC: 
+ *   Set of functions performing tasks specified on command line.
+ *   All are called from otpasswd.c. One function can realize more
+ *   then one command line option.    
  **********************************************************************/
 
 #ifndef _OTPASSWD_ACTIONS_H_
@@ -21,7 +26,8 @@
 
 #include "config.h"
 
-/* Constants used for parsing input data */
+/* Constants used for parsing input data.
+ * Shared between otpasswd.c and _actions. */
 enum {
 	OPTION_KEY      = 'k',
 	OPTION_REMOVE   = 'r',
@@ -46,6 +52,7 @@ enum {
 	OPTION_ALPHABETS = 'A',
 };
 
+/* Struct holding "user CLI request" information */
 typedef struct {
 	char action;
 	char *action_arg;
@@ -60,10 +67,20 @@ typedef struct {
 	int set_alphabet;
 } options_t;
 
+
+/* Configures user state, prints state information (-c -i) */
 extern int action_flags(options_t *options, const cfg_t *cfg);
+
+/* Print author, license and quit. */
 extern int action_license(options_t *options, const cfg_t *cfg);
+
+/* Generates/Regenerates new key (-k) */
 extern int action_key(options_t *options, const cfg_t *cfg);
+
+/* Command line authentication (-a) */
 extern int action_authenticate(options_t *options, const cfg_t *cfg);
+
+/* Print passcode or passcard or skip (-t -l -s) */
 extern int action_print(options_t *options, const cfg_t *cfg);
 
 #endif

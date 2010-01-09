@@ -18,19 +18,18 @@
 
 #define PAM_SM_AUTH
 #define PAM_SM_SESSION
-//#define PAM_SM_ACCOUNT
-//#define PAM_SM_PASSWORD
 #define _PAM_EXTERN_FUNCTIONS
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+/* libotp interface */
+#include "ppp.h"
+
+/* PAM declarations */
 #include <pam_modules.h>
 #include "pam_macros.h"
-
-#include "print.h"
-#include "ppp.h"
 #include "pam_helpers.h"
 
 /* Entry point for authentication */

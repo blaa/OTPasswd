@@ -14,6 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * DESC:
+ *   GetText interface.
  **********************************************************************/
 
 #ifndef _NLS_H_

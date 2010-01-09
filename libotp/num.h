@@ -14,6 +14,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * DESC:
+ *   Additional (to GMP) operations on long numbers. In future might be
+ *   used as a place for functions which will be supposed to drop 
+ *   dependency on GMP. num_init sets GMP allocation routines which
+ *   safely clean up memory.
  **********************************************************************/
 
 #ifndef _NUM_H_

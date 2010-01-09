@@ -21,12 +21,7 @@
 #include "testcases.h"
 
 #define PPP_INTERNAL 1
-#include "num.h"
-#include "crypto.h"
-#include "state.h"
 #include "ppp.h"
-#include "passcards.h"
-#include "config.h"
 
 #include "security.h"
 

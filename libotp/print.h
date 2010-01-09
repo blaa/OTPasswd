@@ -14,6 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * DESC:
+ *   Simple logging/debugging system.
  **********************************************************************/
 
 #ifndef _PRINT_H_
@@ -46,10 +49,6 @@ extern int _print(const char *file, const int line, int level, const char *fmt, 
 
 /* Log data and preceed it with perror message */
 extern int _print_perror(const char *file, const int line, int level, const char *fmt, ...);
-
-/* Return number in base which doesn't need to be freed */
-extern const char *print_mpz(const mpz_t number, int base);
-
 
 #if DEBUG_POSITIONS == 1
 #define print(x, y, ...) _print(__FILE__, __LINE__, (x), (y), ## __VA_ARGS__)

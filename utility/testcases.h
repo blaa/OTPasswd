@@ -14,6 +14,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * DESC:
+ *   Internal testcases of OTPasswd. Used not only to test correct
+ *   system behaviour, but also as a hooks to various routines which
+ *   might be checked this way for memory leaks using valgrind.
  **********************************************************************/
 
 #ifndef _TESTCASES_H_

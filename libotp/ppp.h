@@ -14,20 +14,37 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * DESC:
+ *   Main interface to the libotp. In future all operations on state
+ *   will go through this module. Currently defining PPP_INTERNAL 
+ *   allows user to get a view into state internals.
  **********************************************************************/
 
 #ifndef _PPP_H_
 #define _PPP_H_
 
 #include <gmp.h>
+
+/* Data shared between state and ppp */
 #include "ppp_common.h"
 
+/* Load state.h only if user explicitly requested it.
+ * This file defines state struct internals which should
+ * not be mangled by hand. Use ppp.h interface instead
+ */
 #ifdef PPP_INTERNAL
 #	include "state.h"
 #else
-typedef struct state state;
-
+	typedef struct state state;
 #endif
+
+/* Load all standard libotp headers at once */
+#include "print.h"
+#include "config.h"
+#include "crypto.h"
+#include "passcards.h"
+#include "num.h"
 
 /* Decode external card number and XY code position into a counter 
  * This function decreases passcard by one so counting starts at '1'.

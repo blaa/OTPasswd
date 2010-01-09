@@ -14,6 +14,9 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * DESC:
+ *   Unified interface to SHA256, AES256 and some RNG
  **********************************************************************/
 
 #ifndef _CRYPTO_H_

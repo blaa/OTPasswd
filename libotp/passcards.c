@@ -24,10 +24,6 @@
 
 #define PPP_INTERNAL 1
 #include "ppp.h"
-#include "print.h"
-#include "num.h"
-#include "crypto.h"
-#include "passcards.h"
 
 char *card_ascii(const state *s, const mpz_t passcard)
 {
@@ -39,8 +35,6 @@ char *card_ascii(const state *s, const mpz_t passcard)
 	char *label, *whole_card_num, *printed_card_num;
 	int label_len, card_num_len;
 	int i;
-
-	print(PRINT_NOTICE, "Printing passcard number %s\n", print_mpz(passcard, 10));
 
 	assert(s->code_length > 1 && s->code_length < 17);
 	assert(s->codes_in_row >= 2 && s->codes_on_card > 10);

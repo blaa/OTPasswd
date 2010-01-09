@@ -14,12 +14,15 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * DESC:
+ *   Prints ASCII or LaTeX passcards.
  **********************************************************************/
 
 #ifndef _PASSCARDS_H_
 #define _PASSCARDS_H_
 
-#include "state.h"
+#include "ppp.h"
 
 /* Returns allocated memory with one passcard
  * "Number" is a passcard number. These functions 

@@ -19,7 +19,8 @@
 #ifndef _PAM_HELPERS_
 #define _PAM_HELPERS_
 
-#include "config.h"
+/* libotp interface (for config and state declarations) */
+#include "ppp.h"
 
 /* Parse module options and modify options accordingly */
 extern int ph_parse_module_options(int flags, int argc, const char **argv, cfg_t *cfg);

@@ -22,11 +22,12 @@
 #include <ctype.h>	/* isalnum  */
 #include <pwd.h>	/* getpwuid */
 
-#include "print.h"
-#include "state.h"
-#include "crypto.h"
-#include "num.h"
-#include "config.h"
+/* libotp declarations. Internal since we need 
+ * to know state struct. */
+#define PPP_INTERNAL 1
+#include "ppp.h"
+
+/* Low-level interface */
 #include "db.h"
 
 /********************************************

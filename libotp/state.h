@@ -14,6 +14,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * DESC:
+ *   Basic operations on state structure (init/fini), interface to 
+ *   lower db_ files (automatically selects which db_ functions to call
+ *   depending on configuration).
  **********************************************************************/
 
 #ifndef _STATE_H_
@@ -38,7 +43,6 @@ typedef struct {
 	mpz_t counter;
 
 	/* User secret sequence key */
-//	mpz_t sequence_key;
 	unsigned char sequence_key[32];
 
 	/* Furthest printed passcode

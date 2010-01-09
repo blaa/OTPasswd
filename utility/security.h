@@ -14,19 +14,22 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * DESC:
+ *   Performs secure environment initialization, manages rights 
+ *   and capabilities. Other function query environment for our
+ *   configuration (are we suid, run by root etc.)
  **********************************************************************/
 
 #ifndef _SECURITY_H_
 #define _SECURITY_H_
 
+/* For uid_t */
+#include <sys/types.h>
+#include <unistd.h>
+
 /* Init environment for SUID program */
 extern void security_init(void);
-
-/* Temporary drop our effective rights */
-/* extern void security_temporal_drop(void); */
-
-/* Restore rights which were dropped temporarily */
-/* extern void security_restore(void); */
 
 /* Pernamently drop rights back to the user who called us */
 extern void security_permanent_drop(void);

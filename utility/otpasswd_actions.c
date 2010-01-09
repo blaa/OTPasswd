@@ -14,10 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+ *
  **********************************************************************/
 
+#include "nls.h"
+
 #ifndef PROG_VERSION
-#define PROG_VERSION "v0.5b4 \"Savage Savory\""
+#define PROG_VERSION _("v0.5b4 \"Savage Savory\"")
 #endif
 
 #include <stdio.h>
@@ -29,18 +32,13 @@
 
 #include <assert.h>
 
-#include "nls.h"
-#include "print.h"
-#include "crypto.h"
-#include "num.h"
-#include "config.h"
-#include "security.h"
-
+/* libotp header */
 #define PPP_INTERNAL
 #include "ppp.h"
-#include "passcards.h"
 
+/* Utility headers */
 #include "otpasswd_actions.h"
+#include "security.h"
 
 enum {
 	QUERY_YES=0,
@@ -832,22 +830,23 @@ cleanup:
 int action_license(options_t *options, const cfg_t *cfg)
 {
 	printf(
-		"OTPasswd - One-Time Password Authentication System.\n"
-		"Version " PROG_VERSION "\n"
-		"Copyright (C) 2009, 2010 Tomasz bla Fortuna <bla@thera.be>\n"
-		"\n"
-		"This program is free software: you can redistribute it and/or modify\n"
-		"it under the terms of the GNU General Public License as published by\n"
-		"the Free Software Foundation, either version 3 of the License, or\n"
-		"(at your option) any later version.\n"
-		"\n"
-		"This program is distributed in the hope that it will be useful,\n"
-		"but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-		"MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
-		"GNU General Public License for more details.\n"
-		"\n"
-		"You should have received a copy of the GNU General Public License\n"
-		"along with this program in a LICENSE file.\n"
+		_("OTPasswd - One-Time Password Authentication System.\n"
+		  "Version %s \n"
+		  "Copyright (C) 2009, 2010 Tomasz bla Fortuna <bla@thera.be>\n"
+		  "\n"
+		  "This program is free software: you can redistribute it and/or modify\n"
+		  "it under the terms of the GNU General Public License as published by\n"
+		  "the Free Software Foundation, either version 3 of the License, or\n"
+		  "(at your option) any later version.\n"
+		  "\n"
+		  "This program is distributed in the hope that it will be useful,\n"
+		  "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+		  "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+		  "GNU General Public License for more details.\n"
+		  "\n"
+		  "You should have received a copy of the GNU General Public License\n"
+		  "along with this program in a LICENSE file.\n"),
+		  PROG_VERSION
 	);
 	return 0;
 }

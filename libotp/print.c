@@ -35,9 +35,6 @@ struct log_state {
 	int use_stdout; /* Log to stdout if 1, stderr if 2 */
 	int use_syslog; /* Log to syslog if 1 */
 	FILE *log_file;	/* Log to file if not null */
-
-	/* Last number converted */
-	char *number;
 } log_state = {0};
 
 struct log_state log_state;
@@ -191,14 +188,5 @@ void print_fini()
 	if (log_state.log_file)
 		fclose(log_state.log_file);
 
-	free(log_state.number);
-
 	log_state.initialized = 0;
-}
-
-const char *print_mpz(const mpz_t number, int base)
-{
-	free(log_state.number);
-	log_state.number = mpz_get_str(NULL, base, number);
-	return log_state.number;
 }
