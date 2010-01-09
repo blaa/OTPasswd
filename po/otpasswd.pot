@@ -1,0 +1,874 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-01-09 19:12+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: utility/otpasswd.c:583
+#, c-format
+msgid ""
+"\n"
+"Unable to read config file from %s\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:112
+msgid " (yes/no): "
+msgstr ""
+
+#: utility/otpasswd_actions.c:226
+#, c-format
+msgid "(salt=off)\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:224
+#, c-format
+msgid "(salt=on)\n"
+msgstr ""
+
+#: utility/otpasswd.c:476
+#, c-format
+msgid "*** Running testcases\n"
+msgstr ""
+
+#: utility/otpasswd.c:502
+#, c-format
+msgid ""
+"**********************************\n"
+"* All testcases seem successful. *\n"
+"**********************************\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:1071 utility/otpasswd_actions.c:1121
+#, c-format
+msgid ""
+"**********************************\n"
+"* WARNING: You should never skip *\n"
+"* backwards to reuse your codes! *\n"
+"**********************************\n"
+msgstr ""
+
+#: utility/otpasswd.c:493
+#, c-format
+msgid ""
+"***********************************************\n"
+"*         !!! %d testcases failed !!!         *\n"
+"* Don't use this release until this is fixed! *\n"
+"* Note: Testcases should be run with default  *\n"
+"* If unsure, reinstall and rerun --check      *\n"
+"***********************************************\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:457
+#, c-format
+msgid "Alphabet denied by policy. See -f alphabet-list\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:805
+msgid "Are you ready to start using this one-time passwords?"
+msgstr ""
+
+#: utility/otpasswd_actions.c:716
+msgid "Are you sure you want to continue?"
+msgstr ""
+
+#: utility/otpasswd_actions.c:628
+#, c-format
+msgid "Authentication failed (Counter overflowed, regenerate key).\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:610
+#, c-format
+msgid "Authentication failed (denied by policy).\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:660
+#, c-format
+msgid "Authentication failed (ppp_authenticate error).\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:643
+#, c-format
+msgid "Authentication failed (state increment error).\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:633
+#, c-format
+msgid "Authentication failed (user doesn't have a key).\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:638
+#, c-format
+msgid "Authentication failed (user doesn't have entry in db).\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:656
+#, c-format
+msgid "Authentication failed (wrong passcode).\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:652
+#, c-format
+msgid "Authentication successful.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:151
+#, c-format
+msgid "Card numbering starts at 1\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:324
+#, c-format
+msgid "Changing a \"disable\" flag disallowed by policy.\n"
+msgstr ""
+
+#: utility/otpasswd.c:598
+#, c-format
+msgid ""
+"Configuration error. You have to edit otpasswd.conf and select DB option.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:965
+#, c-format
+msgid "Configuration not changed.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:963
+#, c-format
+msgid "Configuration updated.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:207
+#, c-format
+msgid "Configuration:\n"
+msgstr ""
+
+#: utility/otpasswd.c:585
+#, c-format
+msgid "Consult installation manual for detailed information.\n"
+msgstr ""
+
+#: utility/otpasswd.c:190
+#, c-format
+msgid "Contact already defined\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:382
+#, c-format
+msgid "Contact can't be longer than %d characters\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:387
+#, c-format
+msgid "Contact changing denied by policy.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:377
+#, c-format
+msgid ""
+"Contact contains illegal characters.\n"
+"Only alphanumeric + \" -+.@_*\" are allowed.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:300
+#, c-format
+msgid "Counter = %032ZX\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:188
+#, c-format
+msgid "Current card        = %Zd\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:192
+#, c-format
+msgid "Current code        = %Zd\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:187
+#, c-format
+msgid "Current state:\n"
+msgstr ""
+
+#: utility/otpasswd.c:615
+#, c-format
+msgid ""
+"Database type set to global, MySQL or LDAP, yet program is not a SUID root.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:746
+msgid "Do you want to keep this configuration?"
+msgstr ""
+
+#: utility/otpasswd.c:569
+#, c-format
+msgid "ERROR: Unable to start logging subsystem\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:1102
+msgid "Error while calculating passcode\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:668
+msgid "Error while finalizing state\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:1199
+#, c-format
+msgid "Error while finalizing state. (No changes to write)\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:1061
+msgid "Error while generating destination passcode\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:541
+#, c-format
+msgid "Error while parsing passcard description.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:581
+#, c-format
+msgid "Error while parsing passcard number.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:561
+#, c-format
+msgid "Error while parsing passcode number.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:1036 utility/otpasswd_actions.c:1047
+msgid "Error while printing card (not enough memory?)\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:728
+#, c-format
+msgid "Error while removing key!\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:97
+#, c-format
+msgid "Error while saving state data. State not changed.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:1197
+#, c-format
+msgid "Error while saving state! Changes not written.\n"
+msgstr ""
+
+#: utility/otpasswd.c:283
+#, c-format
+msgid "Garbage on command line. (%s)\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:1080 utility/otpasswd_actions.c:1130
+#, c-format
+msgid "Ignoring skip to the current passcode.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:453
+#, c-format
+msgid "Illegal alphabet ID specified. See -f alphabet-list\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:592
+#, c-format
+msgid "Illegal argument passed to option.\n"
+msgstr ""
+
+#: utility/otpasswd.c:229
+#, c-format
+msgid "Illegal configuration defined.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:552
+#, c-format
+msgid "Illegal passcode number!\n"
+msgstr ""
+
+#: utility/otpasswd.c:372
+#, c-format
+msgid "Illegal user specified on command prompt\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:528
+#, c-format
+msgid "Incorrect passcard specification.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:522
+#, c-format
+msgid "Incorrect passcode specification. (%d)\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:296
+#, c-format
+msgid "Key     = "
+msgstr ""
+
+#: utility/otpasswd_actions.c:769
+#, c-format
+msgid "Key generation denied by policy.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:704
+#, c-format
+msgid "Key regeneration denied by policy.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:685
+#, c-format
+msgid "Key removal denied by policy.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:725
+#, c-format
+msgid "Key removed!\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:824
+#, c-format
+msgid "Key stored! One-time passwords enabled for this account.\n"
+msgstr ""
+
+#: utility/security.c:125
+#, c-format
+msgid "LANG environment variable irrationaly long. Quitting.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:1109
+#, c-format
+msgid "LaTeX parameter works only with passcard specification\n"
+msgstr ""
+
+#: utility/otpasswd.c:200
+#, c-format
+msgid "Label already defined\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:408
+#, c-format
+msgid "Label can't be longer than %d characters\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:413
+#, c-format
+msgid "Label changing denied by policy.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:403
+#, c-format
+msgid ""
+"Label contains illegal characters.\n"
+"Only alphanumeric + \" -+.@_*\" are allowed.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:195
+#, c-format
+msgid "Latest printed card = %Zd\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:198
+#, c-format
+msgid "Max card            = %Zd\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:201
+#, c-format
+msgid "Max code            = %Zd\n"
+msgstr ""
+
+#: utility/otpasswd.c:366
+#, c-format
+msgid "Multiple '--user' options passed\n"
+msgstr ""
+
+#: utility/otpasswd.c:432
+#, c-format
+msgid ""
+"No action specified. Try passing -k, -s, -t or -l\n"
+"\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:237
+#, c-format
+msgid "No label, "
+msgstr ""
+
+#: utility/otpasswd.c:222
+#, c-format
+msgid "No such flag or illegal option (%s).\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:156
+#, c-format
+msgid "Number of the last available passcard is %Zd\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:170
+#, c-format
+msgid "Number of the last available passcode is %Zd\n"
+msgstr ""
+
+#: utility/otpasswd.c:584
+#, c-format
+msgid "OTPasswd not correctly installed, consult installation manuals.\n"
+msgstr ""
+
+#: utility/otpasswd.c:179
+#, c-format
+msgid ""
+"Only one action can be specified on the command line\n"
+"and you can't mix alphabet listing with other flags.\n"
+msgstr ""
+
+#: utility/otpasswd.c:309 utility/otpasswd.c:323 utility/otpasswd.c:339
+#, c-format
+msgid "Only one action can be specified on the command line.\n"
+msgstr ""
+
+#: utility/otpasswd.c:361
+#, c-format
+msgid "Only root can use the '--user' option\n"
+msgstr ""
+
+#: utility/otpasswd.c:292
+#, c-format
+msgid "Option argument too long!\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:1090
+msgid "Option requires passcode as argument\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:235
+#, c-format
+msgid "Passcard label=\"%s\", "
+msgstr ""
+
+#: utility/otpasswd_actions.c:533
+#, c-format
+msgid "Passcard number out of range. First passcard has number 1.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:586
+#, c-format
+msgid "Passcard out of accessible range.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:430
+#, c-format
+msgid "Passcode length must be between 2 and 16.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:566
+#, c-format
+msgid "Passcode number out of range.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:990
+#, c-format
+msgid "Passcode printing denied by policy.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:996
+#, c-format
+msgid "Passcode skipping denied by policy.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:140 utility/otpasswd_actions.c:807
+#, c-format
+msgid "Please answer 'yes' or 'no'.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:333
+#, c-format
+msgid "Policy disallows salted keys.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:352
+#, c-format
+msgid "Policy disallows showing entered passcodes.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:358
+#, c-format
+msgid "Policy enforces entered passcode visibility.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:339
+#, c-format
+msgid "Policy enforces salted keys.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:934
+#, c-format
+msgid "Printing key denied by policy!\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:945
+#, c-format
+msgid "Program error. You should never end up here.\n"
+msgstr ""
+
+#: utility/otpasswd.c:387 utility/otpasswd.c:511
+#, c-format
+msgid "Program error. You shouldn't end up here.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:747
+#, c-format
+msgid "Reverting to defaults.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:316
+#, c-format
+msgid "Salt configuration can be changed only during key creation.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:434
+#, c-format
+msgid "Setting passcode length denied by policy.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:1084
+#, c-format
+msgid "Skipped to specified passcard.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:1134
+#, c-format
+msgid "Skipped to specified passcode.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:1076 utility/otpasswd_actions.c:1126
+#, c-format
+msgid "Skipping backwards denied by policy.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:249
+#, c-format
+msgid "Static password is not set.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:247
+#, c-format
+msgid "Static password is set.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:911
+#, c-format
+msgid "Static password set.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:717
+#, c-format
+msgid "Stopping\n"
+msgstr ""
+
+#: utility/otpasswd.c:396
+#, c-format
+msgid "The \"salt\" flag can only be specified during key creation!\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:742
+#, c-format
+msgid ""
+"This is your previous configuration updated with command line options:\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:903
+#, c-format
+msgid "Turning off static password.\n"
+msgstr ""
+
+#: utility/security.c:86
+#, c-format
+msgid "Unable to change directory to /\n"
+msgstr ""
+
+#: utility/otpasswd.c:404
+#, c-format
+msgid "Unable to determine name of current user!\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:786
+msgid "Unable to generate new key\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:693
+msgid "Unable to initialize state\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:616
+msgid "Unable to initialize state.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:762
+#, c-format
+msgid "Unable to load your state, nothing to remove.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:819
+msgid "Unable to save state.\n"
+msgstr ""
+
+#: utility/otpasswd.c:425
+#, c-format
+msgid "Unable to start debugging\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:439 utility/otpasswd_actions.c:464
+#, c-format
+msgid "Unexpected error while setting code length.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:393
+#, c-format
+msgid "Unexpected error while setting contact information.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:420
+#, c-format
+msgid "Unexpected error while setting label information.\n"
+msgstr ""
+
+#: utility/otpasswd.c:61
+#, c-format
+msgid ""
+"Usage: %s [options]\n"
+"Actions:\n"
+"  -k, --key\n"
+"           Generate a new key. You can pass\n"
+"           -d, -c and -f options along.\n"
+"  -r, --remove\n"
+"           Remove key, and disable OTP.\n"
+"\n"
+"  -s, --skip <which>\n"
+"           Skip to a card specified as an argument.\n"
+"  -t, --text <which>\n"
+"           Generate either one ascii passcard\n"
+"           or a single passcode depending on argument. \n"
+"  -l, --latex <which>\n"
+"           Generate a LaTeX output with 6 passcards\n"
+"           starting with the specified one\n"
+"  -a, --authenticate <passcode>\n"
+"           Try to authenticate with given passcode\n"
+"  -w, --warning\n"
+"           Display warnings (ex. user on last passcard)\n"
+"  -P, --prompt <which>\n"
+"           Display authentication prompt for given passcode\n"
+"\n"
+"Where <which> might be one of:\n"
+"  number         - a decimal number of a passcode\n"
+"  [number]       - a passcard number\n"
+"  CRR[number]    - a passcode in passcard of a given number.\n"
+"                   C is column (A through G), RR - row (1..10)\n"
+"  current        - passcode used for next time authentication\n"
+"  [current]      - passcard containing current passcode\n"
+"  next or [next] - first, not yet printed, passcard\n"
+"\n"
+"Configuration:\n"
+"  -i, --info\n"
+"           Print current configuration and state.\n"
+"      --info-key\n"
+"           Print key and counter used for generating passcodes.\n"
+"  -c, --config <arg>\n"
+"           Manages various settings:\n"
+"           show=<on|off> configure visibility of passcode during\n"
+"                         authentication.\n"
+"           alphabet=<ID|list>\n"
+"                         select passcode alphabet. Use 'list' argument\n"
+"                         to get IDs of available alphabets.\n"
+"           codelenght=<length>\n"
+"                         select passcode length.\n"
+"\n"
+"           contact=X     Set contact info (e.g. phone number) with\n"
+"                         which to receive a passcode during authentication.\n"
+"                         Details depends configuration. Use \"\" to "
+"disable.\n"
+"           label=X       Set a caption to use on generated passcards.\n"
+"                         Use \"\" to set default (hostname)\n"
+"\n"
+"           salt=<on|off>\n"
+"                         Meaningful only during key generation.\n"
+"                         Enable/disable salting of a passcode counter.\n"
+"                         Disabling this option will make program\n"
+"                         compatible with PPPv3.1 and will increase\n"
+"                         available passcard number at the cost of\n"
+"                         (theoretically) less security.\n"
+"\n"
+"           disable=<on|off>\n"
+"                         Disable user without removing his data.\n"
+"\n"
+"  -p=<pass>, --password=<pass>\n"
+"           Set static password. Equal sign is obligatory as the argument\n"
+"           is optional. Use without argument and equal-sign to unset "
+"password\n"
+"\n"
+"  -u, --user <username|UID>\n"
+"           Operate on state of specified user. Administrator-only option.\n"
+"  -v, --verbose\n"
+"           Display more information about what is happening.\n"
+"  --version\n"
+"           Display license, warranty, version and author information.\n"
+"  -h, --help\n"
+"           Display this message\n"
+"  --check  Run all testcases. Assumes default config file.\n"
+"\n"
+"Notes:\n"
+"  Both --text and --latex can get \"next\" as a parameter which\n"
+"  will print the first not-yet printed passcard. Usage of this argument\n"
+"  is recommended as it enables OTPasswd to display warnings when user\n"
+"  reaches his last printed passcard.\n"
+"\n"
+"Examples:\n"
+"%s --config salt=off --key   generate new (not salted) key\n"
+"%s --text next               print first not-yet-printed passcard\n"
+"%s --text '[3]'              print third passcard to standard output\n"
+"%s --text current            print current passcode\n"
+"%s --config codelength=5     use 5-character long passcodes\n"
+"Generate a 6 passcards on A4 page using LaTeX:\n"
+"%s --latex next > tmp.latex\n"
+"pdflatex tmp.latex\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:920 utility/otpasswd_actions.c:930
+#, c-format
+msgid "User    = %s\n"
+msgstr ""
+
+#: utility/otpasswd.c:379
+#, c-format
+msgid "Verbose output denied by policy.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:255
+#, c-format
+msgid "WARNING: Current alphabet setting is inconsistent with the policy!\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:260
+#, c-format
+msgid ""
+"WARNING: Current passcode length setting is inconsistent with the policy!\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:283
+#, c-format
+msgid ""
+"WARNING: Key is not salted, but policy denies such configuration. Regenerate "
+"key!\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:277
+#, c-format
+msgid ""
+"WARNING: Key is salted, but policy denies such configuration. Regenerate "
+"key!\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:271
+#, c-format
+msgid "WARNING: Show flag is disabled, but policy enforces it's use!\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:266
+#, c-format
+msgid "WARNING: Show flag is enabled, but policy denies it's use!\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:73
+#, c-format
+msgid ""
+"WARNING: Your state is inconsistent with system policy.\n"
+"         Fix it or you will be unable to login.\n"
+"         For details use --info command.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:468
+#, c-format
+msgid ""
+"Warning: Changing alphabet invalidates already printed passcards.\n"
+"         If you like, you can switch back to your previous settings.\n"
+"\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:443
+#, c-format
+msgid ""
+"Warning: Changing codelength invalidates already printed passcards.\n"
+"         If you like, you can switch back to your previous settings.\n"
+"\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:813
+#, c-format
+msgid "Wiping out key. One-time passwords not enabled.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:744
+#, c-format
+msgid ""
+"You can either use it, or start with default one (modified by any --config "
+"options).\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:220
+#, c-format
+msgid "alphabet=%d "
+msgstr ""
+
+#: utility/otpasswd_actions.c:221
+#, c-format
+msgid "codelength=%d "
+msgstr ""
+
+#: utility/otpasswd_actions.c:241
+#, c-format
+msgid "contact=\"%s\".\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:218
+#, c-format
+msgid "disabled=off "
+msgstr ""
+
+#: utility/otpasswd_actions.c:216
+#, c-format
+msgid "disabled=on "
+msgstr ""
+
+#: utility/otpasswd_actions.c:126
+msgid "no"
+msgstr ""
+
+#: utility/otpasswd_actions.c:243
+#, c-format
+msgid "no contact information.\n"
+msgstr ""
+
+#: utility/otpasswd_actions.c:213
+#, c-format
+msgid "show=off "
+msgstr ""
+
+#: utility/otpasswd_actions.c:211
+#, c-format
+msgid "show=on "
+msgstr ""
+
+#: utility/otpasswd_actions.c:123
+msgid "yes"
+msgstr ""

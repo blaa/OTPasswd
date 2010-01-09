@@ -37,6 +37,7 @@ ADD_DEFINITIONS("-Wall -ggdb -fPIC")
 
 option(PROFILE "Enable coverage tests" OFF)
 option(DEBUG "Enable additional debug information" OFF)
+option(NLS "Enable National Language Support (NLS)" OFF)
 # option( MYSQL "Generate code for MySQL database" OFF )
 # option( LDAP "Generate code for LDAP" OFF )
 
@@ -50,6 +51,10 @@ ENDIF (PROFILE)
 IF (DEBUG)
   ADD_DEFINITIONS("-DDEBUG_POSITIONS=1")
 ENDIF (DEBUG)
+
+IF (NLS)
+  ADD_DEFINITIONS("-DUSE_NLS=1")
+ENDIF (NLS)
 
 
 # Detect system

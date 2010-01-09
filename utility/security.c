@@ -44,6 +44,8 @@
 
 #include "security.h"
 
+#include "nls.h"
+
 /* Initial remembered values */
 static uid_t real_uid=-1, set_uid=-1;
 static uid_t real_gid=-1, set_gid=-1;
@@ -81,7 +83,7 @@ void security_init(void)
 
 	ret = chdir("/");
 	if (ret != 0) {
-		printf("Unable to change directory to /\n");
+		printf(_("Unable to change directory to /\n"));
 		exit(EXIT_FAILURE);
 	}
 
@@ -89,11 +91,6 @@ void security_init(void)
 	umask(S_IWOTH | S_IROTH | S_IXOTH | S_IWGRP | S_IRGRP | S_IXGRP);
 
 	/* Just check if everything is all right... */
-/*	if (real_uid != 0 && set_uid == 0) {
-		printf("OTPasswd is set-uid root. And it shouldn't. Fix it.\n");
-		exit(EXIT_FAILURE);
-	}
-*/
 	if (real_gid != set_gid) {
 		printf("We're not supposed to work as SGID program. SUID or nothing.\n");
 		exit(EXIT_FAILURE);
@@ -104,6 +101,32 @@ void security_init(void)
 	}
 
 	if (is_suid) {
+#if 0
+		/* Remember needed environment settings */
+		char *tmp;
+		char LC_ALL[30] = {0}, LC_MESSAGES[30] = {0}, LANG[30] = {0};
+
+		tmp = getenv("LC_ALL");
+		if (strlen(tmp) >= sizeof(LC_ALL)) {
+			printf("LC_ALL environment variable irrationaly long. Quitting.\n");
+			exit(EXIT_FAILURE);
+		}
+		strcpy(LC_ALL, tmp);
+
+		tmp = getenv("LC_MESSAGES");
+		if (strlen(tmp) >= sizeof(LC_MESSAGES)) {
+			printf("LC_MESSAGES environment variable irrationaly long. Quitting.\n");
+			exit(EXIT_FAILURE);
+		}
+		strcpy(LC_MESSAGES, tmp);
+
+		tmp = getenv("LANG");
+		if (strlen(tmp) >= sizeof(LANG)) {
+			printf(_("LANG environment variable irrationaly long. Quitting.\n");
+			exit(EXIT_FAILURE);
+		}
+		strcpy(LANG, tmp);
+#endif
 		/* Clear the environment. */
 		ret = clearenv();
 		if (ret != 0) {
@@ -116,10 +139,16 @@ void security_init(void)
 			exit(EXIT_FAILURE);
 		}
 
+		/* Re-set required environment variables */
 		putenv("PATH=/bin:/usr/bin");
 		putenv("IFS= \t\n");
 		putenv("TZ=UTC"); /* TODO: Verify this */
 
+#if 0
+		setenv("LC_ALL", LC_ALL, 1);
+		setenv("LC_MESSAGES", LC_MESSAGES, 1);
+		setenv("LANG", LANG, 1);
+#endif
 		/* Disable signals */
 		ret = 0;
 		if (signal(SIGTERM, SIG_IGN) == SIG_ERR)

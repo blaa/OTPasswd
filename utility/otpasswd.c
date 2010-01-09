@@ -25,6 +25,7 @@
 #include <unistd.h> /* chdir, environ */
 
 #include "security.h"
+#include "nls.h"
 
 #define PPP_INTERNAL
 #include "ppp.h"
@@ -56,7 +57,7 @@ static const char *_program_name(const char *argv0)
 static void _usage(int argc, const char **argv)
 {
 	const char *prog_name =	_program_name(argc >= 2 ? argv[0] : NULL);
-	fprintf(stdout,
+	fprintf(stdout, _(
 		"Usage: %s [options]\n"
 		"Actions:\n"
 		"  -k, --key\n"
@@ -150,7 +151,7 @@ static void _usage(int argc, const char **argv)
 		"%s --config codelength=5     use 5-character long passcodes\n"
 		"Generate a 6 passcards on A4 page using LaTeX:\n"
 		"%s --latex next > tmp.latex\n"
-		"pdflatex tmp.latex\n",
+		"pdflatex tmp.latex\n"),
 	        prog_name, prog_name, prog_name, prog_name, prog_name, prog_name, prog_name
 	);
 }
@@ -175,8 +176,8 @@ int parse_flag(options_t *options, const char *arg)
 		options->flag_set_mask |= FLAG_DISABLED;
 	else if (strcmp(arg, "alphabet=list") == 0) {
 		if (options->action != OPTION_CONFIG) {
-			printf("Only one action can be specified on the command line\n"
-			       "and you can't mix alphabet listing with other flags.\n");
+			printf(_("Only one action can be specified on the command line\n"
+			         "and you can't mix alphabet listing with other flags.\n"));
 			return 1;
 		}
 		options->action = OPTION_ALPHABETS; /* List alphabets instead of changing flags */
@@ -186,7 +187,7 @@ int parse_flag(options_t *options, const char *arg)
 		const char *contact = arg + 8;
 
 		if (options->contact) {
-			printf("Contact already defined\n");
+			printf(_("Contact already defined\n"));
 			return 1;
 		}
 
@@ -196,7 +197,7 @@ int parse_flag(options_t *options, const char *arg)
 		const char *label = arg + 6;
 
 		if (options->label) {
-			printf("Label already defined\n");
+			printf(_("Label already defined\n"));
 			return 1;
 		}
 
@@ -218,14 +219,14 @@ int parse_flag(options_t *options, const char *arg)
 			options->set_alphabet = tmp;
 		} else {
 			/* Illegal flag */
-			printf("No such flag or illegal option (%s).\n", arg);
+			printf(_("No such flag or illegal option (%s).\n"), arg);
 			return 1;
 		}
 	}
 
 	/* Verify user don't want to unset and set at the same time */
 	if (options->flag_set_mask & options->flag_clear_mask) {
-		printf("Illegal configuration defined.\n");
+		printf(_("Illegal configuration defined.\n"));
 		return 1;
 	}
 
@@ -279,7 +280,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		/* Detect the end of the options. */
 		if (c == -1) {
 			if (optind < argc) {
-				printf("Garbage on command line. (%s)\n", argv[optind]);
+				printf(_("Garbage on command line. (%s)\n"), argv[optind]);
 				goto error;
 			}
 
@@ -288,7 +289,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 
 		/* Assert maximal length of parameter */
 		if (optarg && (strlen(optarg) > 100)) {
-			printf("Option argument too long!\n");
+			printf(_("Option argument too long!\n"));
 			goto error;
 		}
 
@@ -305,7 +306,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			/* Error unless there was flag defined for key generation */
 			if (options->action != 0 &&
 			    !(options->action == OPTION_CONFIG && c == OPTION_KEY)) {
-				printf("Only one action can be specified on the command line\n");
+				printf(_("Only one action can be specified on the command line.\n"));
 				return 1;
 			}
 			options->action = c;
@@ -319,7 +320,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		case OPTION_AUTH:
 		case OPTION_SPASS:
 			if (options->action != 0) {
-				printf("Only one action can be specified on the command line\n");
+				printf(_("Only one action can be specified on the command line.\n"));
 				goto error;
 			}
 			options->action = c;
@@ -335,7 +336,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			if (options->action != 0 && 
 			    options->action != OPTION_CONFIG &&
 			    options->action != OPTION_KEY) {
-				printf("Only one action can be specified on the command line\n");
+				printf(_("Only one action can be specified on the command line.\n"));
 				goto error;
 			}
 
@@ -357,25 +358,25 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		case OPTION_USER:
 			assert(optarg);
 			if (security_is_privileged() == 0) {
-				printf("Only root can use the '--user' option\n");
+				printf(_("Only root can use the '--user' option\n"));
 				exit(EXIT_FAILURE);
 			}
 
 			if (options->username) {
-				printf("Multiple '--user' options passed\n");
+				printf(_("Multiple '--user' options passed\n"));
 				exit(EXIT_FAILURE);
 			}
 
 			options->username = security_parse_user(optarg);
 			if (!options->username) {
-				printf("Illegal user specified on command prompt\n");
+				printf(_("Illegal user specified on command prompt\n"));
 				exit(EXIT_FAILURE);
 			}
 			break;
 
 		case OPTION_VERBOSE:
 			if (!security_is_privileged() && cfg->allow_verbose_output == 0) {
-				printf("Verbose output denied by policy.\n");
+				printf(_("Verbose output denied by policy.\n"));
 				goto error;
 			}
 
@@ -383,7 +384,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			break;
 
 		default:
-			printf("Program error. You shouldn't end up here.\n");
+			printf(_("Program error. You shouldn't end up here.\n"));
 			assert(0);
 			goto error;
 		}
@@ -392,7 +393,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 	/* Check additional correctness */
 	if (((options->flag_set_mask | options->flag_clear_mask) & FLAG_SALTED)
 	    && (options->action != 'k')) {
-		printf("The \"salt\" flag can only be specified during key creation!\n");
+		printf(_("The \"salt\" flag can only be specified during key creation!\n"));
 		goto error;
 	}
 
@@ -400,7 +401,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		/* User not specified, use the one who has ran us */
 		options->username = security_get_calling_user();
 		if (!options->username) {
-			printf("Unable to determine name of current user!\n");
+			printf(_("Unable to determine name of current user!\n"));
 			goto error;
 		}
 	}
@@ -421,14 +422,14 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 	/* Initialize logging subsystem */
 	if (print_init(cfg->logging == 1 ? PRINT_WARN : PRINT_NOTICE,
 		       1, 0, NULL) != 0) {
-		printf("Unable to start debugging\n");
+		printf(_("Unable to start debugging\n"));
 	}
 
 
 	/* Perform action */
 	switch (options->action) {
 	case 0:
-		print(PRINT_ERROR, "No action specified. Try passing -k, -s, -t or -l\n\n");
+		printf(_("No action specified. Try passing -k, -s, -t or -l\n\n"));
 		_usage(argc, (const char **) argv);
 		retval = 1;
 		goto cleanup;
@@ -472,7 +473,7 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 		break;
 
 	case OPTION_CHECK:
-		printf("*** Running testcases\n");
+		printf(_("*** Running testcases\n"));
 		{
 			int failed = 0;
 
@@ -489,27 +490,25 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 			failed += card_testcase();
 			failed += ppp_testcase();
 			if (failed) {
-				printf(
-					"***********************************************\n"
-					"*         !!! %d testcases failed !!!         *\n"
-					"* Don't use this release until this is fixed! *\n"
-					"* Note: Testcases should be run with default  *\n"
-					"* If unsure, reinstall and rerun --check      *\n"
-					"***********************************************\n",
+				printf(_("***********************************************\n"
+				         "*         !!! %d testcases failed !!!         *\n"
+				         "* Don't use this release until this is fixed! *\n"
+				         "* Note: Testcases should be run with default  *\n"
+				         "* If unsure, reinstall and rerun --check      *\n"
+				         "***********************************************\n"),
 					failed);
 				retval = 1;
 			} else {
-				printf(
-					"**********************************\n"
-					"* All testcases seem successful. *\n"
-					"**********************************\n");
+				printf(_("**********************************\n"
+				         "* All testcases seem successful. *\n"
+				         "**********************************\n"));
 				retval = 0;
 			}
 			break;
 		}
 
 	default:
-		printf("Program error. You shouldn't end up here.\n");
+		printf(_("Program error. You shouldn't end up here.\n"));
 		assert(0);
 		retval = 1;
 		goto cleanup;
@@ -546,6 +545,9 @@ int main(int argc, char **argv)
 		.set_alphabet = -1,
 	};
 
+	/* 0) Initialize locale */
+	locale_init();
+
 	/* 1) Init safe environment, store current uids, etc. */
 	security_init();
 
@@ -560,7 +562,7 @@ int main(int argc, char **argv)
 
 	/* 2a) Bootstrap logging subsystem. */
 	if (print_init(PRINT_WARN, 1, 0, NULL) != 0) {
-		printf("ERROR: Unable to start log subsystem\n");
+		printf(_("ERROR: Unable to start logging subsystem\n"));
 		return 1;
 	}
 
@@ -574,9 +576,9 @@ int main(int argc, char **argv)
 	cfg = cfg_get();
 
 	if (!cfg) {
-		printf("\nUnable to read config file from %s\n", CONFIG_PATH);
-		printf("OTPasswd not correctly installed, consult installation manuals.\n");
-		printf("Consult installation manual for detailed information.\n");
+		printf(_("\nUnable to read config file from %s\n"), CONFIG_PATH);
+		printf(_("OTPasswd not correctly installed, consult installation manuals.\n"));
+		printf(_("Consult installation manual for detailed information.\n"));
 		print_fini();
 		return 1;
 	}
@@ -589,8 +591,8 @@ int main(int argc, char **argv)
 
 	/* Check if configuration was done. Database unconfigured */
 	if (cfg->db == CONFIG_DB_UNCONFIGURED) {
-		printf("Configuration error. You have to "
-		       "edit otpasswd.conf and select DB option.\n");
+		printf(_("Configuration error. You have to "
+		         "edit otpasswd.conf and select DB option.\n"));
 		print_fini();
 		return 1;
 	}
@@ -605,9 +607,9 @@ int main(int argc, char **argv)
 		/* Something is wrong. We are not SUID.
 		 * Or we're run as SUID user which is also bad.
 		 */
-		print(PRINT_ERROR, 
-		      "Database type set to global, MySQL or LDAP, yet program "
-		       "is not a SUID root.\n");
+		printf(
+			_("Database type set to global, MySQL or LDAP, yet program "
+			  "is not a SUID root.\n"));
 		print_fini();
 		return 1;
 	}

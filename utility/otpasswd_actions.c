@@ -29,6 +29,7 @@
 
 #include <assert.h>
 
+#include "nls.h"
 #include "print.h"
 #include "crypto.h"
 #include "num.h"
@@ -69,14 +70,14 @@ static int _init_state(state **s, const options_t *options, int load)
 		/* All right */
 		ret = ppp_verify_state(*s);
 		if (ret != 0) {
-			printf("WARNING: Your state is inconsistent with system policy.\n"
-			       "         Fix it or you will be unable to login.\n"
-			       "         For details use --info command.\n");
+			printf(_("WARNING: Your state is inconsistent with system policy.\n"
+			         "         Fix it or you will be unable to login.\n"
+			         "         For details use --info command.\n"));
 		}
 		return 0;
 
 	default:
-		printf("%s\n", ppp_get_error_desc(ret));
+		puts(_(ppp_get_error_desc(ret)));
 		ppp_fini(*s);
 		return ret;
 	}
@@ -93,7 +94,7 @@ static int _fini_state(state **s, int store)
 	 */
 	ret = ppp_release(*s, store, 0);
 	if (ret != 0) {
-		printf("Error while saving state data. State not changed.\n");
+		printf(_("Error while saving state data. State not changed.\n"));
 	}
 
 	ppp_fini(*s);
@@ -107,8 +108,8 @@ static int _fini_state(state **s, int store)
 static int _yes_or_no(const char *msg)
 {
 	char buf[20];
-
-	printf("%s (yes/no): ", msg);
+	fputs(msg, stdout);
+	fputs(_(" (yes/no): "), stdout);
 	fflush(stdout);
 	if (fgets(buf, sizeof(buf), stdin) == NULL) {
 		/* End of file? */
@@ -116,10 +117,13 @@ static int _yes_or_no(const char *msg)
 		return 1;
 	}
 
-	if (strcasecmp(buf, "yes\n") == 0) {
+	/* Strip \n */
+	buf[strlen(buf) - 1] = '\0';
+
+	if (strcasecmp(buf, _("yes")) == 0) {
 		printf("\n");
 		return QUERY_YES;
-	} else if (strcasecmp(buf, "no\n") == 0) {
+	} else if (strcasecmp(buf, _("no")) == 0) {
 		return QUERY_NO;
 	}
 
@@ -133,7 +137,7 @@ static int _enforced_yes_or_no(const char *msg)
 	do {
 		ret = _yes_or_no(msg);
 		if (ret == QUERY_OBSCURE) {
-			printf("Please answer 'yes' or 'no'.\n");
+			printf(_("Please answer 'yes' or 'no'.\n"));
 			continue;
 		}
 	} while(ret != QUERY_YES && ret != QUERY_NO);
@@ -144,12 +148,12 @@ static int _is_passcard_in_range(const state *s, const mpz_t passcard)
 {
 	/* 1..max_passcode/codes_on_passcard */
 	if (mpz_cmp_ui(passcard, 1) < 0) {
-		printf("Card numbering starts at 1\n");
+		printf(_("Card numbering starts at 1\n"));
 		return 0; /* false */
 	}
 
 	if (mpz_cmp(passcard, s->max_card) > 0) {
-		gmp_printf("Number of the last available passcard is %Zd\n", s->max_card);
+		gmp_printf(_("Number of the last available passcard is %Zd\n"), s->max_card);
 		return 0;
 	}
 
@@ -163,7 +167,7 @@ static int _is_passcode_in_range(const state *s, const mpz_t passcard)
 		return 0; /* false */
 
 	if (mpz_cmp(passcard, s->max_code) > 0) {
-		gmp_printf("Number of the last available passcode is %Zd\n", s->max_code);
+		gmp_printf(_("Number of the last available passcode is %Zd\n"), s->max_code);
 		return 0;
 	}
 
@@ -180,46 +184,46 @@ static void _show_flags(const state *s)
 	mpz_t tmp;
 	mpz_init(tmp);
 
-	printf("Current state:\n");
-	gmp_printf("Current card        = %Zd\n", s->current_card);
+	printf(_("Current state:\n"));
+	gmp_printf(_("Current card        = %Zd\n"), s->current_card);
 
 	/* Counter */
 	ppp_get_mpz(s, PPP_FIELD_UNSALTED_COUNTER, tmp);
-	gmp_printf("Current code        = %Zd\n", tmp);
+	gmp_printf(_("Current code        = %Zd\n"), tmp);
 
 	ppp_get_mpz(s, PPP_FIELD_LATEST_CARD, tmp);
-	gmp_printf("Latest printed card = %Zd\n", tmp);
+	gmp_printf(_("Latest printed card = %Zd\n"), tmp);
 
 	ppp_get_mpz(s, PPP_FIELD_MAX_CARD, tmp);
-	gmp_printf("Max card            = %Zd\n", tmp);
+	gmp_printf(_("Max card            = %Zd\n"), tmp);
 
 	ppp_get_mpz(s, PPP_FIELD_MAX_CODE, tmp);
-	gmp_printf("Max code            = %Zd\n", tmp);
+	gmp_printf(_("Max code            = %Zd\n"), tmp);
 
 	mpz_clear(tmp);
 
 
 	int flags = ppp_get_int(s, PPP_FIELD_FLAGS);
-	printf("Configuration:\n");
+	printf(_("Configuration:\n"));
 
 	/* Display flags */
 	if (flags & FLAG_SHOW)
-		printf("show=on ");
+		printf(_("show=on "));
 	else
-		printf("show=off ");
+		printf(_("show=off "));
 
 	if (flags & FLAG_DISABLED)
-		printf("disabled=on ");
+		printf(_("disabled=on "));
 	else
-		printf("disabled=off ");
+		printf(_("disabled=off "));
 
-	printf("alphabet=%d ", alphabet);
-	printf("codelength=%d ", code_length);
+	printf(_("alphabet=%d "), alphabet);
+	printf(_("codelength=%d "), code_length);
 
 	if (flags & FLAG_SALTED)
-		printf("(salt=on)\n");
+		printf(_("(salt=on)\n"));
 	else
-		printf("(salt=off)\n");
+		printf(_("(salt=off)\n"));
 
 
 	const char *label = NULL;
@@ -228,56 +232,56 @@ static void _show_flags(const state *s)
 	ppp_get_str(s, PPP_FIELD_LABEL, &contact);
 
 	if (label && strlen(label) > 0) {
-		printf("Passcard label=\"%s\", ", label);
+		printf(_("Passcard label=\"%s\", "), label);
 	} else {
-		printf("No label, ");
+		printf(_("No label, "));
 	}
 
 	if (contact && strlen(contact) > 0) {
-		printf("contact=\"%s\".\n", contact);
+		printf(_("contact=\"%s\".\n"), contact);
 	} else {
-		printf("no contact information.\n");
+		printf(_("no contact information.\n"));
 	}
 
 	if (s->spass_set) {
-		printf("Static password is set.\n");
+		printf(_("Static password is set.\n"));
 	} else {
-		printf("Static password is not set.\n");
+		printf(_("Static password is not set.\n"));
 	}
 
 	/* Verify policy and inform user what's wrong, so he can fix it. */
 
 	if (ppp_verify_alphabet(alphabet) != 0) {
-		printf("WARNING: Current alphabet setting is "
-		       "inconsistent with the policy!\n");
+		printf(_("WARNING: Current alphabet setting is "
+		       "inconsistent with the policy!\n"));
 	}
 
 	if (ppp_verify_code_length(code_length) != 0) {
-		printf("WARNING: Current passcode length setting is "
-		       "inconsistent with the policy!\n");
+		printf(_("WARNING: Current passcode length setting is "
+		       "inconsistent with the policy!\n"));
 	}
 
 	/* Show */
 	if (flags & FLAG_SHOW && cfg->show_allow == 0) {
-		printf("WARNING: Show flag is enabled, but policy "
-		       "denies it's use!\n");
+		printf(_("WARNING: Show flag is enabled, but policy "
+		       "denies it's use!\n"));
 	}
 
 	if (!(flags & FLAG_SHOW) && cfg->show_allow == 2) {
-		printf("WARNING: Show flag is disabled, but policy "
-		       "enforces it's use!\n");
+		printf(_("WARNING: Show flag is disabled, but policy "
+		       "enforces it's use!\n"));
 	}
 
 	/* Salted */
 	if (flags & FLAG_SALTED && cfg->salt_allow == 0) {
-		printf("WARNING: Key is salted, but policy "
-		       "denies such configuration. Regenerate key!\n");
+		printf(_("WARNING: Key is salted, but policy "
+		       "denies such configuration. Regenerate key!\n"));
 
 	}
 
 	if (!(flags & FLAG_SALTED) && cfg->salt_allow == 2) {
-		printf("WARNING: Key is not salted, but policy "
-		       "denies such configuration. Regenerate key!\n");
+		printf(_("WARNING: Key is not salted, but policy "
+		       "denies such configuration. Regenerate key!\n"));
 	}
 }
 
@@ -289,11 +293,11 @@ static void _show_keys(const state *s)
 	assert(cfg);
 
 	/* Print key in LSB as PPPv3 likes */
-	printf("Key     = "); crypto_print_hex(s->sequence_key, 32);
+	printf(_("Key     = ")); crypto_print_hex(s->sequence_key, 32);
 
 	/* This prints data MSB */
-	/* gmp_printf("Key     = %064ZX\n", s->sequence_key); */
-	gmp_printf("Counter = %032ZX\n", s->counter);
+	/* gmp_printf(_("Key     = %064ZX\n"), s->sequence_key); */
+	gmp_printf(_("Counter = %032ZX\n"), s->counter);
 }
 
 /* Update state flags. Checks policy. If generation is 1 we allow salt changes. */
@@ -309,7 +313,7 @@ static int _update_flags(options_t *options, state *s, int generation)
 	if ((generation == 0) && 
 	    (options->flag_set_mask & FLAG_SALTED || 
 	     options->flag_clear_mask & FLAG_SALTED)) {
-		printf("Salt configuration can be changed only during key creation.\n");
+		printf(_("Salt configuration can be changed only during key creation.\n"));
 		return 1;
 	}
 
@@ -317,7 +321,7 @@ static int _update_flags(options_t *options, state *s, int generation)
 	if (cfg->allow_disabling == 0) {
 		if (options->flag_set_mask & FLAG_DISABLED ||
 		    options->flag_clear_mask & FLAG_DISABLED) {
-			printf("Changing a \"disable\" flag disallowed by policy.\n");
+			printf(_("Changing a \"disable\" flag disallowed by policy.\n"));
 			return 1;
 		}
 	}
@@ -326,13 +330,13 @@ static int _update_flags(options_t *options, state *s, int generation)
 	switch (cfg->salt_allow) {
 	case 0:
 		if (options->flag_set_mask & FLAG_SALTED) {
-			printf("Policy disallows salted keys.\n");
+			printf(_("Policy disallows salted keys.\n"));
 			return 1;
 		}
 		break;
 	case 2:
 		if (options->flag_clear_mask & FLAG_SALTED) {
-			printf("Policy enforces salted keys.\n");
+			printf(_("Policy enforces salted keys.\n"));
 			return 1;
 		}
 		break;
@@ -345,13 +349,13 @@ static int _update_flags(options_t *options, state *s, int generation)
 	switch (cfg->show_allow) {
 	case 0:
 		if (options->flag_set_mask & FLAG_SHOW) {
-			printf("Policy disallows showing entered passcodes.\n");
+			printf(_("Policy disallows showing entered passcodes.\n"));
 			return 1;
 		}
 		break;
 	case 2:
 		if (options->flag_clear_mask & FLAG_SHOW) {
-			printf("Policy enforces entered passcode visibility.\n");
+			printf(_("Policy enforces entered passcode visibility.\n"));
 			return 1;
 		}
 		break;
@@ -370,24 +374,23 @@ static int _update_flags(options_t *options, state *s, int generation)
 
 		switch (ret) {
 		case PPP_ERROR_ILL_CHAR:
-			printf(
-				"Contact contains illegal characters.\n"
-				"Only alphanumeric + \" -+.@_*\" are allowed.\n");
+			printf(_("Contact contains illegal characters.\n"
+			         "Only alphanumeric + \" -+.@_*\" are allowed.\n"));
 			return ret;
 
 		case PPP_ERROR_TOO_LONG:
-			printf("Contact can't be longer than %d "
-			       "characters\n", STATE_CONTACT_SIZE-1);
+			printf(_("Contact can't be longer than %d "
+			         "characters\n"), STATE_CONTACT_SIZE-1);
 			return ret;
 
 		case PPP_ERROR_POLICY:
-			printf("Contact changing denied by policy.\n");
+			printf(_("Contact changing denied by policy.\n"));
 			return ret;
 
 		case 0:
 			break;
 		default:
-			printf("Unexpected error while setting contact information.\n");
+			printf(_("Unexpected error while setting contact information.\n"));
 			return 1;
 		}
 	}
@@ -397,25 +400,24 @@ static int _update_flags(options_t *options, state *s, int generation)
 				  security_is_privileged() ? 0 : PPP_CHECK_POLICY);
 		switch (ret) {
 		case PPP_ERROR_ILL_CHAR:
-			printf(
-				"Label contains illegal characters.\n"
-				"Only alphanumeric + \" -+.@_*\" are allowed.\n");
+			printf(_("Label contains illegal characters.\n"
+			         "Only alphanumeric + \" -+.@_*\" are allowed.\n"));
 			return ret;
 
 		case PPP_ERROR_TOO_LONG:
-			printf("Label can't be longer than %d "
-			       "characters\n", STATE_LABEL_SIZE-1);
+			printf(_("Label can't be longer than %d "
+			       "characters\n"), STATE_LABEL_SIZE-1);
 			return ret;
 
 		case PPP_ERROR_POLICY:
-			printf("Label changing denied by policy.\n");
+			printf(_("Label changing denied by policy.\n"));
 			return ret;
 
 		case 0:
 			break;
 
 		default:
-			printf("Unexpected error while setting label information.\n");
+			printf(_("Unexpected error while setting label information.\n"));
 			return 1;
 		}
 	}
@@ -425,48 +427,48 @@ static int _update_flags(options_t *options, state *s, int generation)
 		ret = ppp_set_int(s, PPP_FIELD_CODE_LENGTH, options->set_codelength, 1);
 		switch (ret) {
 		case PPP_ERROR_RANGE:
-			printf("Passcode length must be between 2 and 16.\n");
+			printf(_("Passcode length must be between 2 and 16.\n"));
 			return ret;
 
 		case PPP_ERROR_POLICY:
-			printf("Setting passcode length denied by policy.\n");
+			printf(_("Setting passcode length denied by policy.\n"));
 			return ret;
 		case 0:
 			break;
 		default: 
-			printf("Unexpected error while setting code length.\n");
+			printf(_("Unexpected error while setting code length.\n"));
 			return 1;
 		}
 
-		printf("Warning: Changing codelength invalidates "
+		printf(_("Warning: Changing codelength invalidates "
 		       "already printed passcards.\n"
 		       "         If you like, you can switch back "
-		       "to your previous settings.\n\n");
+		       "to your previous settings.\n\n"));
 	}
 
 	if (options->set_alphabet != -1) {
 		ret = ppp_set_int(s, PPP_FIELD_ALPHABET, options->set_alphabet, 1);
 		switch (ret) { 
 		case PPP_ERROR_RANGE:
-			printf("Illegal alphabet ID specified. See "
-			       "-f alphabet-list\n");
+			printf(_("Illegal alphabet ID specified. See "
+			       "-f alphabet-list\n"));
 			return ret;
 		case PPP_ERROR_POLICY:
-			printf("Alphabet denied by policy. See "
-			       "-f alphabet-list\n");
+			printf(_("Alphabet denied by policy. See "
+			       "-f alphabet-list\n"));
 			return ret;
 		case 0:
 			
 			break;
 		default:
-			printf("Unexpected error while setting code length.\n");
+			printf(_("Unexpected error while setting code length.\n"));
 			return 1;
 		} 
 
-		printf("Warning: Changing alphabet invalidates "
+		printf(_("Warning: Changing alphabet invalidates "
 		       "already printed passcards.\n"
 		       "         If you like, you can switch back "
-		       "to your previous settings.\n\n");
+		       "to your previous settings.\n\n"));
 	}
 
 	/* Change flags */
@@ -517,27 +519,26 @@ static int _parse_code_spec(const state *s, const char *spec, mpz_t passcard, mp
 		ret = sscanf(spec, "%c%d[%40s]", &column, &row, number);
 		column = toupper(column);
 		if (ret != 3 || (column < OPTION_ALPHABETS || column > 'J')) {
-			printf("Incorrect passcode specification. (%d)\n", ret);
+			printf(_("Incorrect passcode specification. (%d)\n"), ret);
 			goto error;
 		}
 
 		ret = gmp_sscanf(number, "%Zu", passcard);
 		if (ret != 1) {
-			printf("Incorrect passcard specification.\n");
+			printf(_("Incorrect passcard specification.\n"));
 			goto error;
 		}
 
 		if (!_is_passcard_in_range(s, passcard)) {
-			printf(
-			      "Passcard number out of range. "
-			      "First passcard has number 1.\n");
+			printf(_("Passcard number out of range. "
+			         "First passcard has number 1.\n"));
 			goto error;
 		}
 
 		/* ppp_get_passcode_number adds salt as needed */
 		ret = ppp_get_passcode_number(s, passcard, passcode, column, row);
 		if (ret != 0) {
-			printf("Error while parsing passcard description.\n");
+			printf(_("Error while parsing passcard description.\n"));
 			goto error;
 		}
 
@@ -548,7 +549,7 @@ static int _parse_code_spec(const state *s, const char *spec, mpz_t passcard, mp
 		int i;
 		for (i=0; spec[i]; i++) {
 			if (!isdigit(spec[i])) {
-				printf("Illegal passcode number!\n");
+				printf(_("Illegal passcode number!\n"));
 				goto error;
 			}
 		}
@@ -557,12 +558,12 @@ static int _parse_code_spec(const state *s, const char *spec, mpz_t passcard, mp
 		/* number -- passcode number */
 		ret = gmp_sscanf(spec, "%Zd", passcode);
 		if (ret != 1) {
-			printf("Error while parsing passcode number.\n");
+			printf(_("Error while parsing passcode number.\n"));
 			goto error;
 		}
 
 		if (!_is_passcode_in_range(s, passcode)) {
-			printf("Passcode number out of range.\n");
+			printf(_("Passcode number out of range.\n"));
 			goto error;
 		}
 
@@ -577,18 +578,18 @@ static int _parse_code_spec(const state *s, const char *spec, mpz_t passcard, mp
 		/* [number] -- passcard number */
 		ret = gmp_sscanf(spec, "[%Zd]", passcard);
 		if (ret != 1) {
-			printf("Error while parsing passcard number.\n");
+			printf(_("Error while parsing passcard number.\n"));
 			goto error;
 		}
 
 		if (!_is_passcard_in_range(s, passcard)) {
-			printf("Passcard out of accessible range.\n");
+			printf(_("Passcard out of accessible range.\n"));
 			goto error;
 		}
 
 		selected = 2;
 	} else {
-		printf("Illegal argument passed to option.\n");
+		printf(_("Illegal argument passed to option.\n"));
 		goto error;
 	}
 
@@ -606,13 +607,13 @@ int action_authenticate(options_t *options, const cfg_t *cfg)
 	state *s = NULL;
 
 	if (cfg->allow_shell_auth == 0) {
-		printf("Authentication failed (denied by policy).\n");
+		printf(_("Authentication failed (denied by policy).\n"));
 		return 0;
 	}
 
 	if (_init_state(&s, options, 0) != 0) {
 		/* This will fail if we're unable to locate home directory */
-		print(PRINT_ERROR, "Unable to initialize state.\n");
+		print(PRINT_ERROR, _("Unable to initialize state.\n"));
 		return 0; /* False - not authenticated */
 	}
 
@@ -624,22 +625,22 @@ int action_authenticate(options_t *options, const cfg_t *cfg)
 		break;
 
 	case STATE_NUMSPACE:
-		printf("Authentication failed (Counter overflowed, regenerate key).\n");
+		printf(_("Authentication failed (Counter overflowed, regenerate key).\n"));
 		retval = 0;
 		goto cleanup;
 
 	case STATE_NON_EXISTENT:
-		printf("Authentication failed (user doesn't have a key).\n");
+		printf(_("Authentication failed (user doesn't have a key).\n"));
 		retval = 0;
 		goto cleanup;
 
 	case STATE_NO_USER_ENTRY:
-		printf("Authentication failed (user doesn't have entry in db).\n");
+		printf(_("Authentication failed (user doesn't have entry in db).\n"));
 		retval = 0;
 		goto cleanup;
 
 	default: /* Any other problem - error */
-		printf("Authentication failed (state increment error).\n");
+		printf(_("Authentication failed (state increment error).\n"));
 		retval = 0;
 		goto cleanup;
 	}
@@ -648,15 +649,15 @@ int action_authenticate(options_t *options, const cfg_t *cfg)
 	switch (retval) {
 	case 0:
 		/* Correctly authenticated */
-		printf("Authentication successful.\n");
+		printf(_("Authentication successful.\n"));
 		retval = 1;
 		break;
 	case 3:
-		printf("Authentication failed (wrong passcode).\n");
+		printf(_("Authentication failed (wrong passcode).\n"));
 		retval = 0;
 		break;
 	default:
-		printf("Authentication failed (ppp_authenticate error).\n");
+		printf(_("Authentication failed (ppp_authenticate error).\n"));
 		retval = 0;
 		break;
 	}
@@ -664,7 +665,7 @@ int action_authenticate(options_t *options, const cfg_t *cfg)
 cleanup:
 	if (_fini_state(&s, 0) != 0) {
 		/* Should never happen */
-		print(PRINT_ERROR, "Error while finalizing state\n");
+		print(PRINT_ERROR, _("Error while finalizing state\n"));
 		retval = 0;
 	}
 
@@ -681,7 +682,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 	if (remove && 
 	    security_is_privileged() == 0 &&
 	    cfg->allow_key_removal == 0) {
-		printf("Key removal denied by policy.\n");
+		printf(_("Key removal denied by policy.\n"));
 		return 1;
 	}
 
@@ -689,7 +690,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 	state s;
 
 	if (state_init(&s, options->username) != 0) {
-		print(PRINT_ERROR, "Unable to initialize state\n");
+		print(PRINT_ERROR, _("Unable to initialize state\n"));
 		return 1;
 	}
 
@@ -700,7 +701,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 		if (!remove && 
 		    security_is_privileged() == 0 &&
 		    cfg->allow_key_regeneration == 0) {
-			printf("Key regeneration denied by policy.\n");
+			printf(_("Key regeneration denied by policy.\n"));
 			goto cleanup;
 		}
 
@@ -712,8 +713,8 @@ int action_key(options_t *options, const cfg_t *cfg)
 			"*************************************************\n"
 		);
 
-		if (_yes_or_no("Are you sure you want to continue?") != 0) {
-			printf("Stopping\n");
+		if (_yes_or_no(_("Are you sure you want to continue?")) != 0) {
+			printf(_("Stopping\n"));
 			goto cleanup;
 		}
 
@@ -721,10 +722,10 @@ int action_key(options_t *options, const cfg_t *cfg)
 		if (remove) {
 			ret = state_store(&s, 1);
 			if (ret == 0) {
-				printf("Key removed!\n");
+				printf(_("Key removed!\n"));
 				retval = 0;
 			} else {
-				printf("Error while removing key!\n");
+				printf(_("Error while removing key!\n"));
 				retval = 1;
 			}
 			goto cleanup;
@@ -738,12 +739,12 @@ int action_key(options_t *options, const cfg_t *cfg)
 			goto cleanup;
 		}
 
-		printf("This is your previous configuration updated with command line options:\n");
+		printf(_("This is your previous configuration updated with command line options:\n"));
 		_show_flags(&s);
-		printf("You can either use it, or start with default one (modified by any --config options).\n");
+		printf(_("You can either use it, or start with default one (modified by any --config options).\n"));
 		if (_enforced_yes_or_no(
-			    "Do you want to keep this configuration?") == QUERY_NO) {
-			printf("Reverting to defaults.\n");
+			    _("Do you want to keep this configuration?")) == QUERY_NO) {
+			printf(_("Reverting to defaults.\n"));
 			state_fini(&s);
 			state_init(&s, options->username);
 
@@ -758,14 +759,14 @@ int action_key(options_t *options, const cfg_t *cfg)
 		}
 	} else {
 		if (remove) {
-			printf("Unable to load your state, nothing to remove.\n");
+			printf(_("Unable to load your state, nothing to remove.\n"));
 			goto cleanup;
 		}
 
 		if (!remove && 
 		    security_is_privileged() == 0 &&
 		    cfg->allow_key_generation == 0) {
-			printf("Key generation denied by policy.\n");
+			printf(_("Key generation denied by policy.\n"));
 			goto cleanup;
 		}
 
@@ -782,7 +783,7 @@ int action_key(options_t *options, const cfg_t *cfg)
 	}
 
 	if (state_key_generate(&s) != 0) {
-		print(PRINT_ERROR, "Unable to generate new key\n");
+		print(PRINT_ERROR, _("Unable to generate new key\n"));
 		goto cleanup;
 	}
 
@@ -801,26 +802,26 @@ int action_key(options_t *options, const cfg_t *cfg)
 	free(card);
 
 	do {
-		ret = _yes_or_no("Are you ready to start using this one-time passwords?");
+		ret = _yes_or_no(_("Are you ready to start using this one-time passwords?"));
 		if (ret == 1) {
-			printf("Please answer 'yes' or 'no'.\n");
+			printf(_("Please answer 'yes' or 'no'.\n"));
 			continue;
 		}
 	} while (ret != 0 && ret != 2);
 
 	if (ret != 0) {
-		printf("Wiping out key. One-time passwords not enabled.\n");
+		printf(_("Wiping out key. One-time passwords not enabled.\n"));
 		goto cleanup;
 	}
 
 	ret = state_store(&s, 0); /* This should auto lock */
 	if (ret != 0) {
-		print(PRINT_ERROR, "Unable to save state.\n");
+		print(PRINT_ERROR, _("Unable to save state.\n"));
 		print(PRINT_NOTICE, "(%s)\n", ppp_get_error_desc(ret));
 		goto cleanup;
 	}
 
-	printf("Key stored! One-time passwords enabled for this account.\n");
+	printf(_("Key stored! One-time passwords enabled for this account.\n"));
 	retval = 0;
 
 cleanup:
@@ -899,7 +900,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		if (len == 0) {
 			s->spass_set = 0;
 			mpz_set_ui(s->spass, 0);
-			printf("Turning off static password.\n");
+			printf(_("Turning off static password.\n"));
 		} else {
 			/* Change static password */
 			/* TODO: Ensure its length/difficulty */
@@ -907,7 +908,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 			num_from_bin(s->spass, sha_buf, sizeof(sha_buf));
 			s->spass_set = 1;
 			s->spass_time = time(NULL);
-			printf("Static password set.\n");
+			printf(_("Static password set.\n"));
 		}
 
 		save_state = 1;
@@ -916,7 +917,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 
 	case OPTION_INFO: /* State info */
 		if (security_is_privileged())
-			printf("User    = %s\n", s->username);
+			printf(_("User    = %s\n"), s->username);
 		_show_flags(s);
 
 		save_state = 0;
@@ -926,11 +927,11 @@ int action_flags(options_t *options, const cfg_t *cfg)
 	case OPTION_INFO_KEY: /* Key info */
 		if (cfg->allow_key_print == 1 || security_is_privileged()) {
 			if (security_is_privileged())
-				printf("User    = %s\n", s->username);
+				printf(_("User    = %s\n"), s->username);
 			_show_keys(s);
 			retval = 0;
 		} else {
-			printf("Printing key denied by policy!\n");
+			printf(_("Printing key denied by policy!\n"));
 			retval = 1;
 		}
 		save_state = 0;
@@ -941,7 +942,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 	default:
 	case OPTION_ALPHABETS:
 		/* List alphabets ought be done before */
-		printf("Program error. You should never end up here.\n");
+		printf(_("Program error. You should never end up here.\n"));
 		assert(0);
 		retval = 1;
 		goto cleanup;
@@ -959,9 +960,9 @@ cleanup:
 		/* If we were supposed to change something print the result... */
 		if (options->action != OPTION_INFO && options->action != OPTION_INFO_KEY) {
 			if (save_state)
-				printf("Configuration updated.\n");
+				printf(_("Configuration updated.\n"));
 			else
-				printf("Configuration not changed.\n");
+				printf(_("Configuration not changed.\n"));
 		}
 	}
 	return retval;
@@ -986,13 +987,13 @@ int action_print(options_t *options, const cfg_t *cfg)
 
 	if (options->action == OPTION_TEXT || options->action == OPTION_LATEX)
 		if (security_is_privileged() == 0 && cfg->allow_passcode_print == 0) {
-			printf("Passcode printing denied by policy.\n");
+			printf(_("Passcode printing denied by policy.\n"));
 			return 1;
 		}
 
 	if (options->action == OPTION_SKIP)
 		if (security_is_privileged() == 0 && cfg->allow_skipping == 0) {
-			printf("Passcode skipping denied by policy.\n");
+			printf(_("Passcode skipping denied by policy.\n"));
 			return 1;
 		}
 
@@ -1032,8 +1033,8 @@ int action_print(options_t *options, const cfg_t *cfg)
 		case OPTION_TEXT:
 			card = card_ascii(s, passcard_num);
 			if (!card) {
-				print(PRINT_ERROR, "Error while printing "
-				      "card (not enough memory?)\n");
+				print(PRINT_ERROR, _("Error while printing "
+				      "card (not enough memory?)\n"));
 				goto cleanup;
 			}
 			puts(card);
@@ -1043,8 +1044,8 @@ int action_print(options_t *options, const cfg_t *cfg)
 		case OPTION_LATEX:
 			card = card_latex(s, passcard_num);
 			if (!card) {
-				print(PRINT_ERROR, "Error while printing "
-				      "card (not enough memory?)\n");
+				print(PRINT_ERROR, _("Error while printing "
+				      "card (not enough memory?)\n"));
 				goto cleanup;
 			}
 			puts(card);
@@ -1057,7 +1058,7 @@ int action_print(options_t *options, const cfg_t *cfg)
 						      passcode_num, 'A', 1);
 			if (ret != 0) {
 				print(PRINT_ERROR,
-				      "Error while generating destination passcode\n");
+				      _("Error while generating destination passcode\n"));
 				goto cleanup;
 			}
 
@@ -1067,27 +1068,26 @@ int action_print(options_t *options, const cfg_t *cfg)
 				if (cfg->allow_backward_skipping 
 				    || security_is_privileged()) {
 					/* Allowed or root */
-					printf(
-						"**********************************\n"
-						"* WARNING: You should never skip *\n"
-						"* backwards to reuse your codes! *\n"
-						"**********************************\n");
+					printf(_("**********************************\n"
+					         "* WARNING: You should never skip *\n"
+					         "* backwards to reuse your codes! *\n"
+					         "**********************************\n"));
 				} else {
-					printf("Skipping backwards denied by policy.\n");
+					printf(_("Skipping backwards denied by policy.\n"));
 					break;
 				}
 			} else if (ret == 0) {
-				printf("Ignoring skip to the current passcode.\n");
+				printf(_("Ignoring skip to the current passcode.\n"));
 				break;
 			}
 
-			printf("Skipped to specified passcard.\n");
+			printf(_("Skipped to specified passcard.\n"));
 			mpz_set(s->counter, passcode_num);
 			save_state = 1;
 			break;
 
 		case OPTION_PROMPT:
-			print(PRINT_ERROR, "Option requires passcode as argument\n");
+			print(PRINT_ERROR, _("Option requires passcode as argument\n"));
 			break;
 		}
 	} else {
@@ -1099,16 +1099,15 @@ int action_print(options_t *options, const cfg_t *cfg)
 			 * passcodes (with salt) */
 			ret = ppp_get_passcode(s, passcode_num, passcode);
 			if (ret != 0) {
-				print(PRINT_ERROR, "Error while calculating passcode\n");
+				print(PRINT_ERROR, _("Error while calculating passcode\n"));
 				goto cleanup;
 			}
 			printf("%s\n", passcode);
 			break;
 
 		case OPTION_LATEX:
-			printf(
-			      "LaTeX parameter works only with"
-			      " passcard specification\n");
+			printf(_("LaTeX parameter works only with"
+			         " passcard specification\n"));
 			break;
 
 		case OPTION_SKIP:
@@ -1119,21 +1118,20 @@ int action_print(options_t *options, const cfg_t *cfg)
 				if (cfg->allow_backward_skipping 
 				    || security_is_privileged()) {
 					/* Allowed or root */
-					printf(
-						"**********************************\n"
-						"* WARNING: You should never skip *\n"
-						"* backwards to reuse your codes! *\n"
-						"**********************************\n");
+					printf(_("**********************************\n"
+					         "* WARNING: You should never skip *\n"
+					         "* backwards to reuse your codes! *\n"
+					         "**********************************\n"));
 				} else {
-					printf("Skipping backwards denied by policy.\n");
+					printf(_("Skipping backwards denied by policy.\n"));
 					break;
 				}
 			} else if (ret == 0) {
-				printf("Ignoring skip to the current passcode.\n");
+				printf(_("Ignoring skip to the current passcode.\n"));
 				break;
 			}
 
-			printf("Skipped to specified passcode.\n");
+			printf(_("Skipped to specified passcode.\n"));
 			mpz_set(s->counter, passcode_num);
 			save_state = 1;
 			break;
@@ -1196,9 +1194,9 @@ cleanup:
 	if (ret != 0) {
 		retval = ret;
 		if (save_state) {
-			printf("Error while saving state! Changes not written.\n");
+			printf(_("Error while saving state! Changes not written.\n"));
 		} else {
-			printf("Error while finalizing state. (No changes to write)\n");
+			printf(_("Error while finalizing state. (No changes to write)\n"));
 		}
 	}
 	return retval;
