@@ -79,6 +79,42 @@ LINK_DIRECTORIES(${GMP_LIBRARY_DIR})
 INCLUDE_DIRECTORIES(libotp/ crypto/)
 
 ##
+# Manuals
+#   Rules for building compressed manuals
+##
+
+# See if gzip is available to compress manuals
+FIND_PROGRAM(GZIP_TOOL
+             NAMES gzip
+             PATHS /bin
+                   /usr/bin
+                   /usr/local/bin)
+
+IF(NOT GZIP_TOOL)
+   MESSAGE(SEND_ERROR "Unable to find 'gzip' program")
+ENDIF(NOT GZIP_TOOL)
+
+# List manual sources
+SET(man_src_1 docs/otpasswd.1    )
+SET(man_src_5 docs/otpasswd.5    )
+SET(man_src_8 docs/pam_otpasswd.8)
+SET(man_src   "${man_src_1}" "${man_src_5}" "${man_src_8}")
+
+# Generate list compressed manuals
+STRING(REGEX REPLACE "(\\.[0-9]+)(;|$)" "\\1.gz\\2" man_gz_1 "${man_src_1}")
+STRING(REGEX REPLACE "(\\.[0-9]+)(;|$)" "\\1.gz\\2" man_gz_5 "${man_src_5}")
+STRING(REGEX REPLACE "(\\.[0-9]+)(;|$)" "\\1.gz\\2" man_gz_8 "${man_src_8}")
+STRING(REGEX REPLACE "(\\.[0-9]+)(;|$)" "\\1.gz\\2" man_gz   "${man_src}"  )
+
+# Generate build rules for building compressed manuals
+FOREACH(man ${man_src})
+  ADD_CUSTOM_COMMAND(OUTPUT ${man}.gz
+                     COMMAND ${GZIP_TOOL} -c ${man} > ${man}.gz
+                     DEPENDS ${man}
+                     COMMENT "Building ${man}.gz")
+ENDFOREACH(man)
+
+##
 # Targets
 ##
 
@@ -99,6 +135,9 @@ ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/otpasswd_actions.c utility/te
 TARGET_LINK_LIBRARIES(pam_otpasswd otp gmp pam)
 TARGET_LINK_LIBRARIES(otpasswd     otp gmp    )
 
+# Man page target
+ADD_CUSTOM_TARGET(man ALL DEPENDS ${man_gz})
+
 ##
 # Install target
 ##
@@ -113,10 +152,9 @@ INSTALL(TARGETS pam_otpasswd otpasswd
 INSTALL(FILES examples/otpasswd-login DESTINATION /etc/pam.d)
 INSTALL(FILES examples/otpasswd.conf DESTINATION /etc/otpasswd)
 
-INSTALL(FILES docs/otpasswd.1 DESTINATION /usr/share/man/man1)
-INSTALL(FILES docs/otpasswd.5 DESTINATION /usr/share/man/man5)
-INSTALL(FILES docs/pam_otpasswd.8 DESTINATION /usr/share/man/man8)
-
+INSTALL(FILES ${man_gz_1} DESTINATION "share/man/man1")
+INSTALL(FILES ${man_gz_5} DESTINATION "share/man/man5")
+INSTALL(FILES ${man_gz_8} DESTINATION "share/man/man8")
 
 ##
 # Tests / Coverage
