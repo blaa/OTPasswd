@@ -91,7 +91,9 @@ static void _usage(int argc, const char **argv)
 		"\n"
 		"Configuration:\n"
 	        "  -i, --info\n"
-	        "           Print current state and configuration.\n"
+	        "           Print current configuration and state.\n"
+	        "      --info-key\n"
+	        "           Print key and counter used for generating passcodes.\n"
 		"  -c, --config <arg>\n"
 		"           Manages various settings:\n"
 		"           show=<on|off> configure visibility of passcode during\n"
@@ -257,6 +259,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 
 		/* Flags */
 		{"info",		no_argument,		0, OPTION_INFO},
+		{"info-key",		no_argument,		0, OPTION_INFO_KEY},
 		{"config",		required_argument,	0, OPTION_CONFIG},
 		{"password",		optional_argument,	0, OPTION_SPASS},
 		{"user",		required_argument,	0, OPTION_USER},
@@ -298,6 +301,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		case OPTION_CHECK:
 		case OPTION_HELP:
 		case OPTION_INFO:
+		case OPTION_INFO_KEY:
 			/* Error unless there was flag defined for key generation */
 			if (options->action != 0 &&
 			    !(options->action == OPTION_CONFIG && c == OPTION_KEY)) {
@@ -443,6 +447,7 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 	case OPTION_CONFIG:
 	case OPTION_SPASS:
 	case OPTION_INFO:
+	case OPTION_INFO_KEY:
 		retval = action_flags(options, cfg);
 		break;
 

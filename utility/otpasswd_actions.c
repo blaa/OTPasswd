@@ -17,7 +17,7 @@
  **********************************************************************/
 
 #ifndef PROG_VERSION
-#define PROG_VERSION "v0.5b3"
+#define PROG_VERSION "v0.5b4 \"Savage Savory\""
 #endif
 
 #include <stdio.h>
@@ -181,7 +181,26 @@ static void _show_flags(const state *s)
 	ppp_get_str(s, PPP_FIELD_LABEL, &label);
 	ppp_get_str(s, PPP_FIELD_LABEL, &contact);
 
+	/* Calculate unsalted counter so we can show it user */
+	mpz_t unsalted_counter;
+	mpz_init_set(unsalted_counter, s->counter);
+	if (s->flags & FLAG_SALTED) {
+		mpz_and(unsalted_counter, unsalted_counter, s->code_mask);
+	}
+	mpz_add_ui(unsalted_counter, unsalted_counter, 1);
 
+	printf("Current state:\n");
+	gmp_printf("Current card        = %Zd\n", s->current_card);
+	gmp_printf("Current code        = %Zd\n", unsalted_counter);
+	gmp_printf("Latest printed card = %Zd\n", s->latest_card);
+	gmp_printf("Max card            = %Zd\n", s->max_card);
+	gmp_printf("Max code            = %Zd\n", s->max_code);
+
+	mpz_clear(unsalted_counter);
+
+
+	printf("Configuration:\n");
+	/* Display flags */
 	if (flags & FLAG_SHOW)
 		printf("show=on ");
 	else
@@ -261,33 +280,12 @@ static void _show_keys(const state *s)
 	cfg_t *cfg = cfg_get();
 	assert(cfg);
 
-	mpz_t unsalted_counter;
-	mpz_init_set(unsalted_counter, s->counter);
-	if (s->flags & FLAG_SALTED) {
-		mpz_and(unsalted_counter, unsalted_counter, s->code_mask);
-	}
-	/* Convert to user numbering */
-	mpz_add_ui(unsalted_counter, unsalted_counter, 1);
+	/* Print key in LSB as PPPv3 likes */
+	printf("Key     = "); crypto_print_hex(s->sequence_key, 32);
 
-	if (cfg->allow_key_print == 1 || security_is_privileged()) {
-		/* Print key in LSB as PPPv3 likes */
-		printf("Key     = "); crypto_print_hex(s->sequence_key, 32);
-
-		/* This prints data MSB */
-		/* gmp_printf("Key     = %064ZX\n", s->sequence_key); */
-		gmp_printf("Counter = %032ZX\n", s->counter);
-	} else {
-		printf("Key     = (denied by policy)\n");
-		printf("Counter = (denied by policy)\n");
-	}
-	gmp_printf("Current card        = %Zd\n", s->current_card);
-	gmp_printf("Current code        = %Zd\n", unsalted_counter);
-	gmp_printf("Latest printed card = %Zd\n", s->latest_card);
-	gmp_printf("Max card            = %Zd\n", s->max_card);
-	gmp_printf("Max code            = %Zd\n", s->max_code);
-
-	mpz_clear(unsalted_counter);
-
+	/* This prints data MSB */
+	/* gmp_printf("Key     = %064ZX\n", s->sequence_key); */
+	gmp_printf("Counter = %032ZX\n", s->counter);
 }
 
 /* Update state flags. Checks policy. If generation is 1 we allow salt changes. */
@@ -827,7 +825,7 @@ int action_license(options_t *options, const cfg_t *cfg)
 	printf(
 		"OTPasswd - One-Time Password Authentication System.\n"
 		"Version " PROG_VERSION "\n"
-		"Copyright (C) 2009 Tomasz bla Fortuna <bla@thera.be>\n"
+		"Copyright (C) 2009, 2010 Tomasz bla Fortuna <bla@thera.be>\n"
 		"\n"
 		"This program is free software: you can redistribute it and/or modify\n"
 		"it under the terms of the GNU General Public License as published by\n"
@@ -909,13 +907,28 @@ int action_flags(options_t *options, const cfg_t *cfg)
 	}
 
 	case OPTION_INFO: /* State info */
-		printf("User    = %s\n", s->username);
-		_show_keys(s);
+		if (security_is_privileged())
+			printf("User    = %s\n", s->username);
 		_show_flags(s);
 
 		save_state = 0;
 		retval = 0;
 		goto cleanup;
+
+	case OPTION_INFO_KEY: /* Key info */
+		if (cfg->allow_key_print == 1 || security_is_privileged()) {
+			if (security_is_privileged())
+				printf("User    = %s\n", s->username);
+			_show_keys(s);
+			retval = 0;
+		} else {
+			printf("Printing key denied by policy!\n");
+			retval = 1;
+		}
+		save_state = 0;
+
+		goto cleanup;
+
 
 	default:
 	case OPTION_ALPHABETS:
@@ -936,7 +949,7 @@ cleanup:
 		retval = 1;
 	} else {
 		/* If we were supposed to change something print the result... */
-		if (options->action != OPTION_INFO) {
+		if (options->action != OPTION_INFO && options->action != OPTION_INFO_KEY) {
 			if (save_state)
 				printf("Configuration updated.\n");
 			else
