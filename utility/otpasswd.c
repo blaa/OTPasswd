@@ -25,7 +25,6 @@
 #include <unistd.h> /* chdir, environ */
 
 /* libotp header */
-#define PPP_INTERNAL
 #include "ppp.h"
 
 /* Utility headers */

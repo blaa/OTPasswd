@@ -258,9 +258,12 @@ static int _db_path(const char *username, char **db, char **lck, char **tmp)
 		if (!*db) 
 			return STATE_NOMEM;
 		
+#if NDEBUG
+		snprintf(*db, length, "%s/%s", home, cfg->user_db_path);
+#else
 		int ret = snprintf(*db, length, "%s/%s", home, cfg->user_db_path);
-		
 		assert( ret == length - 1 );
+#endif
 
 		break;
 	}

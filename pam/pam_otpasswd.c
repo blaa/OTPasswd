@@ -70,7 +70,6 @@ PAM_EXTERN int pam_sm_authenticate(
 				goto cleanup;
 
 			/* Generate prompt */
-			ppp_calculate(s);
 			retval = ppp_get_str(s, PPP_FIELD_PROMPT, &prompt);
 			if (retval != 0 || !prompt) {
 				print(PRINT_ERROR, "Error while generating prompt\n");

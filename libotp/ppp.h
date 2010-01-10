@@ -46,26 +46,79 @@
 #include "passcards.h"
 #include "num.h"
 
-/* Decode external card number and XY code position into a counter 
- * This function decreases passcard by one so counting starts at '1'.
- * Counter is created with salt included.
+
+/*******************************************
+ * High level functions for state management
+ *******************************************/
+/* Allocate state information and initialize it. */
+extern int ppp_init(state **s, const char *user);
+
+/* Deinitialize state and free it's memory */
+extern void ppp_fini(state *s);
+
+/* Lock state and load state.
+ * Calculate PPP data (passcard sizes etc.)
+ * After this function finished correctly state
+ * is still locked, so it can be modified. */
+extern int ppp_load(state *s);
+
+/* Will ensure that the state was locked before
+ * If store = 1 will update db with state information
+ * If unlock = 1 will unlock state after writting. */
+extern int ppp_release(state *s, int store, int unlock);
+
+/*
+ * 1. Lock file
+ * 2a. Open it
+ * 2b. Call ppp_calculate()
+ * 2c. Verify that we still can perform authentication
+ *     (for example the counter is not bigger than 2^128)
+ * 3. Increment counter
+ * 4. Save it and unlock
+ * 5. Leaves in state non-incremented counter which can be
+ *    used for authentication. This counter value can be though
+ *    as 'reserved' for this authentication.
  */
-extern int ppp_get_passcode_number(
-	const state *s, const mpz_t passcard,
-	mpz_t passcode, char column, char row);
+extern int ppp_increment(state *s);
 
-/* Adds a salt to given passcode if salt is used
- * In other words: converts from user supplied passcode
- * into system passcode number. */
-extern void ppp_add_salt(const state *s, mpz_t passcode);
+/* Lock & Read
+ * If zero = 0 then increment failure and recent_failures count.
+ * If zero = 1 then clear recent_failures.
+ * Store & unlock
+ * Does not modify passed state structure
+ */
+extern int ppp_failures(const state *s, int zero);
 
+/**************************************
+ * Passcode/Counter management
+ *************************************/
 /* Calculate a single passcode using Perfect Paper Passwords
- * algorithm. Key is taken from state, and counter passes as argument
- * (which is not further mangled. That is - it has to have a salt included). */
+ * algorithm using Key from state. Counter is universal
+ * and passed as argument (which is not further mangled,
+ * so it has to have a salt included). 
+ * char *passcode must have enough place. Minimum 17 bytes.
+ */
 extern int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode);
 
 /* Return current passcode. Helper for ppp_get_passcode function. */
 extern int ppp_get_current(const state *s, char *passcode);
+
+/* Try to authenticate user; returns 0 on successful authentication.
+ * Does not increment counter, just compares with password which would
+ * be generated for current passcode (i.e. reserved by ppp_increment call) */
+extern int ppp_authenticate(const state *s, const char *passcode);
+
+/* Decode external card number and XY code position into a counter 
+ * This function decreases passcard by one so counting starts at '1'.
+ * Counter is created with salt included. Result returned in 'passcode'. */
+extern int ppp_get_passcode_number(
+	const state *s, const mpz_t passcard,
+	mpz_t passcode, char column, char row);
+
+/* Adds a salt to given passcode if salt is used.
+ * In other words: converts from user supplied passcode
+ * into system passcode number. */
+extern void ppp_add_salt(const state *s, mpz_t passcode);
 
 /* Calculate card parameters and save them in state.  Required by many 
  * (ppp_get_prompt, ppp_verify_range) functions to work.
@@ -76,25 +129,25 @@ extern void ppp_calculate(state *s);
 /* Print to stdout all acceptable alphabets with IDs */
 extern void ppp_alphabet_print(void);
 
-/* Returns an ORed mask of warning conditions */
+
+/**************************************
+ * Warning/Error management 
+ *************************************/
+/* Returns an ORed mask of warning conditions for state.*/
 extern int ppp_get_warning_conditions(const state *s);
 
-/* Return warning message for a warning condition
+/* Take a condition from warning and return it's textual
+ * description.
  * and clear this condition from flag. Returns NULL
- * when no conditions are left in argument.
- */
+ * when no conditions are left in argument. */
 extern const char *ppp_get_warning_message(const state *s, int *warning);
 
 /* Decode ppp_error (see ppp_common.h for list) */
 extern const char *ppp_get_error_desc(int error);
 
-/* Try to authenticate user; returns 0 on successful authentication */
-extern int ppp_authenticate(const state *s, const char *passcode);
-
 /**************************************
  * State/Policy verification 
  *************************************/
-
 /* Verify that counter (and key) is in correct range 
  * done usually after reading from the state file, when 
  * the data could be maliciously changed */
@@ -172,48 +225,5 @@ extern int ppp_set_str(state *s, int field, const char *arg, int options);
 extern int ppp_flag_check(const state *s, int flag);
 extern void ppp_flag_add(state *s, int flag);
 extern void ppp_flag_del(state *s, int flag);
-
-/*******************************************
- * High level functions for state management
- *******************************************/
-
-/* Allocate state information and initialize it. */
-extern int ppp_init(state **s, const char *user);
-
-/* Deinitialize state and free it's memory */
-extern void ppp_fini(state *s);
-
-/*
- * Lock state and load state.
- * Calculate PPP data (passcard sizes etc.)
- * Lock is left set.
- */
-extern int ppp_load(state *s);
-
-/*
- * Will ensure that the state was locked before
- * If store = 1 will update db with state information
- * If unlock = 1 will unlock state after writting.
- */
-extern int ppp_release(state *s, int store, int unlock);
-
-/*
- * 1. Lock file
- * 2a. Open it
- * 2b. Verify that we still can perform authentication
- *     (for example the counter is not bigger than 2^128)
- * 3. Increment counter
- * 4. Save it and unlock
- *
- * It also calls ppp_calculate();
- */
-extern int ppp_increment(state *s);
-
-/* Lock & Read
- * If zero = 0 then increment failure and recent_failures count.
- * If zero = 1 then clear recent_failures.
- * Store & unlock
- */
-extern int ppp_failures(const state *s, int zero);
 
 #endif
