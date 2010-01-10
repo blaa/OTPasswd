@@ -27,40 +27,44 @@
 
 #include "print.h"
 
+const int PRINT_LEVEL_MASK = 0x3F;
+
 /* Currently used print_level */
 struct log_state {
 	/* Log messages of level equal or greater to print_level */
 	int initialized;
-	int print_level;
-	int use_stdout; /* Log to stdout if 1, stderr if 2 */
-	int use_syslog; /* Log to syslog if 1 */
+	int flags;
 	FILE *log_file;	/* Log to file if not null */
 } log_state = {0};
 
 struct log_state log_state;
 
-int print_init(int print_level, int use_stdout, int use_syslog, const char *log_file)
+int print_init(int flags, const char *log_file)
 {
 	if (log_state.initialized)
 		print_fini();
 
-	log_state.print_level = print_level;
-	log_state.use_stdout = use_stdout;
-	log_state.use_syslog = use_syslog;
+	log_state.flags = flags;
 
 	if (log_file) {
 		log_state.log_file = fopen(log_file, "a");
 	
 		if (!log_state.log_file) {
-			printf("Unable to open log file\n");
-			perror("fopen");
+			log_state.flags = 0;
 			return 1;
 		}
-	} else 
+	} else {
 		log_state.log_file = NULL;
+	}
 
 	log_state.initialized = 1;
 	return 0;
+}
+
+void print_config(int flags)
+{
+	assert(log_state.initialized == 1);
+	log_state.flags = flags;
 }
 
 int _print(const char *file, const int line, int level, const char *fmt, ...)
@@ -72,13 +76,11 @@ int _print(const char *file, const int line, int level, const char *fmt, ...)
 
 	assert(log_state.initialized == 1);
 
-	if (log_state.print_level == 0) {
-		printf("Attempted to use print subsystem without initialization\n");
-		assert(0);
-		return 1;
-	}
+	const int print_level = log_state.flags & PRINT_LEVEL_MASK;
+	const int use_stdout = log_state.flags & PRINT_STDOUT;
+	const int use_syslog = log_state.flags & PRINT_SYSLOG;
 
-	if (level < log_state.print_level)
+	if (level < print_level)
 		return 1;
 
 	va_list ap;
@@ -120,7 +122,7 @@ int _print(const char *file, const int line, int level, const char *fmt, ...)
 	}
 
 	/* stdout */
-	switch (log_state.use_stdout) {
+	switch (use_stdout) {
 	case 1:
 		if (file) {
 			char *base = strrchr(file, '/') + 1;
@@ -144,7 +146,7 @@ int _print(const char *file, const int line, int level, const char *fmt, ...)
 	}
 
 	/* syslog */
-	if (log_state.use_syslog) {
+	if (use_syslog) {
 		openlog("otpasswd", LOG_CONS | LOG_PID, LOG_AUTHPRIV);
 		syslog(syslog_level, "%s%s", intro, buff); /* FIXME; is intro needed? */
 		closelog();

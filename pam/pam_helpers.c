@@ -157,7 +157,7 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 		/* We don't want to leave state in memory! */
 		/* TODO/FIXME: What with the locks? DB may unlock
 		 * data if it was locked. */
-		retval = ppp_release(s, 0, 0);
+		retval = ppp_state_release(s, 0, 0);
 		// ppp_fini(s);
 		if (retval != 0) {
 			print(PRINT_ERROR, "RELEASE FAILED IN CHILD!");
@@ -406,61 +406,36 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
 
 	int retval;
 
-	/* Set safe umask */
-	umask(077);
+	retval = ppp_init(PRINT_SYSLOG);
+	if (retval != 0) {
+		print(PRINT_ERROR, "OTPasswd not correctly installed (%s)\n", ppp_get_error_desc(retval));
+		ppp_fini();
+		retval = PAM_SERVICE_ERR;
+		return 1;
+	}
 
-	/* Bootstrap logging */
-	print_init(PRINT_NOTICE, 0, 1, NULL);
-
-	/* Ensure GMP frees memory safely */
-	num_init();
-
-	/* Load default options + ones defined in config file */
-	*cfg = cfg_get();
-
-	if (!*cfg) {
-		print(PRINT_ERROR, "Unable to read config file\n");
-		/* FIXME: Should incorrect config lock out from logging? */
+	/* Parse additional options passed to module */
+	retval = ph_parse_module_options(flags, argc, argv, *cfg);
+	if (retval != 0) {
 		retval = PAM_SERVICE_ERR;
 		goto error;
 	}
 
-	/* Database unconfigured */
-	if ((*cfg)->db == CONFIG_DB_UNCONFIGURED) {
-		retval = PAM_IGNORE;
-		print(PRINT_ERROR,
-		      "Configuration error. You have to "
-		      "edit otpasswd.conf and select DB\n");
-		goto error;
-	}
+	*cfg = cfg_get();
 
-
-	/* Parse additional options passed to module */
-	retval = ph_parse_module_options(flags, argc, argv, *cfg);
-
-	if (retval != 0) {
-		goto error;
-	}
-
-
-	/* Initialize correctly internal debugging */
-	int log_level = PRINT_NOTICE;
+	/* Update log level with data read from module options */
 	switch ((*cfg)->logging) {
-	case 0: log_level = PRINT_NONE; break;
-	case 1: log_level = PRINT_ERROR; break;
-	case 2: log_level = PRINT_WARN; break;
-	case 3: log_level = PRINT_NOTICE; break;
+	case 0: print_config(PRINT_SYSLOG | PRINT_NONE); break;
+	case 1: print_config(PRINT_SYSLOG | PRINT_ERROR); break;
+	case 2: print_config(PRINT_SYSLOG | PRINT_WARN); break; 
+	case 3: print_config(PRINT_SYSLOG | PRINT_NOTICE); break; 
 	default:
-		print(PRINT_ERROR,
-		      "This should never happen. "
-		      "Illegal cfg->logging value\n");
+		assert(0);
+		retval = PAM_SERVICE_ERR;
+		goto error;
 	}
 
-	/* Close bootstrapped logging */
-	print_fini();
-
-	print_init(log_level, 0, 1, NULL);
-	print(PRINT_NOTICE, "otpasswd started\n");
+	print(PRINT_NOTICE, "pam_otpasswd started\n");
 
 	/* We must know the user of whom we must find state data */
 	retval = pam_get_user(pamh, &user, NULL);
@@ -477,7 +452,7 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
 	}
 
 	/* Initialize state with given username */
-	retval = ppp_init(s, user); 
+	retval = ppp_state_init(s, user); 
 	if (retval != 0) {
 		/* This will fail if, for example, we're 
 		 * unable to locate home directory */
@@ -497,13 +472,13 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
 	/* All ok */
 	return 0;
 error:
-	print_fini();
+	ppp_fini();
 	return retval;
 }
 
 void ph_fini(state *s)
 {
-	ppp_fini(s);
-	print(PRINT_NOTICE, "otpasswd finished\n");
-	print_fini();
+	ppp_state_fini(s);
+	print(PRINT_NOTICE, "pam_otpasswd finished\n");
+	ppp_fini();
 }

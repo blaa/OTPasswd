@@ -48,25 +48,43 @@
 
 
 /*******************************************
+ * Init/fini functions of libotp
+ *******************************************/
+
+/* First libotp function which should be called.
+ * Call ppp_fini even if this functions fails.
+ * Sets umask, starts printing subsystem and reads configuration. */
+extern int ppp_init(int print_flags);
+
+/* Shuts down logging subsystem */
+extern void ppp_fini(void);
+
+
+/*******************************************
  * High level functions for state management
  *******************************************/
 /* Allocate state information and initialize it. */
-extern int ppp_init(state **s, const char *user);
+extern int ppp_state_init(state **s, const char *user);
 
 /* Deinitialize state and free it's memory */
-extern void ppp_fini(state *s);
+extern void ppp_state_fini(state *s);
 
 /* Lock state and load state.
  * Calculate PPP data (passcard sizes etc.)
  * After this function finished correctly state
  * is still locked, so it can be modified. */
-extern int ppp_load(state *s);
+extern int ppp_state_load(state *s);
 
 /* Will ensure that the state was locked before
  * If store = 1 will update db with state information
  * If unlock = 1 will unlock state after writting. */
-extern int ppp_release(state *s, int store, int unlock);
+extern int ppp_state_release(state *s, int store, int unlock);
 
+
+/*******************************************
+ * Combos combining load+lock, some action 
+ * and unlock of state db.
+ *******************************************/
 /*
  * 1. Lock file
  * 2a. Open it
@@ -164,7 +182,7 @@ extern int ppp_verify_code_length(int length);
 extern int ppp_verify_flags(int flags);
 
 /* Verify all parts of user state */
-extern int ppp_verify_state(const state *s);
+extern int ppp_state_verify(const state *s);
 
 /*******************************************
  * State Getters / Setters

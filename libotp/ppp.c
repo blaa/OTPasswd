@@ -18,6 +18,10 @@
 
 #define PPP_INTERNAL 1
 
+/* for umask */
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include "num.h"
 #include "crypto.h"
 
@@ -58,6 +62,68 @@ static const char *alphabets[] = {
 };
 
 static const int alphabet_cnt = sizeof(alphabets) / sizeof(*alphabets);
+
+
+int ppp_init(int print_flags)
+{
+	int retval = PPP_ERROR;
+	cfg_t *cfg = NULL;
+
+	assert(print_flags <= (PRINT_SYSLOG | PRINT_STDOUT));
+
+	/* Set safe umask for creation of DB files */
+	umask(077);
+
+	/* Enable logging at biggest log level */
+	print_init(PRINT_NOTICE | print_flags, NULL);
+
+	/* Ensure GMP frees memory safely */
+	num_init();
+
+	/* Load default options + ones defined in config file */
+	cfg = cfg_get();
+
+	if (!cfg) {
+		retval = PPP_ERROR_CONFIG;
+		goto cleanup;
+	}
+
+	/* Database unconfigured */
+	if (cfg->db == CONFIG_DB_UNCONFIGURED) {
+		retval = PPP_ERROR_NOT_CONFIGURED;
+		goto cleanup;
+	}
+
+	/* Set log level according to cfg->logging */
+	switch (cfg->logging) {
+	case 0: print_config(print_flags | PRINT_NONE); break;
+	case 1: print_config(print_flags | PRINT_ERROR); break;
+	case 2: print_config(print_flags | PRINT_WARN); break; 
+	case 3: print_config(print_flags | PRINT_NOTICE); break; 
+	default:
+		print(PRINT_ERROR,
+		      "This should never happen. "
+		      "Illegal cfg->logging value\n");
+		break;
+	}
+
+	/* Verify permissions according to mode */
+	retval = cfg_permissions();
+	if (retval != 0) 
+		return retval;
+
+	/* All ok */
+	retval = 0;
+
+cleanup:
+	return retval;
+}
+
+void ppp_fini(void)
+{
+	print_fini();
+}
+
 
 /***********************
  * Verification group 
@@ -200,7 +266,7 @@ int ppp_verify_flags(int flags)
 	return 0;
 }
 
-int ppp_verify_state(const state *s)
+int ppp_state_verify(const state *s)
 {
 	if (ppp_verify_flags(s->flags) != 0)
 		return PPP_ERROR_POLICY;
@@ -375,7 +441,7 @@ int ppp_authenticate(const state *s, const char *passcode)
 	}
 
 	/* User with state inconsistent with policy can't authenticate */
-	retval = ppp_verify_state(s);
+	retval = ppp_state_verify(s);
 	if (retval != 0) {
 		return retval;
 	}
@@ -577,7 +643,7 @@ const char *ppp_get_error_desc(int error)
 	case STATE_NO_SUCH_USER:
 		return "No such Unix user in passwd database. Unable to locate home.";
 
-		
+
 	case PPP_ERROR:
 		return "Generic PPP error. (Try -v to get details)";
 
@@ -596,6 +662,18 @@ const char *ppp_get_error_desc(int error)
 	case PPP_ERROR_DISABLED:
 		return "User state disabled.";
 
+	case PPP_ERROR_CONFIG:
+		return "Unable to read config file";
+
+	case PPP_ERROR_NOT_CONFIGURED:
+		return "You have to edit otpasswd.conf and select correct DB option.";
+
+	case PPP_ERROR_CONFIG_OWNERSHIP:
+		return "Configuration file should be owned by root.";
+
+	case PPP_ERROR_CONFIG_PERMISSIONS:
+		return "Incorrect permissions for config file. Should be accessible only by root.";
+
 	default:
 		return "Error occured while reading state. Use -v to determine which.";
 	}
@@ -604,7 +682,7 @@ const char *ppp_get_error_desc(int error)
 /****************************************
  * High-level state management functions
  ****************************************/
-int ppp_init(state **s, const char *user)
+int ppp_state_init(state **s, const char *user)
 {
 	int ret;
 	*s = malloc(sizeof(**s));
@@ -621,14 +699,14 @@ int ppp_init(state **s, const char *user)
 	return ret;
 }
 
-void ppp_fini(state *s)
+void ppp_state_fini(state *s)
 {
 	state_fini(s);
 	free(s);
 }
 
 
-int ppp_load(state *s)
+int ppp_state_load(state *s)
 {
 	int retval = 1;
 
@@ -663,25 +741,7 @@ cleanup1:
 	return retval;
 }
 
-int ppp_flag_check(const state *s, int flag)
-{
-	return s->flags & flag;
-}
-
-void ppp_flag_add(state *s, int flag)
-{
-	/* TODO: Check policy */
-	s->flags |= flag;
-}
-
-void ppp_flag_del(state *s, int flag)
-{
-	/* TODO: Check policy */
-	s->flags &= ~flag;
-}
-
-
-int ppp_release(state *s, int store, int unlock)
+int ppp_state_release(state *s, int store, int unlock)
 {
 	int ret;
 	int retval = 0;
@@ -711,12 +771,12 @@ int ppp_increment(state *s)
 	int ret;
 
 	/* Load user state */
-	ret = ppp_load(s);
+	ret = ppp_state_load(s);
 	if (ret != 0)
 		return ret;
 
 	/* Verify state correctness before trying anything more */
-	ret = ppp_verify_state(s);
+	ret = ppp_state_verify(s);
 	if (ret != 0) {
 		goto error;
 	}
@@ -735,7 +795,7 @@ int ppp_increment(state *s)
 	mpz_add_ui(s->counter, s->counter, 1);
 
 	/* We will return it's return value if anything failed */
-	ret = ppp_release(s, 1, 1);
+	ret = ppp_state_release(s, 1, 1);
 
 	/* Restore current counter */
 	mpz_set(s->counter, tmp);
@@ -745,7 +805,7 @@ int ppp_increment(state *s)
 
 error:
 	/* Unlock. And ignore unlocking errors */
-	(void) ppp_release(s, 0, 1);
+	(void) ppp_state_release(s, 0, 1);
 	return ret;
 }
 
@@ -756,11 +816,11 @@ int ppp_failures(const state *s, int zero)
 		       * also we must read failure count from disk. */
 	int ret = 1;
 
-	if (ppp_init(&s_tmp, s->username) != 0)
+	if (ppp_state_init(&s_tmp, s->username) != 0)
 		return 1;
 
 	/* Lock&Load state from disk */
-	ret = ppp_load(s_tmp);
+	ret = ppp_state_load(s_tmp);
 	if (ret != 0)
 		goto cleanup;
 
@@ -773,7 +833,7 @@ int ppp_failures(const state *s, int zero)
 	}
 
 	/* Store changes and unlock */
-	ret = ppp_release(s_tmp, 1, 1);
+	ret = ppp_state_release(s_tmp, 1, 1);
 	if (ret != 0) {
 		print(PRINT_WARN, "Unable to save decremented state\n");
 		goto cleanup;
@@ -782,7 +842,7 @@ int ppp_failures(const state *s, int zero)
 	ret = 0; /* Everything ok */
 
 cleanup:
-	ppp_fini(s_tmp);
+	ppp_state_fini(s_tmp);
 
 	return ret;
 }
@@ -1047,4 +1107,21 @@ int ppp_set_str(state *s, int field, const char *arg, int options)
 	}
 
 	return 0;
+}
+
+int ppp_flag_check(const state *s, int flag)
+{
+	return s->flags & flag;
+}
+
+void ppp_flag_add(state *s, int flag)
+{
+	/* TODO: Check policy */
+	s->flags |= flag;
+}
+
+void ppp_flag_del(state *s, int flag)
+{
+	/* TODO: Check policy */
+	s->flags &= ~flag;
 }

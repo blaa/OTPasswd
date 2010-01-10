@@ -31,9 +31,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "print.h"
-#include "config.h"
-
+#include "ppp.h"
 
 static int _alphabet_check(const char *alphabet) {
 	/* Check duplicates and character range. */
@@ -629,13 +627,12 @@ int cfg_permissions(void)
 {
 	struct stat st;
 	if (stat(CONFIG_PATH, &st) != 0) {
-		printf("Unable to check config file permissions\n");
-		return 1;
+		print(PRINT_ERROR, "Unable to check config file permissions\n");
+		return PPP_ERROR;
 	}
 
 	if (st.st_uid != 0 || st.st_gid != 0) {
-		printf("Config file not owned by root!\n");
-		return 1;
+		return PPP_ERROR_CONFIG_OWNERSHIP;
 	}
 
 	cfg_t *cfg = cfg_get();
@@ -645,8 +642,7 @@ int cfg_permissions(void)
 	case CONFIG_DB_MYSQL:
 	case CONFIG_DB_LDAP:
 		if (st.st_mode & (S_IRWXO)) {
-			printf("Config file is readable by others in LDAP/MySQL mode!\n");
-			return 1;
+			return PPP_ERROR_CONFIG_PERMISSIONS;
 		}
 	default:
 		break;

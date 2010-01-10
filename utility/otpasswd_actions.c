@@ -52,7 +52,7 @@ enum {
 static int _init_state(state **s, const options_t *options, int load)
 {
 	int ret;
-	ret = ppp_init(s, options->username);
+	ret = ppp_state_init(s, options->username);
 	if (ret != 0) {
 		return ret;
 	}
@@ -62,11 +62,11 @@ static int _init_state(state **s, const options_t *options, int load)
 		return 0;
 	}
 
-	ret = ppp_load(*s);
+	ret = ppp_state_load(*s);
 	switch (ret) {
 	case 0:
 		/* All right */
-		ret = ppp_verify_state(*s);
+		ret = ppp_state_verify(*s);
 		if (ret != 0) {
 			printf(_("WARNING: Your state is inconsistent with system policy.\n"
 			         "         Fix it or you will be unable to login.\n"
@@ -76,7 +76,7 @@ static int _init_state(state **s, const options_t *options, int load)
 
 	default:
 		puts(_(ppp_get_error_desc(ret)));
-		ppp_fini(*s);
+		ppp_state_fini(*s);
 		return ret;
 	}
 }
@@ -90,12 +90,12 @@ static int _fini_state(state **s, int store)
 	 * We don't need to unlock just yet - ppp_fini
 	 * will unlock state if it was locked
 	 */
-	ret = ppp_release(*s, store, 0);
+	ret = ppp_state_release(*s, store, 0);
 	if (ret != 0) {
 		printf(_("Error while saving state data. State not changed.\n"));
 	}
 
-	ppp_fini(*s);
+	ppp_state_fini(*s);
 	*s = NULL;
 
 	return ret;
@@ -509,7 +509,7 @@ static int _parse_code_spec(const state *s, const char *spec, mpz_t passcard, mp
 		} else {
 			mpz_add_ui(passcard, s->latest_card, 1);
 		}
-	} else if (isalpha(spec[0])) {
+	} else if (isascii(spec[0]) && isalpha(spec[0])) {
 		/* Format: CRR[number]; TODO: allow RRC[number] */
 		char column;
 		int row;
@@ -595,6 +595,68 @@ static int _parse_code_spec(const state *s, const char *spec, mpz_t passcard, mp
 error:
 	return 5;
 }
+
+static int _verify_spass(const char *spass)
+{
+	int digits = 0, uppercase = 0;
+	int special = 0, lowercase = 0;
+	int whitespace = 0;
+	int length = 0;
+	int i;
+
+	cfg_t *cfg = cfg_get();
+	assert(cfg);
+
+	length = strlen(spass);
+	
+	for (i = 0; spass[i]; i++) {
+		length++;
+		if (!isascii(spass[i])) {
+			/* Non-ascii character */
+			printf(_("Non-ascii character in static password.\n"));
+			return 1;
+		}
+
+		if (isdigit(spass[i]))
+			digits++;
+		else if (isupper(spass[i])) {
+			uppercase++;
+		} else if (islower(spass[i])) {
+			lowercase++;
+		} else if (isspace(spass[i])) { /* This accepts vertical tab */
+			whitespace++;
+		} else if (isgraph(spass[i])) {
+			special++;
+		} else {
+			printf(_("Ok. Add support for this strange character %c\n"), spass[i]);
+			assert(0);
+		}
+	}
+
+	i = 0;
+
+	if (cfg->spass_min_length > length) {
+		printf(_("Static password too short.\n"));
+		i++;
+	}
+
+	if (digits < cfg->spass_require_digit) {
+		printf(_("Not enough digits in password.\n"));
+		i++;
+	}
+
+	if (uppercase < cfg->spass_require_uppercase) {
+		printf(_("Not enough uppercase characters in password.\n"));
+		i++;
+	}
+
+	if (special < cfg->spass_require_special) {
+		printf(_("Not enough special characters in password.\n"));
+		i++;
+	}
+	return i;
+}
+
 
 /* Authenticate; returns boolean; 1 - authenticated */
 int action_authenticate(options_t *options, const cfg_t *cfg)
@@ -891,6 +953,11 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		int len;
 		unsigned char sha_buf[32];
 
+		if (cfg->spass_allow_change != 1 && !security_is_privileged()) {
+			printf(_("Modification of a static password denied by the policy.\n"));
+			break;
+		}
+
 		if (options->action_arg)
 			len = strlen(options->action_arg);
 		else
@@ -901,8 +968,12 @@ int action_flags(options_t *options, const cfg_t *cfg)
 			mpz_set_ui(s->spass, 0);
 			printf(_("Turning off static password.\n"));
 		} else {
+			/* Ensure password length/difficulty */
+			if (_verify_spass(options->action_arg) != 0) {
+				break;
+			}
+
 			/* Change static password */
-			/* TODO: Ensure its length/difficulty */
 			crypto_sha256((unsigned char *)options->action_arg, len, sha_buf);
 			num_from_bin(s->spass, sha_buf, sizeof(sha_buf));
 			s->spass_set = 1;

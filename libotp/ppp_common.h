@@ -92,6 +92,21 @@ enum ppp_errors {
 	/* User disabled, while trying some 
 	 * action like authentication */
 	PPP_ERROR_DISABLED = 105,
+
+	/*** Errors which can happen only during initialization */
+
+	/* Unable to read config file */
+	PPP_ERROR_CONFIG = 110, 
+
+	/* DB option in config not set. */
+	PPP_ERROR_NOT_CONFIGURED = 111,
+
+	/* Config not owned by root */
+	PPP_ERROR_CONFIG_OWNERSHIP = 112,
+
+	/* Incorrect config permissions
+	 * Probably o+r/g+r and LDAP/MySQL selected */
+	PPP_ERROR_CONFIG_PERMISSIONS = 113,
 };
 
 enum ppp_flags {

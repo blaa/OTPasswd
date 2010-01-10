@@ -178,7 +178,7 @@ PAM_EXTERN int pam_sm_open_session(
 
 	print(PRINT_NOTICE, "(session) entrance\n");
 
-	if (ppp_load(s) != 0)
+	if (ppp_state_load(s) != 0)
 		goto exit;
 
 	print(PRINT_NOTICE, "(session) state loaded\n");
@@ -216,7 +216,7 @@ PAM_EXTERN int pam_sm_open_session(
 
 
 cleanup:
-	ppp_release(s, store, 1);
+	ppp_state_release(s, store, 1);
 exit:
 	ph_fini(s);
 

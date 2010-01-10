@@ -30,19 +30,25 @@
 #define DEBUG_POSITIONS 0
 #endif
 
-enum PRINT_LEVEL {
+enum PRINT_FLAGS {
 	PRINT_NOTICE = 1,
 	PRINT_WARN = 2,
 	PRINT_ERROR = 3,
 	PRINT_CRITICAL = 4,
-	PRINT_NONE = 50
+	PRINT_NONE = 50,
+
+	PRINT_STDOUT = 64,
+	PRINT_SYSLOG = 128,
 };
 
 /* Initialize logging system */
-extern int print_init(int log_level, int use_stdout, int use_syslog, const char *log_file);
+extern int print_init(int flags, const char *log_file);
 
 /* Clean up after logging */
 extern void print_fini();
+
+/* Set log_level/syslog/stdout to another value */
+extern void print_config(int flags);
 
 /* Log some data */
 extern int _print(const char *file, const int line, int level, const char *fmt, ...);

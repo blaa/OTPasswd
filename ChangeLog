@@ -71,6 +71,8 @@ Done:
               WARNING: Might be removed and 'skipping backwards' will be
               totally locked.
 TODO Major:
+        * [?] Sanitize gettext environment
+        * [?] locale might mess up isalpha and isprint. 
         * [?] Logging warnings printed to user at WARN level
         * [?] Key quality checking (duplicates)
         * [?] Verify SIGCHLD won't clobber anything.

@@ -233,9 +233,6 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 	assert(cfg);
 	assert(options);
 
-	/* This will cause GMP to free memory safely */
-	num_init();
-
 	/* By default perform only some logging */
 	cfg->logging = 1;
 
@@ -411,12 +408,16 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 	int ret;
 	int retval;
 
-	/* Initialize logging subsystem */
-	if (print_init(cfg->logging == 1 ? PRINT_WARN : PRINT_NOTICE,
-		       1, 0, NULL) != 0) {
-		printf(_("Unable to start debugging\n"));
+	/* Reconfigure printing subsystem; -v might be passed */
+	switch (cfg->logging) {
+	case 0: print_config(PRINT_STDOUT | PRINT_NONE); break;
+	case 1: print_config(PRINT_STDOUT | PRINT_ERROR); break;
+	case 2: print_config(PRINT_STDOUT | PRINT_WARN); break; 
+	case 3: print_config(PRINT_STDOUT | PRINT_NOTICE); break; 
+	default:
+		assert(0);
+		goto cleanup;
 	}
-
 
 	/* Perform action */
 	switch (options->action) {
@@ -446,7 +447,6 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 
 	case OPTION_AUTH:
 		ret = action_authenticate(options, cfg);
-		print_fini();
 		if (ret == 0)
 			retval = 1;
 		else
@@ -512,7 +512,7 @@ cleanup:
 	free(options->label);
 	free(options->contact);
 	free(options->username);
-	print_fini();
+	ppp_fini();
 	return retval;
 }
 
@@ -549,45 +549,19 @@ int main(int argc, char **argv)
 	 * b) Set-uid root. (On DB=global or user)
 	 * c) Not set-uid. (DB=user)
 	 *
-	 * Now, try to read config file.
+	 * Now, try to read config file, init printing etc.
 	 */
 
-	/* 2a) Bootstrap logging subsystem. */
-	if (print_init(PRINT_WARN, 1, 0, NULL) != 0) {
-		printf(_("ERROR: Unable to start logging subsystem\n"));
-		return 1;
-	}
-
-	/* TODO:
-	 * If we are SUID and DB=LDAP or DB=MySQL ensure only
-	 * we can read config.
-	 * TODO: Ensure config is owned by root.
-	 */
-
-	/* 2b) Get global config */
-	cfg = cfg_get();
-
-	if (!cfg) {
-		printf(_("\nUnable to read config file from %s\n"), CONFIG_PATH);
+	ret = ppp_init(PRINT_STDOUT);
+	if (ret != 0) {
+		puts(_(ppp_get_error_desc(ret)));
 		printf(_("OTPasswd not correctly installed, consult installation manuals.\n"));
 		printf(_("Consult installation manual for detailed information.\n"));
-		print_fini();
+		ppp_fini();
 		return 1;
 	}
 
-	/* 3) Check common configuration errors */
-
-	if (cfg_permissions() != 0) {
-		return 1;
-	}
-
-	/* Check if configuration was done. Database unconfigured */
-	if (cfg->db == CONFIG_DB_UNCONFIGURED) {
-		printf(_("Configuration error. You have to "
-		         "edit otpasswd.conf and select DB option.\n"));
-		print_fini();
-		return 1;
-	}
+	cfg = cfg_get();
 
 	/* If DB is global, mysql or ldap, utility must be SUID root. 
 	 * We can't detect this easily if we are run by root. So, 
@@ -602,7 +576,7 @@ int main(int argc, char **argv)
 		printf(
 			_("Database type set to global, MySQL or LDAP, yet program "
 			  "is not a SUID root.\n"));
-		print_fini();
+		ppp_fini();
 		return 1;
 	}
 
@@ -630,7 +604,6 @@ int main(int argc, char **argv)
 		}
 		break;
 	}
-	print_fini();
 
 	/* 5) Config read. Privileges dropped. Parse user data. */
 	ret = process_cmd_line(argc, argv, &options, cfg);
