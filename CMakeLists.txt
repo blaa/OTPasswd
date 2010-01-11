@@ -109,9 +109,10 @@ STRING(REGEX REPLACE "(\\.[0-9]+)(;|$)" "\\1.gz\\2" man_gz   "${man_src}"  )
 # Generate build rules for building compressed manuals
 FOREACH(man ${man_src})
   ADD_CUSTOM_COMMAND(OUTPUT ${man}.gz
-                     COMMAND ${GZIP_TOOL} -c ${man} > ${man}.gz
-                     DEPENDS ${man}
-                     COMMENT "Building ${man}.gz")
+    COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/docs
+    COMMAND ${GZIP_TOOL} -c ${CMAKE_CURRENT_SOURCE_DIR}/${man} > ${CMAKE_CURRENT_BINARY_DIR}/${man}.gz
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${man}
+    COMMENT "Building ${man}.gz")
 ENDFOREACH(man)
 
 ##
@@ -152,9 +153,9 @@ INSTALL(TARGETS pam_otpasswd otpasswd
 INSTALL(FILES examples/otpasswd-login DESTINATION /etc/pam.d)
 INSTALL(FILES examples/otpasswd.conf DESTINATION /etc/otpasswd)
 
-INSTALL(FILES ${man_gz_1} DESTINATION "share/man/man1")
-INSTALL(FILES ${man_gz_5} DESTINATION "share/man/man5")
-INSTALL(FILES ${man_gz_8} DESTINATION "share/man/man8")
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_1} DESTINATION "share/man/man1")
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_5} DESTINATION "share/man/man5")
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_8} DESTINATION "share/man/man8")
 
 ##
 # Tests / Coverage

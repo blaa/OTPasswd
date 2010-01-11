@@ -416,6 +416,7 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 	case 3: print_config(PRINT_STDOUT | PRINT_NOTICE); break; 
 	default:
 		assert(0);
+		retval = 1;
 		goto cleanup;
 	}
 

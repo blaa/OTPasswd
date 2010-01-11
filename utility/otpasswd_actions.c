@@ -287,9 +287,6 @@ static void _show_keys(const state *s)
 {
 	assert(s->codes_on_card > 0);
 
-	cfg_t *cfg = cfg_get();
-	assert(cfg);
-
 	/* Print key in LSB as PPPv3 likes */
 	printf(_("Key     = ")); crypto_print_hex(s->sequence_key, 32);
 
