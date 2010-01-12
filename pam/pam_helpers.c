@@ -40,14 +40,16 @@
 #include <pam_appl.h>
 
 /* PAM declarations */
-#include "pam_macros.h"
 #include "pam_helpers.h"
 
 /* libotp interface */
 #include "ppp.h"
 
-int ph_parse_module_options(int flags, int argc, const char **argv, cfg_t *cfg)
+int ph_parse_module_options(int flags, int argc, const char **argv)
 {
+	cfg_t *cfg = cfg_get();
+	assert(cfg);
+	
 	for (; argc-- > 0; argv++) {
 		if (strcmp("audit", *argv) == 0)
 			cfg->logging = 2;
@@ -68,11 +70,14 @@ int ph_parse_module_options(int flags, int argc, const char **argv, cfg_t *cfg)
 	return 0;
 }
 
-int ph_send_oob(const cfg_t *cfg, state *s)
+int ph_send_oob(state *s)
 {
 	int retval;
 	char current_passcode[17] = {0};
 	char contact[STATE_CONTACT_SIZE];
+	const cfg_t *cfg = cfg_get();
+
+	assert(cfg);
 
 	/* We musn't have lock on state when running this function */
 
@@ -237,18 +242,33 @@ int ph_send_oob(const cfg_t *cfg, state *s)
 	return 0;
 }
 
-int ph_oob_hook(const cfg_t *opt, state *s)
+int ph_validate_spass(pam_handle_t *pamh, const state *s)
 {
-	return 1;
+	int ret = 1;
+	struct pam_response *pr = NULL;
+
+	pr = ph_query_user(pamh, 0, "Static password: ");
+
+	ret = ppp_spass_validate(s, pr->resp);
+	if (!ret) {
+		print(PRINT_WARN, "Static password validation failed");
+	}
+	
+	ph_drop_response(pr);
+	return ret;
 }
 
-void ph_show_message(pam_handle_t *pamh, const cfg_t *cfg, const char *msg)
+void ph_show_message(pam_handle_t *pamh, const char *msg)
 {
 	/* Required for communication with user */
 	struct pam_conv *conversation;
 	struct pam_message message;
 	struct pam_message *pmessage = &message;
 	struct pam_response *resp = NULL;
+
+	const cfg_t *cfg = cfg_get();
+
+	assert(cfg);
 
 	/* If silent enabled - don't print any messages */
 	if (cfg->silent)
@@ -268,10 +288,10 @@ void ph_show_message(pam_handle_t *pamh, const cfg_t *cfg, const char *msg)
 
 	/* Drop any reply */
 	if (resp)
-		_pam_drop_reply(resp, 1);
+		ph_drop_response(resp);
 }
 
-int ph_increment(pam_handle_t *pamh, const cfg_t *cfg, const char *username, state *s)
+int ph_increment(pam_handle_t *pamh, const char *username, state *s)
 {
 	const char *enforced_msg = "OTPasswd: Key not generated, unable to login.";
 	const char *lock_msg = "OTPasswd: Unable to lock state file.";
@@ -288,6 +308,9 @@ int ph_increment(pam_handle_t *pamh, const cfg_t *cfg, const char *username, sta
 		"OTPasswd: Your state is inconsistent with "
 		"system policy. Contact administrator.";
 
+	const cfg_t *cfg = cfg_get();
+	assert(cfg);
+
 	switch (ppp_increment(s)) {
 	case 0:
 		/* Everything fine */
@@ -295,13 +318,13 @@ int ph_increment(pam_handle_t *pamh, const cfg_t *cfg, const char *username, sta
 
 	case STATE_NUMSPACE:
 		/* Strange error, might happen, but, huh! */
-		ph_show_message(pamh, cfg, numspace_msg);
+		ph_show_message(pamh, numspace_msg);
 		print(PRINT_WARN,
 		      "User \"%s\" runned out of passcodes.\n", username);
 		return PAM_AUTH_ERR;
 
 	case STATE_LOCK_ERROR:
-		ph_show_message(pamh, cfg, lock_msg);
+		ph_show_message(pamh, lock_msg);
 		print(PRINT_WARN, "Lock error while authenticating user");
 		return PAM_AUTH_ERR;
 
@@ -331,7 +354,7 @@ int ph_increment(pam_handle_t *pamh, const cfg_t *cfg, const char *username, sta
 		print(PRINT_ERROR, "State of \"%s\" contains data "
 		      "contradictory to current policy. Update state.\n",
 		      username);
-		ph_show_message(pamh, cfg, policy_msg);
+		ph_show_message(pamh, policy_msg);
 		return PAM_AUTH_ERR;
 
 	case PPP_ERROR_RANGE:
@@ -339,7 +362,7 @@ int ph_increment(pam_handle_t *pamh, const cfg_t *cfg, const char *username, sta
 		      "State of \"%s\" contains invalid data.\n",
 		      username);
 
-		ph_show_message(pamh, cfg, invalid_msg);
+		ph_show_message(pamh, invalid_msg);
 		return PAM_AUTH_ERR;
 
 	case PPP_ERROR_DISABLED:
@@ -348,7 +371,7 @@ int ph_increment(pam_handle_t *pamh, const cfg_t *cfg, const char *username, sta
 			      "Authentication failure; user \"%s\" state "
 			      "is disabled\n", username);
 
-			ph_show_message(pamh, cfg, disabled_msg);
+			ph_show_message(pamh, disabled_msg);
 			return PAM_AUTH_ERR;
 		} else {
 			/* Not enforcing */
@@ -367,14 +390,14 @@ enforced_fail:
 	print(PRINT_WARN, 
 	      "Authentication failed because of enforcement;"
 	      " user \"%s\"\n", username);
-	ph_show_message(pamh, cfg, enforced_msg);
+	ph_show_message(pamh, enforced_msg);
 	return PAM_AUTH_ERR;
 
 
 }
 
 struct pam_response *ph_query_user(
-	pam_handle_t *pamh, int flags, int show, const char *prompt, const state *s)
+	pam_handle_t *pamh, int show, const char *prompt)
 {
 	/* Required for communication with user */
 	struct pam_conv *conversation;
@@ -403,8 +426,24 @@ struct pam_response *ph_query_user(
 	return resp;
 }
 
+void ph_drop_response(struct pam_response *reply)
+{
+	if (!reply)
+		return;
+
+	if (reply[0].resp) {
+		char *c;
+		for (c = reply[0].resp; !c; c++)
+			*c = 0x00;
+		free(reply[0].resp);
+	}
+
+	if (reply)
+		free(reply);
+}
+
 int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
-            cfg_t **cfg, state **s, const char **username)
+            state **s, const char **username)
 {
 	/* User info from PAM */
 	const char *user = NULL;
@@ -419,19 +458,17 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
 		return 1;
 	}
 
-	*cfg = cfg_get();
+	const cfg_t *cfg = cfg_get();
 
 	/* Parse additional options passed to module */
-	retval = ph_parse_module_options(flags, argc, argv, *cfg);
+	retval = ph_parse_module_options(flags, argc, argv);
 	if (retval != 0) {
 		retval = PAM_SERVICE_ERR;
 		goto error;
 	}
 
-	*cfg = cfg_get();
-
 	/* Update log level with data read from module options */
-	switch ((*cfg)->logging) {
+	switch (cfg->logging) {
 	case 0: print_config(PRINT_SYSLOG | PRINT_NONE); break;
 	case 1: print_config(PRINT_SYSLOG | PRINT_ERROR); break;
 	case 2: print_config(PRINT_SYSLOG | PRINT_WARN); break; 

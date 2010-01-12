@@ -29,7 +29,6 @@
 
 /* PAM declarations */
 #include <pam_modules.h>
-#include "pam_macros.h"
 #include "pam_helpers.h"
 
 /* Entry point for authentication */
@@ -56,16 +55,18 @@ PAM_EXTERN int pam_sm_authenticate(
 	/* Perform initialization:
 	 * parse options, start logging, initialize state,
 	 */
-	retval = ph_init(pamh, flags, argc, argv, &cfg, &s, &username);
+	retval = ph_init(pamh, flags, argc, argv, &s, &username);
 	if (retval != 0)
 		return retval;
-	
+
+	cfg = cfg_get();
+
 	/* Retry = 0 - do not retry, 1 - with changing passcodes */
 	int tries;
 	for (tries = 0; tries < (cfg->retry == 0 ? 1 : cfg->retries); tries++) {
 		if (tries == 0 || cfg->retry == 1) {
 			/* First time or we are retrying while changing the password */
-			retval = ph_increment(pamh, cfg, username, s);
+			retval = ph_increment(pamh, username, s);
 			if (retval != 0)
 				goto cleanup;
 
@@ -81,48 +82,56 @@ PAM_EXTERN int pam_sm_authenticate(
 		/* If user configurated OOB to be send
 		 * all the time - sent it */
 		if (cfg->oob == OOB_ALWAYS) {
-			ph_oob_send(cfg, s);
+			ph_oob_send(s);
 		}
 
-		resp = ph_query_user(pamh, flags,
-				     ppp_flag_check(s, FLAG_SHOW),
-				     prompt, s);
-
 		retval = PAM_AUTH_ERR;
+
+		/* State question about passcode. User might
+		 * request OOB by answering with '.'. If so
+		 * we perform OOB and restate question */
+		resp = ph_query_user(pamh,
+				     ppp_flag_check(s, FLAG_SHOW),
+				     prompt);
+
+
+		/* Hook up OOB request */
+		if (resp && strcmp(resp[0].resp, ".") == 0) {
+			const char *oob_msg = "Out-of-band message sent.";
+
+			/* Drop reply. We will most probably 
+			 * restate question about passcode. */
+			ph_drop_response(resp);
+
+			switch (cfg->oob) {
+			case OOB_REQUEST:
+				if (ph_oob_send(s) == 0)
+					ph_show_message(pamh, oob_msg);
+				Break;
+
+			case OOB_SECURE_REQUEST:
+				if (ph_validate_spass(pamh, s) == 0) {
+					if (ph_oob_send(s) == 0)
+						ph_show_message(pamh, oob_msg);
+				}
+
+				break;
+			}
+
+			/* Restate question about passcode */
+			resp = ph_query_user(pamh, ppp_flag_check(s, FLAG_SHOW), prompt);
+		}
+
 		if (!resp) {
 			/* No response? */
 			print(PRINT_NOTICE, "No response from user during auth.\n");
 			goto cleanup;
 		}
 
-		/* We must free resp after this point ourselves. */
-
-		/* Hook up OOB request */
-		if (strcmp(resp[0].resp, ".") == 0) {
-			switch (cfg->oob) {
-			case OOB_REQUEST:
-				ph_oob_send(cfg, s);
-
-				/* Drop reply + restate question about passcode */
-				_pam_drop_reply(resp, 1);
-				resp = ph_query_user(pamh, flags, ppp_flag_check(s, FLAG_SHOW), prompt, s);
-
-				if (!resp) {
-					/* No response? */
-					print(PRINT_NOTICE, "No response from user during auth.\n");
-					goto cleanup;
-				}
-
-				break;
-			case OOB_SECURE_REQUEST:
-				/* TODO: To be implemented */
-				break;
-			}
-		}
 
 		if (ppp_authenticate(s, resp[0].resp) == 0) {
 			/* Authenticated */
-			_pam_drop_reply(resp, 1);
+			ph_drop_response(resp);
 
 			/* Correctly authenticated */
 			retval = PAM_SUCCESS;
@@ -133,7 +142,7 @@ PAM_EXTERN int pam_sm_authenticate(
 			goto cleanup;
 		}
 
-		_pam_drop_reply(resp, 1);
+		ph_drop_response(resp);
 
 		/* Increment count of failures */
 		retval = ppp_failures(s, 0);
@@ -165,14 +174,11 @@ PAM_EXTERN int pam_sm_open_session(
 	/* OTP State */
 	state *s;
 
-	/* Parameters */
-	cfg_t *cfg;
-
 	/* Username */
 	const char *username;
 
 	/* Initialize */
-	retval = ph_init(pamh, flags, argc, argv, &cfg, &s, &username);
+	retval = ph_init(pamh, flags, argc, argv, &s, &username);
 	if (retval != 0)
 		return retval;
 
@@ -197,14 +203,14 @@ PAM_EXTERN int pam_sm_open_session(
 		/* Generate message */
 		char buff_msg[300];
 		int len;
-		
+
 		len = snprintf(buff_msg, sizeof(buff_msg), "*** OTPasswd Warning: %s", msg);
 		if (len < 10) {
 			print(PRINT_ERROR, "(session) sprintf error\n");
 			goto cleanup;
 		}
-		
-		ph_show_message(pamh, cfg, buff_msg);
+
+		ph_show_message(pamh, buff_msg);
 	}
 
 	/* Have we printed warning about recent failures? */

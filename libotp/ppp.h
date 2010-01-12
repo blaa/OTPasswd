@@ -249,7 +249,7 @@ extern void ppp_flag_del(state *s, int flag);
 extern char **ppp_spass_set(state *s, const char *spass, int flag);
 
 /* Check if spass given as argument matches one stored 
- * in state */
-extern int ppp_spass_validate(state *s, const char *spass);
+ * in state. Returns 0 on success */
+extern int ppp_spass_validate(const state *s, const char *spass);
 
 #endif

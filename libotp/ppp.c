@@ -1252,9 +1252,7 @@ char **ppp_spass_set(state *s, const char *spass, int flag)
 	return NULL;
 }
 
-/* Check if spass given as argument matches one stored 
- * in state */
-int ppp_spass_validate(state *s, const char *spass)
+int ppp_spass_validate(const state *s, const char *spass)
 {
 	int ret = PPP_ERROR;
 	int len;
