@@ -251,7 +251,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		{"info",		no_argument,		0, OPTION_INFO},
 		{"info-key",		no_argument,		0, OPTION_INFO_KEY},
 		{"config",		required_argument,	0, OPTION_CONFIG},
-		{"password",		optional_argument,	0, OPTION_SPASS},
+		{"password",		no_argument,		0, OPTION_SPASS},
 		{"user",		required_argument,	0, OPTION_USER},
 		{"verbose",		no_argument,		0, OPTION_VERBOSE},
 		{"check",		no_argument,		0, OPTION_CHECK},
@@ -264,7 +264,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 	while (1) {
 		int option_index = 0;
 
-		int c = getopt_long(argc, argv, "krs:t:l:P:a:wic:p::vu:h", long_options, &option_index);
+		int c = getopt_long(argc, argv, "krs:t:l:P:a:wicpvu:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1) {
@@ -292,6 +292,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		case OPTION_HELP:
 		case OPTION_INFO:
 		case OPTION_INFO_KEY:
+		case OPTION_SPASS:
 			/* Error unless there was flag defined for key generation */
 			if (options->action != 0 &&
 			    !(options->action == OPTION_CONFIG && c == OPTION_KEY)) {
@@ -307,7 +308,6 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 		case OPTION_LATEX:
 		case OPTION_PROMPT:
 		case OPTION_AUTH:
-		case OPTION_SPASS:
 			if (options->action != 0) {
 				printf(_("Only one action can be specified on the command line.\n"));
 				goto error;

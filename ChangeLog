@@ -71,6 +71,8 @@ Done:
               WARNING: Might be removed and 'skipping backwards' will be
               totally locked.
 TODO Major:
+        * [%] Can user lock program on some printf with some control of
+        stdout?
         * [?] Do not store things in mpz_t which don't need it (spass)
         * [?] Sanitize gettext environment
         * [?] locale might mess up isalpha and isprint. 

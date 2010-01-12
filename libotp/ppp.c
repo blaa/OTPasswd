@@ -1256,12 +1256,12 @@ char **ppp_spass_set(state *s, const char *spass, int flag)
  * in state */
 int ppp_spass_validate(state *s, const char *spass)
 {
-	assert(s);
-
 	int ret = PPP_ERROR;
 	int len;
 	unsigned char spass_buf[40];
 	unsigned char sha_buf[32];
+
+	assert(s);
 	
 	if (s->spass_set != 1) {
 		return PPP_ERROR_SPASS_INCORRECT;

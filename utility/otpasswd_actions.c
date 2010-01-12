@@ -28,8 +28,12 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
-#include <gmp.h>
 
+/* For get_pass turning echo off */
+#include <termios.h>
+#include <unistd.h>
+
+#include <gmp.h>
 #include <assert.h>
 
 /* libotp header */
@@ -594,6 +598,62 @@ error:
 }
 
 
+static const char *_get_pass(void)
+{
+	struct termios t;
+	static char buf[128], buf2[128];
+	char *res = NULL;
+	int copy = -1;
+
+	/* Turn off echo */
+	if (tcgetattr(0, &t) != 0) {
+		print(PRINT_ERROR, _("Unable to turn off characters visibility!\n"));
+		return NULL;
+	}
+	
+	copy = t.c_lflag;
+	t.c_lflag &= ~ECHO;
+
+	if (tcsetattr(0, 0, &t) != 0) {
+		print(PRINT_ERROR, _("Unable to turn off characters visibility!\n"));
+		return NULL;
+	}
+	
+	/* Ask question */
+	printf(_("Static password: "));
+	res = fgets(buf, sizeof(buf), stdin);
+	if (res == NULL) {
+		print(PRINT_ERROR, "Unable to read static password\n");
+		goto cleanup;
+	}
+	printf("\n");
+
+	printf(_("Repeat password: "));
+	res = fgets(buf2, sizeof(buf2), stdin);
+	if (res == NULL) {
+		print(PRINT_ERROR, "Unable to read static password\n");
+		goto cleanup;
+	}
+	printf("\n");
+
+	if (strcmp(buf, buf2) == 0)
+		res = buf;
+	else {
+		printf(_("Sorry passwords do not match.\n"));
+		res = NULL;
+	}
+
+
+cleanup:
+	/* Turn echo back on */
+	t.c_lflag = copy;
+	if (tcsetattr(0, 0, &t) != 0) {
+		print(PRINT_ERROR, _("WARNING: Unable to turn on characters visibility!\n"));
+	}
+
+	return res;
+}
+
 /* Authenticate; returns boolean; 1 - authenticated */
 int action_authenticate(options_t *options, const cfg_t *cfg)
 {
@@ -894,10 +954,12 @@ int action_flags(options_t *options, const cfg_t *cfg)
 			break;
 		}
 
-		if (options->action_arg)
-			i = strlen(options->action_arg);
-		else
-			i = 0;
+		const char *pass = _get_pass();
+
+		if (!pass)
+			break;
+
+		i = strlen(pass);
 
 		if (i == 0) {
 			err_list = ppp_spass_set(s, NULL,
@@ -910,7 +972,7 @@ int action_flags(options_t *options, const cfg_t *cfg)
 			printf(_("Turned off static password.\n"));
 		} else {
 			/* Ensure password length/difficulty */
-			err_list = ppp_spass_set(s, options->action_arg,
+			err_list = ppp_spass_set(s, pass,
 						 PPP_CHECK_POLICY);
 			if (err_list && err_list[0]) {
 				for (i=0; err_list[i]; i++)

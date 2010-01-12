@@ -177,8 +177,6 @@ ADD_TEST(state_print6 ./otpasswd -v -t "next")
 ADD_TEST(state_print7 ./otpasswd -v -t "[next]")
 
 ADD_TEST(state_skip1 ./otpasswd -v -s "[3]")
-ADD_TEST(state_pass1 ./otpasswd -v -p="staticpass")
-ADD_TEST(state_pass2 ./otpasswd -v -p="")
 ADD_TEST(state_flag1 ./otpasswd -v -c show=off)
 ADD_TEST(state_flag2 ./otpasswd -v -c codelength=12)
 ADD_TEST(state_flag3 ./otpasswd -v -c alphabet=5)
