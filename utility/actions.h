@@ -21,8 +21,8 @@
  *   then one command line option.    
  **********************************************************************/
 
-#ifndef _OTPASSWD_ACTIONS_H_
-#define _OTPASSWD_ACTIONS_H_
+#ifndef _ACTIONS_H_
+#define _ACTIONS_H_
 
 #include "config.h"
 

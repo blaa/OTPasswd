@@ -30,7 +30,7 @@
 /* Utility headers */
 #include "security.h"
 #include "nls.h"
-#include "otpasswd_actions.h"
+#include "actions.h"
 #include "testcases.h"
 
 static const char *_program_name(const char *argv0)
@@ -264,7 +264,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 	while (1) {
 		int option_index = 0;
 
-		int c = getopt_long(argc, argv, "krs:t:l:P:a:wicpvu:h", long_options, &option_index);
+		int c = getopt_long(argc, argv, "krs:t:l:P:a:wic:pvu:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1) {

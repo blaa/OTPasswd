@@ -13,3 +13,4 @@ gcov
 Testing
 otpasswd.info
 patches
+docs/*.?.gz

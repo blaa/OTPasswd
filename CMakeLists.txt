@@ -130,7 +130,8 @@ ADD_LIBRARY(pam_otpasswd SHARED pam/pam_helpers.c pam/pam_otpasswd.c)
 SET_TARGET_PROPERTIES(pam_otpasswd PROPERTIES PREFIX "")
 
 # Password management target
-ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/otpasswd_actions.c utility/testcases.c utility/security.c)
+ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/actions.c utility/actions_helpers.c
+  utility/testcases.c utility/security.c)
 
 # Linking targets
 TARGET_LINK_LIBRARIES(pam_otpasswd otp gmp pam)
