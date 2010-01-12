@@ -369,7 +369,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 				goto error;
 			}
 
-			cfg->logging = 2;
+			cfg->logging = 3;
 			break;
 
 		default:

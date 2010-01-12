@@ -28,7 +28,11 @@ extern int ph_parse_module_options(int flags, int argc, const char **argv, cfg_t
 /* Send out of band message by calling external script.
  * s parameter is generally const, but child will
  * clean it up */
-extern int ph_out_of_band(const cfg_t *opt, state *s);
+extern int ph_oob_send(const cfg_t *opt, state *s);
+
+/* Verify user prompt, check if it's an OOB request,
+ * if required perform static password prompt */
+extern int ph_oob_hook(const cfg_t *opt, state *s);
 
 /* Display user a message; disabled if in "silent mode" */
 extern void ph_show_message(pam_handle_t *pamh, const cfg_t *opt, const char *msg);

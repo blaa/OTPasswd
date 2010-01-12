@@ -122,8 +122,7 @@ int _print(const char *file, const int line, int level, const char *fmt, ...)
 	}
 
 	/* stdout */
-	switch (use_stdout) {
-	case 1:
+	if (use_stdout) {
 		if (file) {
 			char *base = strrchr(file, '/') + 1;
 			if (!base) file = base;
@@ -131,18 +130,6 @@ int _print(const char *file, const int line, int level, const char *fmt, ...)
 		}
 		fputs(intro, stdout);
 		fputs(buff, stdout);
-		break;
-	case 2:
-		if (file) {
-			char *base = strrchr(file, '/') + 1;
-			if (!base) file = base;
-			fprintf(stderr, "%s:%d ", base, line);
-		}
-		fputs(intro, stderr);
-		fputs(buff, stderr);
-		break;
-	default:
-		break;
 	}
 
 	/* syslog */

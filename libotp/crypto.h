@@ -63,6 +63,16 @@ extern int crypto_sha256(
 
 /* Helpers */
 
+/* Calculate 256bit long hash of data with 8 bytes of random salt
+ * Salt is placed at the beginning of salted_hash, therefore salted_hash
+ * must be atleast 32+8 bytes long = 40.
+ */
+extern int crypto_salted_sha256(
+	const unsigned char *data,
+	const unsigned int length,
+	unsigned char *salted_hash);
+
+
 /* Display hexadecimally binary data */
 extern void crypto_print_hex(
 	const unsigned char *data,

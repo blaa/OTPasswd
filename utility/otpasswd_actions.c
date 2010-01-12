@@ -593,67 +593,6 @@ error:
 	return 5;
 }
 
-static int _verify_spass(const char *spass)
-{
-	int digits = 0, uppercase = 0;
-	int special = 0, lowercase = 0;
-	int whitespace = 0;
-	int length = 0;
-	int i;
-
-	cfg_t *cfg = cfg_get();
-	assert(cfg);
-
-	length = strlen(spass);
-	
-	for (i = 0; spass[i]; i++) {
-		length++;
-		if (!isascii(spass[i])) {
-			/* Non-ascii character */
-			printf(_("Non-ascii character in static password.\n"));
-			return 1;
-		}
-
-		if (isdigit(spass[i]))
-			digits++;
-		else if (isupper(spass[i])) {
-			uppercase++;
-		} else if (islower(spass[i])) {
-			lowercase++;
-		} else if (isspace(spass[i])) { /* This accepts vertical tab */
-			whitespace++;
-		} else if (isgraph(spass[i])) {
-			special++;
-		} else {
-			printf(_("Ok. Add support for this strange character %c\n"), spass[i]);
-			assert(0);
-		}
-	}
-
-	i = 0;
-
-	if (cfg->spass_min_length > length) {
-		printf(_("Static password too short.\n"));
-		i++;
-	}
-
-	if (digits < cfg->spass_require_digit) {
-		printf(_("Not enough digits in password.\n"));
-		i++;
-	}
-
-	if (uppercase < cfg->spass_require_uppercase) {
-		printf(_("Not enough uppercase characters in password.\n"));
-		i++;
-	}
-
-	if (special < cfg->spass_require_special) {
-		printf(_("Not enough special characters in password.\n"));
-		i++;
-	}
-	return i;
-}
-
 
 /* Authenticate; returns boolean; 1 - authenticated */
 int action_authenticate(options_t *options, const cfg_t *cfg)
@@ -947,8 +886,8 @@ int action_flags(options_t *options, const cfg_t *cfg)
 
 	case OPTION_SPASS:
 	{
-		int len;
-		unsigned char sha_buf[32];
+		char **err_list;
+		int i;
 
 		if (cfg->spass_allow_change != 1 && !security_is_privileged()) {
 			printf(_("Modification of a static password denied by the policy.\n"));
@@ -956,25 +895,29 @@ int action_flags(options_t *options, const cfg_t *cfg)
 		}
 
 		if (options->action_arg)
-			len = strlen(options->action_arg);
+			i = strlen(options->action_arg);
 		else
-			len = 0;
+			i = 0;
 
-		if (len == 0) {
-			s->spass_set = 0;
-			mpz_set_ui(s->spass, 0);
-			printf(_("Turning off static password.\n"));
+		if (i == 0) {
+			err_list = ppp_spass_set(s, NULL,
+						 PPP_CHECK_POLICY);
+			if (err_list && err_list[0]) {
+				for (i=0; err_list[i]; i++)
+					puts(_(err_list[i]));
+				break;
+			}
+			printf(_("Turned off static password.\n"));
 		} else {
 			/* Ensure password length/difficulty */
-			if (_verify_spass(options->action_arg) != 0) {
+			err_list = ppp_spass_set(s, options->action_arg,
+						 PPP_CHECK_POLICY);
+			if (err_list && err_list[0]) {
+				for (i=0; err_list[i]; i++)
+					puts(_(err_list[i]));
 				break;
 			}
 
-			/* Change static password */
-			crypto_sha256((unsigned char *)options->action_arg, len, sha_buf);
-			num_from_bin(s->spass, sha_buf, sizeof(sha_buf));
-			s->spass_set = 1;
-			s->spass_time = time(NULL);
 			printf(_("Static password set.\n"));
 		}
 

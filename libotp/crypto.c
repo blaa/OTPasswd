@@ -17,8 +17,11 @@
  **********************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
+#include "crypto.h"
 
 /* Select implementation... */
 #define USE_SLOWAES 0
@@ -224,6 +227,35 @@ int crypto_aes_decrypt(const unsigned char *key,
 
 #endif /* USE_POLARSSL */
 
+
+extern int crypto_salted_sha256(const unsigned char *data,
+				const unsigned int length, 
+				unsigned char *salted_hash)
+{
+	int ret;
+	unsigned char *buf = malloc(length + 8);
+	if (!buf)
+		return 1;
+
+	if (crypto_file_rng("/dev/urandom", NULL, buf, 8) != 0) {
+		ret = 2;
+		goto cleanup;
+	}
+
+	memcpy(buf+8, data, length);
+	memcpy(salted_hash, buf, 8);
+
+	if (crypto_sha256(buf, length+8, salted_hash + 8) != 0) {
+		ret = 3;
+		goto cleanup;
+	}
+
+
+	ret = 0;
+cleanup:
+	free(buf);
+	return ret;
+}
 
 
 

@@ -68,7 +68,7 @@ int ph_parse_module_options(int flags, int argc, const char **argv, cfg_t *cfg)
 	return 0;
 }
 
-int ph_out_of_band(const cfg_t *cfg, state *s)
+int ph_send_oob(const cfg_t *cfg, state *s)
 {
 	int retval;
 	char current_passcode[17] = {0};
@@ -235,6 +235,11 @@ int ph_out_of_band(const cfg_t *cfg, state *s)
 	}
 
 	return 0;
+}
+
+int ph_oob_hook(const cfg_t *opt, state *s)
+{
+	return 1;
 }
 
 void ph_show_message(pam_handle_t *pamh, const cfg_t *cfg, const char *msg)
@@ -413,6 +418,8 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
 		retval = PAM_SERVICE_ERR;
 		return 1;
 	}
+
+	*cfg = cfg_get();
 
 	/* Parse additional options passed to module */
 	retval = ph_parse_module_options(flags, argc, argv, *cfg);

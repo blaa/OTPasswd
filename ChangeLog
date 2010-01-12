@@ -71,6 +71,7 @@ Done:
               WARNING: Might be removed and 'skipping backwards' will be
               totally locked.
 TODO Major:
+        * [?] Do not store things in mpz_t which don't need it (spass)
         * [?] Sanitize gettext environment
         * [?] locale might mess up isalpha and isprint. 
         * [?] Logging warnings printed to user at WARN level

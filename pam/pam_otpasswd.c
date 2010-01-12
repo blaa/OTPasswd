@@ -81,7 +81,7 @@ PAM_EXTERN int pam_sm_authenticate(
 		/* If user configurated OOB to be send
 		 * all the time - sent it */
 		if (cfg->oob == OOB_ALWAYS) {
-			ph_out_of_band(cfg, s);
+			ph_oob_send(cfg, s);
 		}
 
 		resp = ph_query_user(pamh, flags,
@@ -101,7 +101,7 @@ PAM_EXTERN int pam_sm_authenticate(
 		if (strcmp(resp[0].resp, ".") == 0) {
 			switch (cfg->oob) {
 			case OOB_REQUEST:
-				ph_out_of_band(cfg, s);
+				ph_oob_send(cfg, s);
 
 				/* Drop reply + restate question about passcode */
 				_pam_drop_reply(resp, 1);

@@ -23,7 +23,7 @@
 #define STATE_LABEL_SIZE 30
 #define STATE_CONTACT_SIZE 60
 #define STATE_STATIC_SIZE 64 /* Hexadecimal SHA256 of static password */
-#define STATE_MAX_FIELD_SIZE 64
+#define STATE_MAX_FIELD_SIZE 80
 #define STATE_ENTRY_SIZE 512 /* Maximal size of a valid state entry (single line)
 			      * 32 (username) + 64 (key) + 32 (counter) + 60 (contact)
 			      * + 64 (static) + 32 latest + 20 (failures + recent failures) +
@@ -92,6 +92,10 @@ enum ppp_errors {
 	/* User disabled, while trying some 
 	 * action like authentication */
 	PPP_ERROR_DISABLED = 105,
+
+
+	/* SPass related */
+	PPP_ERROR_SPASS_INCORRECT = 106,
 
 	/*** Errors which can happen only during initialization */
 
