@@ -140,7 +140,7 @@ PAM_FAILURE_BOUNDARY=3
 # NI! Seconds of delay after recent failure count raches FAILURE_BOUNDARY 
 PAM_FAILURE_DELAY=5
 
-# NI! Require SPASS on each logon (prefixes passcode)
+# Require SPASS on each logon. Before user is prompted a passcode.
 PAM_SPASS_REQUIRE=0
 
 ##

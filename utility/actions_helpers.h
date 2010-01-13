@@ -48,6 +48,9 @@ int ah_is_passcard_in_range(const state *s, const mpz_t passcard);
 /* Check if passcode is in range */
 int ah_is_passcode_in_range(const state *s, const mpz_t passcard);
 
+/* Show user state (current codes/cards) */
+void ah_show_state(const state *s);
+
 /* Show user flags */
 void ah_show_flags(const state *s);
 

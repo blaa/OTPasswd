@@ -158,17 +158,12 @@ int ah_is_passcode_in_range(const state *s, const mpz_t passcard)
 	return 1;
 }
 
-void ah_show_flags(const state *s)
+void ah_show_state(const state *s)
 {
-	cfg_t *cfg = cfg_get();
-	int alphabet = ppp_get_int(s, PPP_FIELD_ALPHABET);
-	int code_length = ppp_get_int(s, PPP_FIELD_CODE_LENGTH);
-
 	/* Calculate unsalted counter so we can show it user */
 	mpz_t tmp;
 	mpz_init(tmp);
 
-	printf(_("Current state:\n"));
 	gmp_printf(_("Current card        = %Zd\n"), s->current_card);
 
 	/* Counter */
@@ -185,10 +180,15 @@ void ah_show_flags(const state *s)
 	gmp_printf(_("Max code            = %Zd\n"), tmp);
 
 	mpz_clear(tmp);
+}
 
+void ah_show_flags(const state *s)
+{
+	cfg_t *cfg = cfg_get();
+	int alphabet = ppp_get_int(s, PPP_FIELD_ALPHABET);
+	int code_length = ppp_get_int(s, PPP_FIELD_CODE_LENGTH);
 
 	int flags = ppp_get_int(s, PPP_FIELD_FLAGS);
-	printf(_("Configuration:\n"));
 
 	/* Display flags */
 	if (flags & FLAG_SHOW)

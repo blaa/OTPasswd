@@ -183,7 +183,7 @@ int action_key(options_t *options)
 
 		printf(_("This is your previous configuration updated with command line options:\n"));
 		ah_show_flags(&s);
-		printf(_("You can either use it, or start with default one (modified by any --config options).\n"));
+		printf(_("\nYou can either use it, or start with default one (modified by any --config options).\n"));
 		if (ah_enforced_yes_or_no(
 			    _("Do you want to keep this configuration?")) == QUERY_NO) {
 			printf(_("Reverting to defaults.\n"));
@@ -256,7 +256,19 @@ int action_key(options_t *options)
 		goto cleanup;
 	}
 
-	ret = state_store(&s, 0); /* This should auto lock */
+	/* Lock, store, unlock */
+	if (state_lock(&s) != 0) {
+		print(PRINT_ERROR, _("Unable to lock state database.\n"));
+		goto cleanup;
+	}
+
+	ret = state_store(&s, 0);
+
+	if (state_unlock(&s) != 0) {
+		print(PRINT_ERROR, _("Unable to unlock state database.\n"));
+		/* As we will soon quit don't die here */
+	}
+
 	if (ret != 0) {
 		print(PRINT_ERROR, _("Unable to save state.\n"));
 		print(PRINT_NOTICE, "(%s)\n", ppp_get_error_desc(ret));
@@ -399,7 +411,10 @@ int action_flags(options_t *options)
 
 	case OPTION_INFO: /* State info */
 		if (security_is_privileged())
-			printf(_("User    = %s\n"), s->username);
+			printf(_("* User    = %s\n"), s->username);
+		printf(_("* Your current state:\n"));
+		ah_show_state(s);
+		printf(_("\n* Your current flags:\n"));
 		ah_show_flags(s);
 
 		save_state = 0;
