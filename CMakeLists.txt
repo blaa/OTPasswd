@@ -152,7 +152,7 @@ INSTALL(TARGETS pam_otpasswd otpasswd
 #  LIBRARY DESTINATION /lib)
 
 INSTALL(FILES examples/otpasswd-login DESTINATION /etc/pam.d)
-INSTALL(FILES examples/otpasswd.conf DESTINATION /etc/otpasswd)
+INSTALL(FILES examples/otpasswd.conf.orig DESTINATION /etc/otpasswd)
 
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_1} DESTINATION "share/man/man1")
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_5} DESTINATION "share/man/man5")

@@ -668,7 +668,7 @@ const char *ppp_get_error_desc(int error)
 		return "User state disabled.";
 
 	case PPP_ERROR_CONFIG:
-		return "Unable to read config file";
+		return "Unable to read config file.";
 
 	case PPP_ERROR_NOT_CONFIGURED:
 		return "You have to edit otpasswd.conf and select correct DB option.";

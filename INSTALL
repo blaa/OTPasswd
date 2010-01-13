@@ -180,10 +180,14 @@ FIXME
 5. System Configuration
 =======================
 OTPasswd is configured via the /etc/otpasswd/otpasswd.conf file.  Upon
-initial installation, this file will contain a template of all valid
-configuration options along with copious commentary.  A pristine version
-of this file should be available in the OTPasswd package documentation
-directory of your system's /usr/share hierarchy.
+initial installation, otpasswd.conf.orig located in this directory will
+contain a template of all valid configuration options along with copious
+commentary.  A pristine version of this file should be available in the
+OTPasswd package documentation directory of your system's /usr/share 
+hierarchy.
+
+You should change name of the otpasswd.conf.orig to otpasswd.conf and 
+proceed with its configuration.
 
 ** Configure/select user
 **    adduser --system --no-create-home otpasswd

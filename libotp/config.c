@@ -203,7 +203,6 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 	}
 
 	if (!f) {
-		print_perror(PRINT_WARN, "Unable to open config file!");
 		return 1;
 	}
 

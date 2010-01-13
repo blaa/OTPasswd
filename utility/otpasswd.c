@@ -559,7 +559,8 @@ int main(int argc, char **argv)
 	ret = ppp_init(PRINT_STDOUT);
 	if (ret != 0) {
 		puts(_(ppp_get_error_desc(ret)));
-		printf(_("OTPasswd not correctly installed, consult installation manuals.\n"));
+		puts("");
+		printf(_("OTPasswd not correctly installed.\n"));
 		printf(_("Consult installation manual for detailed information.\n"));
 		ppp_fini();
 		return 1;
