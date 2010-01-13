@@ -74,19 +74,27 @@ Done:
               They might be required always or just to perform some commands
               like second-channel usage.
         * [+] Use locales for user messages [_("")? ]. Now do translations...
+        * [+] Locale might mess up isalpha and isprint. 
+              Fixed by adding isascii() before.
+        * [!] User can always remove DISABLED flag if he can regenerate state.
+              Should he be allowed to do this? More important question:
+              What are we trying to disable? Disabling accounts is done with 
+              other utilities.
 TODO Major:
         * [?] Parametrize PAM messages.
         * [%] Can user lock program on some printf with some control of
         stdout?
+        * [?] OOB Channel usage time updates + DoS security
+        * [?] Static password expire warnings + enforcement. 
         * [?] Do not store things in mpz_t which don't need it (spass)
         * [?] Sanitize gettext environment
-        * [?] locale might mess up isalpha and isprint. 
         * [?] Logging warnings printed to user at WARN level
         * [?] Key quality checking (duplicates)
         * [?] Verify SIGCHLD won't clobber anything.
         * [?] "Problem solving section" in docs, mentioning use of -v on
               errors in the first place.
         * [?] Global DB should work with users which aren't in passwd.
+              Should it?
         * [?] Check if lock files are links. if so. fail. Or rather always unlink
               before overwritting.
         * [?] Logging into syslog from utility if SUID; Also deny -v.
@@ -104,10 +112,6 @@ TODO Major:
         * [-] Scan all FIXME/TODO entries
         * [?] SELinux compatibility.
         * [?] Import/export of ascii state lines...
-        * [%] User can always remove DISABLED flag if he can regenerate state.
-              Should he be allowed to do this? More important question:
-              What are we trying to disable? Disabling accounts is done with 
-              other utilities.
         * [?] Make otpasswd work with su (there's additional information 'who
               is trying to get authenticated'. Just test it.
 
