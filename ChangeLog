@@ -70,6 +70,10 @@ Done:
               skipping count of passcards? 
               WARNING: Might be removed and 'skipping backwards' will be
               totally locked.
+        * [+] Implement static passwords;
+              They might be required always or just to perform some commands
+              like second-channel usage.
+        * [+] Use locales for user messages [_("")? ]. Now do translations...
 TODO Major:
         * [?] Parametrize PAM messages.
         * [%] Can user lock program on some printf with some control of
@@ -87,9 +91,6 @@ TODO Major:
               before overwritting.
         * [?] Logging into syslog from utility if SUID; Also deny -v.
         * [?] Security: Do we need to change something regarding ulimits?
-        * [-] Implement static passwords;
-              They might be required always or just to perform some commands
-              like second-channel usage.
         * [?] Admin function to scan all states for things invalidating
               policy.
         * [?] Cleanup PPP interface. This should look like follows.
@@ -101,7 +102,6 @@ TODO Major:
               uses 'db' backend for operating on files/databases.
               * Lots of things done in direction to finish this task
         * [-] Scan all FIXME/TODO entries
-        * [?] Use locales for user messages [_("")? ]
         * [?] SELinux compatibility.
         * [?] Import/export of ascii state lines...
         * [%] User can always remove DISABLED flag if he can regenerate state.

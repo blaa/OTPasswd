@@ -296,6 +296,14 @@ int state_store(state *s, int remove)
 {
 	cfg_t *cfg = cfg_get();
 	assert(cfg);
+
+	if (s->lock <= 0) {
+		print(PRINT_ERROR,
+		      "Trying to save state data into DB "
+		      "without previously locked DB.\n");
+		return 2;
+	}
+
 	switch (cfg->db) {
 	case CONFIG_DB_USER:
 	case CONFIG_DB_GLOBAL:

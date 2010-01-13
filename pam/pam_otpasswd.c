@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h> /* sleep */
 
 /* libotp interface */
 #include "ppp.h"
@@ -36,6 +37,9 @@ PAM_EXTERN int pam_sm_authenticate(
 	pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
 	int retval;
+
+	/* Static password failure delay */
+	const int spass_delay = 2;
 
 	/* Prompt to ask user */
 	const char *prompt = NULL;
@@ -52,6 +56,16 @@ PAM_EXTERN int pam_sm_authenticate(
 	/* Username */
 	const char *username = NULL;
 
+	/* Have user entered correct spass? */
+	int spass_correct = 0;
+
+	/* Have user entered OOB in this session? */
+	int oob_sent = 0;
+	
+	/* User messages */
+	const char *oob_msg = "Out-of-band message sent.";
+	const char *oob_already_msg = "Out-of-band message already sent.";
+
 	/* Perform initialization:
 	 * parse options, start logging, initialize state,
 	 */
@@ -61,21 +75,50 @@ PAM_EXTERN int pam_sm_authenticate(
 
 	cfg = cfg_get();
 
-	/* Retry = 0 - do not retry, 1 - with changing passcodes */
-	int tries;
-	for (tries = 0; tries < (cfg->retry == 0 ? 1 : cfg->retries); tries++) {
-		if (tries == 0 || cfg->retry == 1) {
-			/* First time or we are retrying while changing the password */
-			retval = ph_increment(pamh, username, s);
-			if (retval != 0)
-				goto cleanup;
+	if (cfg->spass_require == 1) {
+		/* Before we will enter passcode loop ask user for his
+		 * static password. As this is supposed to be used instead
+		 * of unix password we behave similarly. We ask questions
+		 * even if used doesn't have state and don't tell anything. */
+		int loaded = 0;
+		retval = ppp_state_load(s, PPP_DONT_LOCK);
+		if (retval == 0)
+			loaded = 1;
+		else
+			print(PRINT_NOTICE,
+			      "Unable to read state (%d) when "
+			      "asking for static password.\n",
+			      retval);
 
-			/* Generate prompt */
-			retval = ppp_get_str(s, PPP_FIELD_PROMPT, &prompt);
-			if (retval != 0 || !prompt) {
-				print(PRINT_ERROR, "Error while generating prompt\n");
-				retval = PAM_AUTH_ERR;
-				goto cleanup;
+		if (ph_validate_spass(pamh, loaded ? s : NULL) != 0) {
+			sleep(spass_delay);
+			return PAM_AUTH_ERR;
+		}
+	}
+
+
+	/* Retry = 0 - do not retry, 1 - with changing passcodes */
+	int first_try = 1;
+	int dont_increment = 0; /* Do not increment if previous prompt was for OOB */
+	int tries;
+	for (tries = 0; tries < (cfg->retry == 0 ? 1 : cfg->retries);) {
+		if (first_try || cfg->retry == 1) {
+			/* First time or we are retrying while changing the passcode */
+			first_try = 0;
+			if (dont_increment) 
+				dont_increment = 0;
+			else {
+				retval = ph_increment(pamh, username, s);
+				if (retval != 0)
+					goto cleanup;
+
+				/* Generate fresh prompt */
+				retval = ppp_get_str(s, PPP_FIELD_PROMPT, &prompt);
+				if (retval != 0 || !prompt) {
+					print(PRINT_ERROR, "Error while generating prompt\n");
+					retval = PAM_AUTH_ERR;
+					goto cleanup;
+				}
 			}
 		}
 
@@ -94,40 +137,59 @@ PAM_EXTERN int pam_sm_authenticate(
 				     ppp_flag_check(s, FLAG_SHOW),
 				     prompt);
 
-
-		/* Hook up OOB request */
-		if (resp && strcmp(resp[0].resp, ".") == 0) {
-			const char *oob_msg = "Out-of-band message sent.";
-
-			/* Drop reply. We will most probably 
-			 * restate question about passcode. */
-			ph_drop_response(resp);
-
-			switch (cfg->oob) {
-			case OOB_REQUEST:
-				if (ph_oob_send(s) == 0)
-					ph_show_message(pamh, oob_msg);
-				break;
-
-			case OOB_SECURE_REQUEST:
-				if (ph_validate_spass(pamh, s) == 0) {
-					if (ph_oob_send(s) == 0)
-						ph_show_message(pamh, oob_msg);
-				} 
-
-				break;
-			}
-
-			/* Restate question about passcode */
-			resp = ph_query_user(pamh, ppp_flag_check(s, FLAG_SHOW), prompt);
-		}
-
 		if (!resp) {
 			/* No response? */
 			print(PRINT_NOTICE, "No response from user during auth.\n");
 			goto cleanup;
 		}
 
+		/* Hook up OOB request */
+		if (strcmp(resp->resp, ".") == 0) {
+			/* Drop reply. We will most probably 
+			 * restate question about passcode. */
+			ph_drop_response(resp);
+
+			/* Was it already sent? */
+			if (oob_sent) {
+				/* if so - ignore prompt with message */
+				ph_show_message(pamh, oob_already_msg);
+				dont_increment = 1;
+				continue;
+			}
+
+			/* Only if not already sent in this session. */
+			switch (cfg->oob) {
+			case OOB_REQUEST:
+				if (ph_oob_send(s) == 0) {
+					ph_show_message(pamh, oob_msg);
+					oob_sent = 1;
+				}
+				break;
+				
+			case OOB_SECURE_REQUEST:
+				if (ph_validate_spass(pamh, s) == 0) {
+					spass_correct = 1;
+					if (ph_oob_send(s) == 0) {
+						ph_show_message(pamh, oob_msg);
+						oob_sent = 1;
+					}
+				} else {
+					/* Ensure attacker doesn't have 
+					 * infinite tries of static pass */
+					sleep(spass_delay);
+					tries++;
+				}
+				break;
+			}
+
+			/* Continue, so the user is restated question about passcode */
+			dont_increment = 1;
+			continue;
+		}
+
+
+		/* Count this try */
+		tries++;
 
 		if (ppp_authenticate(s, resp[0].resp) == 0) {
 			/* Authenticated */
@@ -169,7 +231,7 @@ PAM_EXTERN int pam_sm_open_session(
 	int retval;
 
 	/* Should we store state after printing? */
-	int store = 0;
+	int release_flags = 0;
 
 	/* OTP State */
 	state *s;
@@ -184,7 +246,7 @@ PAM_EXTERN int pam_sm_open_session(
 
 	print(PRINT_NOTICE, "(session) entrance\n");
 
-	if (ppp_state_load(s) != 0)
+	if (ppp_state_load(s, 0) != 0)
 		goto exit;
 
 	print(PRINT_NOTICE, "(session) state loaded\n");
@@ -195,7 +257,6 @@ PAM_EXTERN int pam_sm_open_session(
 		print(PRINT_NOTICE, "(session) no warning to be printed\n");
 		goto cleanup;
 	}
-
 
 	const char *msg;
 	int err_copy = err;
@@ -217,12 +278,12 @@ PAM_EXTERN int pam_sm_open_session(
 	if (err & PPP_WARN_RECENT_FAILURES) {
 		if (ppp_set_int(s, PPP_FIELD_RECENT_FAILURES, 0, PPP_CHECK_POLICY) != 0)
 			print(PRINT_WARN, "Unable to clear recent failures\n");
-		store = 1;
+		release_flags = PPP_STORE;
 	}
 
 
 cleanup:
-	ppp_state_release(s, store, 1);
+	ppp_state_release(s, PPP_UNLOCK | release_flags);
 exit:
 	ph_fini(s);
 

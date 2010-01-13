@@ -45,7 +45,7 @@ int ah_init_state(state **s, const options_t *options, int load)
 		return 0;
 	}
 
-	ret = ppp_state_load(*s);
+	ret = ppp_state_load(*s, 0);
 	switch (ret) {
 	case 0:
 		/* All right */
@@ -73,7 +73,10 @@ int ah_fini_state(state **s, int store)
 	 * We don't need to unlock just yet - ppp_fini
 	 * will unlock state if it was locked
 	 */
-	ret = ppp_state_release(*s, store, 0);
+	if (store)
+		store = PPP_STORE;
+	ret = ppp_state_release(*s, store);
+
 	if (ret != 0) {
 		printf(_("Error while saving state data. State not changed.\n"));
 	}

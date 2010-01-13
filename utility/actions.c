@@ -332,7 +332,7 @@ int action_spass(options_t *options)
 				puts(_(err_list[i]));
 			goto cleanup;
 		}
-		printf(_("Turned off static password.\n"));
+		printf(_("Turned static password off.\n"));
 	} else {
 		/* Ensure password length/difficulty */
 		err_list = ppp_spass_set(s, pass,

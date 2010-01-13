@@ -164,7 +164,7 @@ int ph_oob_send(state *s)
 		/* We don't want to leave state in memory! */
 		/* TODO/FIXME: What with the locks? DB may unlock
 		 * data if it was locked. */
-		retval = ppp_state_release(s, 0, 0);
+		retval = ppp_state_release(s, 0);
 		// ppp_fini(s);
 		if (retval != 0) {
 			print(PRINT_ERROR, "RELEASE FAILED IN CHILD!");
@@ -252,6 +252,11 @@ int ph_validate_spass(pam_handle_t *pamh, const state *s)
 
 	pr = ph_query_user(pamh, 0, "Static password: ");
 
+	if (!s) {
+		/* If we don't have state we just silently fail */
+		goto cleanup;
+	}
+
 	ret = ppp_spass_validate(s, pr->resp);
 	if (ret != 0) {
 		print(PRINT_WARN, "Static password validation failed");
@@ -259,6 +264,7 @@ int ph_validate_spass(pam_handle_t *pamh, const state *s)
 		print(PRINT_NOTICE, "Static password validation succeeded");
 	}
 	
+cleanup:
 	ph_drop_response(pr);
 	return ret;
 }

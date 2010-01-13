@@ -714,14 +714,17 @@ void ppp_state_fini(state *s)
 }
 
 
-int ppp_state_load(state *s)
+int ppp_state_load(state *s, int flags)
 {
 	int retval = 1;
+	int do_lock = flags & PPP_DONT_LOCK ? 0 : 1;
 
 	/* Locking */
-	retval = state_lock(s);
-	if (retval != 0)
-		return retval;
+	if (do_lock) {
+		retval = state_lock(s);
+		if (retval != 0)
+			return retval;
+	}
 
 	/* Loading... */
 	retval = state_load(s);
@@ -745,25 +748,31 @@ int ppp_state_load(state *s)
 	return 0;
 
 cleanup1:
-	state_unlock(s);
+	if (do_lock) {
+		state_unlock(s);
+	}
 	return retval;
 }
 
-int ppp_state_release(state *s, int store, int unlock)
+int ppp_state_release(state *s, int flags)
 {
 	int ret;
 	int retval = 0;
-
-	if (store && (ret = state_store(s, 0)) != 0) {
-		print(PRINT_ERROR, "Error while storing state file\n");
-		print(PRINT_NOTICE, "(%d: %s)\n", ret, ppp_get_error_desc(ret));
-		retval++;
+	
+	if (flags & PPP_STORE) {
+		if ((ret = state_store(s, 0)) != 0) {
+			print(PRINT_ERROR, "Error while storing state file\n");
+			print(PRINT_NOTICE, "(%d: %s)\n", ret, ppp_get_error_desc(ret));
+			retval++;
+		}
 	}
 
-	if (unlock && (ret = state_unlock(s)) != 0) {
-		print(PRINT_ERROR, "Error while unlocking state file\n");
-		print(PRINT_NOTICE, "(%d: %s)\n", ret, ppp_get_error_desc(ret));
-		retval++;
+	if (flags & PPP_UNLOCK) {
+		if ((ret = state_unlock(s)) != 0) {
+			print(PRINT_ERROR, "Error while unlocking state file\n");
+			print(PRINT_NOTICE, "(%d: %s)\n", ret, ppp_get_error_desc(ret));
+			retval++;
+		}
 	}
 
 	return retval;
@@ -779,7 +788,7 @@ int ppp_increment(state *s)
 	int ret;
 
 	/* Load user state */
-	ret = ppp_state_load(s);
+	ret = ppp_state_load(s, 0);
 	if (ret != 0)
 		return ret;
 
@@ -803,7 +812,7 @@ int ppp_increment(state *s)
 	mpz_add_ui(s->counter, s->counter, 1);
 
 	/* We will return it's return value if anything failed */
-	ret = ppp_state_release(s, 1, 1);
+	ret = ppp_state_release(s, PPP_STORE | PPP_UNLOCK);
 
 	/* Restore current counter */
 	mpz_set(s->counter, tmp);
@@ -813,7 +822,7 @@ int ppp_increment(state *s)
 
 error:
 	/* Unlock. And ignore unlocking errors */
-	(void) ppp_state_release(s, 0, 1);
+	(void) ppp_state_release(s, PPP_UNLOCK);
 	return ret;
 }
 
@@ -828,7 +837,7 @@ int ppp_failures(const state *s, int zero)
 		return 1;
 
 	/* Lock&Load state from disk */
-	ret = ppp_state_load(s_tmp);
+	ret = ppp_state_load(s_tmp, 0);
 	if (ret != 0)
 		goto cleanup;
 
@@ -841,7 +850,7 @@ int ppp_failures(const state *s, int zero)
 	}
 
 	/* Store changes and unlock */
-	ret = ppp_state_release(s_tmp, 1, 1);
+	ret = ppp_state_release(s_tmp, PPP_UNLOCK | PPP_STORE);
 	if (ret != 0) {
 		print(PRINT_WARN, "Unable to save decremented state\n");
 		goto cleanup;

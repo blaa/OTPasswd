@@ -73,12 +73,12 @@ extern void ppp_state_fini(state *s);
  * Calculate PPP data (passcard sizes etc.)
  * After this function finished correctly state
  * is still locked, so it can be modified. */
-extern int ppp_state_load(state *s);
+extern int ppp_state_load(state *s, int flags);
 
 /* Will ensure that the state was locked before
  * If store = 1 will update db with state information
  * If unlock = 1 will unlock state after writting. */
-extern int ppp_state_release(state *s, int store, int unlock);
+extern int ppp_state_release(state *s, int flags);
 
 
 /*******************************************

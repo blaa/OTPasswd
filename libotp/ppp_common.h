@@ -134,9 +134,17 @@ enum ppp_warning {
 
 /* Flag-like options to some ppp functions */
 enum ppp_options {
+	/* Turn on policy checking */
 	PPP_CHECK_POLICY = 1,
+
+	/* Update state data in database */
 	PPP_STORE = 2,
+
+	/* Unlock state DB */
 	PPP_UNLOCK = 4,
+
+	/* Do not keep lock when loading. */
+	PPP_DONT_LOCK = 8,
 };
 
 
