@@ -388,7 +388,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			REQUIRE_ARG(0, 1);
 			cfg->silent = arg;
 		} else if (_EQ(line_buf, "oob")) {
-			REQUIRE_ARG(0, 2);
+			REQUIRE_ARG(0, 3);
 			cfg->oob = arg;
 		} else if (_EQ(line_buf, "oob_delay")) {
 			REQUIRE_ARG(0, 172800);
