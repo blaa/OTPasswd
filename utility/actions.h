@@ -69,18 +69,21 @@ typedef struct {
 
 
 /* Configures user state, prints state information (-c -i) */
-extern int action_flags(options_t *options, const cfg_t *cfg);
+extern int action_flags(options_t *options);
+
+/* Sets user static password. */
+extern int action_spass(options_t *options);
 
 /* Print author, license and quit. */
-extern int action_license(options_t *options, const cfg_t *cfg);
+extern int action_license(options_t *options);
 
 /* Generates/Regenerates new key (-k) */
-extern int action_key(options_t *options, const cfg_t *cfg);
+extern int action_key(options_t *options);
 
 /* Command line authentication (-a) */
-extern int action_authenticate(options_t *options, const cfg_t *cfg);
+extern int action_authenticate(options_t *options);
 
 /* Print passcode or passcard or skip (-t -l -s) */
-extern int action_print(options_t *options, const cfg_t *cfg);
+extern int action_print(options_t *options);
 
 #endif

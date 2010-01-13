@@ -39,8 +39,9 @@
 #include "security.h"
 
 /* Authenticate; returns boolean; 1 - authenticated */
-int action_authenticate(options_t *options, const cfg_t *cfg)
+int action_authenticate(options_t *options)
 {
+	cfg_t *cfg = cfg_get();
 	int retval = 0;
 
 	/* OTP State */
@@ -113,8 +114,9 @@ cleanup:
 }
 
 /* Generate new key */
-int action_key(options_t *options, const cfg_t *cfg)
+int action_key(options_t *options)
 {
+	cfg_t *cfg = cfg_get();
 	int retval = 1;
 
 	int remove = options->action == OPTION_KEY ? 0 : 1;
@@ -269,7 +271,7 @@ cleanup:
 	return retval;
 }
 
-int action_license(options_t *options, const cfg_t *cfg)
+int action_license(options_t *options)
 {
 	printf(
 		_("OTPasswd - One-Time Password Authentication System.\n"
@@ -293,13 +295,80 @@ int action_license(options_t *options, const cfg_t *cfg)
 	return 0;
 }
 
+int action_spass(options_t *options)
+{
+	const cfg_t *cfg = cfg_get();
+
+	char **err_list;
+	int i;
+	int ret;
+
+	if (cfg->spass_allow_change != 1 && !security_is_privileged()) {
+		printf(_("Modification of a static password denied by the policy.\n"));
+		return 1;
+	}
+
+	/* This must be done when the state is NOT locked */
+	const char *pass = ah_get_pass();
+	if (!pass) {
+		print(PRINT_ERROR, _("No password returned\n"));
+		return 1;
+	}
+
+	i = strlen(pass);
+
+	state *s;
+	ret = ah_init_state(&s, options, 1);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = 1;
+	if (i == 0) {
+		err_list = ppp_spass_set(s, NULL,
+		                         PPP_CHECK_POLICY);
+		if (err_list && err_list[0]) {
+			for (i=0; err_list[i]; i++)
+				puts(_(err_list[i]));
+			goto cleanup;
+		}
+		printf(_("Turned off static password.\n"));
+	} else {
+		/* Ensure password length/difficulty */
+		err_list = ppp_spass_set(s, pass,
+		                         PPP_CHECK_POLICY);
+		if (err_list && err_list[0]) {
+			for (i=0; err_list[i]; i++)
+				puts(_(err_list[i]));
+			goto cleanup;
+		}
+		printf(_("Static password set.\n"));
+	}
+
+	ret = 0;
+
+cleanup:
+	if (ret == 0) {
+		/* Save */
+		if (ah_fini_state(&s, 1) != 0)
+			ret = 1;
+	} else {
+		/* Do not save */
+		ah_fini_state(&s, 0);
+	}
+
+	return ret;
+}
+
 /* Update flags based on mask which are stored in options struct */
-int action_flags(options_t *options, const cfg_t *cfg)
+int action_flags(options_t *options)
 {
 	int retval = 1;
 	int ret;
 	int save_state = 0;
 	state *s;
+
+	cfg_t *cfg = cfg_get();
 
 	if (options->action == OPTION_ALPHABETS) {
 		/* This does not require state. */
@@ -327,50 +396,6 @@ int action_flags(options_t *options, const cfg_t *cfg)
 			save_state = 1;
 		}
 		break;
-
-	case OPTION_SPASS:
-	{
-		char **err_list;
-		int i;
-
-		if (cfg->spass_allow_change != 1 && !security_is_privileged()) {
-			printf(_("Modification of a static password denied by the policy.\n"));
-			break;
-		}
-
-		/* FIXME FIXME STATE MUSN'T BE LOCKED! */
-		const char *pass = ah_get_pass();
-
-		if (!pass)
-			break;
-
-		i = strlen(pass);
-
-		if (i == 0) {
-			err_list = ppp_spass_set(s, NULL,
-						 PPP_CHECK_POLICY);
-			if (err_list && err_list[0]) {
-				for (i=0; err_list[i]; i++)
-					puts(_(err_list[i]));
-				break;
-			}
-			printf(_("Turned off static password.\n"));
-		} else {
-			/* Ensure password length/difficulty */
-			err_list = ppp_spass_set(s, pass,
-						 PPP_CHECK_POLICY);
-			if (err_list && err_list[0]) {
-				for (i=0; err_list[i]; i++)
-					puts(_(err_list[i]));
-				break;
-			}
-
-			printf(_("Static password set.\n"));
-		}
-
-		save_state = 1;
-		break;
-	}
 
 	case OPTION_INFO: /* State info */
 		if (security_is_privileged())
@@ -425,8 +450,9 @@ cleanup:
 	return retval;
 }
 
-int action_print(options_t *options, const cfg_t *cfg)
+int action_print(options_t *options)
 {
+	cfg_t *cfg = cfg_get();
 	int retval = 1;
 	int ret;
 

@@ -621,6 +621,11 @@ const char *ah_get_pass(void)
 		res = NULL;
 	}
 
+	const int len = strlen(buf);
+	if (len != 0) {
+		/* Strip \n */
+		buf[len-1] = '\0';
+	}
 
 cleanup:
 	/* Turn echo back on */

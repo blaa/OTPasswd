@@ -70,7 +70,7 @@ int ph_parse_module_options(int flags, int argc, const char **argv)
 	return 0;
 }
 
-int ph_send_oob(state *s)
+int ph_oob_send(state *s)
 {
 	int retval;
 	char current_passcode[17] = {0};
@@ -87,6 +87,8 @@ int ph_send_oob(state *s)
 			    "Trying OOB when it's not enabled\n");
 		return 1;
 	}
+
+	/* TODO: Check delay! */
 
 	/* Ensure cfg->oob_path is correct */
 	{
@@ -211,10 +213,11 @@ int ph_send_oob(state *s)
 			return 1;
 		}
 		if (retval == 0) {
-			print(PRINT_NOTICE,  "Waiting for  OOB return\n");
 			continue;
 		}
 	}
+	print(PRINT_NOTICE,  "Waited 7000*%d microseconds for OOB\n", 200-times);
+
 
 	if (times == 0) {
 		/* Timed out while waiting for it's merry death */
@@ -250,8 +253,10 @@ int ph_validate_spass(pam_handle_t *pamh, const state *s)
 	pr = ph_query_user(pamh, 0, "Static password: ");
 
 	ret = ppp_spass_validate(s, pr->resp);
-	if (!ret) {
+	if (ret != 0) {
 		print(PRINT_WARN, "Static password validation failed");
+	} else {
+		print(PRINT_NOTICE, "Static password validation succeeded");
 	}
 	
 	ph_drop_response(pr);

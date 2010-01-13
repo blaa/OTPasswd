@@ -107,13 +107,13 @@ PAM_EXTERN int pam_sm_authenticate(
 			case OOB_REQUEST:
 				if (ph_oob_send(s) == 0)
 					ph_show_message(pamh, oob_msg);
-				Break;
+				break;
 
 			case OOB_SECURE_REQUEST:
 				if (ph_validate_spass(pamh, s) == 0) {
 					if (ph_oob_send(s) == 0)
 						ph_show_message(pamh, oob_msg);
-				}
+				} 
 
 				break;
 			}

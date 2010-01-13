@@ -435,26 +435,29 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 
 	case OPTION_KEY:
 	case OPTION_REMOVE:
-		retval = action_key(options, cfg);
+		retval = action_key(options);
+		break;
+
+	case OPTION_SPASS:
+		retval = action_spass(options);
 		break;
 
 	case OPTION_ALPHABETS:
 	case OPTION_CONFIG:
-	case OPTION_SPASS:
 	case OPTION_INFO:
 	case OPTION_INFO_KEY:
-		retval = action_flags(options, cfg);
+		retval = action_flags(options);
 		break;
 
 	case OPTION_AUTH:
-		ret = action_authenticate(options, cfg);
+		ret = action_authenticate(options);
 		if (ret == 0)
 			retval = 1;
 		else
 			retval = 0;
 		break;
 	case OPTION_VERSION:
-		retval = action_license(options, cfg);
+		retval = action_license(options);
 		break;
 
 	case OPTION_WARN:
@@ -462,7 +465,7 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 	case OPTION_TEXT:
 	case OPTION_LATEX:
 	case OPTION_PROMPT:
-		retval = action_print(options, cfg);
+		retval = action_print(options);
 		break;
 
 	case OPTION_CHECK:
