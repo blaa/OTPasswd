@@ -104,18 +104,30 @@ LDAP_DN=ou=users,dc=domain,dc=com
 #     Normal mode can be enabled by passing "audit" option to module.
 PAM_LOGGING=1
 
-# 0 - Normal
-#     User will get additional information on some types of errors during login
-#     (like, otp is enforced and he doesn't have generated key.)
-# 1 - Silent 
+# This option can be set for both auth and session modules here 
+# or for selected one in /etc/pam.d as a module option.
+# DISABLED - Normal
+#     User will get additional information on some types of errors during
+#     login (like, otp is enforced and he doesn't have generated key, 
+#     OOB sent, policy error etc.)
+# ENABLED - Silent 
 #     Inhibit any not important messages sent to user during authentication
 #     (including "last passcard warnings" of PAM session.).
 #     Can be also enabled by "silent" module option.
-PAM_SILENT=0
+PAM_SILENT=DISABLED
 
 # If enabled only users who exists in DB will be able to authenticate.
-PAM_ENFORCE=0
+PAM_ENFORCE=DISABLED
 
+# Should PAM fail any authentication if user state doesn't match policy?
+# If DB=user and some of the policies should be enforced this should be
+# set to 1. When DB=global the user should not be able to set his state
+# against the policy, but, administrator can escalate policies which can
+# cause previously-valid states not to authenticate. Setting this option
+# to 0 can allow such account to authenticate successfully.
+PAM_ENFORCE_POLICY=DISABLED
+
+# Passcode prompt retry configuration.
 # 0 - Do not retry passcode question
 # 1 - retry using next passcode
 # 2 - retry asking the same passcode
@@ -128,7 +140,7 @@ PAM_RETRIES=3
 # with PAM prompt (by entering , instead of passcode)
 # The user is then requested a static password which
 # he must have set before.
-PAM_KEY_REGENERATION_PROMPT=0
+PAM_KEY_REGENERATION_PROMPT=DISABLED
 
 # After authentication display user a number of failed
 # authentication tries.
@@ -137,11 +149,11 @@ PAM_FAILURE_WARNING=1
 # NI! Number of failures after which delay is incremented.
 PAM_FAILURE_BOUNDARY=3
 
-# NI! Seconds of delay after recent failure count raches FAILURE_BOUNDARY 
+# NI! Seconds of delay after recent failure count reaches FAILURE_BOUNDARY 
 PAM_FAILURE_DELAY=5
 
 # Require SPASS on each logon. Before user is prompted a passcode.
-PAM_SPASS_REQUIRE=0
+PAM_SPASS_REQUIRE=DISABLED
 
 ##
 # 0 - OOB disabled
@@ -284,10 +296,11 @@ SHOW_DEF=ENABLED
 #################################################################
 # System Policy Configuration
 #
-# As oppossed to "Utility Policy" this is enforced by PAM module
-# so user can't simply avoid this policy by mangling directly
+# As oppossed to "Utility Policy" this is can be enforced
+# additionaly by PAM module if PAM_ENFORCE_POLICY is enabled.
+# User can't simply avoid this policy by mangling directly
 # with his state file. If user manages to distroy his state file
-# or it's compatibility with this policy then his authentication 
+# or its compatibility with this policy then his authentication 
 # will be denied.
 #################################################################
 

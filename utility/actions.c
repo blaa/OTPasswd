@@ -147,9 +147,9 @@ int action_key(options_t *options)
 			goto cleanup;
 		}
 
-		if (s->flags & FLAG_DISABLED) {
-			print(_("Your current state is disabled. Cannot regenerate "
-			        "until you remove the disabled flag.\n"));
+		if (s.flags & FLAG_DISABLED) {
+			printf(_("Your current state is disabled. Cannot regenerate "
+			         "until you remove the disabled flag.\n"));
 			goto cleanup;
 		}
 
