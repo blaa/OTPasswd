@@ -94,7 +94,7 @@ LDAP_DN=ou=users,dc=domain,dc=com
 ##
 
 # How many messages will be logged into syslog by PAM.
-# (Utility works on level 1, can be switched into 2 by -v option)
+# (Utility works on level 1, can be switched into 3 by -v option)
 #
 # 0 - Nothing will be logged
 # 1 - Normal: Errors
@@ -156,6 +156,7 @@ PAM_FAILURE_DELAY=5
 PAM_SPASS_REQUIRE=DISABLED
 
 ##
+# Out-Of-Band passcode transfer configuration.
 # 0 - OOB disabled
 # 1 - OOB available on user request (by entering '.' on passcode prompt)
 # 2 - OOB on request, requires static password prompt
@@ -181,7 +182,9 @@ PAM_OOB_DELAY=10
 # Utility Policy Configuration
 #
 # As oppossed to "System Policy" this works only if user doesn't
-# have direct access to state database himself.
+# have direct access to state database himself, that is: 
+# either DB is set to global or user doesn't have access to his
+# home.
 #################################################################
 
 # Can user generate himself a key?

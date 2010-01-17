@@ -83,7 +83,8 @@ Done:
 TODO Major:
         * [?] Parametrize PAM messages.
         * [%] Can user lock program on some printf with some control of
-        stdout?
+        stdout? Probably yes. stdout buffering, not printing while locked
+        or two-proc.
         * [?] OOB Channel usage time updates + DoS security
         * [?] Static password expire warnings + enforcement. 
         * [?] Do not store things in mpz_t which don't need it (spass)

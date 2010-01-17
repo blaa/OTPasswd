@@ -26,7 +26,7 @@ cd $DIR
 
 echo Cleaning up
 make clean
-rm -rf CMakeCache.txt cmake_install.cmake CTestTestfile.cmake install_manifest.txt CMakeFiles otpasswd.info lcov Testing .git .gitignore tools examples/otpasswd-testcase
+rm -rf CMakeCache.txt cmake_install.cmake CTestTestfile.cmake install_manifest.txt CMakeFiles otpasswd.info lcov Testing .git .gitignore tools examples/otpasswd-testcase po/
 find . -iname ".*.sw?" -exec rm -f {} \;
 
 echo Taring up

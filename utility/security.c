@@ -41,6 +41,8 @@
 #include <sys/stat.h>
 /* pwd */
 #include <pwd.h>
+/* open */
+#include <fcntl.h>
 
 #include "security.h"
 
@@ -66,20 +68,30 @@ void security_init(void)
 
 	/* Ensure that stdout and stderr exists, so we won't overwrite
 	 * any opened files with stdout data. I wonder if this danger is
-	 * still valid on new Unix systems. */
+	 * still valid on new Unix systems. 
+	 *
+	 * Also ensure this is terminal and user can't easily lock our 
+	 * output while we have locked file. This could be better done 
+	 * by splitting utility into two programs...
+	 */
 
 	struct stat st;
-	/* Do we have stdout? */
-	ret = fstat(1, &st);
-	if (ret != 0) {
-		exit(EXIT_FAILURE);
-	}
+	/* 0 - stdin, 1 - stdout, 2 - stderr */
+	int i;
+	for (i=0; i<10; i++)
+		close(i);
 
-	/* Do we have stderr? */
-	ret = fstat(2, &st);
-	if (ret != 0) {
+	i = open("/dev/tty", O_NOCTTY | O_RDONLY);
+	if (i != 0)
 		exit(EXIT_FAILURE);
-	}
+
+	i = open("/dev/tty", O_NOCTTY | O_WRONLY);
+	if (i != 1)
+		exit(EXIT_FAILURE);
+
+	i = open("/dev/tty", O_NOCTTY | O_WRONLY);
+	if (i != 2)
+		exit(EXIT_FAILURE);
 
 	ret = chdir("/");
 	if (ret != 0) {
