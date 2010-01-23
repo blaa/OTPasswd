@@ -186,6 +186,7 @@ int ph_oob_send(state *s)
 			exit(12);
 		}
 
+		/* print(PRINT_NOTICE, "Managed to get to the execl (%s) with OOB.\n", cfg->oob_path); */
 		execl(cfg->oob_path, cfg->oob_path,
 		      contact, current_passcode, NULL);
 

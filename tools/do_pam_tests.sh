@@ -33,7 +33,7 @@ echo "Installing into the system"
 make install || exit 1
 cat /etc/otpasswd/otpasswd.conf | sed 's/# DB=/DB=/g' > /etc/otpasswd/otpasswd.conf.2
 mv /etc/otpasswd/otpasswd.conf.2 /etc/otpasswd/otpasswd.conf
-cp examples/otpasswd-testcase /etc/pam.d/
+cp tools/otpasswd-testcase /etc/pam.d/
 
 # additional testcases which will create a state
 rm -rf ~/.otpasswd

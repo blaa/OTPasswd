@@ -41,11 +41,8 @@ worth noting, however.
 ** Discuss binary/source package
 OTPasswd can easily be configured to work in conjunction with any text-based
 PAM-aware application, such as sudo, su, ftp, or any standard *nix console
-login.  While it would technically also be possible for OTPasswd to be
-used in GUI-based PAM applications, as one might find in the KDE or Gnome
-desktops, the necessary GUI layers do not presently exist.  The typical use
-case for OTPasswd by far, however, is to secure non-publickey SSH logins,
-which is what will be described in this section.
+login.  The typical use case for OTPasswd by far, however, is to secure
+non-publickey SSH logins, which is what will be described in this section.
 
 Operational Mode
 ----------------
@@ -69,23 +66,23 @@ a relevant concern.  In any event, the USER DB mode effectively implies
 that OTPasswd security is optional.
 
 In the second operational mode, the 'GLOBAL DB' mode, every user's
-configuration is stored in a single database under system control.
-This operational mode may use a number of backend database interfaces,
-such as a flat-file in the /etc filesystem hierarchy, an LDAP database, or a
-MySQL database.  The user has no read/write access to the configuration data,
-and hence the system is capable of enforcing OTPasswd security policies.
-As an example, GLOBAL DB mode ensures that passcodes are never reused.
-This mode of operation does require that the OTPasswd utility be installed
-as SUID root, which may be viewed by some as being undesirable since this
-may present a security exposure in its own right.  It should be stressed,
-however, that the OTPasswd software was written in a manner observant of
-secure coding practices, and while the utility is installed SUID root,
-it merely uses these privileges to read its configuration files and then
-it promptly drops the root privileges.  Or, put another way, the OTPasswd
-utility only holds root privileges for a brief time during which it never
-processes any user input.  The benefit of this approach is that the GLOBAL
-DB mode allows the system administrator to choose whether OTPasswd security
-is optional, or mandatory.
+configuration is stored in a single database under system control.  This
+operational mode may use a number of backend database interfaces, such as a
+flat-file in the /etc filesystem hierarchy or (not yet implemented)
+LDAP/MySQL database.  The user has no read/write access to the
+configuration data, and hence the system is capable of enforcing OTPasswd
+security policies.  As an example, GLOBAL DB mode ensures that passcodes
+are never reused.  This mode of operation does require that the OTPasswd
+utility be installed as SUID root, which may be viewed by some as being
+undesirable since this may present a security exposure in its own right.
+It should be stressed, however, that the OTPasswd software was written in 
+a manner observant of secure coding practices, and while the utility is
+installed SUID root, it merely uses these privileges to read its
+configuration files and then it promptly drops the root privileges.  Or,
+put another way, the OTPasswd utility only holds root privileges for 
+a brief time during which it never processes any user input.  The benefit of
+this approach is that the GLOBAL DB mode allows the system administrator to
+choose whether OTPasswd security is optional, or mandatory.
 
 It is important to note that this is the first critical decision that
 a system administrator must make in configuring OTPasswd.  No default
@@ -136,6 +133,7 @@ comprehensive, but merely to serve as a point of reference.
                     Build    cmake         2.4.7-1build1
                              libpam0g-dev  0.99.7.1-5ubuntu6.1
                              libgmp3-dev   2:4.2.2+dfsg-1ubuntu2
+   FreeBSD 8.0
 
 Future versions of OTPasswd may optionally use MySQL and LDAP.  It is also
 possible that a GNU Autotools build system will eventually either replace,
@@ -154,20 +152,33 @@ from source, as follows:
    $ cd otpasswd
    $ cmake .            # Generate makefiles (You can add -DDEBUG=1)
    $ make               # Compile everything
-   $ sudo make install  # Install otpasswd into system (as root)
+
+   On Linux distributions you can install OTPasswd into the system 
+   by running as root a following command:
+   $ make install
 
 If you would prefer to perform the final installation step manually,
 then instead of using 'make install' you can copy the following files:
 
-   a) PAM module                       'pam_otpasswd.so' -> /lib/security/
-   b) Utility program                         'otpasswd' -> /usr/bin/
-   c) Example PAM configuration 'example/otpasswd-login' -> /etc/pam.d/
+   a) PAM module 'pam_otpasswd.so'
+      Linux: /lib/security/ 
+      FreeBSD: /usr/lib
+      
+   b) Utility program 'otpasswd' 
+      Linux: /usr/bin/
+      FreeBSD: /usr/local/bin/
+
+   c) PAM configuration
+      Copy into /etc/pam.d one of files:        
+      Linux:      example/otpasswd-login
+      FreeBSD:    example/otpasswd-login_FreeBSD
    d) OTPasswd configuration    'example/otpasswd.conf'  -> /etc/otpasswd/
 
-NOTE: Depending on the DB backend that is being used (see the next
-section), it may be necessary to create a unique system user exclusively
-for OTPasswd, then set the utility program to run as this user through
-use of the SUID flag.  By default, no OTPasswd binaries are SUID.
+
+When using 'GLOBAL DB' mode you should create a unique system user
+exclusively for OTPasswd. /etc/otpasswd should be owned by this user
+and otpasswd utility binary should be SUID-root.
+By default, no OTPasswd binaries are SUID.
 
 
 
@@ -186,7 +197,7 @@ commentary.  A pristine version of this file should be available in the
 OTPasswd package documentation directory of your system's /usr/share 
 hierarchy.
 
-You should change name of the otpasswd.conf.orig to otpasswd.conf and 
+You should change name of the otpasswd.conf.dist to otpasswd.conf and 
 proceed with its configuration.
 
 ** Configure/select user

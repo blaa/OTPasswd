@@ -12,8 +12,10 @@
 # Change it before using.
 # Contacts are phone numbers in format "48xxxyyyzzz"
 
+SENDMAIL=/usr/bin/sendmail # sbin under FreeBSD
+
 TO="<$1@text.plusgsm.pl>"
-echo -en "To:$TO\nFrom: OTP <Ted@thera.be>\nSubject: OTP password\n\nPasscode = $2\n" | sendmail "$TO" 
+echo -en "To:$TO\nFrom: OTP <Ted@thera.be>\nSubject: OTP password\n\nPasscode = $2\n" | $SENDMAIL "$TO" 
 
 # Tests.
 # whoami >> /tmp/OOB_TEST

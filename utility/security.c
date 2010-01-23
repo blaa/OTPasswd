@@ -75,7 +75,6 @@ void security_init(void)
 	 * by splitting utility into two programs...
 	 */
 
-	struct stat st;
 	/* 0 - stdin, 1 - stdout, 2 - stderr */
 	int i;
 	for (i=0; i<10; i++)
@@ -114,7 +113,11 @@ void security_init(void)
 
 	if (is_suid) {
 		/* Clear the environment. */
+#if OS_FREEBSD
+		environ = NULL;
+#else
 		ret = clearenv();
+#endif
 		if (ret != 0) {
 			printf("Unable to clear environment\n");
 			exit(EXIT_FAILURE);
@@ -128,7 +131,6 @@ void security_init(void)
 		/* Re-set required environment variables */
 		putenv("PATH=/bin:/usr/bin");
 		putenv("IFS= \t\n");
-		putenv("TZ=UTC"); /* TODO: Verify this */
 
 		/* Disable signals */
 		ret = 0;
