@@ -48,6 +48,17 @@ enum {
 	OOB_ALWAYS = 3
 };
 
+/* Arguments */
+enum {
+	CONFIG_DISALLOW = 0,
+	CONFIG_ALLOW = 1,
+	CONFIG_ENFORCE = 2,
+
+	CONFIG_ENABLED = 0,
+	CONFIG_DISABLED = 1,
+};
+
+
 typedef struct {
 	/*** 
 	 * General configuration 
@@ -84,64 +95,67 @@ typedef struct {
 
 	/* Enforced makes any user without key
 	 * fail to login */
-	int enforce;
+	int pam_enforce;
+
+	/* Should PAM check if existing state files break policy? */
+	int pam_enforce_policy;
 
 	/* Turns on increased debugging
 	 * 0 - Only Errors
 	 * 1 - Errors, Warnings
 	 * 2 - Errors, Warnings, Notices
 	 */
-	int logging;
+	int pam_logging;
 
 	/* Silent flag. 1 - Be silent. Can be set in 
 	 * config or as an module option */
-	int silent;
+	int pam_silent;
 
 	/* 0 - no retry
 	 * 1 - retry with new passcode
 	 * 2 - retry with the same passcode
 	 * Will always retry 3 times...
 	 */
-	int retry;
+	int pam_retry;
 
 	/* How many retries are allowed */
-	int retries;
+	int pam_retries;
 
 	/* Do we allow key regeneration (,) prompt? */
-	int key_regeneration_prompt;
+	int pam_key_regeneration_prompt;
 
 	/* If recent_failures > 0, show user warning during session */
-	int failure_warning;
+	int pam_failure_warning;
 	
 	/* Number of recent failures after which to increment
 	 * delay */
-	int failure_boundary;
+	int pam_failure_boundary;
 
 	/* Delay to add before authentication if 
 	 * recent_failures hits failure_boundary */
-	int failure_delay;
+	int pam_failure_delay;
 
 	/* Require spass prefix on each logon */
-	int spass_require;
+	int pam_spass_require;
 
 	/* 0 - OOB disabled
 	 * 1 - OOB on request
 	 * 2 - OOB on request; request requires password
 	 * 3 - OOB sent during all authentication sessions
 	 */
-	int oob;
+	int pam_oob;
 
 	/* Out-Of-Band script path */
 	/* Ensure that size of this field matches sscanf in _parse_options */
-	char oob_path[CONFIG_PATH_LEN];
+	char pam_oob_path[CONFIG_PATH_LEN];
 
 	/* Parameters determined from the environment and
 	 * not options themselves  */
 	/* uid, gid of a safe, non-root user who can run OOB script */
-	uid_t oob_uid, oob_gid; 
+	uid_t pam_oob_uid, pam_oob_gid; 
 
 	/* Delay in seconds between two consecutive uses of oob */
-	int oob_delay;
+	int pam_oob_delay;
 
 	/***
 	 * Policy configuration
@@ -152,43 +166,43 @@ typedef struct {
 	/* Not-implemented */
 
 	/* User can generate himself a key */
-	int allow_key_generation;
+	int key_generation;
 
 	/* User can reregenerate existing key */
-	int allow_key_regeneration;
+	int key_regeneration;
 
 	/* User can disable his state */
-	int allow_disabling; 
+	int disabling; 
 
 	/* User can generate key by using a command line or file entry */
-	int allow_sourced_key_generation;
+	int sourced_key_generation;
 	
 	/* Allow user to remove his key */
-	int allow_key_removal;
+	int key_removal;
 
 	/* Allow -a option usage */
-	int allow_shell_auth;
+	int shell_auth;
 	/* Allow -v option usage */
-	int allow_verbose_output;
+	int verbose_output;
 
 	/* User can skip further in passcodes */
-	int allow_skipping;
+	int skipping;
 
 	/* User can skip backwards in passcodes */
-	int allow_backward_skipping;
+	int backward_skipping;
 
 	/* User can print passcards/passcodes */
-	int allow_passcode_print;
+	int passcode_print;
 	/* User can see his key/counter */
-	int allow_key_print;
+	int key_print;
 
 	/* Allow state export/import */
-	int allow_state_export;
-	int allow_state_import;
+	int state_export;
+	int state_import;
 
 	/* Allow contact/label change */
-	int allow_contact_change;
-	int allow_label_change;
+	int contact_change;
+	int label_change;
 
 	/* Passcode configuration. Default, minimal and maximal */
 	int passcode_def_length;
@@ -199,14 +213,14 @@ typedef struct {
 	/* def=1 - 64 long alphabet 
 	 * def=2 - 88 long alphabet 
 	 */
-	int alphabet_allow_change;
+	int alphabet_change;
 	int alphabet_def;
 	int alphabet_min_length;
 	int alphabet_max_length;
 	char alphabet_custom[CONFIG_ALPHABET_LEN];
 
 	/* Allow user to change his static password */
-	int spass_allow_change;
+	int spass_change;
 
 	/* Minimal length */
 	int spass_min_length;
@@ -221,7 +235,7 @@ typedef struct {
 	int spass_require_uppercase;
 
 	/* Disallow (0), allow (1) or enforce (2) salt */
-	int salt_allow;
+	int salt;
 
 	/* Enabled (1), disabled (1) */
 	int salt_def;
@@ -229,7 +243,7 @@ typedef struct {
 	/* Passcode show policy: 
 	 * Disallow (0) display, allow (1) or enforce (2) display 
 	 */
-	int show_allow;
+	int show;
 
 	/* Show passcodes: Enabled (1), disabled (1) */
 	int show_def;

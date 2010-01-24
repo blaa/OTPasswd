@@ -234,7 +234,7 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 	assert(options);
 
 	/* By default perform only some logging */
-	cfg->logging = 1;
+	cfg->pam_logging = 1;
 
 	static struct option long_options[] = {
 		/* Action selection */
@@ -364,12 +364,12 @@ int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
 			break;
 
 		case OPTION_VERBOSE:
-			if (!security_is_privileged() && cfg->allow_verbose_output == 0) {
+			if (!security_is_privileged() && cfg->verbose_output == CONFIG_DISALLOW) {
 				printf(_("Verbose output denied by policy.\n"));
 				goto error;
 			}
 
-			cfg->logging = 3;
+			cfg->pam_logging = 3;
 			break;
 
 		default:
@@ -409,7 +409,7 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 	int retval;
 
 	/* Reconfigure printing subsystem; -v might be passed */
-	switch (cfg->logging) {
+	switch (cfg->pam_logging) {
 	case 0: print_config(PRINT_STDOUT | PRINT_NONE); break;
 	case 1: print_config(PRINT_STDOUT | PRINT_ERROR); break;
 	case 2: print_config(PRINT_STDOUT | PRINT_WARN); break; 

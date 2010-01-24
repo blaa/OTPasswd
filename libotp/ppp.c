@@ -100,7 +100,7 @@ int ppp_init(int print_flags)
 	}
 
 	/* Set log level according to cfg->logging */
-	switch (cfg->logging) {
+	switch (cfg->pam_logging) {
 	case 0: print_config(print_flags | PRINT_NONE); break;
 	case 1: print_config(print_flags | PRINT_ERROR); break;
 	case 2: print_config(print_flags | PRINT_WARN); break; 
@@ -163,7 +163,7 @@ int ppp_verify_alphabet(int id)
 
 	/* Fail also if changing is denied and this
 	 * alphabet is not default one */
-	if  (cfg->alphabet_allow_change == 0 &&
+	if  (cfg->alphabet_change == CONFIG_DISALLOW &&
 	     cfg->alphabet_def != id)
 		return PPP_ERROR_POLICY;
 
@@ -251,20 +251,20 @@ int ppp_verify_flags(int flags)
 	assert(cfg);
 
 	/* Show */
-	if (flags & FLAG_SHOW && cfg->show_allow == 0) {
+	if (flags & FLAG_SHOW && cfg->show == CONFIG_DISALLOW) {
 		return PPP_ERROR_POLICY;
 	}
 
-	if (!(flags & FLAG_SHOW) && cfg->show_allow == 2) {
+	if (!(flags & FLAG_SHOW) && cfg->show == CONFIG_ENFORCE) {
 		return PPP_ERROR_POLICY;
 	}
 
 	/* Salted */
-	if (flags & FLAG_SALTED && cfg->salt_allow == 0) {
+	if (flags & FLAG_SALTED && cfg->salt == CONFIG_DISALLOW) {
 		return PPP_ERROR_POLICY;
 	}
 
-	if (!(flags & FLAG_SALTED) && cfg->salt_allow == 2) {
+	if (!(flags & FLAG_SALTED) && cfg->salt == CONFIG_ENFORCE) {
 		return PPP_ERROR_POLICY;
 	}
 
@@ -1079,7 +1079,7 @@ int ppp_set_str(state *s, int field, const char *arg, int options)
 
 	switch (field) {
 	case PPP_FIELD_CONTACT:
-		if (check_policy && cfg->allow_contact_change == 0) {
+		if (check_policy && cfg->contact_change == CONFIG_DISALLOW) {
 			return PPP_ERROR_POLICY;
 		}
 
@@ -1098,7 +1098,7 @@ int ppp_set_str(state *s, int field, const char *arg, int options)
 		break;
 
 	case PPP_FIELD_LABEL:
-		if (check_policy && cfg->allow_label_change == 0) {
+		if (check_policy && cfg->label_change == CONFIG_DISALLOW) {
 			return PPP_ERROR_POLICY;
 		}
 
@@ -1232,7 +1232,7 @@ char **ppp_spass_set(state *s, const char *spass, int flag)
 	err_count = 0;
 
 
-	if ((flag & PPP_CHECK_POLICY) && (cfg->spass_allow_change == 0)) {
+	if ((flag & PPP_CHECK_POLICY) && (cfg->spass_change == CONFIG_DISALLOW)) {
 		err_list[0] = "Policy denies changing of static password.";
 		return err_list;
 	}

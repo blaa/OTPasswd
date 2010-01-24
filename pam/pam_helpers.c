@@ -52,11 +52,11 @@ int ph_parse_module_options(int flags, int argc, const char **argv)
 	
 	for (; argc-- > 0; argv++) {
 		if (strcmp("audit", *argv) == 0)
-			cfg->logging = 2;
+			cfg->pam_logging = 2;
 		else if (strcmp("debug", *argv) == 0)
-			cfg->logging = 3;
+			cfg->pam_logging = 3;
 		else if (strcmp("silent", *argv) == 0)
-			cfg->silent = 1;
+			cfg->pam_silent = 1;
 		else {
 			print(PRINT_ERROR, 
 				"Invalid parameter %s\n", *argv);
@@ -64,7 +64,7 @@ int ph_parse_module_options(int flags, int argc, const char **argv)
 	}
 
 	if (flags & PAM_SILENT) {
-		cfg->silent = 1;
+		cfg->pam_silent = 1;
 	}
 
 	return 0;
@@ -82,7 +82,7 @@ int ph_oob_send(state *s)
 	/* We musn't have lock on state when running this function */
 
 	/* Check if OOB enabled */
-	if (cfg->oob_path == NULL || cfg->oob == 0) {
+	if (cfg->pam_oob_path == NULL || cfg->pam_oob == 0) {
 		print(PRINT_WARN,
 			    "Trying OOB when it's not enabled\n");
 		return 1;
@@ -93,7 +93,7 @@ int ph_oob_send(state *s)
 	/* Ensure cfg->oob_path is correct */
 	{
 		struct stat st;
-		if (stat(cfg->oob_path, &st) != 0) {
+		if (stat(cfg->pam_oob_path, &st) != 0) {
 			print(PRINT_ERROR,
 				     "Unable to access oob sender. "
 				     "Check oob_path parameter\n");
@@ -120,17 +120,17 @@ int ph_oob_send(state *s)
 			/* That's cool, but can we execute it? */
 			const int can_owner = 
 				((st.st_mode & S_IXUSR) &&
-				 st.st_uid == cfg->oob_uid);
+				 st.st_uid == cfg->pam_oob_uid);
 			const int can_group =
 				((st.st_mode & S_IXGRP) &&
-				 st.st_gid == cfg->oob_gid);
+				 st.st_gid == cfg->pam_oob_gid);
 			if (! (can_owner || can_group) ) {
 				/* Neither from group nor from 
 				 * owner mode */
 				/* TODO: testcase this check */
 				print(PRINT_ERROR,
 					    "UID %d is unable to execute "
-					    "OOB utility!\n", cfg->oob_uid);
+					    "OOB utility!\n", cfg->pam_oob_uid);
 				return 2;
 			}
 		}
@@ -172,22 +172,22 @@ int ph_oob_send(state *s)
 		}
 
 		/* Drop root */
-		retval = setgid(cfg->oob_gid);
+		retval = setgid(cfg->pam_oob_gid);
 		if (retval != 0) {
 			print_perror(PRINT_ERROR,
-				     "UNABLE TO CHANGE GID TO %d\n", cfg->oob_gid);
+				     "UNABLE TO CHANGE GID TO %d\n", cfg->pam_oob_gid);
 			exit(11);
 		}
 
-		retval = setuid(cfg->oob_uid);
+		retval = setuid(cfg->pam_oob_uid);
 		if (retval != 0) {
 			print_perror(PRINT_ERROR, 
-				     "UNABLE TO CHANGE UID TO %d\n", cfg->oob_uid);
+				     "UNABLE TO CHANGE UID TO %d\n", cfg->pam_oob_uid);
 			exit(12);
 		}
 
 		/* print(PRINT_NOTICE, "Managed to get to the execl (%s) with OOB.\n", cfg->oob_path); */
-		execl(cfg->oob_path, cfg->oob_path,
+		execl(cfg->pam_oob_path, cfg->pam_oob_path,
 		      contact, current_passcode, NULL);
 
 		/* Whoops */
@@ -217,7 +217,8 @@ int ph_oob_send(state *s)
 			continue;
 		}
 	}
-	print(PRINT_NOTICE,  "Waited 7000*%d microseconds for OOB\n", 200-times);
+	if (times != 200) 
+		print(PRINT_NOTICE,  "Waited 7000*%d microseconds for OOB\n", 200-times);
 
 
 	if (times == 0) {
@@ -283,7 +284,7 @@ void ph_show_message(pam_handle_t *pamh, const char *msg)
 	assert(cfg);
 
 	/* If silent enabled - don't print any messages */
-	if (cfg->silent)
+	if (cfg->pam_silent)
 		return;
 
 
@@ -342,7 +343,7 @@ int ph_increment(pam_handle_t *pamh, const char *username, state *s)
 
 	case STATE_NON_EXISTENT:
 		/* TODO: Fail only if db=user? This shouldn't happen on GLOBAL. */
-		if (cfg->enforce == 1 && cfg->db == CONFIG_DB_USER)
+		if (cfg->pam_enforce == CONFIG_ENABLED && cfg->db == CONFIG_DB_USER)
 			goto enforced_fail;
 
 		/* Otherwise we are just not configured correctly
@@ -353,7 +354,7 @@ int ph_increment(pam_handle_t *pamh, const char *username, state *s)
 		return PAM_IGNORE;
 
 	case STATE_NO_USER_ENTRY:
-		if (cfg->enforce == 1)
+		if (cfg->pam_enforce == CONFIG_ENABLED)
 			goto enforced_fail;
 
 		print(PRINT_WARN, 
@@ -378,7 +379,7 @@ int ph_increment(pam_handle_t *pamh, const char *username, state *s)
 		return PAM_AUTH_ERR;
 
 	case PPP_ERROR_DISABLED:
-		if (cfg->enforce) {
+		if (cfg->pam_enforce == CONFIG_ENABLED) {
 			print(PRINT_WARN, 
 			      "Authentication failure; user \"%s\" state "
 			      "is disabled\n", username);
@@ -480,7 +481,7 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
 	}
 
 	/* Update log level with data read from module options */
-	switch (cfg->logging) {
+	switch (cfg->pam_logging) {
 	case 0: print_config(PRINT_SYSLOG | PRINT_NONE); break;
 	case 1: print_config(PRINT_SYSLOG | PRINT_ERROR); break;
 	case 2: print_config(PRINT_SYSLOG | PRINT_WARN); break; 

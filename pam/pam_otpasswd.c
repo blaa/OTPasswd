@@ -75,7 +75,7 @@ PAM_EXTERN int pam_sm_authenticate(
 
 	cfg = cfg_get();
 
-	if (cfg->spass_require == 1) {
+	if (cfg->pam_spass_require == CONFIG_ENABLED) {
 		/* Before we will enter passcode loop ask user for his
 		 * static password. As this is supposed to be used instead
 		 * of unix password we behave similarly. We ask questions
@@ -101,8 +101,8 @@ PAM_EXTERN int pam_sm_authenticate(
 	int first_try = 1;
 	int dont_increment = 0; /* Do not increment if previous prompt was for OOB */
 	int tries;
-	for (tries = 0; tries < (cfg->retry == 0 ? 1 : cfg->retries);) {
-		if (first_try || cfg->retry == 1) {
+	for (tries = 0; tries < (cfg->pam_retry == 0 ? 1 : cfg->pam_retries);) {
+		if (first_try || cfg->pam_retry == 1) {
 			/* First time or we are retrying while changing the passcode */
 			first_try = 0;
 			if (dont_increment) 
@@ -124,7 +124,7 @@ PAM_EXTERN int pam_sm_authenticate(
 
 		/* If user configurated OOB to be send
 		 * all the time - sent it */
-		if (cfg->oob == OOB_ALWAYS) {
+		if (cfg->pam_oob == OOB_ALWAYS) {
 			ph_oob_send(s);
 		}
 
@@ -158,7 +158,7 @@ PAM_EXTERN int pam_sm_authenticate(
 			}
 
 			/* Only if not already sent in this session. */
-			switch (cfg->oob) {
+			switch (cfg->pam_oob) {
 			case OOB_REQUEST:
 				if (ph_oob_send(s) == 0) {
 					ph_show_message(pamh, oob_msg);
@@ -217,7 +217,7 @@ PAM_EXTERN int pam_sm_authenticate(
 
 		print(PRINT_WARN, 
 		      "Authentication failure; user=%s; try=%d/%d\n",
-		      username, tries+1, cfg->retries);
+		      username, tries+1, cfg->pam_retries);
 	}
 
 cleanup:

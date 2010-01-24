@@ -47,7 +47,7 @@ int action_authenticate(options_t *options)
 	/* OTP State */
 	state *s = NULL;
 
-	if (cfg->allow_shell_auth == 0) {
+	if (cfg->shell_auth == CONFIG_DISALLOW) {
 		printf(_("Authentication failed (denied by policy).\n"));
 		return 0;
 	}
@@ -123,7 +123,7 @@ int action_key(options_t *options)
 
 	if (remove && 
 	    security_is_privileged() == 0 &&
-	    cfg->allow_key_removal == 0) {
+	    cfg->key_removal == CONFIG_DISALLOW) {
 		printf(_("Key removal denied by policy.\n"));
 		return 1;
 	}
@@ -142,7 +142,7 @@ int action_key(options_t *options)
 		/* Check regeneration policy */
 		if (!remove && 
 		    security_is_privileged() == 0 &&
-		    cfg->allow_key_regeneration == 0) {
+		    cfg->key_regeneration == CONFIG_DISALLOW) {
 			printf(_("Key regeneration denied by policy.\n"));
 			goto cleanup;
 		}
@@ -213,7 +213,7 @@ int action_key(options_t *options)
 
 		if (!remove && 
 		    security_is_privileged() == 0 &&
-		    cfg->allow_key_generation == 0) {
+		    cfg->key_generation == CONFIG_DISALLOW) {
 			printf(_("Key generation denied by policy.\n"));
 			goto cleanup;
 		}
@@ -321,7 +321,7 @@ int action_spass(options_t *options)
 	int i;
 	int ret;
 
-	if (cfg->spass_allow_change != 1 && !security_is_privileged()) {
+	if (cfg->spass_change != CONFIG_ALLOW && !security_is_privileged()) {
 		printf(_("Modification of a static password denied by the policy.\n"));
 		return 1;
 	}
@@ -428,7 +428,7 @@ int action_flags(options_t *options)
 		goto cleanup;
 
 	case OPTION_INFO_KEY: /* Key info */
-		if (cfg->allow_key_print == 1 || security_is_privileged()) {
+		if (cfg->key_print == CONFIG_ALLOW || security_is_privileged()) {
 			if (security_is_privileged())
 				printf(_("User    = %s\n"), s->username);
 			ah_show_keys(s);
@@ -490,13 +490,13 @@ int action_print(options_t *options)
 	int selected = 0; 
 
 	if (options->action == OPTION_TEXT || options->action == OPTION_LATEX)
-		if (security_is_privileged() == 0 && cfg->allow_passcode_print == 0) {
+		if (security_is_privileged() == 0 && cfg->passcode_print == CONFIG_DISALLOW) {
 			printf(_("Passcode printing denied by policy.\n"));
 			return 1;
 		}
 
 	if (options->action == OPTION_SKIP)
-		if (security_is_privileged() == 0 && cfg->allow_skipping == 0) {
+		if (security_is_privileged() == 0 && cfg->skipping == CONFIG_DISALLOW) {
 			printf(_("Passcode skipping denied by policy.\n"));
 			return 1;
 		}
@@ -569,7 +569,7 @@ int action_print(options_t *options)
 			ret = mpz_cmp(s->counter, passcode_num);
 			if (ret > 0) {
 				/* Skipping backwards */
-				if (cfg->allow_backward_skipping 
+				if (cfg->backward_skipping == CONFIG_ALLOW
 				    || security_is_privileged()) {
 					/* Allowed or root */
 					printf(_("**********************************\n"
@@ -619,7 +619,7 @@ int action_print(options_t *options)
 			ret = mpz_cmp(s->counter, passcode_num);
 			if (ret > 0) {
 				/* Skipping backwards */
-				if (cfg->allow_backward_skipping 
+				if (cfg->backward_skipping == CONFIG_ALLOW
 				    || security_is_privileged()) {
 					/* Allowed or root */
 					printf(_("**********************************\n"

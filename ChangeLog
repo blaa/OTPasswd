@@ -117,6 +117,7 @@ TODO Major:
               is trying to get authenticated'. Just test it.
 
 Todo Minor:
+        * [?] ssh config info to .ebuild elog!
         * [?] Will we be pppv3 compatible on big-endian?
         * [?] Sourced key generation (from file, string...)
         * [?] Add error_t and bool_t to differentiate differently

@@ -246,24 +246,24 @@ void ah_show_flags(const state *s)
 	}
 
 	/* Show */
-	if (flags & FLAG_SHOW && cfg->show_allow == 0) {
+	if (flags & FLAG_SHOW && cfg->show == CONFIG_DISALLOW) {
 		printf(_("WARNING: Show flag is enabled, but policy "
 		       "denies it's use!\n"));
 	}
 
-	if (!(flags & FLAG_SHOW) && cfg->show_allow == 2) {
+	if (!(flags & FLAG_SHOW) && cfg->show == CONFIG_ENFORCE) {
 		printf(_("WARNING: Show flag is disabled, but policy "
 		       "enforces it's use!\n"));
 	}
 
 	/* Salted */
-	if (flags & FLAG_SALTED && cfg->salt_allow == 0) {
+	if (flags & FLAG_SALTED && cfg->salt == CONFIG_DISALLOW) {
 		printf(_("WARNING: Key is salted, but policy "
 		       "denies such configuration. Regenerate key!\n"));
 
 	}
 
-	if (!(flags & FLAG_SALTED) && cfg->salt_allow == 2) {
+	if (!(flags & FLAG_SALTED) && cfg->salt == CONFIG_ENFORCE) {
 		printf(_("WARNING: Key is not salted, but policy "
 		       "denies such configuration. Regenerate key!\n"));
 	}
@@ -298,7 +298,7 @@ int ah_update_flags(options_t *options, state *s, int generation)
 	}
 
 	/* Tries to disable/enable himself when not allowed? */
-	if (cfg->allow_disabling == 0) {
+	if (cfg->disabling == CONFIG_DISALLOW) {
 		if (options->flag_set_mask & FLAG_DISABLED ||
 		    options->flag_clear_mask & FLAG_DISABLED) {
 			printf(_("Changing a \"disable\" flag disallowed by policy.\n"));
@@ -307,39 +307,39 @@ int ah_update_flags(options_t *options, state *s, int generation)
 	}
 
 	/* Check policy of salt */
-	switch (cfg->salt_allow) {
-	case 0:
+	switch (cfg->salt) {
+	case CONFIG_DISALLOW:
 		if (options->flag_set_mask & FLAG_SALTED) {
 			printf(_("Policy disallows salted keys.\n"));
 			return 1;
 		}
 		break;
-	case 2:
+	case CONFIG_ENFORCE:
 		if (options->flag_clear_mask & FLAG_SALTED) {
 			printf(_("Policy enforces salted keys.\n"));
 			return 1;
 		}
 		break;
-	case 1:
+	case CONFIG_ALLOW:
 	default:
 		break;
 	}
 
 	/* Check policy of salt */
-	switch (cfg->show_allow) {
-	case 0:
+	switch (cfg->show) {
+	case CONFIG_DISALLOW:
 		if (options->flag_set_mask & FLAG_SHOW) {
 			printf(_("Policy disallows showing entered passcodes.\n"));
 			return 1;
 		}
 		break;
-	case 2:
+	case CONFIG_ENFORCE:
 		if (options->flag_clear_mask & FLAG_SHOW) {
 			printf(_("Policy enforces entered passcode visibility.\n"));
 			return 1;
 		}
 		break;
-	case 1:
+	case CONFIG_ALLOW:
 	default:
 		break;
 	}

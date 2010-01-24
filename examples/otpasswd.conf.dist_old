@@ -11,6 +11,10 @@
 # Whitespaces around '=' are not ignored and values musn't be 
 # surrounded with " or '. Whitespace after arguments is trimmed.
 #
+# In general there're two conventions:
+# 0 - disabled, 1 - enabled or
+# 0 - disallow, 1 - user selectable, 2 - enforced
+#
 # Most policy affects administrator and user (length of code
 # usable alphabet), but some disable options only for user
 # (contact/label changing, account disabling).
@@ -94,7 +98,7 @@ LDAP_DN=ou=users,dc=domain,dc=com
 ##
 
 # How many messages will be logged into syslog by PAM.
-# (Utility works on level 1, can be switched into 3 by -v option)
+# (Utility works on level 1, can be switched into 2 by -v option)
 #
 # 0 - Nothing will be logged
 # 1 - Normal: Errors
@@ -102,144 +106,138 @@ LDAP_DN=ou=users,dc=domain,dc=com
 # 3 - Verbose: Errors, Warnings, Notices (-v option to utility)
 #     Verbose mode is enabled by "debug" module option.
 #     Normal mode can be enabled by passing "audit" option to module.
-PAM_LOGGING=1
+LOGGING=3
 
-# This option can be set for both auth and session modules here 
-# or for selected one in /etc/pam.d as a module option.
-# DISABLED - Normal
-#     User will get additional information on some types of errors during
-#     login (like, otp is enforced and he doesn't have generated key, 
-#     OOB sent, policy error etc.)
-# ENABLED - Silent 
+# 0 - Normal
+#     User will get additional information on some types of errors during login
+#     (like, otp is enforced and he doesn't have generated key.)
+# 1 - Silent 
 #     Inhibit any not important messages sent to user during authentication
 #     (including "last passcard warnings" of PAM session.).
 #     Can be also enabled by "silent" module option.
-PAM_SILENT=DISABLED
+SILENT=0
 
 # If enabled only users who exists in DB will be able to authenticate.
-PAM_ENFORCE=DISABLED
+ENFORCE=0
 
-# Should PAM fail any authentication if user state doesn't match policy?
-# If DB=user and some of the policies should be enforced this should be
-# set to 1. When DB=global the user should not be able to set his state
-# against the policy, but, administrator can escalate policies which can
-# cause previously-valid states not to authenticate. Setting this option
-# to 0 can allow such account to authenticate successfully.
-PAM_ENFORCE_POLICY=DISABLED
-
-# Passcode prompt retry configuration.
 # 0 - Do not retry passcode question
 # 1 - retry using next passcode
 # 2 - retry asking the same passcode
-PAM_RETRY=0
+RETRY=0
 
 # Number of retries (2 to 5)
-PAM_RETRIES=3
+RETRIES=3
 
 # NI! User can request key regeneration
 # with PAM prompt (by entering , instead of passcode)
 # The user is then requested a static password which
 # he must have set before.
-PAM_KEY_REGENERATION_PROMPT=DISABLED
+KEY_REGENERATION_PROMPT=0
 
 # After authentication display user a number of failed
 # authentication tries.
-PAM_FAILURE_WARNING=1
+FAILURE_WARNING=1
 
 # NI! Number of failures after which delay is incremented.
-PAM_FAILURE_BOUNDARY=3
+FAILURE_BOUNDARY=3
 
-# NI! Seconds of delay after recent failure count reaches FAILURE_BOUNDARY 
-PAM_FAILURE_DELAY=5
+# NI! Seconds of delay after recent failure count raches FAILURE_BOUNDARY 
+FAILURE_DELAY=5
 
-# Require SPASS on each logon. Before user is prompted a passcode.
-PAM_SPASS_REQUIRE=DISABLED
+# Require SPASS on each logon
+SPASS_REQUIRE=0
 
 ##
-# Out-Of-Band passcode transfer configuration.
 # 0 - OOB disabled
 # 1 - OOB available on user request (by entering '.' on passcode prompt)
-# 2 - OOB on request, requires static password prompt
+# 2 - OOB on '.' request, requires static password verification
 # 3 - Sent OOB at the beginning of all authentication sessions.
 ##
-PAM_OOB=0
+OOB=0
 
 # Path to OOB script
 # This script gets two arguments: User contact field and current
 # passcode. Script musn't be SUID, and must be readable/executable by
 # user defined in OOB_USER as OTPasswd will drop root privilages in
 # order to run it.
-PAM_OOB_PATH=/etc/otpasswd/otpasswd_oob.sh
+OOB_PATH=/etc/otpasswd/otpasswd_oob.sh
 
 # User used to run script (don't set to root!)
-PAM_OOB_USER=nobody
+OOB_USER=nobody
 
 # NI! Minimum delay in seconds between two consecutive uses of OOB
-PAM_OOB_DELAY=10
+OOB_DELAY=10
 
-
-#################################################################
-# Utility Policy Configuration
-#
-# As oppossed to "System Policy" this works only if user doesn't
-# have direct access to state database himself, that is: 
-# either DB is set to global or user doesn't have access to his
-# home.
-#################################################################
+##
+# Utility policy configuration
+# Works only if user doesn't have direct access to state database himself.
+# For example in DB=global.
+##
 
 # Can user generate himself a key?
-KEY_GENERATION=ALLOW
+# (Can't be enforced with DB=user.)
+ALLOW_KEY_GENERATION=1
 
 # Can user generate himself a key if he already has one?
-KEY_REGENERATION=ALLOW
+# (Can't be enforced with DB=user.)
+ALLOW_KEY_REGENERATION=1
 
 # Can user disable AND enable his state? 
 # Disabled state is ignored if ENFORCE=0
-DISABLING=DISALLOW
+ALLOW_DISABLING=0
 
 # NI! Allow user to specify a (small) file or a string.
 # Instead of random data this file will be used to generate
 # key (with salted SHA256 hash).
-SOURCED_KEY_GENERATION=DISALLOW
+ALLOW_SOURCED_KEY_GENERATION=0
 
 # Allow user to remove his state information
-KEY_REMOVAL=ALLOW
+# (Can't be enforced with DB=user.)
+ALLOW_KEY_REMOVAL=1
 
 # Can user print himself any passcodes?
-PASSCODE_PRINT=ALLOW
+# (Can't be enforced with DB=user.)
+ALLOW_PASSCODE_PRINT=1
 
 # Can user display his key/counter pair?
 # Will disable also state export.
-KEY_PRINT=ALLOW
+# (Can't be enforced with DB=user.)
+ALLOW_KEY_PRINT=1
 
 # Allow user to skip passcodes?
-SKIPPING=ALLOW
+# (Can't be enforced with DB=user.)
+ALLOW_SKIPPING=1
 
 # Allow backward skip of passcodes?
-BACKWARD_SKIPPING=DISALLOW
+# (Can't be enforced with DB=user; root always allowed)
+ALLOW_BACKWARD_SKIPPING=0
 
 # Can user authenticate on prompt with -a option?
-SHELL_AUTH=ALLOW
+ALLOW_SHELL_AUTH=1
 
 # Allow user to use -v option?
-VERBOSE_OUTPUT=ALLOW
+ALLOW_VERBOSE_OUTPUT=1
 
 # NI! Allow ascii state import/export.
-STATE_EXPORT=ALLOW
-STATE_IMPORT=DISALLOW
+# (Can't be enforced with DB=user.)
+ALLOW_STATE_EXPORT=1
+ALLOW_STATE_IMPORT=0
 
 # Can user set his contact information?
-CONTACT_CHANGE=ALLOW
+# (Can't be enforced with DB=user.)
+ALLOW_CONTACT_CHANGE=1
 
 # Can user change label printed on cards?
-LABEL_CHANGE=ALLOW
+# (Can't be enforced with DB=user.)
+ALLOW_LABEL_CHANGE=1
 
 ##
 # Static password (spass)
+# (Can't be enforced with DB=user.)
 ##
 
 # Allow setting/clearing of spass
-SPASS_CHANGE=ALLOW
+SPASS_ALLOW_CHANGE=1
 
 # Minimal length
 SPASS_MIN_LENGTH=7
@@ -250,13 +248,25 @@ SPASS_REQUIRE_SPECIAL=1
 # How many uppercase alpha characters we require. 
 SPASS_REQUIRE_UPPERCASE=1
 
+##
+# Set minimal/maximal/default length of passcode.
+# Acceptable passcode length is between 2 and 16.
+# Those are enforced also by PAM module.
+##
+PASSCODE_MIN_LENGTH=2
+PASSCODE_MAX_LENGTH=16
+PASSCODE_DEF_LENGTH=4
 
 ##
-# Alphabet configuration
+# Set alphabet parameters
 ##
 
-# Allow selection of alphabet or stick to default?
-ALPHABET_CHANGE=ALLOW
+# Minimal/Maximal acceptable length of alphabet
+ALPHABET_MIN_LENGTH=32
+ALPHABET_MAX_LENGTH=88
+
+# Allow alphabet selection
+ALPHABET_ALLOW_CHANGE=1
 
 # 0 - Custom alphabet defined in config (by default 0123456789)
 # 1 - 64 characters ("PPP standard"):
@@ -272,62 +282,33 @@ ALPHABET_CHANGE=ALLOW
 # 23456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPRSTUVWXYZ
 ALPHABET_DEF=1
 
-# Custom alphabet.
+# NI! Custom alphabet.
 ALPHABET_CUSTOM=0123456789
-
 
 ## Salt parameters
 # By default:
-# DISABLED - Use key without salt (PPPv3.1 compatible)
-# ENABLED  - Use salted key ("Safer", but not compatible)
+# 1 - Use key without salt (PPPv3.1 compatible)
+# 2 - Use salted key ("Safer", not compatible)
 ##
-SALT_DEF=ENABLED
+SALT_DEF=1
 
 # Policy configuration:
-# DISALLOW - Disallow generation of salt
-# ALLOW    - Allow user to use salt
-# ENFORCE  - Enforce usage of salt
-SALT=ALLOW
+# 0 - Disallow generation of salt
+# 1 - Allow user to use salt
+# 2 - Enforce usage of salt
+# (Can't be enforced with DB=user.)
+SALT_ALLOW=1
+
 
 ##
 # Show flag policy
-# ENABLED  - display entered passcodes
-# DISABLED - do not display entered passcodes
+# 1 - display entered passcodes
+# 0 - do not display entered passcodes
 ##
-SHOW_DEF=ENABLED
+SHOW_DEF=1
 
-#################################################################
-# System Policy Configuration
-#
-# As oppossed to "Utility Policy" this is can be enforced
-# additionaly by PAM module if PAM_ENFORCE_POLICY is enabled.
-# User can't simply avoid this policy by mangling directly
-# with his state file. If user manages to distroy his state file
-# or its compatibility with this policy then his authentication 
-# will be denied.
-#################################################################
-
-##
-# Set minimal/maximal/default length of passcode.
-# Acceptable passcode length is between 2 and 16.
-# Those are enforced also by PAM module.
-##
-PASSCODE_MIN_LENGTH=2
-PASSCODE_MAX_LENGTH=16
-PASSCODE_DEF_LENGTH=4
-
-##
-# Minimal/maximal acceptable length of alphabet.
-# Can be used to enforce usage of one, choosen, alphabet.
-##
-ALPHABET_MIN_LENGTH=32
-ALPHABET_MAX_LENGTH=88
-
-
-## 
-# Show flag policy
-# DISALLOW - Disallow display of passcode
-# ALLOW    - Allow user to select option
-# ENFORCE  - Enforce display of passcode
-##
-SHOW_PASSCODE=ALLOW
+# 0 - Disallow display of passcode
+# 1 - Allow user to select option
+# 2 - Enforce display of passcode
+# Enforced by PAM module.
+SHOW_ALLOW=1
