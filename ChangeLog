@@ -80,18 +80,24 @@ Done:
               Should he be allowed to do this? More important question:
               What are we trying to disable? Disabling accounts is done with 
               other utilities.
+        * [!] Can user lock program on some printf with some control of
+              stdout? Probably yes. stdout buffering, not printing while locked
+              or two-proc.
+              FIXED: reopened /dev/tty. Does it suffice? Should be more less
+              ok, but still it would be ok to limit number of outputed
+              messages while state files are locked.
+        * [!] Verify SIGCHLD won't clobber anything.
+              FIXED: It shouldn't as we take care of our child (kill it when
+              it's useless and wait for it)
+
 TODO Major:
         * [?] Parametrize PAM messages.
-        * [%] Can user lock program on some printf with some control of
-        stdout? Probably yes. stdout buffering, not printing while locked
-        or two-proc.
         * [?] OOB Channel usage time updates + DoS security
         * [?] Static password expire warnings + enforcement. 
         * [?] Do not store things in mpz_t which don't need it (spass)
         * [?] Sanitize gettext environment
         * [?] Logging warnings printed to user at WARN level
         * [?] Key quality checking (duplicates)
-        * [?] Verify SIGCHLD won't clobber anything.
         * [?] "Problem solving section" in docs, mentioning use of -v on
               errors in the first place.
         * [?] Global DB should work with users which aren't in passwd.
@@ -114,9 +120,11 @@ TODO Major:
         * [?] SELinux compatibility.
         * [?] Import/export of ascii state lines...
         * [?] Make otpasswd work with su (there's additional information 'who
-              is trying to get authenticated'. Just test it.
+              is trying to get authenticated'. Just test it. setuid() required
+              probably (Maybe only on SELINUX)
 
 Todo Minor:
+        * [?] policy checking regarding salt. (won't fail sometimes)
         * [?] ssh config info to .ebuild elog!
         * [?] Will we be pppv3 compatible on big-endian?
         * [?] Sourced key generation (from file, string...)

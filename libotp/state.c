@@ -102,10 +102,10 @@ int state_init(state *s, const char *username)
 	memset(s->contact, 0, sizeof(s->contact));
 
 	s->code_length = cfg->passcode_def_length;
-	if (cfg->show_def == 1)
+	if (cfg->show_def == CONFIG_ENABLED)
 		s->flags = FLAG_SHOW;
 
-	if (cfg->salt_def == 1)
+	if (cfg->salt_def == CONFIG_ENABLED)
 		s->flags |= FLAG_SALTED;
 	
 	s->alphabet = cfg->alphabet_def;

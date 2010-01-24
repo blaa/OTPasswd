@@ -20,7 +20,7 @@
 #include "nls.h"
 
 #ifndef PROG_VERSION
-#define PROG_VERSION _("v0.5b4 \"Savage Savory\"")
+#define PROG_VERSION _("v0.5b5 \"Savage Savory\"")
 #endif
 
 #include <stdio.h>
@@ -80,6 +80,11 @@ int action_authenticate(options_t *options)
 		retval = 0;
 		goto cleanup;
 
+	case PPP_ERROR_POLICY:
+		printf(_("Authentication failed (policy error).\n"));
+		retval = 0;
+		goto cleanup;
+
 	default: /* Any other problem - error */
 		printf(_("Authentication failed (state increment error).\n"));
 		retval = 0;
@@ -114,6 +119,8 @@ cleanup:
 }
 
 /* Generate new key */
+/* FIXME: This functions needs rewriting to use PPP.c interface
+ * instead of state */
 int action_key(options_t *options)
 {
 	cfg_t *cfg = cfg_get();
@@ -168,7 +175,18 @@ int action_key(options_t *options)
 
 		/* If we were supposed to remove the key do it now */
 		if (remove) {
+			if (state_lock(&s) != 0) {
+				print(PRINT_ERROR, _("Unable to lock state for removing.\n"));
+				goto cleanup;
+			}
+
 			ret = state_store(&s, 1);
+
+			if (state_unlock(&s) != 0) {
+				print(PRINT_ERROR, _("Unable to unlock state database.\n"));
+				/* As we will soon quit don't die here */
+			}
+
 			if (ret == 0) {
 				printf(_("Key removed!\n"));
 				retval = 0;
