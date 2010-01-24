@@ -12,7 +12,7 @@
 # Change it before using.
 # Contacts are phone numbers in format "48xxxyyyzzz"
 
-SENDMAIL=/usr/bin/sendmail # sbin under FreeBSD
+SENDMAIL=/usr/sbin/sendmail # Update to match your system. 
 
 TO="<$1@text.plusgsm.pl>"
 echo -en "To:$TO\nFrom: OTP <Ted@thera.be>\nSubject: OTP password\n\nPasscode = $2\n" | $SENDMAIL "$TO" 

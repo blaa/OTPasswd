@@ -20,7 +20,7 @@
 #include "nls.h"
 
 #ifndef PROG_VERSION
-#define PROG_VERSION _("v0.5b5 \"Savage Savory\"")
+#define PROG_VERSION _("v0.5rc1 \"Savage Savory\"")
 #endif
 
 #include <stdio.h>
@@ -119,7 +119,7 @@ cleanup:
 }
 
 /* Generate new key */
-/* FIXME: This functions needs rewriting to use PPP.c interface
+/* FIXME: This function needs rewriting to use PPP.c interface
  * instead of state */
 int action_key(options_t *options)
 {

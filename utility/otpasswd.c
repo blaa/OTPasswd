@@ -127,7 +127,7 @@ static void _usage(int argc, const char **argv)
 		"           Display license, warranty, version and author information.\n"
 		"  -h, --help\n"
 		"           Display this message\n"
-		"  --check  Run all testcases. Assumes default config file.\n"
+		"  --check  Run all testcases. WARNING: Requires default config file.\n"
 
 		"\n"
 		"Notes:\n"

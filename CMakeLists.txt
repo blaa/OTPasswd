@@ -158,11 +158,13 @@ INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_1} DESTINATION "share/man/man
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_5} DESTINATION "share/man/man5")
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_8} DESTINATION "share/man/man8")
 
+
 ##
 # Tests / Coverage
 # WARNING: THIS TESTS MODIFY USER STATE!
 ##
 ENABLE_TESTING()
+
 ADD_TEST(internal_check ./otpasswd --check)
 # This may fail if user does not have state file!
 # This tests are used mostly to have some rationale

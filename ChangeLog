@@ -89,8 +89,10 @@ Done:
         * [!] Verify SIGCHLD won't clobber anything.
               FIXED: It shouldn't as we take care of our child (kill it when
               it's useless and wait for it)
+        * [+] ssh config info to .ebuild elog!
 
 TODO Major:
+	* [?] Accept 2G[2] passcode specification entries.
         * [?] Parametrize PAM messages.
         * [?] OOB Channel usage time updates + DoS security
         * [?] Static password expire warnings + enforcement. 
@@ -116,7 +118,7 @@ TODO Major:
               more fine-grained is necessary. State on the other hand
               uses 'db' backend for operating on files/databases.
               * Lots of things done in direction to finish this task
-        * [-] Scan all FIXME/TODO entries
+        * [-] Scan all FIXME/TODO entries (Especially OOB related)
         * [?] SELinux compatibility.
         * [?] Import/export of ascii state lines...
         * [?] Make otpasswd work with su (there's additional information 'who
@@ -125,7 +127,6 @@ TODO Major:
 
 Todo Minor:
         * [?] policy checking regarding salt. (won't fail sometimes)
-        * [?] ssh config info to .ebuild elog!
         * [?] Will we be pppv3 compatible on big-endian?
         * [?] Sourced key generation (from file, string...)
         * [?] Add error_t and bool_t to differentiate differently
