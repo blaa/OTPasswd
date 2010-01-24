@@ -486,9 +486,9 @@ int db_file_load(state *s)
 
 	/* Permissions will be checked during locking
 	 * now, or was already checked */
-	ret = _db_file_permissions(db);
-	if (ret != 0) {
-		return ret;
+	retval = _db_file_permissions(db);
+	if (retval != 0) {
+		goto cleanup1;
 	}
 
 	/* DB file should always be locked before changing.

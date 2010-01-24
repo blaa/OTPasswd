@@ -370,6 +370,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 				}
 				cfg->user_uid = pwd->pw_uid;
 				cfg->user_gid = pwd->pw_gid;
+				endpwent();
 
 				if (cfg->user_uid == 0) {
 					print(PRINT_ERROR,
@@ -464,6 +465,13 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			}
 			cfg->pam_oob_uid = pwd->pw_uid;
 			cfg->pam_oob_gid = pwd->pw_gid;
+			endpwent();
+			if (cfg->pam_oob_uid == 0) {
+				print(PRINT_ERROR,
+				      "Config Error: PAM_OOB_USER variable is set to root.");
+				goto error;
+			}
+
 		} else if (_EQ(line_buf, "pam_oob_path")) {
 			_COPY(cfg->pam_oob_path, equality);
 		} else if (_EQ(line_buf, "pam_key_regeneration_prompt")) {
