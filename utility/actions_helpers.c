@@ -325,7 +325,7 @@ int ah_update_flags(options_t *options, state *s, int generation)
 		break;
 	}
 
-	/* Check policy of salt */
+	/* Check policy of show */
 	switch (cfg->show) {
 	case CONFIG_DISALLOW:
 		if (options->flag_set_mask & FLAG_SHOW) {
