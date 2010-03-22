@@ -24,9 +24,10 @@
 #ifndef _STATE_H_
 #define _STATE_H_
 
-#include <gmp.h>
+
 #include <inttypes.h>
 #include "ppp_common.h"
+#include "num.h"
 
 /*** Config ***/
 #define STATE_FILENAME ".otpasswd"

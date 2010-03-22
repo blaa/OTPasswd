@@ -24,8 +24,6 @@
 #ifndef _PPP_H_
 #define _PPP_H_
 
-#include <gmp.h>
-
 /* Data shared between state and ppp */
 #include "ppp_common.h"
 

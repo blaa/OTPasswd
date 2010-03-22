@@ -136,7 +136,7 @@ extern int agent_connect(agent *a);
 extern int agent_disconnect(agent *a);
 
 
-void agent_set(agent *ag
+void agent_set(agent *a);
 
 
 #endif

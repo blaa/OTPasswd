@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <gmp.h>
+#include "num.h"
 
 #define PPP_INTERNAL 1
 #include "ppp.h"

@@ -16,7 +16,6 @@
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
  **********************************************************************/
 
-
 #include <stdio.h>
 #include <ctype.h>
 
@@ -137,7 +136,9 @@ int ah_is_passcard_in_range(const state *s, const mpz_t passcard)
 	}
 
 	if (mpz_cmp(passcard, s->max_card) > 0) {
-		gmp_printf(_("Number of the last available passcard is %Zd\n"), s->max_card);
+		printf("Number of the last available passcard is ");
+		num_print_dec(s->max_card);
+		printf("\n");
 		return 0;
 	}
 
@@ -151,7 +152,8 @@ int ah_is_passcode_in_range(const state *s, const mpz_t passcard)
 		return 0; /* false */
 
 	if (mpz_cmp(passcard, s->max_code) > 0) {
-		gmp_printf(_("Number of the last available passcode is %Zd\n"), s->max_code);
+		printf(_("Number of the last available passcode is "));
+		num_print_dec(s->max_code);
 		return 0;
 	}
 
@@ -164,20 +166,30 @@ void ah_show_state(const state *s)
 	mpz_t tmp;
 	mpz_init(tmp);
 
-	gmp_printf(_("Current card        = %Zd\n"), s->current_card);
+	printf(_("Current card        = "));
+	num_print_dec(s->current_card);
+	printf("\n");
 
 	/* Counter */
 	ppp_get_mpz(s, PPP_FIELD_UNSALTED_COUNTER, tmp);
-	gmp_printf(_("Current code        = %Zd\n"), tmp);
+	printf(_("Current code        = "));
+	num_print_dec(tmp);
+	printf("\n");
 
 	ppp_get_mpz(s, PPP_FIELD_LATEST_CARD, tmp);
-	gmp_printf(_("Latest printed card = %Zd\n"), tmp);
+	printf(_("Latest printed card = "));
+	num_print_dec(tmp);
+	printf("\n");
 
 	ppp_get_mpz(s, PPP_FIELD_MAX_CARD, tmp);
-	gmp_printf(_("Max card            = %Zd\n"), tmp);
+	printf(_("Max card            = \n"));
+	num_print_dec(tmp);
+	printf("\n");
 
 	ppp_get_mpz(s, PPP_FIELD_MAX_CODE, tmp);
-	gmp_printf(_("Max code            = %Zd\n"), tmp);
+	printf(_("Max code            = \n"));
+	num_print_dec(tmp);
+	printf("\n");
 
 	mpz_clear(tmp);
 }
@@ -278,7 +290,9 @@ void ah_show_keys(const state *s)
 
 	/* This prints data MSB */
 	/* gmp_printf(_("Key     = %064ZX\n"), s->sequence_key); */
-	gmp_printf(_("Counter = %032ZX\n"), s->counter);
+	printf(_("Counter = "));
+	num_print_hex(s->counter, 32);
+	printf("\n");
 }
 
 int ah_update_flags(options_t *options, state *s, int generation)
@@ -503,7 +517,8 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 			goto error;
 		}
 
-		ret = gmp_sscanf(number, "%Zu", passcard);
+		ret = num_set_str(&passcard, number, 10)
+/*		ret = gmp_sscanf(number, "%Zu", passcard); */
 		if (ret != 1) {
 			printf(_("Incorrect passcard specification.\n"));
 			goto error;
@@ -536,7 +551,8 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 
 
 		/* number -- passcode number */
-		ret = gmp_sscanf(spec, "%Zd", passcode);
+		ret = num_set_str(&passcode, spec, 10)
+//		ret = gmp_sscanf(spec, "%Zd", passcode);
 		if (ret != 1) {
 			printf(_("Error while parsing passcode number.\n"));
 			goto error;
@@ -553,10 +569,11 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 		ppp_add_salt(s, passcode);
 
 		selected = 1;
-	} else if (spec[0] == '['
-		   && spec[strlen(spec)-1] == ']') {
+	} else if (spec[0] == '[' && spec[strlen(spec)-1] == ']') {
 		/* [number] -- passcard number */
-		ret = gmp_sscanf(spec, "[%Zd]", passcard);
+		spec[ strlen(spec)-1 ] = '\0';
+		ret = num_set_str(&passcard, spec+1, 10)
+//		ret = gmp_sscanf(spec, "[%Zd]", passcard);
 		if (ret != 1) {
 			printf(_("Error while parsing passcard number.\n"));
 			goto error;

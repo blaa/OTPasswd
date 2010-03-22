@@ -14,9 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
- *
  **********************************************************************/
-
 #include "nls.h"
 
 #ifndef PROG_VERSION
@@ -26,7 +24,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <gmp.h>
 #include <assert.h>
 
 /* libotp header */
@@ -207,7 +204,8 @@ int action_key(options_t *options)
 
 		printf(_("This is your previous configuration updated with command line options:\n"));
 		ah_show_flags(&s);
-		printf(_("\nYou can either use it, or start with default one (modified by any --config options).\n"));
+		printf(_("\nYou can either use it, or start with default one "
+			 "(modified by any --config options).\n"));
 		if (ah_enforced_yes_or_no(
 			    _("Do you want to keep this configuration?")) == QUERY_NO) {
 			printf(_("Reverting to defaults.\n"));

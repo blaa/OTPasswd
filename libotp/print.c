@@ -23,7 +23,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <syslog.h>
-#include <gmp.h>
 
 #include "print.h"
 

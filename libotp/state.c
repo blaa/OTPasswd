@@ -66,7 +66,6 @@ int state_init(state *s, const char *username)
 	const char code_mask[] =
 		"000000000000000000000000FFFFFFFF";
 
-	int ret;
 	cfg_t *cfg = NULL;
 
 	assert(sizeof(salt_mask) == 33);
@@ -127,10 +126,16 @@ int state_init(state *s, const char *username)
 
 	mpz_init(s->spass);
 
+#if USE_GMP
+	int ret;
 	ret = mpz_init_set_str(s->salt_mask, salt_mask, 16);
 	assert(ret == 0);
 	ret = mpz_init_set_str(s->code_mask, code_mask, 16);
 	assert(ret == 0);
+#else
+	s->salt_mask = num_i(0);
+	s->code_mask = num_i(0);
+#endif
 
 	return 0;
 }

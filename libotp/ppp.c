@@ -210,10 +210,15 @@ int ppp_verify_range(const state *s)
 */
 
 	/* Verify counter size */
+	mpz_t max_counter;
+#if USE_GMP
 	const char max_counter_hex[] =
 		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
-	mpz_t max_counter;
+
 	mpz_init_set_str(max_counter, max_counter_hex, 16);
+#else
+	max_counter = num_ii(0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFULL);
+#endif
 
 	if (mpz_cmp(s->counter, max_counter) > 0) {
 		print(PRINT_ERROR, "State file corrupted. Counter number too big\n");
@@ -366,11 +371,14 @@ int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
 	assert(cfg);
 
 	/* Assure range during development */
+#if USE_GMP
 	assert(mpz_tstbit(counter, 128) == 0);
+	assert(mpz_sgn(s->counter) >= 0);
+#endif
 
 	/* Check for illegal data */
 	assert(s->code_length >= 2 && s->code_length <= 16);
-	assert(mpz_sgn(s->counter) >= 0);
+
 
 	if (!passcode)
 		return 2;
@@ -525,7 +533,11 @@ void ppp_calculate(state *s)
 		const char max_hex[] =
 			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
 		assert(sizeof(max_hex)  == 33);
+#if USE_GMP
 		mpz_set_str(s->max_card, max_hex, 16);
+#else
+		s->max_card = num_ii(0xFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL);
+#endif
 	}
 
 	mpz_div_ui(s->max_card, s->max_card, s->codes_on_card);
@@ -940,7 +952,6 @@ int ppp_set_int(state *s, int field, unsigned int arg, int options)
 
 int ppp_get_mpz(const state *s, int field, mpz_t arg)
 {
-	assert(arg);
 	switch (field) {
 	case PPP_FIELD_COUNTER:
 		mpz_set(arg, s->counter);

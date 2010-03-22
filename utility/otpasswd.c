@@ -468,6 +468,9 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 
 	case OPTION_CHECK:
 		printf(_("*** Running testcases\n"));
+		num_testcase_();
+		break;
+
 		{
 			int failed = 0;
 

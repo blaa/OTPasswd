@@ -19,7 +19,6 @@
 #ifndef _ACTIONS_HELPERS_H_
 #define _ACTIONS_HELPERS_H_
 
-#include <gmp.h>
 #include "ppp.h"
 
 enum {

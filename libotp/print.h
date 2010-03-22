@@ -22,7 +22,7 @@
 #ifndef _PRINT_H_
 #define _PRINT_H_
 
-#include <gmp.h>
+#include "num.h"
 
 /* With DEBUG_POSITIONS messages printed on 
  * stdout get information about their source */
