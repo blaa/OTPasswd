@@ -291,7 +291,7 @@ void ah_show_keys(const state *s)
 	/* This prints data MSB */
 	/* gmp_printf(_("Key     = %064ZX\n"), s->sequence_key); */
 	printf(_("Counter = "));
-	num_print_hex(s->counter, 32);
+	num_print_hex(s->counter, 32, 1);
 	printf("\n");
 }
 
@@ -517,7 +517,7 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 			goto error;
 		}
 
-		ret = num_set_str(&passcard, number, 10)
+		ret = num_set_str(&passcard, number, 10);
 /*		ret = gmp_sscanf(number, "%Zu", passcard); */
 		if (ret != 1) {
 			printf(_("Incorrect passcard specification.\n"));
@@ -551,7 +551,7 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 
 
 		/* number -- passcode number */
-		ret = num_set_str(&passcode, spec, 10)
+		ret = num_set_str(&passcode, spec, 10);
 //		ret = gmp_sscanf(spec, "%Zd", passcode);
 		if (ret != 1) {
 			printf(_("Error while parsing passcode number.\n"));
@@ -571,8 +571,12 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 		selected = 1;
 	} else if (spec[0] == '[' && spec[strlen(spec)-1] == ']') {
 		/* [number] -- passcard number */
-		spec[ strlen(spec)-1 ] = '\0';
-		ret = num_set_str(&passcard, spec+1, 10)
+		char *copy = strdup(spec);
+		if (!copy) 
+			goto error;
+		copy[ strlen(copy)-1 ] = '\0';
+		ret = num_set_str(&passcard, spec+1, 10);
+		free(copy);
 //		ret = gmp_sscanf(spec, "[%Zd]", passcard);
 		if (ret != 1) {
 			printf(_("Error while parsing passcard number.\n"));

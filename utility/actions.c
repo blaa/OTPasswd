@@ -18,7 +18,7 @@
 #include "nls.h"
 
 #ifndef PROG_VERSION
-#define PROG_VERSION _("v0.5rc1 \"Savage Savory\"")
+#define PROG_VERSION _("v0.5rc2 \"Savage Savory\"")
 #endif
 
 #include <stdio.h>

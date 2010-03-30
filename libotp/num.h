@@ -25,13 +25,17 @@
 #ifndef _NUM_H_
 #define _NUM_H_
 
+/* Configuration */
+#ifndef USE_GMP
+#define USE_GMP 0
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include <assert.h>
-
-#define USE_GMP 0
 
 #if USE_GMP
 #include <gmp.h>
@@ -51,8 +55,6 @@
  * And destination can equal arg1
  */
 
-#include <inttypes.h>
-
 #if !USE_GMP
 
 typedef struct {
@@ -60,7 +62,9 @@ typedef struct {
 	uint64_t lo;
 } num_t;
 
-/* Setters */
+/*****************************
+ * Setters 
+ *****************************/
 static inline num_t num_ii(uint64_t arg1, uint64_t arg2) {
 	const num_t a = {arg1, arg2};
 	return a;
@@ -73,22 +77,28 @@ static inline void num_init_(num_t *n) {
 	n->lo = 0;
 }
 
-/* Logical operations */
+/*****************************
+ * Logical operations
+ *****************************/
 extern num_t num_and(const num_t arg1, const num_t arg2);
 extern num_t num_lshift(const num_t arg);
 extern num_t num_rshift(const num_t arg);
 
-/* Comparison */
+/*****************************
+ * Comparisons
+ *****************************/
 extern int num_cmp_i(const num_t arg1, const uint64_t arg2);
 extern int num_cmp(num_t arg1, num_t arg2);
 
-/* Arithmetic operations */
+/*****************************
+ * Arithmetic operations
+ *****************************/
 extern num_t num_add(const num_t arg1, const num_t arg2);
 extern num_t num_sub(const num_t arg1, const num_t arg2);
 extern num_t num_mul_i(num_t arg1, const uint64_t arg2);
 extern uint64_t num_div_i(num_t *result, num_t divwhat, uint64_t divby);
 
-extern void num_testcase_(void);
+
 
 
 /* Macros used to substitute GMP for our own function set */
@@ -126,102 +136,51 @@ typedef num_t mpz_t;
 
 
 /************************************************
- * Helpers. This functions should work for both
+ * Conversions. This functions should work for both
  * GMP and our own implementation.
+ *
+ * 1) Printing decimal for user
+ * 2) Printing HEX for user (ppp compat)
+ * 3) Printing HEX for debug (msb)
+ * 4) Converting to/from binary for encryption
+ * Implement as storing in buffer (preallocated
  ************************************************/
 
-/* Converts num_t into string representation in either base 10
- * or base 16. Returned string is allocated and should be freed. */
-extern char *num_get_str(const num_t arg, const int base);
+/* Exports num_t into binary, hex string or LSB first PPP compatible HEX string 
+ * Minimal safe length of buff for all options is 39 bytes. 
+ * Binary is not \0 padded and it's length is 16 bytes.
+ * 0 - OK
+ * 1 - Error
+ */
+enum num_str_type { NUM_FORMAT_DEC, NUM_FORMAT_HEX, NUM_FORMAT_PPP_HEX, NUM_FORMAT_BIN };
+extern int num_export(const num_t num, char *buff, enum num_str_type t);
+
+/* 
+ * Parse either decimal or hex into a num_t type.
+ * 0 - success
+ */
+extern int num_import(num_t *num, const char *buff, enum num_str_type t);
+
+
+extern char *num_get_str(const num_t arg, int base);
+
 /* Parses input string in base 10 or 16, returns num. */
 extern int num_set_str(num_t *arg, const char *str, const int base);
 
+extern void num_from_bin(mpz_t num, const unsigned char *data, const size_t length);
+extern void num_to_bin(const mpz_t num, unsigned char *data, const size_t length);
 
-static inline void num_from_bin(mpz_t num, const unsigned char *data, const size_t length)
-{
-	/* Store data as LSB - to match pppv3 */
-#if USE_GMP
-	mpz_import(num, 1, 1, length, -1 /* LSB to match ppp behaviour */ , 0, data);
-#else
-	memcpy(&num, data, length);
-#endif
-}
-
-static inline void num_to_bin(const mpz_t num, unsigned char *data, const size_t length)
-{
-#if USE_GMP
-	size_t size = 1;
-	/* Handle 0 numbers; otherwise nothing would be written to data */
-	if (mpz_cmp_si(num, 0) == 0)
-		memset(data, 0, length);
-        else 
-		(void) mpz_export(data, &size, 1, length, -1, 0, num);
-	assert(size == 1);
-#else
-	memcpy(data, &num, length);
-#endif
-}
 
 /* Convert number to hex which conforms with PPPv3 methods */
-static inline void num_to_hex(const mpz_t num, char *data, const unsigned int length)
-{
-	unsigned char bin[32];
-	int i;
-	assert(length == 65 || length == 33); /* Key or counter */
+extern void num_to_hex(const mpz_t num, char *data, const unsigned int length);
 
-	const int bin_len = (length-1) / 2;
-
-	num_to_bin(num, bin, bin_len);
-
-	for (i = 0; i < bin_len; i++)
-		snprintf(data + i * 2,  3, "%02X", bin[i]);
-}
-
-static inline void num_print_hex(const mpz_t num, const unsigned int length)
-{
-	unsigned char bin[32];
-	int i;
-
-	assert(length == 32 || length == 64); /* Key or counter */
-
-	const int bin_len = (length) / 2;
-
-	num_to_bin(num, bin, bin_len);
-
-	for (i = 0; i < bin_len; i++)
-		printf("%02X", bin[i]);
-
-	memset(bin, 0, sizeof(bin));
-
-/* Alternative: 
-	if (length == 32) 
-		gmp_printf("%32Zd", arg);
-	else
-		gmp_printf("%64Zd", arg);
-*/
-
-}
-
-#if USE_GMP
-static inline void num_print_dec(const num_t arg)
-{
-	gmp_printf("%Zd", arg);
-}
-
-#else
-
-static inline void num_print_dec(const num_t arg)
-{
-	/* To string (Decimal) */
-	char *buf = num_get_str(arg, 10);
-	if (!buf) 
-		printf("ERROR");
-	else
-		printf("%s", buf);
-}
-#endif
+/* Set MSB to 1 for PPPv3 compatibility */
+extern void num_print_hex(const mpz_t num, const unsigned int length, int msb);
+extern void num_print_dec(const num_t arg);
 
 
+/* TODO: Move testcase to testcase.c */
+/* extern void num_testcase(void); */
 
 /* This function set's GMP memory allocation routines 
  * to safer versions which cleanup deallocated memory */

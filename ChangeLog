@@ -10,7 +10,7 @@ ChangeLog / TODO
 
 Trying to sort tasks according to their priority.
 
-2009-12-13 v0.5
+2010-01-24 v0.5rc1
 Done:
         * [+] Check bit distribution for alphabets not divisible by 2
         * [+] Remove dont-skip option.
