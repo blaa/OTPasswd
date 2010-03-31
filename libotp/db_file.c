@@ -558,13 +558,14 @@ int db_file_load(state *s)
 		s->sequence_key[i] = tmp;
 	}
 
-	if (mpz_set_str(s->counter, field[FIELD_COUNTER], STATE_BASE) != 0) {
+//	if (mpz_set_str(s->counter, field[FIELD_COUNTER], STATE_BASE) != 0) {
+	if (num_import(&s->counter, field[FIELD_COUNTER], NUM_FORMAT_HEX) != 0) {
 		print(PRINT_ERROR, "Error while parsing counter.\n");
 		goto cleanup;
 	}
 
-	if (mpz_set_str(s->latest_card,
-			field[FIELD_LATEST_CARD], STATE_BASE) != 0) {
+//	if (mpz_set_str(s->latest_card, field[FIELD_LATEST_CARD], STATE_BASE) != 0) {
+	if (num_import(&s->latest_card, field[FIELD_LATEST_CARD], NUM_FORMAT_HEX) != 0) {
 		print(PRINT_ERROR,
 		      "Error while parsing number "
 		      "of latest printed passcard\n");
@@ -605,7 +606,8 @@ int db_file_load(state *s)
 	if (strlen(field[FIELD_SPASS]) == 0) {
 		s->spass_set = 0;
 	} else {
-		if (mpz_set_str(s->spass, field[FIELD_SPASS], STATE_BASE) != 0) {
+//		if (mpz_set_str(s->spass, field[FIELD_SPASS], STATE_BASE) != 0) {
+		if (num_import(&s->spass, field[FIELD_SPASS], NUM_FORMAT_HEX) != 0) {
 			print(PRINT_ERROR, "Error while parsing static password.\n");
 			goto cleanup;
 		}
@@ -711,12 +713,20 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 	sequence_key[64] = '\0';
 
 
-	counter = mpz_get_str(NULL, STATE_BASE, s->counter);
+/*	counter = mpz_get_str(NULL, STATE_BASE, s->counter);
 	latest_card = mpz_get_str(NULL, STATE_BASE, s->latest_card);
+*/
+	tmp = num_export(s->counter, counter, NUM_FORMAT_HEX);
+	assert(tmp == 0);
+	tmp = num_export(s->latest_card, latest_card, NUM_FORMAT_HEX);
+	assert(tmp == 0);
 
-	if (s->spass_set)
-		spass = mpz_get_str(NULL, STATE_BASE, s->spass);
-	else
+
+	if (s->spass_set) {
+//		spass = mpz_get_str(NULL, STATE_BASE, s->spass);
+		tmp = num_export(s->spass, spass, NUM_FORMAT_HEX);
+		/* FIXME: THIS WON'T WORK! SPASS IS 256 BIT LONG! + SALT */
+	} else
 		spass = strdup("");
 
 	if (!counter || !latest_card || !spass) {

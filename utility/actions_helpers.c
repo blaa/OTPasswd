@@ -171,22 +171,22 @@ void ah_show_state(const state *s)
 	printf("\n");
 
 	/* Counter */
-	ppp_get_mpz(s, PPP_FIELD_UNSALTED_COUNTER, tmp);
+	ppp_get_mpz(s, PPP_FIELD_UNSALTED_COUNTER, &tmp);
 	printf(_("Current code        = "));
 	num_print_dec(tmp);
 	printf("\n");
 
-	ppp_get_mpz(s, PPP_FIELD_LATEST_CARD, tmp);
+	ppp_get_mpz(s, PPP_FIELD_LATEST_CARD, &tmp);
 	printf(_("Latest printed card = "));
 	num_print_dec(tmp);
 	printf("\n");
 
-	ppp_get_mpz(s, PPP_FIELD_MAX_CARD, tmp);
+	ppp_get_mpz(s, PPP_FIELD_MAX_CARD, &tmp);
 	printf(_("Max card            = \n"));
 	num_print_dec(tmp);
 	printf("\n");
 
-	ppp_get_mpz(s, PPP_FIELD_MAX_CODE, tmp);
+	ppp_get_mpz(s, PPP_FIELD_MAX_CODE, &tmp);
 	printf(_("Max code            = \n"));
 	num_print_dec(tmp);
 	printf("\n");
@@ -517,7 +517,7 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 			goto error;
 		}
 
-		ret = num_set_str(&passcard, number, 10);
+		ret = num_import(&passcard, number, NUM_FORMAT_DEC);
 /*		ret = gmp_sscanf(number, "%Zu", passcard); */
 		if (ret != 1) {
 			printf(_("Incorrect passcard specification.\n"));
@@ -531,7 +531,7 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 		}
 
 		/* ppp_get_passcode_number adds salt as needed */
-		ret = ppp_get_passcode_number(s, passcard, passcode, column, row);
+		ret = ppp_get_passcode_number(s, passcard, &passcode, column, row);
 		if (ret != 0) {
 			printf(_("Error while parsing passcard description.\n"));
 			goto error;
@@ -551,7 +551,7 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 
 
 		/* number -- passcode number */
-		ret = num_set_str(&passcode, spec, 10);
+		ret = num_import(&passcode, spec, NUM_FORMAT_DEC);
 //		ret = gmp_sscanf(spec, "%Zd", passcode);
 		if (ret != 1) {
 			printf(_("Error while parsing passcode number.\n"));
@@ -566,7 +566,7 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 		mpz_sub_ui(passcode, passcode, 1);
 
 		/* Add salt as this number came from user */
-		ppp_add_salt(s, passcode);
+		ppp_add_salt(s, &passcode);
 
 		selected = 1;
 	} else if (spec[0] == '[' && spec[strlen(spec)-1] == ']') {
@@ -575,7 +575,7 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 		if (!copy) 
 			goto error;
 		copy[ strlen(copy)-1 ] = '\0';
-		ret = num_set_str(&passcard, spec+1, 10);
+		ret = num_import(&passcard, spec+1, NUM_FORMAT_DEC);
 		free(copy);
 //		ret = gmp_sscanf(spec, "[%Zd]", passcard);
 		if (ret != 1) {

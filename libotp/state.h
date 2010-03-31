@@ -32,9 +32,6 @@
 /*** Config ***/
 #define STATE_FILENAME ".otpasswd"
 
-/* Base for storing big numbers inside STATE_FILENAME */
-#define STATE_BASE	16
-
 typedef intmax_t state_time_t;
 
 /*** State ***/

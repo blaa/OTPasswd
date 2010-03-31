@@ -63,8 +63,6 @@ int state_init(state *s, const char *username)
 {
 	const char salt_mask[] =
 		"FFFFFFFFFFFFFFFFFFFFFFFF00000000";
-	const char code_mask[] =
-		"000000000000000000000000FFFFFFFF";
 
 	cfg_t *cfg = NULL;
 
@@ -126,15 +124,19 @@ int state_init(state *s, const char *username)
 
 	mpz_init(s->spass);
 
-#if USE_GMP
 	int ret;
+#if USE_GMP
+	const char code_mask[] =
+		"000000000000000000000000FFFFFFFF";
+
 	ret = mpz_init_set_str(s->salt_mask, salt_mask, 16);
 	assert(ret == 0);
 	ret = mpz_init_set_str(s->code_mask, code_mask, 16);
 	assert(ret == 0);
 #else
-	s->salt_mask = num_i(0);
-	s->code_mask = num_i(0);
+	ret = num_import(&s->salt_mask, "FFFFFFFFFFFFFFFFFFFFFFFF00000000", NUM_FORMAT_HEX);
+	assert(ret == 0);
+	s->code_mask = num_i(4294967295ULL);
 #endif
 
 	return 0;
@@ -220,7 +222,8 @@ int state_key_generate(state *s)
 		/* And half to initialize counter */
 		unsigned char cnt_bin[32];
 		crypto_sha256(entropy_pool + sizeof(entropy_pool)/2, sizeof(entropy_pool)/2, cnt_bin);
-		num_from_bin(s->counter, cnt_bin, 16); /* Counter is 128 bit only */
+		num_import(&s->counter, (char *)cnt_bin, NUM_FORMAT_BIN);
+//		num_from_bin(s->counter, cnt_bin, 16); /* Counter is 128 bit only */
 		mpz_and(s->counter, s->counter, s->salt_mask);
 		mpz_set_ui(s->latest_card, 0);
 

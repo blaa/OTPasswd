@@ -103,32 +103,32 @@ extern uint64_t num_div_i(num_t *result, num_t divwhat, uint64_t divby);
 
 /* Macros used to substitute GMP for our own function set */
 typedef num_t mpz_t;
-#define mpz_and(c, a, b) do { c = num_and(a, b); } while (0)
-#define mpz_add(c, a, b) do { c = num_add(a, b); } while (0)
-#define mpz_add_ui(c, a, b) do { c = num_add(a, num_i(b)); } while (0)
-#define mpz_sub(c, a, b) do { c = num_sub(a, b); } while (0)
-#define mpz_sub_ui(c, a, b) do { c = num_sub(a, num_i(b)); } while (0)
+#define mpz_and(c, a, b) do { (c) = num_and(a, b); } while (0)
+#define mpz_add(c, a, b) do { (c) = num_add(a, b); } while (0)
+#define mpz_add_ui(c, a, b) do { (c) = num_add(a, num_i(b)); } while (0)
+#define mpz_sub(c, a, b) do { (c) = num_sub(a, b); } while (0)
+#define mpz_sub_ui(c, a, b) do { (c) = num_sub(a, num_i(b)); } while (0)
 
-#define mpz_mul(c, a, b) do { c = num_mul_i(a, num_i(b)); } while (0)
-#define mpz_mul_ui(c, a, b) do { c = num_mul_i(a, b); } while (0)
+#define mpz_mul(c, a, b) do { (c) = num_mul_i(a, num_i(b)); } while (0)
+#define mpz_mul_ui(c, a, b) do { (c) = num_mul_i(a, b); } while (0)
 #define mpz_fdiv_q_ui(quot, divwhat, divby) num_div_i(&quot, divwhat, divby)
 #define mpz_div_ui(quot, divwhat, divby) num_div_i(&quot, divwhat, divby)
 
-#define mpz_set(a, b) do { a = b; } while(0)
-#define mpz_set_ui(a, b) do { a = num_i(b); } while(0)
+#define mpz_set(a, b) do { (a) = b; } while(0)
+#define mpz_set_ui(a, b) do { (a) = num_i(b); } while(0)
 
 #define mpz_get_str(x, base, a) num_get_str(a, base)
 #define mpz_set_str(a, b, base) num_set_str(&a, b, base)
-#define mpz_init_set_str(a, b, base) do { a = num_get_hex(a, b); } while (0)
+#define mpz_init_set_str(a, b, base) do { (a) = num_get_hex(a, b); } while (0)
 
 #define mpz_cmp(a, b) num_cmp(a, b)
 #define mpz_cmp_ui(a, b) num_cmp(a, num_i(b))
 #define mpz_sgn(a) mpz_cmp(a, num_i(0))
 
-#define mpz_clear(a) do { a = num_i(0); } while (0)
-#define mpz_init(a) do { a = num_i(0); } while (0)
-#define mpz_set_d(a, b) do { a = num_i(b); } while (0)
-#define mpz_init_set(a, b) do { a = b; } while (0)
+#define mpz_clear(a) do { (a) = num_i(0); } while (0)
+#define mpz_init(a) do { (a) = num_i(0); } while (0)
+#define mpz_set_d(a, b) do { (a) = num_i(b); } while (0)
+#define mpz_init_set(a, b) do { (a) = (b); } while (0)
 
 
 #endif
@@ -161,19 +161,7 @@ extern int num_export(const num_t num, char *buff, enum num_str_type t);
  */
 extern int num_import(num_t *num, const char *buff, enum num_str_type t);
 
-
-extern char *num_get_str(const num_t arg, int base);
-
-/* Parses input string in base 10 or 16, returns num. */
-extern int num_set_str(num_t *arg, const char *str, const int base);
-
-extern void num_from_bin(mpz_t num, const unsigned char *data, const size_t length);
-extern void num_to_bin(const mpz_t num, unsigned char *data, const size_t length);
-
-
-/* Convert number to hex which conforms with PPPv3 methods */
-extern void num_to_hex(const mpz_t num, char *data, const unsigned int length);
-
+/* Helpers */
 /* Set MSB to 1 for PPPv3 compatibility */
 extern void num_print_hex(const mpz_t num, const unsigned int length, int msb);
 extern void num_print_dec(const num_t arg);

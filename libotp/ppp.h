@@ -129,12 +129,12 @@ extern int ppp_authenticate(const state *s, const char *passcode);
  * Counter is created with salt included. Result returned in 'passcode'. */
 extern int ppp_get_passcode_number(
 	const state *s, const mpz_t passcard,
-	mpz_t passcode, char column, char row);
+	mpz_t *passcode, char column, char row);
 
 /* Adds a salt to given passcode if salt is used.
  * In other words: converts from user supplied passcode
  * into system passcode number. */
-extern void ppp_add_salt(const state *s, mpz_t passcode);
+extern void ppp_add_salt(const state *s, mpz_t *passcode);
 
 /* Calculate card parameters and save them in state.  Required by many 
  * (ppp_get_prompt, ppp_verify_range) functions to work.
@@ -216,7 +216,7 @@ enum {
 extern unsigned int ppp_get_int(const state *s, int field);
 
 /* Get long number from state. */
-extern int ppp_get_mpz(const state *s, int field, mpz_t arg);
+extern int ppp_get_mpz(const state *s, int field, mpz_t *arg);
 
 /* Get character string from state. This sets "arg" memory 
  * to a pointer to state data. This data musn't be altered.

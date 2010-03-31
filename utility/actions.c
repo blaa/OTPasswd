@@ -18,7 +18,7 @@
 #include "nls.h"
 
 #ifndef PROG_VERSION
-#define PROG_VERSION _("v0.5rc2 \"Savage Savory\"")
+#define PROG_VERSION _("v0.6-dev")
 #endif
 
 #include <stdio.h>
@@ -575,7 +575,7 @@ int action_print(options_t *options)
 		case OPTION_SKIP:
 			/* Skip to passcard... */
 			ret = ppp_get_passcode_number(s, passcard_num,
-						      passcode_num, 'A', 1);
+						      &passcode_num, 'A', 1);
 			if (ret != 0) {
 				print(PRINT_ERROR,
 				      _("Error while generating destination passcode\n"));

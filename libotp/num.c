@@ -180,164 +180,19 @@ uint64_t num_div_i(num_t *result, num_t divwhat, uint64_t divby)
 /***********************************************
  * Conversions
  **********************************************/
-
-//enum num_str_type { NUM_FORMAT_DEC, NUM_FORMAT_HEX, NUM_FORMAT_PPP_HEX };
-int num_export(const num_t num, char *buff, enum num_str_type t) 
-{
-#if USE_GMP
-	switch (t) {
-	case NUM_FORMAT_DEC:
-		break;
-	case NUM_FORMAT_HEX:
-		break;
-	case NUM_FORMAT_PPP_HEX:
-		break;
-	case NUM_FORMAT_BIN:
-		return 0;
-
-	default:
-		/* Incorrect input */
-		assert(0); 
-		return ;1
-	}
-
-#else
-	switch (t) {
-	case NUM_FORMAT_DEC:
-		break;
-	case NUM_FORMAT_HEX:
-		break;
-	case NUM_FORMAT_PPP_HEX:
-		break;
-	case NUM_FORMAT_BIN:
-		memcpy(data  , &num.lo, 8);
-		memcpy(data+8, &num.hi, 8);
-		return 0;
-
-	default:
-		/* Incorrect input */
-		assert(0); 
-		return ;1
-	}
-#endif
-}
-
-/* 
- * Parse either decimal or hex into a num_t type.
- * 0 - success
- */
-int num_import(num_t *num, const char *buff, enum num_str_type t)
-{
-#if USE_GMP
-	switch (t) {
-	case NUM_FORMAT_DEC:
-		break;
-	case NUM_FORMAT_HEX:
-		break;
-	case NUM_FORMAT_PPP_HEX:
-		break;
-	case NUM_FORMAT_BIN:
-		mpz_import(num, 1, 1, length, -1 /* LSB to match ppp behaviour */ , 0, data);
-		return 0;
-
-	default:
-		/* Incorrect input */
-		assert(0); 
-		return ;1
-	}
-
-#else
-
-	switch (t) {
-	case NUM_FORMAT_DEC:
-		break;
-	case NUM_FORMAT_HEX:
-		break;
-	case NUM_FORMAT_PPP_HEX:
-		break;
-	case NUM_FORMAT_BIN:
-		memcpy(&num.lo, buff  , 8);
-		memcpy(&num.hi, buff+8, 8);
-		return 0;
-
-	default:
-		/* Incorrect input */
-		assert(0); 
-		return ;1
-	}
-#endif
-}
-
-
-#if 0
-void num_from_bin(mpz_t num, const unsigned char *data, const size_t length)
-{
-	/* Store data as LSB - to match pppv3 */
-#if USE_GMP
-	mpz_import(num, 1, 1, length, -1 /* LSB to match ppp behaviour */ , 0, data);
-#else
-//	memcpy(&num, data, length);
-	assert(length == 16);
-	memcpy(&num.lo, data  , 8);
-	memcpy(&num.hi, data+8, 8);
-
-#endif
-}
-
-/* Converts number to HEX used to store number in file. In way compatible with PPPv3.
- * A data must have at least 33 bytes. */
-void num_to_hex(const mpz_t num, char *data)
-{
-	unsigned char bin[32];
-	int i;
-
-	const int bin_len = (length-1) / 2;
-	num_to_bin(num, bin, bin_len);
-	for (i = 0; i < bin_len; i++)
-		snprintf(data + i * 2,  3, "%02X", bin[i]);
-}
-
-
-
-void num_to_bin(const mpz_t num, unsigned char *data, const size_t length)
-{
-#if USE_GMP
-	size_t size = 1;
-	/* Handle 0 numbers; otherwise nothing would be written to data */
-	if (mpz_cmp_si(num, 0) == 0)
-		memset(data, 0, length);
-        else 
-		(void) mpz_export(data, &size, 1, length, -1, 0, num);
-	assert(size == 1);
-#else
-	assert(length == 16);
-	memcpy(data  , &num.lo, 8);
-	memcpy(data+8, &num.hi, 8);
-#endif
-}
-
+#if !USE_GMP
 /* Returns string containing number in human-readable endianness */
-char *num_get_str(const num_t arg, const int base)
+static inline int _num_get_str(const num_t arg, char *buff, const int base)
 {
 	/* To string (Decimal) */
-	char *buf;
-	char *bufpos;
-
 	assert(base == 16 || base == 10);
-
-#if USE_GMP
-	buf1 = mpz_get_str(NULL, base, arg);
-	assert(buf1);
-	return buf1;
-#else
-
-	buf = malloc(45); /* 32 + 1, but must fit base 10! */
-	bufpos = buf+44;
-	if (!buf)
-		return NULL;
+	assert(buff);
 
 	num_t value = arg;
 	uint64_t rest;
+
+	char buf_tmp[55] = {0};
+	char *bufpos = buf_tmp + 53;
 
 	while (num_cmp_i(value, 0) != 0) {
 		rest = num_div_i(&value, value, base);
@@ -352,98 +207,243 @@ char *num_get_str(const num_t arg, const int base)
 			}
 		}
 	}
-	return bufpos;
-#endif
+	strcpy(buff, bufpos);
+	return 0;
 }
 
-int num_set_str(num_t *arg, const char *str, const int base)
+static inline int _num_set_str(num_t *arg, const char *str, const int base)
 {
-	assert(base == 16);
-
-#if USE_GMP
-	int ret;
-	if (base == 10) {
-		ret = gmp_sscanf(str, "%Zu", *arg);
-		return ret;
-	} else if (base == 16) {
-		printf("Unimplemented!\n");
-		/* ret = gmp_sscanf(str, "%ZX", *arg); */
-		assert(0);
-	} else {
-		assert(0);
-	}
-	return 0;
-#else
+	assert(base == 16 || base == 10);
 
 	unsigned char byte;
 	int i;
 	*arg = num_i(0);
-	for (i=0; str[i] && str[i+1]; i+=2) {
-		for (byte=0; byte < 8; byte++) {
-			*arg = num_lshift(*arg);		
+
+	switch (base) {
+	case 10:
+	{
+		for (i=0; str[i]; i++) {
+			/* Shift */
+			*arg = num_mul_i(*arg, 10);
+
+			if (str[i] < '0' || str[i] > '9')
+				return 1;
+
+			*arg = num_add(*arg, num_i(str[i] - '0'));
+		}
+		if (str[i]) 
+			return 1;
+		return 0;
+	}
+	case 16:
+		for (i=0; str[i]; i++) {
+			/* Shift */
+			for (byte=0; byte < 4; byte++) {
+				*arg = num_lshift(*arg);		
+			}
+			
+			if (str[i] >= '0' && str[i] <= '9')
+				byte = str[i] - '0';
+			else if (str[i] >= 'A' && str[i] <= 'F')
+				byte = 10 + str[i] - 'A';
+			else
+				return 1;
+			
+			*arg = num_add(*arg, num_i(byte));
 		}
 
-		if (str[i] >= '0' && str[i] <= '9')
-			byte = str[i] - '0';
-		else if (str[i] >= 'A' || str[i] <= 'F')
-			byte = 10 + str[i] - 'A';
-		else
-			break;
+		if (str[i] || i > 32 || i < 2) {
+			return 1;
+		}
 
-		byte <<= 4;
-
-		if (str[i+1] >= '0' && str[i+1] <= '9')
-			byte |= str[i+1] - '0';
-		else if (str[i+1] >= 'A' || str[i+1] <= 'F')
-			byte |= 10 + str[i+1] - 'A';
-		else
-			break;
-
-		*arg = num_add(*arg, num_i(byte));
-	}
-
-	if (str[i] || i > 32 || i < 2) {
+		return 0;
+	default:
 		return 1;
 	}
-	return 0;
-#endif
 }
 #endif
 
-void num_print_hex(const mpz_t num, const unsigned int length, int msb)
+int num_export(const num_t num, char *buff, enum num_str_type t) 
 {
-	unsigned char bin[32];
+	int ret;
+#if USE_GMP
+	size_t size = 1;
+
+	switch (t) {
+	case NUM_FORMAT_DEC:
+	{
+		char *tmp = mpz_get_str(buff, 10, arg);
+		assert(tmp);
+		if (!tmp) 
+			return 1;
+		return 0;
+	}
+
+	case NUM_FORMAT_HEX:
+	{
+		char *tmp = mpz_get_str(buff, 16, arg);
+		assert(tmp);
+		if (!tmp) 
+			return 1;
+		return 0;
+	}
+
+	case NUM_FORMAT_PPP_HEX:
+		break;
+	case NUM_FORMAT_BIN:
+		/* Handle 0 numbers; otherwise nothing would be written to data */
+		if (mpz_cmp_si(num, 0) == 0)
+			memset(data, 0, length);
+		else 
+			(void) mpz_export(data, &size, 1, length, -1, 0, num);
+		assert(size == 1);
+
+		return 0;
+
+	default:
+		/* Incorrect input */
+		assert(0); 
+		return 1;
+	}
+
+#else
+/* static inline int _num_get_str(const num_t arg, char *buff, const int base)
+ */
+
+	switch (t) {
+	case NUM_FORMAT_DEC:
+		ret = _num_get_str(num, buff, 10);
+		return ret;
+
+	case NUM_FORMAT_PPP_HEX:
+	{
+		char bin[16];
+		int i;
+		num_export(num, bin, NUM_FORMAT_BIN);
+		for (i = 0; i < 16; i++)
+			snprintf(buff + i * 2,  3, "%02X", bin[i]);
+		
+		return 0;
+	}
+
+	case NUM_FORMAT_HEX:
+	{
+		char bin[16];
+		int i;
+		num_export(num, bin, NUM_FORMAT_BIN);
+		for (i = 0; i < 16; i++)
+			snprintf(buff + i * 2,  3, "%02X", bin[15 - i]);
+		
+		return 0;
+	}
+	case NUM_FORMAT_BIN:
+		/* FIXME: This depends on endiannes. Result should always look like
+		 * on an little-endian machine. Add some #ifs */
+		memcpy(buff  , &num.lo, 8);
+		memcpy(buff+8, &num.hi, 8);
+		return 0;
+
+	default:
+		/* Incorrect input */
+		assert(0); 
+		return 1;
+	}
+#endif
+	return 1;
+}
+
+/* 
+ * Parse either decimal or hex into a num_t type.
+ * 0 - success
+ */
+int num_import(num_t *num, const char *buff, enum num_str_type t)
+{
+	int ret;
+#if USE_GMP
+	switch (t) {
+	case NUM_FORMAT_DEC:
+		ret = gmp_sscanf(str, "%Zu", *arg);
+		return ret;
+
+	case NUM_FORMAT_HEX:
+	{
+		printf("Unimplemented!\n");
+		/* ret = gmp_sscanf(str, "%ZX", *arg); */
+		assert(0);
+		return 1;
+	}
+
+	case NUM_FORMAT_PPP_HEX:
+		break;
+	case NUM_FORMAT_BIN:
+		mpz_import(num, 1, 1, length, -1 /* LSB to match ppp behaviour */ , 0, data);
+		return 0;
+
+	default:
+		/* Incorrect input */
+		assert(0); 
+		return 1;
+	}
+
+#else
+	switch (t) {
+	case NUM_FORMAT_DEC:
+		ret = _num_set_str(num, buff, 10);
+		return ret;
+
+	case NUM_FORMAT_PPP_HEX:
+	case NUM_FORMAT_HEX:
+		ret = _num_set_str(num, buff, 16);
+		return ret;
+
+	case NUM_FORMAT_BIN:
+		memcpy(&num->lo, buff  , 8);
+		memcpy(&num->hi, buff+8, 8);
+		return 0;
+
+	default:
+		/* Incorrect input */
+		assert(0); 
+		return 1;
+	}
+#endif
+	return 1;
+}
+
+
+/*****************************
+ * Printing helpers 
+ *****************************/
+void num_print_hex(const num_t num, const unsigned int length, int msb)
+{
+	char hex[35];
 	int i;
 
-	const int bin_len = (length) / 2;
-	num_to_bin(num, bin, bin_len);
 	if (msb) {
-		for (i = 0; i < bin_len; i++)
-			printf("%02X", bin[i]);
+		i = num_export(num, hex, NUM_FORMAT_HEX);
 	} else {
-		for (i = bin_len - 1; i >= 0; i--)
-			printf("%02X", bin[i]);
+		i = num_export(num, hex, NUM_FORMAT_PPP_HEX);		
 	}
-	memset(bin, 0, sizeof(bin));
+
+	assert(i==0);
+	if (i != 0)
+		return;
+
+	printf("%s", hex);
+	memset(hex, 0, sizeof(hex));
 }
 
 
 void num_print_dec(const num_t arg)
 {
-#if USE_GMP
-	gmp_printf("%Zd", arg);
-#else
-	/* To string (Decimal) */
-	char *buf = num_get_str(arg, 10);
-	if (!buf) 
-		printf("ERROR");
-	else
-		printf("%s", buf);
-#endif
+	int ret;
+	char buf[50];
+	ret = num_export(arg, buf, NUM_FORMAT_DEC);
+	assert(ret == 0);
+	if (ret != 0)
+		return;
+	printf("%s", buf);
 }
-
-
-
 
 
 
@@ -453,7 +453,7 @@ void num_testcase(void)
 #if !USE_GMP
 	const uint64_t max64 = 18446744073709551615LLU;
 	const num_t max128 = num_ii(max64, max64);
-	char buff[32];
+	char buff[42];
 
 	int failed = 0;
 	num_t a, b, c, d;
@@ -472,42 +472,72 @@ void num_testcase(void)
 
 	if (num_cmp_i(a, 1) != 0) {
 		failed++;
-		printf("Shift test failed\n");
+		printf("FAILED\n");
 	} else 
-		printf("Shift test OK\n");
+		printf("OK\n");
 
 	printf("* Hex conv test: ");
-	i = num_set_str(&a, "00000000000000000100000000000000", 16);
+	i = num_import(&a, "00000000000000010000000000000023", NUM_FORMAT_HEX);
 	assert(i == 0);
-	if (a.hi != 1 && a.lo != 0) {
-		printf("FAILED "); failed++;
+	if (a.hi != 1 && a.lo != 0x23) {
+		printf("FAILED_IMP1 "); failed++;
 	} else printf("OK ");
-
-
-	num_to_hex(a, buff, 16);
 
 	/* Twice 16327946327849612384 = e29884ad0f1eb460e29884ad0f1eb460 */
-	i = num_set_str(&a, "E29884AD0f1EB460E29884AD0f1EB460", 16);
+	i = num_import(&a, "E29884AD0F1EB460E29884AD0F1EB460", NUM_FORMAT_HEX);
 	assert(i == 0);
-	      
-	if (a.hi != 0xe29884ad2f1eb460ULL || a.lo != 0xe29884ad2f1eb460ULL) {
-		printf("FAILED "); failed++;
+	if (a.hi != 0xE29884AD0F1EB460 || a.lo != 0xE29884AD0F1EB460ULL) {
+		printf("FAILED_IMP2 "); failed++;
 	} else printf("OK ");
 
-	/* Should fail: */
-	i = num_set_str(&a, "", 16);
+
+	/* Exports: bin, hex, ppp_hex, dec */
+	i = num_import(&a, "112233445566778899AABBCCDDEEFF00", NUM_FORMAT_HEX);
+	assert(i == 0);
+	i = num_export(a, buff, NUM_FORMAT_BIN);
+	if (memcmp(buff,   "\x00\xFF\xEE\xDD\xCC\xBB\xAA\x99\x88\x77\x66\x55\x44\x33\x22\x11", 16) != 0) {
+		printf("FAILED_BIN "); failed++;
+	} else printf("OK ");
+
+	i = num_export(a, buff, NUM_FORMAT_HEX);
+	assert(i==0);
+	if (strcmp(buff, "11223344556677FFFFFFFFFFFFFFFF00") != 0) {
+		printf("FAILED_HEX "); failed++;
+	} else printf("OK ");
+
+	i = num_export(a, buff, NUM_FORMAT_PPP_HEX); 
+	assert(i==0);
+	if (strcmp(buff, "00FFFFFFFFFFFFFFFF77665544332211") != 0) {
+		printf("FAILED_HEX "); failed++;
+	} else printf("OK ");
+
+	i = num_export(a, buff, NUM_FORMAT_DEC); 
+	assert(i==0);
+	if (strcmp(buff, "22774453838368691933757882222884355840") != 0) {
+		printf("FAILED_DEC "); failed++;
+	} else printf("OK ");
+
+	i = num_import(&b, "22774453838368691933757882222884355840", NUM_FORMAT_DEC);
+	assert(i==0);
+	if (num_cmp(a, b) != 0) {
+		printf("FAILED_DEC_IMP "); failed++;
+	} else printf("OK ");
+
+
+	/* Should "fail": */
+	i = num_import(&a, "", NUM_FORMAT_HEX);
 	if (i == 0) {
 		printf("FAILED "); failed++;
 	} else printf("OK ");
 
-	i = num_set_str(&a, "0", 16);
+	i = num_import(&a, "0", NUM_FORMAT_HEX);
 	if (i == 0) {
 		printf("FAILED "); failed++;
 	} else printf("OK ");
 
-	i = num_set_str(&a, "G", 16);
+	i = num_import(&a, "FG", NUM_FORMAT_HEX);
 	if (i == 0) {
-		printf("FAILED "); failed++;
+		printf("FAILED"); failed++;
 	} else printf("OK ");
 	
 	printf("\n");
@@ -563,7 +593,7 @@ void num_testcase(void)
 	/* 2^128     = 340282366920938463463374607431768211456L
 	 * fibo(184) = 332825110087067562321196029789634457848 
 	 * = FA63... */
-	i = num_set_str(&a, "FA63C8D9FA216A8FC8A7213B333270F8", 16);
+	i = num_import(&a, "FA63C8D9FA216A8FC8A7213B333270F8", NUM_FORMAT_HEX);
 	assert(i==0);
 
 	if (num_cmp(b, a) != 0) {
@@ -574,15 +604,15 @@ void num_testcase(void)
 
 	printf("* Multiplication/Division: ");
 
-	a = num_i(50);
-	r = num_div_i(&c, a, 3);
-	num_print_dec(c); printf(" ");
-	if (num_cmp(c, num_i(16)) != 0 && r != 2) {
+	a = num_i(18446744073709551615ULL);
+	r = num_div_i(&c, a, 7);
+	if (num_cmp(c, num_i(2635249153387078802)) != 0 && r != 1) {
 		printf("FAILED "); failed++;
 	} else printf("OK ");
 
+
 	printf("\nCURRENT:\n");
-	i = num_set_str(&a, "010000000000000000", 16);
+	i = num_import(&a, "010000000000000000", NUM_FORMAT_HEX);
 	assert(i==0);
 	num_print_hex(a, 32, 1);
 	puts("");
@@ -600,7 +630,8 @@ void num_testcase(void)
 	/* 0xE29884AD2F1EB460E29884AD2F1EB460 / 0xE298FFAD2F1EB460 =
 	 * 18446591285620466492LLU rest = 3981894756443311584L */
 
-	i = num_set_str(&a, "E29884AD2F1EB460E29884AD2F1EB460", 16);
+//	i = num_set_str(&a, "E29884AD2F1EB460E29884AD2F1EB460", 16);
+	i = num_import(&a, "E29884AD2F1EB460E29884AD2F1EB460", NUM_FORMAT_HEX);
 	assert(i==0);
 
 	r = num_div_i(&c, a, 0xE298FFAD2F1EB460LLU);

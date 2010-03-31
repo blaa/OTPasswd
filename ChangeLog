@@ -10,6 +10,63 @@ ChangeLog / TODO
 
 Trying to sort tasks according to their priority.
 
+
+
+2010-03-31 v0.6-dev
+Done:
+
+In progress:
+        * [?] Dropping dependency on GMP. Cleaning up "num" interface.
+          - Clean memory so there're no key/counter leaks
+        * [?] Cleanup PPP interface. This should look like follows.
+              "State" is class implementing some basic features of
+              state management. From this 'class' ppp is derived.
+              ppp implements high-level functions which should be used
+              explicitly to manage state information unless something
+              more fine-grained is necessary. State on the other hand
+              uses 'db' backend for operating on files/databases.
+              * Lots of things done in direction to finish this task
+        * [?] Security: Do we need to change something regarding ulimits?
+
+TODO Major:
+	* [?] Accept 2G[2] passcode specification entries.
+        * [?] Parametrize PAM messages.
+        * [?] OOB Channel usage time updates + DoS security
+        * [?] Static password expire warnings + enforcement. 
+        * [?] Do not store things in mpz_t which don't need it (spass)
+        * [?] Sanitize gettext environment
+        * [?] Logging warnings printed to user at WARN level
+        * [?] Key quality checking (duplicates)
+        * [?] "Problem solving section" in docs, mentioning use of -v on
+              errors in the first place.
+        * [?] Global DB should work with users which aren't in passwd.
+              Should it?
+        * [?] Check if lock files are links. if so. fail. Or rather always unlink
+              before overwritting.
+        * [?] Logging into syslog from utility if SUID; Also deny -v.
+        * [?] Admin function to scan all states for things invalidating
+              policy.
+        * [-] Scan all FIXME/TODO entries (Especially OOB related)
+        * [?] SELinux compatibility.
+        * [?] Import/export of ascii state lines...
+        * [?] Make otpasswd work with su (there's additional information 'who
+              is trying to get authenticated'. Just test it. setuid() required
+              probably (Maybe only on SELINUX)
+
+Todo Minor:
+        * [?] policy checking regarding salt. (won't fail sometimes)
+        * [?] Will we be pppv3 compatible on big-endian?
+        * [?] Sourced key generation (from file, string...)
+        * [?] Add error_t and bool_t to differentiate differently
+              used ints?
+        * [?] Improve LaTeX output (some colors, borders?)
+        * [?] Incorporate SSH key fingerprints on passcards?
+              Use some file as passcard background, allow hook
+              regenerating this passcard
+        * [-] Keep lines below 75 columns? Or 80?
+
+
+
 2010-01-24 v0.5rc1
 Done:
         * [+] Check bit distribution for alphabets not divisible by 2

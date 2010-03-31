@@ -32,7 +32,7 @@ char *card_ascii(const state *s, const mpz_t passcard)
 	const int label_max = STATE_LABEL_SIZE;	/* Maximal length of label */
 	const int num_min = 8;			/* Minimal size for number on card */
 
-	char *label, *whole_card_num, *printed_card_num;
+	char *label, whole_card_num[50], *printed_card_num;
 	int label_len, card_num_len;
 	int i;
 
@@ -53,7 +53,6 @@ char *card_ascii(const state *s, const mpz_t passcard)
 
 	memset(card, ' ', size);
 
-
 	/* Determine a label */
 	label_len = strlen(s->label);
 	if (label_len > 0) {
@@ -69,8 +68,9 @@ char *card_ascii(const state *s, const mpz_t passcard)
 	/* Get card number */
 	mpz_t tmp;
 	mpz_init_set(tmp, passcard);
-
-	whole_card_num = mpz_get_str(NULL, 10, tmp);
+	
+	num_export(tmp, whole_card_num, NUM_FORMAT_DEC);
+//	whole_card_num = mpz_get_str(NULL, 10, tmp);
 	mpz_clear(tmp);
 	printed_card_num = whole_card_num;
 
@@ -119,7 +119,7 @@ char *card_ascii(const state *s, const mpz_t passcard)
 	mpz_sub_ui(code_num, passcard, 1);
 	mpz_mul_ui(code_num, code_num, s->codes_on_card);
 
-	ppp_add_salt(s, code_num);
+	ppp_add_salt(s, &code_num);
 
 	for (i = 1; i < 1 + ROWS_PER_CARD; i++) {
 		sprintf(card, "%2d: ", i);
@@ -142,7 +142,7 @@ char *card_ascii(const state *s, const mpz_t passcard)
 	mpz_clear(code_num);
 
 	free(label);
-	free(whole_card_num);
+//	free(whole_card_num);
 
 	whole_card[size-1] = '\0';
 	return whole_card;

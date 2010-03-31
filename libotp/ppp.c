@@ -320,18 +320,18 @@ void ppp_alphabet_print(void)
 	}
 }
 
-void ppp_add_salt(const state *s, mpz_t passcode)
+void ppp_add_salt(const state *s, mpz_t *passcode)
 {
 	if (s->flags & FLAG_SALTED) {
 		mpz_t salt;
 		mpz_init_set(salt, s->counter);
 		mpz_and(salt, salt, s->salt_mask);
-		mpz_add(passcode, passcode, salt);
+		mpz_add(*passcode, *passcode, salt);
 		mpz_clear(salt);
 	}
 }
 
-int ppp_get_passcode_number(const state *s, const mpz_t passcard, mpz_t passcode, char column, char row)
+int ppp_get_passcode_number(const state *s, const mpz_t passcard, mpz_t *passcode, char column, char row)
 {
 	if (column < 'A' || column >= 'A' + s->codes_in_row) {
 		print(PRINT_NOTICE, "Column out of possible range!\n");
@@ -345,12 +345,12 @@ int ppp_get_passcode_number(const state *s, const mpz_t passcard, mpz_t passcode
 
 	/* Start with calculating first passcode on card */
 	/* passcode = (passcard-1)*codes_on_card + salt */
-	mpz_sub_ui(passcode, passcard, 1);
-	mpz_mul_ui(passcode, passcode, s->codes_on_card);
+	mpz_sub_ui(*passcode, passcard, 1);
+	mpz_mul_ui(*passcode, *passcode, s->codes_on_card);
 
 	/* Then add location on card */
-	mpz_add_ui(passcode, passcode, (row - 1) * s->codes_in_row);
-	mpz_add_ui(passcode, passcode, column - 'A');
+	mpz_add_ui(*passcode, *passcode, (row - 1) * s->codes_in_row);
+	mpz_add_ui(*passcode, *passcode, column - 'A');
 
 	/* Add salt if required */
 	ppp_add_salt(s, passcode);
@@ -387,7 +387,8 @@ int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
 	mpz_init(cipher);
 
 	/* Convert numbers to binary */
-	num_to_bin(counter, cnt_bin, 16);
+//	num_to_bin(counter, cnt_bin, 16);
+	num_export(counter, (char *)cnt_bin, NUM_FORMAT_BIN);
 
 	/* Encrypt counter with key */
 	ret = crypto_aes_encrypt(s->sequence_key, cnt_bin, cipher_bin);
@@ -396,7 +397,8 @@ int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
 	}
 
 	/* Convert result back to number */
-	num_from_bin(cipher, cipher_bin, 16);
+//	num_from_bin(cipher, cipher_bin, 16);
+	num_import(&cipher, (char *)cipher_bin, NUM_FORMAT_BIN);
 
 	if (ppp_verify_alphabet(s->alphabet) != 0) {
 		print(PRINT_ERROR, "State contains invalid alphabet\n");
@@ -950,36 +952,36 @@ int ppp_set_int(state *s, int field, unsigned int arg, int options)
 }
 
 
-int ppp_get_mpz(const state *s, int field, mpz_t arg)
+int ppp_get_mpz(const state *s, int field, mpz_t *arg)
 {
 	switch (field) {
 	case PPP_FIELD_COUNTER:
-		mpz_set(arg, s->counter);
+		mpz_set(*arg, s->counter);
 		break;
 
 	case PPP_FIELD_UNSALTED_COUNTER:
-		mpz_set(arg, s->counter);
+		mpz_set(*arg, s->counter);
 		if (s->flags & FLAG_SALTED) {
-			mpz_and(arg, arg, s->code_mask);
+			mpz_and(*arg, *arg, s->code_mask);
 		}
-		mpz_add_ui(arg, arg, 1);
+		mpz_add_ui(*arg, *arg, 1);
 		break;
 
 	case PPP_FIELD_LATEST_CARD:
-		mpz_set(arg, s->latest_card);
+		mpz_set(*arg, s->latest_card);
 		break;
 
 	case PPP_FIELD_MAX_CARD:
-		mpz_set(arg, s->max_card);
+		mpz_set(*arg, s->max_card);
 		break;
 
 	case PPP_FIELD_MAX_CODE:
-		mpz_set(arg, s->max_code);
+		mpz_set(*arg, s->max_code);
 		break;
 
 	default:
 		print(PRINT_CRITICAL, "Illegal field passed to ppp_get_mpz\n");
-		mpz_set_ui(arg, 0);
+		mpz_set_ui(*arg, 0);
 		assert(0);
 		return PPP_ERROR;
 	}
@@ -1008,7 +1010,7 @@ static const char *_ppp_get_prompt(state *s)
 	/* "Passcode RRC [number]: " */
 	const char intro[] = "Passcode ";
 	int length = sizeof(intro)-1 + 3 + 5 + 1;
-	char *num;
+	char num[50];
 
 	if (s->prompt)
 		_ppp_dispose_prompt(s);
@@ -1016,18 +1018,18 @@ static const char *_ppp_get_prompt(state *s)
 	/* Ensure ppp_calculate was called already! */
 	assert(s->codes_on_card != 0);
 
-	num = mpz_get_str(NULL, 10, s->current_card);
+	int ret = num_export(s->current_card, num, NUM_FORMAT_DEC);
+	assert(ret == 0);
+//	num = mpz_get_str(NULL, 10, s->current_card);
 	length += strlen(num);
 
 	s->prompt = malloc(length);
 	if (!s->prompt)
 		return NULL;
 
-	int ret = sprintf(s->prompt, "%s%2d%c [%s]: ", intro, s->current_row, s->current_column, num);
+	ret = sprintf(s->prompt, "%s%2d%c [%s]: ", intro, s->current_row, s->current_column, num);
 
 	memset(num, 0, strlen(num));
-	free(num);
-	num = NULL;
 
 	assert(ret+1 == length);
 
@@ -1266,7 +1268,8 @@ char **ppp_spass_set(state *s, const char *spass, int flag)
 
 	/* Change static password */
 	crypto_salted_sha256((unsigned char *)spass, len, sha_buf);
-	num_from_bin(s->spass, sha_buf, sizeof(sha_buf));
+	num_import(&s->spass, (char *)sha_buf, NUM_FORMAT_BIN);
+//	num_from_bin(s->spass, sha_buf, sizeof(sha_buf));
 	s->spass_set = 1;
 	s->spass_time = time(NULL);
 	return NULL;
@@ -1293,7 +1296,8 @@ int ppp_spass_validate(const state *s, const char *spass)
 	if (!tmp_buf)
 		return STATE_NOMEM;
 
-	num_to_bin(s->spass, spass_buf, sizeof(spass_buf));
+//	num_to_bin(s->spass, spass_buf, sizeof(spass_buf));
+	num_export(s->spass, (char *)spass_buf, NUM_FORMAT_BIN);
 	
 	memcpy(tmp_buf, spass_buf, 8);
 	memcpy(tmp_buf+8, spass, len);

@@ -294,7 +294,8 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 	printf("ppp_testcase_stat: Evaluating %d bits distribution in %u passcodes\n", bits_to_test, tests);
 	for (cnt = 0; cnt < tests; cnt++) {
 		mpz_add_ui(counter, counter, 1);
-		num_to_bin(counter, cnt_bin, 16);
+		num_export(counter, (char *)cnt_bin, NUM_FORMAT_BIN);
+//		num_to_bin(counter, cnt_bin, 16);
 
 		/* Encrypt counter with key */
 		ret = crypto_aes_encrypt(s->sequence_key, cnt_bin, cipher_bin);
@@ -304,7 +305,8 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 		}
 
 		/* Convert result back to number */
-		num_from_bin(cipher, cipher_bin, 16);
+//		num_from_bin(cipher, cipher_bin, 16);
+		num_import(&cipher, (char *)cipher_bin, NUM_FORMAT_BIN);
 
 		int bit = 0;
 		int y;
@@ -408,7 +410,8 @@ static int _ppp_testcase_stat_2(const state *s,
 		mpz_add_ui(counter, counter, 119);
 
 		/* Convert to binary for encryption */
-		num_to_bin(counter, cnt_bin, 16);
+//		num_to_bin(counter, cnt_bin, 16);
+		num_export(counter, (char *)cnt_bin, NUM_FORMAT_BIN);
 
 		/* Encrypt counter with key */
 		ret = crypto_aes_encrypt(s->sequence_key, cnt_bin, cipher_bin);
@@ -418,7 +421,8 @@ static int _ppp_testcase_stat_2(const state *s,
 		}
 
 		/* Convert result back to number */
-		num_from_bin(cipher, cipher_bin, 16);
+//		num_from_bin(cipher, cipher_bin, 16);
+		num_import(&cipher, (char *)cipher_bin, NUM_FORMAT_BIN);
 
 		for (i=0; i<code_length; i++) {
 			unsigned long int r = mpz_fdiv_q_ui(quotient, cipher, alphabet_len);
@@ -564,8 +568,10 @@ cleanup:
 #define _PPP_TEST(cnt,len, col, row, code)			\
 mpz_set_ui(s.counter, (cnt)); s.code_length = (len);		\
 ppp_calculate(&s);						\
-buf1 = mpz_get_str(NULL, 10, s.counter);			\
-buf2 = mpz_get_str(NULL, 10, s.current_card);			\
+tmp = num_export(s.counter, buf1, NUM_FORMAT_DEC);		\
+assert(tmp == 0); 						\
+tmp = num_export(s.current_card, buf2, NUM_FORMAT_DEC);		\
+assert(tmp == 0); 						\
 ppp_get_passcode(&s, s.counter, passcode);			\
 printf("ppp_testcase[%2d]: ", test++);				\
 printf("cnt=%10s len=%2d in_row=%d pos=%d%c[%8s] code=%16s",	\
@@ -575,17 +581,17 @@ if (s.current_row == (row) && s.current_column == (col)		\
     && strcmp(passcode, (code)) == 0)				\
 	printf(" PASSED\n"); else {				\
 		printf(" FAILED\n\n");				\
-		failed++; }					\
-free(buf1); free(buf2);
+		failed++; }
 
 int ppp_testcase(void)
 {
 	int failed = 0;
-	char *buf1, *buf2;
+	char buf1[50], buf2[50];
 	int test = 1;
 	char passcode[17] = {0};
 	char *current_user = security_get_calling_user();
-
+	int tmp;
+	
 	const unsigned char ex_bin[32] = {
 		0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00,
