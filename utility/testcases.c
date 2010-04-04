@@ -107,7 +107,7 @@ int card_testcase(void)
 	unsigned char hash[32];
 	char *card;
 	state s;
-	mpz_t cnt;
+	num_t cnt;
 	int test = 0;
 	int failed = 0;
 
@@ -278,9 +278,9 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 
 	unsigned char cnt_bin[16];
 	unsigned char cipher_bin[16];
-	mpz_t counter;
-	mpz_t cipher;
-	mpz_t quotient;
+	num_t counter;
+	num_t cipher;
+	num_t quotient;
 	int i;
 	unsigned int cnt;
 
@@ -391,9 +391,9 @@ static int _ppp_testcase_stat_2(const state *s,
 
 	unsigned char cnt_bin[16];
 	unsigned char cipher_bin[16];
-	mpz_t counter;
-	mpz_t cipher;
-	mpz_t quotient;
+	num_t counter;
+	num_t cipher;
+	num_t quotient;
 
 	int i;
 	unsigned int cnt;
@@ -828,6 +828,51 @@ int num_testcase(void)
 	
 	printf("\n");
 
+
+	/* GMP Compatibility test */
+	printf("* GMP Compatibility: ");
+	const int bytes = 16;
+
+	memset(buff, 0, bytes);
+	buff[10] = 0xAB;
+
+	num_import(&a, (char *)buff, NUM_FORMAT_BIN);
+	if (memcmp(buff,
+		   "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xAB\x00\x00\x00"
+		   "\x00\x00", 16) != 0) {
+		printf("FAILED ");
+		failed++;
+	} else
+		printf("OK ");
+
+	memset(buff, 0x80, bytes);
+	buff[0] = 0xAA;
+	buff[bytes-1] = 0xFF;
+
+	num_import(&a, (char *)buff, NUM_FORMAT_BIN);
+	num_export(a, buff, NUM_FORMAT_DEC);
+	if (strcmp(buff,
+	           "339620359252449505361967613327236432042"
+		    ) != 0) {
+		printf("FAILED ");
+		failed++;
+	} else
+		printf("OK ");
+
+	/* Backward conversion of previous pattern */
+	memcpy(buff, "somegarbagesomegarbagesomegarbage", 16);
+	num_export(a, (char *)buff, NUM_FORMAT_BIN);
+
+	if (memcmp(buff,
+		   "\xaa\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80"
+		   "\x80\x80\x80\xff", 16) != 0) {
+		printf("FAILED\n");
+		failed++;
+	} else
+		printf("OK\n");
+
+
+
 	/* Addition */
 	printf("* Addition: ");
 
@@ -931,8 +976,6 @@ int num_testcase(void)
 		printf("FAILED_MUL0 "); failed++;
 	} else printf("OK ");
 
-
-
 	i = num_import(&a, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", NUM_FORMAT_HEX);
 	assert(i==0);
 	              bi = 0xFFFFFFFFFFFFFFFF;
@@ -972,76 +1015,70 @@ int num_testcase(void)
 
 #else
 
-	int failed = 0;
-	unsigned char num[32];
-	mpz_t tmp_num;
-	char *result;
+	unsigned char num[16];
+	num_t tmp_num;
+	char result[45];
 
+	/* Initialize num with garbage */
 	mpz_init(tmp_num);
+	mpz_set_d(tmp_num, 0xdeadbabe); 
 
 	const int bytes = sizeof(num);
-	/* All 0, but one byte */
+
+	/* Input: All 0, but one byte */
 	memset(num, 0, bytes);
 	num[10] = 0xAB;
 
-	mpz_set_d(tmp_num, 0xdeadbabe); /* Initialize with garbage */
-
-	num_from_bin(tmp_num, num, bytes);
-	result = mpz_get_str(NULL, 16, tmp_num);
+	num_import(&tmp_num, (char *)num, NUM_FORMAT_BIN);
 	printf("num_testcase [ 0]: ");
 	if (memcmp(num,
 		   "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xAB\x00\x00\x00"
-		   "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-		   "\x00\x00\x00\x00", 32) != 0) {
+		   "\x00\x00", 16) != 0) {
 		printf("FAILED\n");
 		failed++;
 	} else
 		printf("PASSED\n");
-	free(result);
 
 	/* Backward conversion of previous pattern */
-  	memcpy(num, "somegarbagesomegarbagesomegarbage", 32);
-	num_to_bin(tmp_num, num, bytes);
+  	memcpy(num, "somegarbagesomegarbagesomegarbage", bytes);
+	num_export(tmp_num, (char *)num, NUM_FORMAT_BIN);
 	printf("num_testcase [ 1]: ");
 
 	if (memcmp(num,
 		   "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xAB\x00\x00\x00"
-		   "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
-		   "\x00\x00\x00\x00", 32) != 0) {
-		printf("FAILED\n");
+		   "\x00\x00", 16) != 0) {
+		printf(" FAILED\n");
 		failed++;
 	} else
 		printf("PASSED\n");
 
+	/* 0xAA, filled with 0x80, then 0xFF = 
+	 * 0xFF8080808080808080808080808080AA  */
 
-	/* 0xAA, filled with 0x80, then 0xFF  */
 	memset(num, 0x80, bytes);
 	num[0] = 0xAA;
 	num[bytes-1] = 0xFF;
 
-	num_from_bin(tmp_num, num, bytes);
-	result = mpz_get_str(NULL, 10, tmp_num);
+	num_import(&tmp_num, (char *)num, NUM_FORMAT_BIN);
+	num_export(tmp_num, result, NUM_FORMAT_DEC);
 
 	printf("num_testcase [ 2]: ");
 	if (strcmp(result,
-		   "1155668197009629607909301529759657"
-		   "36218812795816796563554883271612554597662890"
+	           "339620359252449505361967613327236432042"
 		    ) != 0) {
 		printf("FAILED\n");
 		failed++;
 	} else
 		printf("PASSED\n");
-	free(result);
 
 	/* Backward conversion of previous pattern */
-	memcpy(num, "somegarbagesomegarbagesomegarbage", 32);
-	num_to_bin(tmp_num, num, bytes);
+	memcpy(num, "somegarbagesomegarbagesomegarbage", 16);
+	num_export(tmp_num, (char *)num, NUM_FORMAT_BIN);
 	printf("num_testcase [ 3]: ");
 
 	if (memcmp(num,
-		   "\xaa\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80"
-		   "\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80"
-		   "\x80\x80\x80\xff", 32) != 0) {
+		   "\xaa\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80"
+		   "\x80\x80\x80\xff", 16) != 0) {
 		printf("FAILED\n");
 		failed++;
 	} else

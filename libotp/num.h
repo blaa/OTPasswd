@@ -38,7 +38,12 @@
 #include <assert.h>
 
 #if USE_GMP
+
 #include <gmp.h>
+//typedef __mpz_struct * num_t;
+typedef mpz_t num_t;
+typedef __mpz_struct *num_ref_t;
+
 #endif
 
 /******************************
@@ -99,10 +104,7 @@ extern num_t num_mul_i(num_t arg1, const uint64_t arg2);
 extern uint64_t num_div_i(num_t *result, const num_t divwhat, const uint64_t divby);
 
 
-
-
 /* Macros used to substitute GMP for our own function set */
-typedef num_t mpz_t;
 #define mpz_and(c, a, b) do { (c) = num_and(a, b); } while (0)
 #define mpz_add(c, a, b) do { (c) = num_add(a, b); } while (0)
 #define mpz_add_ui(c, a, b) do { (c) = num_add(a, num_i(b)); } while (0)
@@ -163,12 +165,8 @@ extern int num_import(num_t *num, const char *buff, enum num_str_type t);
 
 /* Helpers */
 /* Set MSB to 1 for PPPv3 compatibility */
-extern void num_print_hex(const mpz_t num, int msb);
+extern void num_print_hex(const num_t num, int msb);
 extern void num_print_dec(const num_t arg);
-
-
-/* TODO: Move testcase to testcase.c */
-/* extern void num_testcase(void); */
 
 /* This function set's GMP memory allocation routines 
  * to safer versions which cleanup deallocated memory */

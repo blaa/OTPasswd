@@ -38,14 +38,14 @@ typedef intmax_t state_time_t;
 typedef struct {
 	/* 128 bit counter pointing at the next passcode
 	 * which will be used for authentication */
-	mpz_t counter;
+	num_t counter;
 
 	/* User secret sequence key */
 	unsigned char sequence_key[32];
 
 	/* Furthest printed passcode
 	 * used for warnings */
-	mpz_t latest_card;
+	num_t latest_card;
 
 	/* Number of bytes used for passcode (2 - 16) */
 	unsigned int code_length;
@@ -57,7 +57,7 @@ typedef struct {
 	unsigned int flags;
 
 	/* Static password (spass) */
-	mpz_t spass;
+	num_t spass;
 	int spass_set; /* Bool: 0 - not set, 1 - set */
 
 	/* Timestamp of the last change of static password */
@@ -86,17 +86,17 @@ typedef struct {
 	 * counter & salt_mask = salt
 	 * counter & code_mask = user passcode number
 	 */
-	mpz_t salt_mask;
-	mpz_t code_mask;
+	num_t salt_mask;
+	num_t code_mask;
 
 	/* Card information, calculated once for
 	 * simplicity by ppp_calculate and stored here.
 	 * (codes_on_card>0) can be checked to ensure this values
 	 * are correct.
 	 */
-	mpz_t current_card;		/* Card with current code */
-	mpz_t max_card;			/* Last available passcard (from 1) */
-	mpz_t max_code;			/* Last code from last passcard (from 1) */
+	num_t current_card;		/* Card with current code */
+	num_t max_card;			/* Last available passcard (from 1) */
+	num_t max_code;			/* Last code from last passcard (from 1) */
 	unsigned int codes_on_card;
 	unsigned int codes_in_row;
 	unsigned char current_row;	/* 1 - 10 */

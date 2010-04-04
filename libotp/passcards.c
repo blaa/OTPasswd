@@ -25,7 +25,7 @@
 #define PPP_INTERNAL 1
 #include "ppp.h"
 
-char *card_ascii(const state *s, const mpz_t passcard)
+char *card_ascii(const state *s, const num_t passcard)
 {
 	const char columns[] = "ABCDEFGHIJKLMNOP";
 	const int whitespace = 1;
@@ -66,7 +66,7 @@ char *card_ascii(const state *s, const mpz_t passcard)
 	}
 
 	/* Get card number */
-	mpz_t tmp;
+	num_t tmp;
 	mpz_init_set(tmp, passcard);
 	
 	num_export(tmp, whole_card_num, NUM_FORMAT_DEC);
@@ -114,7 +114,7 @@ char *card_ascii(const state *s, const mpz_t passcard)
 	*(card-1) = '\n';
 
 	/* Passcodes */
-	mpz_t code_num;
+	num_t code_num;
 	mpz_init(code_num);
 	mpz_sub_ui(code_num, passcard, 1);
 	mpz_mul_ui(code_num, code_num, s->codes_on_card);
@@ -148,7 +148,7 @@ char *card_ascii(const state *s, const mpz_t passcard)
 	return whole_card;
 }
 
-char *card_latex(const state *s, const mpz_t number)
+char *card_latex(const state *s, const num_t number)
 {
 	const char intro[] =
 		"\\documentclass[11pt,twocolumn,a4paper]{article}\n"
@@ -178,7 +178,7 @@ char *card_latex(const state *s, const mpz_t number)
 		return NULL;
 	memset(whole_card, 0, size);
 
-	mpz_t n;
+	num_t n;
 	mpz_init(n);
 
 	memcpy(card_pos, intro, sizeof(intro) - 1);

@@ -76,8 +76,9 @@ void security_init(void)
 	 */
 
 	/* 0 - stdin, 1 - stdout, 2 - stderr */
-	int i;
+
 /*
+	int i;
 	for (i=0; i<10; i++)
 		close(i);
 

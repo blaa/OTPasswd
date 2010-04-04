@@ -198,7 +198,7 @@ int ppp_verify_range(const state *s)
 	const char max_key_hex[] =
 		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
 		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
-	mpz_t max_key;
+	num_t max_key;
 	mpz_init_set_str(max_key, max_key_hex, 16);
 
 	if (mpz_cmp(s->sequence_key, max_key) > 0) {
@@ -210,7 +210,7 @@ int ppp_verify_range(const state *s)
 */
 
 	/* Verify counter size */
-	mpz_t max_counter;
+	num_t max_counter;
 #if USE_GMP
 	const char max_counter_hex[] =
 		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
@@ -230,7 +230,7 @@ int ppp_verify_range(const state *s)
 	/* Check if we have runned out of available passcodes */
 
 	/* Retrieve current counter without salt */
-	mpz_t just_counter;
+	num_t just_counter;
 	mpz_init(just_counter);
 	if (s->flags & FLAG_SALTED) {
 		mpz_and(just_counter, s->counter, s->code_mask);
@@ -320,10 +320,10 @@ void ppp_alphabet_print(void)
 	}
 }
 
-void ppp_add_salt(const state *s, mpz_t *passcode)
+void ppp_add_salt(const state *s, num_t *passcode)
 {
 	if (s->flags & FLAG_SALTED) {
-		mpz_t salt;
+		num_t salt;
 		mpz_init_set(salt, s->counter);
 		mpz_and(salt, salt, s->salt_mask);
 		mpz_add(*passcode, *passcode, salt);
@@ -331,7 +331,7 @@ void ppp_add_salt(const state *s, mpz_t *passcode)
 	}
 }
 
-int ppp_get_passcode_number(const state *s, const mpz_t passcard, mpz_t *passcode, char column, char row)
+int ppp_get_passcode_number(const state *s, const num_t passcard, num_t *passcode, char column, char row)
 {
 	if (column < 'A' || column >= 'A' + s->codes_in_row) {
 		print(PRINT_NOTICE, "Column out of possible range!\n");
@@ -357,12 +357,12 @@ int ppp_get_passcode_number(const state *s, const mpz_t passcard, mpz_t *passcod
 	return 0;
 }
 
-int ppp_get_passcode(const state *s, const mpz_t counter, char *passcode)
+int ppp_get_passcode(const state *s, const num_t counter, char *passcode)
 {
 	unsigned char cnt_bin[16];
 	unsigned char cipher_bin[16];
-	mpz_t cipher;
-	mpz_t quotient;
+	num_t cipher;
+	num_t quotient;
 	int i;
 
 	int ret;
@@ -511,7 +511,7 @@ void ppp_calculate(state *s)
 	s->codes_on_card = s->codes_in_row * ROWS_PER_CARD;
 
 	/* Calculate current card */
-	mpz_t unsalted_counter;
+	num_t unsalted_counter;
 	mpz_init_set(unsalted_counter, s->counter);
 	if (s->flags & FLAG_SALTED) {
 		mpz_and(unsalted_counter, unsalted_counter, s->code_mask);
@@ -819,7 +819,7 @@ int ppp_increment(state *s)
 	}
 
 	/* Hold temporarily current counter */
-	mpz_t tmp;
+	num_t tmp;
 	mpz_init_set(tmp, s->counter);
 
 	/* Increment and save state */
@@ -952,7 +952,7 @@ int ppp_set_int(state *s, int field, unsigned int arg, int options)
 }
 
 
-int ppp_get_mpz(const state *s, int field, mpz_t *arg)
+int ppp_get_mpz(const state *s, int field, num_t *arg)
 {
 	switch (field) {
 	case PPP_FIELD_COUNTER:

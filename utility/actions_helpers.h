@@ -42,10 +42,10 @@ int ah_yes_or_no(const char *msg);
 int ah_enforced_yes_or_no(const char *msg);
 
 /* Check if passcard is in range */
-int ah_is_passcard_in_range(const state *s, const mpz_t passcard);
+int ah_is_passcard_in_range(const state *s, const num_t passcard);
 
 /* Check if passcode is in range */
-int ah_is_passcode_in_range(const state *s, const mpz_t passcard);
+int ah_is_passcode_in_range(const state *s, const num_t passcard);
 
 /* Show user state (current codes/cards) */
 void ah_show_state(const state *s);
@@ -60,7 +60,7 @@ void ah_show_keys(const state *s);
 int ah_update_flags(options_t *options, state *s, int generation);
 
 /* Parse code specification and store resulting data in arguments */
-int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t passcode);
+int ah_parse_code_spec(const state *s, const char *spec, num_t *passcard, num_t *passcode);
 
 
 

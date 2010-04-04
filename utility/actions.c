@@ -499,8 +499,8 @@ int action_print(options_t *options)
 	int save_state = 0;
 
 	/* Passcard/code to print */
-	mpz_t passcard_num;
-	mpz_t passcode_num;
+	num_t passcard_num;
+	num_t passcode_num;
 
 	/* And which to look at: 1 - code, 2 - card */
 	int selected = 0; 
@@ -539,7 +539,7 @@ int action_print(options_t *options)
 	}
 
 	/* Parse argument */
-	selected = ah_parse_code_spec(s, options->action_arg, passcard_num, passcode_num);
+	selected = ah_parse_code_spec(s, options->action_arg, &passcard_num, &passcode_num);
 	if ((selected != 1) && (selected != 2)) {
 		goto cleanup;
 	}

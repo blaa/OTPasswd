@@ -27,11 +27,13 @@
  * Own 128 bit library test
  *****************************/
 #if !USE_GMP
-static char overflow = 0;
+
+static char num_overflow = 0;
+
 void _num_overflow(const char *file, int location)
 {
 	printf("(%s:%d Overflow!)", file, location);
-	overflow++;
+	num_overflow++;
 }
 #define num_overflow() _num_overflow(__FILE__, __LINE__)
 
@@ -91,9 +93,11 @@ int num_cmp(const num_t arg1, const num_t arg2)
 
 num_t num_add(const num_t arg1, const num_t arg2)
 {
-	num_t r;
-	r.lo = arg1.lo + arg2.lo;
-	r.hi = arg1.hi + arg2.hi;
+	num_t r = {
+		.lo = arg1.lo + arg2.lo,
+		.hi = arg1.hi + arg2.hi
+	};
+
 	if (r.hi < arg1.hi)
 		num_overflow();
 
@@ -108,9 +112,10 @@ num_t num_add(const num_t arg1, const num_t arg2)
 
 num_t num_sub(const num_t arg1, const num_t arg2)
 {
-	num_t r;
-	r.lo = arg1.lo - arg2.lo;
-	r.hi = arg1.hi - arg2.hi;
+	num_t r = {
+		.lo = arg1.lo - arg2.lo,
+		.hi = arg1.hi - arg2.hi
+	};
 
 	/* Overflow in high subtraction */
 	if (r.hi > arg1.hi)
@@ -133,8 +138,7 @@ num_t num_mul_i(num_t arg1, const uint64_t arg2)
 	num_t reply = num_i(0);
 	num_t r = num_i(arg2);
 	for (i=0; i<128; i++) {
-		const int bit = arg1.lo & 1;
-		if (bit) {
+		if (arg1.lo & 0x01) {
 			if (can_overflow)
 				num_overflow();
 			reply = num_add(reply, r);
@@ -174,13 +178,6 @@ uint64_t num_div_i(num_t *result, const num_t divwhat, const uint64_t divby)
 			result->lo |= 1;
 		}
 	}
-/*
-	printf("\nDIV: 0x");
-	num_print_hex(divwhat, 1);
-	printf(" (0x%llx 0x%llx) / 0x%llX = \n0x", divwhat.hi, divwhat.lo, divby);
-	num_print_hex(*result, 1);
-	printf(" (%llx, %llx) (r=%llX)\n", result->hi, result->lo, remainder);
-*/
 	return remainder;
 }
 
@@ -191,6 +188,7 @@ uint64_t num_div_i(num_t *result, const num_t divwhat, const uint64_t divby)
  * Conversions
  **********************************************/
 #if !USE_GMP
+
 /* Returns string containing number in human-readable endianness */
 static inline int _num_get_str(const num_t arg, char *buff, const int base)
 {
@@ -281,7 +279,6 @@ static inline int _num_set_str(num_t *arg, const char *str, const int base)
 
 int num_export(const num_t num, char *buff, enum num_str_type t) 
 {
-	int ret;
 #if USE_GMP
 	size_t size = 1;
 
@@ -289,7 +286,7 @@ int num_export(const num_t num, char *buff, enum num_str_type t)
 	switch (t) {
 	case NUM_FORMAT_DEC:
 	{
-		char *tmp = mpz_get_str(buff, 10, arg);
+		char *tmp = mpz_get_str(buff, 10, num);
 		assert(tmp);
 		if (!tmp) 
 			return 1;
@@ -298,7 +295,7 @@ int num_export(const num_t num, char *buff, enum num_str_type t)
 
 	case NUM_FORMAT_HEX:
 	{
-		char *tmp = mpz_get_str(buff, 16, arg);
+		char *tmp = mpz_get_str(buff, 16, num);
 		assert(tmp);
 		if (!tmp) 
 			return 1;
@@ -308,15 +305,17 @@ int num_export(const num_t num, char *buff, enum num_str_type t)
 	case NUM_FORMAT_PPP_HEX:
 		break;
 	case NUM_FORMAT_BIN:
+	{
+		const int length = 16;
 		/* Handle 0 numbers; otherwise nothing would be written to data */
 		if (mpz_cmp_si(num, 0) == 0)
-			memset(data, 0, length);
+			memset(buff, 0, length);
 		else 
-			(void) mpz_export(data, &size, 1, length, -1, 0, num);
+			(void) mpz_export(buff, &size, 1, length, -1, 0, num);
 		assert(size == 1);
 
 		return 0;
-
+	}
 	default:
 		/* Incorrect input */
 		assert(0); 
@@ -324,6 +323,7 @@ int num_export(const num_t num, char *buff, enum num_str_type t)
 	}
 
 #else
+	int ret;
 /* static inline int _num_get_str(const num_t arg, char *buff, const int base)
  */
 	assert(buff);
@@ -383,21 +383,27 @@ int num_import(num_t *num, const char *buff, enum num_str_type t)
 #if USE_GMP
 	switch (t) {
 	case NUM_FORMAT_DEC:
-		ret = gmp_sscanf(str, "%Zu", *arg);
+		ret = gmp_sscanf(buff, "%Zu", *num);
 		return ret;
 
 	case NUM_FORMAT_HEX:
 	{
-		printf("Unimplemented!\n");
-		/* ret = gmp_sscanf(str, "%ZX", *arg); */
-		assert(0);
-		return 1;
+		ret = gmp_sscanf(buff, "%ZX", *num);
+		if (ret == 1)
+			return 0;
+		else
+			return 1;
 	}
 
 	case NUM_FORMAT_PPP_HEX:
+		assert(0);
 		break;
-	case NUM_FORMAT_BIN:
-		mpz_import(num, 1, 1, length, -1 /* LSB to match ppp behaviour */ , 0, data);
+
+	case NUM_FORMAT_BIN: 
+	{
+		const int length = 16;
+		mpz_import(*num, 1, 1, length, -1 /* LSB to match ppp behaviour */ , 0, buff);
+	}
 		return 0;
 
 	default:
@@ -455,7 +461,6 @@ void num_print_hex(const num_t num, int msb)
 	memset(hex, 0, sizeof(hex));
 }
 
-
 void num_print_dec(const num_t arg)
 {
 	int ret;
@@ -466,8 +471,6 @@ void num_print_dec(const num_t arg)
 		return;
 	printf("%s", buf);
 }
-
-
 
 
 /********************************

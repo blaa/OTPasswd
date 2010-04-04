@@ -127,7 +127,7 @@ int ah_enforced_yes_or_no(const char *msg)
 	return ret;
 }
 
-int ah_is_passcard_in_range(const state *s, const mpz_t passcard)
+int ah_is_passcard_in_range(const state *s, const num_t passcard)
 {
 	/* 1..max_passcode/codes_on_passcard */
 	if (mpz_cmp_ui(passcard, 1) < 0) {
@@ -145,7 +145,7 @@ int ah_is_passcard_in_range(const state *s, const mpz_t passcard)
 	return 1;
 }
 
-int ah_is_passcode_in_range(const state *s, const mpz_t passcard)
+int ah_is_passcode_in_range(const state *s, const num_t passcard)
 {
 	/* 1..max_which_depends_on_salt and passcard configuration */
 	if (mpz_cmp_ui(passcard, 1) < 0)
@@ -163,7 +163,7 @@ int ah_is_passcode_in_range(const state *s, const mpz_t passcard)
 void ah_show_state(const state *s)
 {
 	/* Calculate unsalted counter so we can show it user */
-	mpz_t tmp;
+	num_t tmp;
 	mpz_init(tmp);
 
 	printf(_("Current card        = "));
@@ -475,7 +475,7 @@ int ah_update_flags(options_t *options, state *s, int generation)
  * Result save to passcode (and return 1) or to passcard (and return 2)
  * any other return value means error 
  */
-int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t passcode)
+int ah_parse_code_spec(const state *s, const char *spec, num_t *passcard, num_t *passcode)
 {
 	int ret;
 	int selected;
@@ -487,11 +487,11 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 	if (strcasecmp(spec, "current") == 0) {
 		/* Current passcode */
 		selected = 1;
-		mpz_set(passcode, s->counter);
+		mpz_set(*passcode, s->counter);
 	} else if (strcasecmp(spec, "[current]") == 0) {
 		/* Current passcode */
 		selected = 2;
-		mpz_set(passcard, s->current_card);
+		mpz_set(*passcard, s->current_card);
 	} else if ((strcasecmp(spec, "next") == 0) ||
 		   (strcasecmp(spec, "[next]") == 0)) {
 		/* Next passcard. */
@@ -501,9 +501,9 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 		 * current code is further than s->latest_card
 		 * then start printing from current_card */
 		if (mpz_cmp(s->current_card, s->latest_card) > 0) {
-			mpz_set(passcard, s->current_card);
+			mpz_set(*passcard, s->current_card);
 		} else {
-			mpz_add_ui(passcard, s->latest_card, 1);
+			mpz_add_ui(*passcard, s->latest_card, 1);
 		}
 	} else if (isascii(spec[0]) && isalpha(spec[0])) {
 		/* Format: CRR[number]; TODO: allow RRC[number] */
@@ -517,21 +517,21 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 			goto error;
 		}
 
-		ret = num_import(&passcard, number, NUM_FORMAT_DEC);
+		ret = num_import(passcard, number, NUM_FORMAT_DEC);
 /*		ret = gmp_sscanf(number, "%Zu", passcard); */
 		if (ret != 1) {
 			printf(_("Incorrect passcard specification.\n"));
 			goto error;
 		}
 
-		if (!ah_is_passcard_in_range(s, passcard)) {
+		if (!ah_is_passcard_in_range(s, *passcard)) {
 			printf(_("Passcard number out of range. "
 			         "First passcard has number 1.\n"));
 			goto error;
 		}
 
 		/* ppp_get_passcode_number adds salt as needed */
-		ret = ppp_get_passcode_number(s, passcard, &passcode, column, row);
+		ret = ppp_get_passcode_number(s, *passcard, passcode, column, row);
 		if (ret != 0) {
 			printf(_("Error while parsing passcard description.\n"));
 			goto error;
@@ -551,22 +551,22 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 
 
 		/* number -- passcode number */
-		ret = num_import(&passcode, spec, NUM_FORMAT_DEC);
+		ret = num_import(passcode, spec, NUM_FORMAT_DEC);
 //		ret = gmp_sscanf(spec, "%Zd", passcode);
 		if (ret != 1) {
 			printf(_("Error while parsing passcode number.\n"));
 			goto error;
 		}
 
-		if (!ah_is_passcode_in_range(s, passcode)) {
+		if (!ah_is_passcode_in_range(s, *passcode)) {
 			printf(_("Passcode number out of range.\n"));
 			goto error;
 		}
 
-		mpz_sub_ui(passcode, passcode, 1);
+		mpz_sub_ui(*passcode, *passcode, 1);
 
 		/* Add salt as this number came from user */
-		ppp_add_salt(s, &passcode);
+		ppp_add_salt(s, passcode);
 
 		selected = 1;
 	} else if (spec[0] == '[' && spec[strlen(spec)-1] == ']') {
@@ -575,7 +575,7 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 		if (!copy) 
 			goto error;
 		copy[ strlen(copy)-1 ] = '\0';
-		ret = num_import(&passcard, spec+1, NUM_FORMAT_DEC);
+		ret = num_import(passcard, spec+1, NUM_FORMAT_DEC);
 		free(copy);
 //		ret = gmp_sscanf(spec, "[%Zd]", passcard);
 		if (ret != 1) {
@@ -583,7 +583,7 @@ int ah_parse_code_spec(const state *s, const char *spec, mpz_t passcard, mpz_t p
 			goto error;
 		}
 
-		if (!ah_is_passcard_in_range(s, passcard)) {
+		if (!ah_is_passcard_in_range(s, *passcard)) {
 			printf(_("Passcard out of accessible range.\n"));
 			goto error;
 		}
