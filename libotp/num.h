@@ -96,7 +96,7 @@ extern int num_cmp(num_t arg1, num_t arg2);
 extern num_t num_add(const num_t arg1, const num_t arg2);
 extern num_t num_sub(const num_t arg1, const num_t arg2);
 extern num_t num_mul_i(num_t arg1, const uint64_t arg2);
-extern uint64_t num_div_i(num_t *result, num_t divwhat, uint64_t divby);
+extern uint64_t num_div_i(num_t *result, const num_t divwhat, const uint64_t divby);
 
 
 
@@ -163,7 +163,7 @@ extern int num_import(num_t *num, const char *buff, enum num_str_type t);
 
 /* Helpers */
 /* Set MSB to 1 for PPPv3 compatibility */
-extern void num_print_hex(const mpz_t num, const unsigned int length, int msb);
+extern void num_print_hex(const mpz_t num, int msb);
 extern void num_print_dec(const num_t arg);
 
 

@@ -291,7 +291,7 @@ void ah_show_keys(const state *s)
 	/* This prints data MSB */
 	/* gmp_printf(_("Key     = %064ZX\n"), s->sequence_key); */
 	printf(_("Counter = "));
-	num_print_hex(s->counter, 32, 1);
+	num_print_hex(s->counter, 1);
 	printf("\n");
 }
 

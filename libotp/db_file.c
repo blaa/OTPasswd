@@ -700,8 +700,8 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 
 	/* Converted state parts */
 	char sequence_key[65];
-	char *counter = NULL;
-	char *latest_card = NULL;
+	char counter[35];
+	char latest_card[35];
 	char *spass = NULL;
 
 	/* Write using ascii-safe approach */
@@ -712,24 +712,22 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 	}
 	sequence_key[64] = '\0';
 
-
 /*	counter = mpz_get_str(NULL, STATE_BASE, s->counter);
-	latest_card = mpz_get_str(NULL, STATE_BASE, s->latest_card);
-*/
-	tmp = num_export(s->counter, counter, NUM_FORMAT_HEX);
-	assert(tmp == 0);
-	tmp = num_export(s->latest_card, latest_card, NUM_FORMAT_HEX);
-	assert(tmp == 0);
+	latest_card = mpz_get_str(NULL, STATE_BASE, s->latest_card);  */
 
+	tmp = 0;
+	tmp += num_export(s->counter, counter, NUM_FORMAT_HEX);
+	tmp += num_export(s->latest_card, latest_card, NUM_FORMAT_HEX);
 
 	if (s->spass_set) {
+		assert(0); /* Do it */
 //		spass = mpz_get_str(NULL, STATE_BASE, s->spass);
-		tmp = num_export(s->spass, spass, NUM_FORMAT_HEX);
+		tmp += num_export(s->spass, spass, NUM_FORMAT_HEX);
 		/* FIXME: THIS WON'T WORK! SPASS IS 256 BIT LONG! + SALT */
 	} else
 		spass = strdup("");
 
-	if (!counter || !latest_card || !spass) {
+	if (tmp != 0 || !spass) {
 		print(PRINT_ERROR, "Error while converting numbers\n");
 		goto error;
 	}
@@ -755,8 +753,6 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 	retval = 0;
 error:
 	memset(sequence_key, 0, sizeof(sequence_key));
-	free(counter);
-	free(latest_card);
 	free(spass);
 	return retval;
 }

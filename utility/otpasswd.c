@@ -468,10 +468,8 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 
 	case OPTION_CHECK:
 		printf(_("*** Running testcases\n"));
-		num_testcase();
-		break;
-
 		{
+			int tmp;
 			int failed = 0;
 
 			/* Change DB info so we won't overwrite anything
@@ -480,17 +478,43 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 			strcpy(cfg->global_db_path, "/tmp/otshadow_testcase");
 			cfg->db = CONFIG_DB_USER;
 
-			failed += config_testcase();
-			failed += state_testcase();
-			failed += num_testcase();
-			failed += crypto_testcase();
-			failed += card_testcase();
-			failed += ppp_testcase();
+			tmp = num_testcase();
+			failed += tmp;
+			if (tmp)
+				printf("******\n*** %d num testcases failed\n******\n", tmp);
+
+			tmp = config_testcase();
+			failed += tmp;
+			if (tmp)
+				printf("******\n*** %d config testcases failed\n******\n", tmp);
+
+			tmp = state_testcase();
+			failed += tmp;
+			if (tmp)
+				printf("******\n*** %d state testcases failed\n******\n", tmp);
+
+			tmp = crypto_testcase();
+			failed += tmp;
+			if (tmp)
+				printf("******\n*** %d crypto testcases failed\n******\n", tmp);
+
+			tmp = card_testcase();
+			failed += tmp;
+			if (tmp)
+				printf("******\n*** %d card testcases failed\n******\n", tmp);
+
+			tmp = ppp_testcase();
+			failed += tmp;
+			if (tmp)
+				printf("******\n*** %d ppp testcases failed\n******\n", tmp);
+
+
 			if (failed) {
 				printf(_("***********************************************\n"
 				         "*         !!! %d testcases failed !!!         *\n"
 				         "* Don't use this release until this is fixed! *\n"
 				         "* Note: Testcases should be run with default  *\n"
+				         "* conpilation options and config.             *\n"
 				         "* If unsure, reinstall and rerun --check      *\n"
 				         "***********************************************\n"),
 					failed);

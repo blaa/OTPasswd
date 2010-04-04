@@ -713,10 +713,343 @@ int ppp_testcase(void)
 
 int config_testcase(void)
 {
-	int failed = 0;
 	cfg_t *cfg;
 	
 	cfg = cfg_get();
+	if (!cfg) {
+		printf("Can't read config - Queer.\n");
+		return 1;
+	} else 
+		return 0;
+}
 
+
+
+
+int num_testcase(void)
+{
+	int failed = 0;
+
+#if !USE_GMP
+	const uint64_t max64 = 18446744073709551615LLU;
+	const num_t max128 = num_ii(max64, max64);
+	char buff[42];
+
+	num_t a, b, c, d;
+	uint64_t r, bi = 0;
+	int i;
+	printf("*** Num testcase. (Testcasing internal 128bit implementation).\n");
+
+	printf("* Shift test: ");
+	a = num_i(1);
+	for (i=0; i<127; i++) {
+		a = num_lshift(a);
+	}
+
+	for (i=0; i<127; i++) {
+		a = num_rshift(a);
+	}
+
+	if (num_cmp_i(a, 1) != 0) {
+		failed++;
+		printf("FAILED\n");
+	} else 
+		printf("OK\n");
+
+	printf("* Hex conv test: ");
+	i = num_import(&a, "00000000000000010000000000000023", NUM_FORMAT_HEX);
+	assert(i == 0);
+	if (a.hi != 1 && a.lo != 0x23) {
+		printf("FAILED_IMP1 "); failed++;
+	} else printf("OK ");
+
+	/* Twice 16327946327849612384 = e29884ad0f1eb460e29884ad0f1eb460 */
+	i = num_import(&a, "E29884AD0F1EB460E29884AD0F1EB460", NUM_FORMAT_HEX);
+	assert(i == 0);
+	if (a.hi != 0xE29884AD0F1EB460 || a.lo != 0xE29884AD0F1EB460ULL) {
+		printf("FAILED_IMP2 "); failed++;
+	} else printf("OK ");
+
+	a = num_ii(0x08, 0xE0);
+	i = num_export(a, buff, NUM_FORMAT_HEX);
+	assert(i==0);
+	if (strcmp(buff, "000000000000000800000000000000E0") != 0) {
+		printf("FAILED_HEX2 "); failed++;
+	} else printf("OK ");
+
+	/* Exports: bin, hex, ppp_hex, dec */
+	i = num_import(&a, "112233445566778899AABBCCDDEEFF00", NUM_FORMAT_HEX);
+	assert(i == 0);
+	i = num_export(a, buff, NUM_FORMAT_BIN);
+	if (memcmp(buff,   "\x00\xFF\xEE\xDD\xCC\xBB\xAA\x99\x88\x77\x66\x55\x44\x33\x22\x11", 16) != 0) {
+		printf("FAILED_BIN "); failed++;
+	} else printf("OK ");
+
+	i = num_export(a, buff, NUM_FORMAT_HEX);
+	assert(i==0);
+	if (strcmp(buff, "112233445566778899AABBCCDDEEFF00") != 0) {
+		printf("FAILED_HEX "); failed++;
+	} else printf("OK ");
+
+	i = num_export(a, buff, NUM_FORMAT_PPP_HEX); 
+	assert(i==0);
+	if (strcmp(buff, "00FFEEDDCCBBAA998877665544332211") != 0) {
+		printf("FAILED_HEX "); failed++;
+	} else printf("OK ");
+
+
+	i = num_export(a, buff, NUM_FORMAT_DEC); 
+	assert(i==0);
+	if (strcmp(buff, "22774453838368691933757882222884355840") != 0) {
+		printf("FAILED_DEC (%s)", buff); failed++;
+	} else printf("OK ");
+
+	i = num_import(&b, "22774453838368691933757882222884355840", NUM_FORMAT_DEC);
+	assert(i==0);
+	if (num_cmp(a, b) != 0) {
+		printf("FAILED_DEC_IMP "); failed++;
+	} else printf("OK ");
+
+	/* Should "fail": */
+	i = num_import(&a, "", NUM_FORMAT_HEX);
+	if (i == 0) {
+		printf("FAILED "); failed++;
+	} else printf("OK ");
+
+	i = num_import(&a, "0", NUM_FORMAT_HEX);
+	if (i == 0) {
+		printf("FAILED "); failed++;
+	} else printf("OK ");
+
+	i = num_import(&a, "FG", NUM_FORMAT_HEX);
+	if (i == 0) {
+		printf("FAILED"); failed++;
+	} else printf("OK ");
+	
+	printf("\n");
+
+	/* Addition */
+	printf("* Addition: ");
+
+	a = num_i(max64);
+	b = num_i(1);
+	c = num_add(a, b);
+	if (a.hi != 0 || c.hi != 1 || c.lo != 0 || b.hi != 0 || b.lo != 1) {
+		printf("FAILED "); failed++;
+	} else printf("OK ");
+	d = num_sub(c, b);
+	if (a.lo != d.lo || a.hi != d.hi || num_cmp(a, d) != 0) {
+		printf("FAILED "); failed++;
+	} else printf("OK ");
+
+	a = max128;
+	b = max128;
+	c = num_sub(a, b);
+	if (num_cmp_i(c, 0) != 0) {
+		printf("FAILED "); failed++;
+	} else printf("OK ");
+
+	if (num_cmp(a, b) != 0 || num_cmp(a, c) != 1 || num_cmp(c, a) != -1) {
+		printf("FAILED "); failed++;
+	} else printf("OK ");
+
+	b = num_i(max64);
+	d = num_i(65784365938ULL);
+	c = num_sub(a, d); 
+	c = num_sub(c, b); 
+	c = num_add(d, c);
+	c = num_add(b, c);
+
+	/* 340282366920938463463374607431768211455 - 18446744073709551615
+	 * = 340282366920938463444927863358058659840 */
+	if (num_cmp(c, a) != 0) {
+		printf("FAILED "); failed++;
+	} else printf("OK ");
+
+
+	/* Calculate high fibonacci */
+	a = num_i(1);
+	b = num_i(1);
+	for (i=0; i<184; i++) {
+		c = num_add(a, b);
+		a = b;
+		b = c;
+	}
+
+	/* 2^128     = 340282366920938463463374607431768211456L
+	 * fibo(184) = 332825110087067562321196029789634457848 
+	 * = FA63... */
+	i = num_import(&a, "FA63C8D9FA216A8FC8A7213B333270F8", NUM_FORMAT_HEX);
+	assert(i==0);
+
+	if (num_cmp(b, a) != 0) {
+		printf("FAILED "); failed++;
+	} else printf("OK ");
+ 
+	printf("\n");
+
+	printf("* Multiplication/Division: ");
+	/* A / B = C, r
+	 * B * C + r = A
+	 */
+	a = num_i(18446744073709551615ULL);
+	bi = 7;
+	r = num_div_i(&c, a, bi);
+	if (num_cmp(c, num_i(2635249153387078802)) != 0 || r != 1) {
+		printf("FAILED_DIV1 "); failed++;
+	} else printf("OK_DIV1 ");
+
+	c = num_mul_i(c, bi);
+	c = num_add(c, num_i(r));
+	if (num_cmp(c, a) != 0) {
+		printf("FAILED_MUL1 "); failed++;
+	} else printf("OK_MUL1 ");
+	
+	i = num_import(&a, "18446744073709551616", NUM_FORMAT_DEC);
+	assert(i==0);
+	bi = 9;
+	r = num_div_i(&c, a, bi);
+
+	if (num_cmp(c, num_i(2049638230412172401ULL)) != 0 || r != 7) {
+		printf("FAILED_DIV2 "); failed++;
+	} else printf("OK_DIV2 ");
+
+	c = num_mul_i(c, bi);
+	c = num_add(c, num_i(r));
+	if (num_cmp(c, a) != 0) {
+		printf("FAILED_MUL2 "); failed++;
+	} else printf("OK_MUL2 ");
+
+	/* TEST ON PARTICULAR VALUE */
+	i = num_import(&a, "00000000000000010000000000000000", NUM_FORMAT_HEX);
+	bi = 0x8000008000000064;
+	r = num_div_i(&c, a, bi); //0x9000000000000000LLU);
+
+	c = num_mul_i(c, bi);
+	c = num_add(c, num_i(r));
+	if (num_cmp(c, a) != 0) {
+		printf("FAILED_MUL0 "); failed++;
+	} else printf("OK ");
+
+
+
+	i = num_import(&a, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", NUM_FORMAT_HEX);
+	assert(i==0);
+	              bi = 0xFFFFFFFFFFFFFFFF;
+	r = num_div_i(&c, a, bi);
+
+	c = num_mul_i(c, bi);
+	c = num_add(c, num_i(r));
+	if (num_cmp(c, a) != 0) {
+		printf("FAILED_MUL3 "); failed++;
+	} else printf("OK ");
+
+	/* DIVISION / MULTIPLICATION LOOP */
+	i = num_import(&a, "EFABBBCCCDDEDEDED543543542385FFA", NUM_FORMAT_HEX);
+	assert(i==0);
+
+	for (i = 1; i < 100000; i+=3) {
+		bi = 0xFAEFBB * i + i;
+		r = num_div_i(&c, a, bi);
+
+		c = num_mul_i(c, bi);
+		c = num_add(c, num_i(r));
+
+		if (num_cmp(c, a) != 0) {
+			failed++;
+			printf("\nFAILED for %llu %llx\n",  (unsigned long long)bi, (unsigned long long int)bi);
+			printf("MUL Result: hi=%llu lo=%llu\n\n", (unsigned long long)c.hi, (unsigned long long)c.lo);
+			break;
+		} 
+
+		if (i % 20) {
+			a = num_add(a, num_ii(0x117A3 * i + 0x12bd9264a662ULL , i * 0xFABCDEF02134ULL));
+		}
+	}
+
+	if (i >= 30000) 
+		printf("OK\n");
+
+#else
+
+	int failed = 0;
+	unsigned char num[32];
+	mpz_t tmp_num;
+	char *result;
+
+	mpz_init(tmp_num);
+
+	const int bytes = sizeof(num);
+	/* All 0, but one byte */
+	memset(num, 0, bytes);
+	num[10] = 0xAB;
+
+	mpz_set_d(tmp_num, 0xdeadbabe); /* Initialize with garbage */
+
+	num_from_bin(tmp_num, num, bytes);
+	result = mpz_get_str(NULL, 16, tmp_num);
+	printf("num_testcase [ 0]: ");
+	if (memcmp(num,
+		   "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xAB\x00\x00\x00"
+		   "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+		   "\x00\x00\x00\x00", 32) != 0) {
+		printf("FAILED\n");
+		failed++;
+	} else
+		printf("PASSED\n");
+	free(result);
+
+	/* Backward conversion of previous pattern */
+  	memcpy(num, "somegarbagesomegarbagesomegarbage", 32);
+	num_to_bin(tmp_num, num, bytes);
+	printf("num_testcase [ 1]: ");
+
+	if (memcmp(num,
+		   "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xAB\x00\x00\x00"
+		   "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
+		   "\x00\x00\x00\x00", 32) != 0) {
+		printf("FAILED\n");
+		failed++;
+	} else
+		printf("PASSED\n");
+
+
+	/* 0xAA, filled with 0x80, then 0xFF  */
+	memset(num, 0x80, bytes);
+	num[0] = 0xAA;
+	num[bytes-1] = 0xFF;
+
+	num_from_bin(tmp_num, num, bytes);
+	result = mpz_get_str(NULL, 10, tmp_num);
+
+	printf("num_testcase [ 2]: ");
+	if (strcmp(result,
+		   "1155668197009629607909301529759657"
+		   "36218812795816796563554883271612554597662890"
+		    ) != 0) {
+		printf("FAILED\n");
+		failed++;
+	} else
+		printf("PASSED\n");
+	free(result);
+
+	/* Backward conversion of previous pattern */
+	memcpy(num, "somegarbagesomegarbagesomegarbage", 32);
+	num_to_bin(tmp_num, num, bytes);
+	printf("num_testcase [ 3]: ");
+
+	if (memcmp(num,
+		   "\xaa\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80"
+		   "\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80\x80"
+		   "\x80\x80\x80\xff", 32) != 0) {
+		printf("FAILED\n");
+		failed++;
+	} else
+		printf("PASSED\n");
+	
+	mpz_clear(tmp_num);
+
+#endif
 	return failed;
 }
+

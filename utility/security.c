@@ -77,9 +77,11 @@ void security_init(void)
 
 	/* 0 - stdin, 1 - stdout, 2 - stderr */
 	int i;
+/*
 	for (i=0; i<10; i++)
 		close(i);
 
+	FIXME: FOR DEBUGGING PURPOSES TURNED OFF! 
 	i = open("/dev/tty", O_NOCTTY | O_RDONLY);
 	if (i != 0)
 		exit(EXIT_FAILURE);
@@ -97,6 +99,7 @@ void security_init(void)
 		printf(_("Unable to change directory to /\n"));
 		exit(EXIT_FAILURE);
 	}
+*/
 
 	/* Set umask to 700 so others/group won't read our files */
 	umask(S_IWOTH | S_IROTH | S_IXOTH | S_IWGRP | S_IRGRP | S_IXGRP);
