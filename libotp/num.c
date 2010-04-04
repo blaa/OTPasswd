@@ -170,7 +170,7 @@ uint64_t num_div_i(num_t *result, const num_t divwhat, const uint64_t divby)
 
 		*result = num_lshift(*result);
 		if (overflow) {
-			remainder = 0xFFFFFFFFFFFFFFFF - divby + 1 + remainder;
+			remainder = 0xFFFFFFFFFFFFFFFFULL - divby + 1 + remainder;
 			result->lo |= 1;
 			overflow = 0;
 		} else if (remainder >= divby) {
@@ -239,13 +239,16 @@ static inline int _num_set_str(num_t *arg, const char *str, const int base)
 			/* Shift */
 			*arg = num_mul_i(*arg, 10);
 
-			if (str[i] < '0' || str[i] > '9')
+			if (str[i] < '0' || str[i] > '9') {
 				return 1;
+			}
 
 			*arg = num_add(*arg, num_i(str[i] - '0'));
 		}
-		if (str[i]) 
+
+		if (str[i]) {
 			return 1;
+		}
 		return 0;
 	}
 	case 16:
@@ -254,19 +257,22 @@ static inline int _num_set_str(num_t *arg, const char *str, const int base)
 			for (byte=0; byte < 4; byte++) {
 				*arg = num_lshift(*arg);
 			}
-			
 
 			if (str[i] >= '0' && str[i] <= '9')
 				byte = str[i] - '0';
 			else if (str[i] >= 'A' && str[i] <= 'F')
 				byte = 10 + str[i] - 'A';
-			else
+			else if (str[i] >= 'a' && str[i] <= 'f')
+				byte = 10 + str[i] - 'a';
+
+			else {
 				return 1;
+			}
 			
 			*arg = num_add(*arg, num_i(byte));
 		}
 
-		if (str[i] || i > 32 || i < 2) {
+		if (str[i] || i > 32 || i < 1) {
 			return 1;
 		}
 

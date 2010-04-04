@@ -182,12 +182,12 @@ void ah_show_state(const state *s)
 	printf("\n");
 
 	ppp_get_mpz(s, PPP_FIELD_MAX_CARD, &tmp);
-	printf(_("Max card            = \n"));
+	printf(_("Max card            = "));
 	num_print_dec(tmp);
 	printf("\n");
 
 	ppp_get_mpz(s, PPP_FIELD_MAX_CODE, &tmp);
-	printf(_("Max code            = \n"));
+	printf(_("Max code            = "));
 	num_print_dec(tmp);
 	printf("\n");
 
@@ -519,7 +519,7 @@ int ah_parse_code_spec(const state *s, const char *spec, num_t *passcard, num_t 
 
 		ret = num_import(passcard, number, NUM_FORMAT_DEC);
 /*		ret = gmp_sscanf(number, "%Zu", passcard); */
-		if (ret != 1) {
+		if (ret != 0) {
 			printf(_("Incorrect passcard specification.\n"));
 			goto error;
 		}
@@ -553,7 +553,7 @@ int ah_parse_code_spec(const state *s, const char *spec, num_t *passcard, num_t 
 		/* number -- passcode number */
 		ret = num_import(passcode, spec, NUM_FORMAT_DEC);
 //		ret = gmp_sscanf(spec, "%Zd", passcode);
-		if (ret != 1) {
+		if (ret != 0) {
 			printf(_("Error while parsing passcode number.\n"));
 			goto error;
 		}
@@ -578,7 +578,7 @@ int ah_parse_code_spec(const state *s, const char *spec, num_t *passcard, num_t 
 		ret = num_import(passcard, spec+1, NUM_FORMAT_DEC);
 		free(copy);
 //		ret = gmp_sscanf(spec, "[%Zd]", passcard);
-		if (ret != 1) {
+		if (ret != 0) {
 			printf(_("Error while parsing passcard number.\n"));
 			goto error;
 		}

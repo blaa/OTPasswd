@@ -766,7 +766,7 @@ int num_testcase(void)
 	/* Twice 16327946327849612384 = e29884ad0f1eb460e29884ad0f1eb460 */
 	i = num_import(&a, "E29884AD0F1EB460E29884AD0F1EB460", NUM_FORMAT_HEX);
 	assert(i == 0);
-	if (a.hi != 0xE29884AD0F1EB460 || a.lo != 0xE29884AD0F1EB460ULL) {
+	if (a.hi != 0xE29884AD0F1EB460ULL || a.lo != 0xE29884AD0F1EB460ULL) {
 		printf("FAILED_IMP2 "); failed++;
 	} else printf("OK ");
 
@@ -940,7 +940,7 @@ int num_testcase(void)
 	a = num_i(18446744073709551615ULL);
 	bi = 7;
 	r = num_div_i(&c, a, bi);
-	if (num_cmp(c, num_i(2635249153387078802)) != 0 || r != 1) {
+	if (num_cmp(c, num_i(2635249153387078802ULL)) != 0 || r != 1) {
 		printf("FAILED_DIV1 "); failed++;
 	} else printf("OK_DIV1 ");
 
@@ -967,7 +967,7 @@ int num_testcase(void)
 
 	/* TEST ON PARTICULAR VALUE */
 	i = num_import(&a, "00000000000000010000000000000000", NUM_FORMAT_HEX);
-	bi = 0x8000008000000064;
+	bi = 0x8000008000000064ULL;
 	r = num_div_i(&c, a, bi); //0x9000000000000000LLU);
 
 	c = num_mul_i(c, bi);
@@ -978,7 +978,7 @@ int num_testcase(void)
 
 	i = num_import(&a, "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", NUM_FORMAT_HEX);
 	assert(i==0);
-	              bi = 0xFFFFFFFFFFFFFFFF;
+	              bi = 0xFFFFFFFFFFFFFFFFULL;
 	r = num_div_i(&c, a, bi);
 
 	c = num_mul_i(c, bi);
