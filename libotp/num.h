@@ -40,9 +40,7 @@
 #if USE_GMP
 
 #include <gmp.h>
-//typedef __mpz_struct * num_t;
 typedef mpz_t num_t;
-typedef __mpz_struct *num_ref_t;
 
 #endif
 

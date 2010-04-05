@@ -14,10 +14,10 @@ Trying to sort tasks according to their priority.
 
 2010-03-31 v0.6-dev
 Done:
+        * [+] Dropping dependency on GMP. Cleaning up "num" interface.
+          - Clean memory so there're no key/counter leaks
 
 In progress:
-        * [?] Dropping dependency on GMP. Cleaning up "num" interface.
-          - Clean memory so there're no key/counter leaks
         * [?] Cleanup PPP interface. This should look like follows.
               "State" is class implementing some basic features of
               state management. From this 'class' ppp is derived.
@@ -29,6 +29,7 @@ In progress:
         * [?] Security: Do we need to change something regarding ulimits?
 
 TODO Major:
+        * [%] Printing with -l when skipped to the last passcard works.
 	* [?] Accept 2G[2] passcode specification entries.
         * [?] Parametrize PAM messages.
         * [?] OOB Channel usage time updates + DoS security

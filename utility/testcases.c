@@ -816,7 +816,7 @@ int num_testcase(void)
 		printf("FAILED "); failed++;
 	} else printf("OK ");
 
-	i = num_import(&a, "0", NUM_FORMAT_HEX);
+	i = num_import(&a, "0 ", NUM_FORMAT_HEX);
 	if (i == 0) {
 		printf("FAILED "); failed++;
 	} else printf("OK ");

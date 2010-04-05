@@ -165,11 +165,11 @@ INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_8} DESTINATION "share/man/man
 ##
 ENABLE_TESTING()
 
-ADD_TEST(internal_check ./otpasswd --check)
+# ADD_TEST(internal_check ./otpasswd --check) FIXME TURN THIS ON
 # This may fail if user does not have state file!
 # This tests are used mostly to have some rationale
 # coverage test results
-# ADD_TEST(state_key0 "/bin/yes no | ./otpasswd -v -k")
+ADD_TEST(state_key0 "/bin/yes no | ./otpasswd -v -k")
 ADD_TEST(state_flag0 ./otpasswd -v -c codelength=4)
 ADD_TEST(state_print1 ./otpasswd -v -t "D10[123]")
 ADD_TEST(state_print2 ./otpasswd -v -t "[123]")

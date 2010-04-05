@@ -154,6 +154,7 @@ int ah_is_passcode_in_range(const state *s, const num_t passcard)
 	if (mpz_cmp(passcard, s->max_code) > 0) {
 		printf(_("Number of the last available passcode is "));
 		num_print_dec(s->max_code);
+		printf("\n");
 		return 0;
 	}
 
@@ -510,7 +511,7 @@ int ah_parse_code_spec(const state *s, const char *spec, num_t *passcard, num_t 
 		char column;
 		int row;
 		char number[41];
-		ret = sscanf(spec, "%c%d[%40s]", &column, &row, number);
+		ret = sscanf(spec, "%c%d[%40[^]]s]", &column, &row, number);
 		column = toupper(column);
 		if (ret != 3 || (column < OPTION_ALPHABETS || column > 'J')) {
 			printf(_("Incorrect passcode specification. (%d)\n"), ret);
@@ -518,9 +519,8 @@ int ah_parse_code_spec(const state *s, const char *spec, num_t *passcard, num_t 
 		}
 
 		ret = num_import(passcard, number, NUM_FORMAT_DEC);
-/*		ret = gmp_sscanf(number, "%Zu", passcard); */
 		if (ret != 0) {
-			printf(_("Incorrect passcard specification.\n"));
+			printf(_("Incorrect passcard specification (%s).\n"), number);
 			goto error;
 		}
 
@@ -549,10 +549,8 @@ int ah_parse_code_spec(const state *s, const char *spec, num_t *passcard, num_t 
 			}
 		}
 
-
 		/* number -- passcode number */
 		ret = num_import(passcode, spec, NUM_FORMAT_DEC);
-//		ret = gmp_sscanf(spec, "%Zd", passcode);
 		if (ret != 0) {
 			printf(_("Error while parsing passcode number.\n"));
 			goto error;
@@ -571,15 +569,18 @@ int ah_parse_code_spec(const state *s, const char *spec, num_t *passcard, num_t 
 		selected = 1;
 	} else if (spec[0] == '[' && spec[strlen(spec)-1] == ']') {
 		/* [number] -- passcard number */
-		char *copy = strdup(spec);
-		if (!copy) 
+
+		/* Erase [,] characters */
+		char number[41] = {0};
+		ret = sscanf(spec, "[%40[^]s]", number);
+		if (ret != 1) {
+			printf("Strange error while parsing passcard number.\n");
 			goto error;
-		copy[ strlen(copy)-1 ] = '\0';
-		ret = num_import(passcard, spec+1, NUM_FORMAT_DEC);
-		free(copy);
-//		ret = gmp_sscanf(spec, "[%Zd]", passcard);
+		}
+
+		ret = num_import(passcard, number, NUM_FORMAT_DEC);
 		if (ret != 0) {
-			printf(_("Error while parsing passcard number.\n"));
+			printf(_("Error while parsing passcard number (%s).\n"), number);
 			goto error;
 		}
 

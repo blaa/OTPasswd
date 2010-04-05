@@ -30,12 +30,26 @@
 
 static char num_overflow = 0;
 
-void _num_overflow(const char *file, int location)
+#define num_set_overflow() _num_set_overflow(__FILE__, __LINE__)
+void _num_set_overflow(const char *file, int location)
 {
 	printf("(%s:%d Overflow!)", file, location);
-	num_overflow++;
+	num_overflow = 1;
 }
-#define num_overflow() _num_overflow(__FILE__, __LINE__)
+
+static inline void num_clear_overflow(void)
+{
+	num_overflow = 0;
+}
+
+static inline char num_test_overflow(void)
+{
+	return num_overflow;
+}
+
+
+
+
 
 num_t num_lshift(const num_t arg)
 {
@@ -99,12 +113,12 @@ num_t num_add(const num_t arg1, const num_t arg2)
 	};
 
 	if (r.hi < arg1.hi)
-		num_overflow();
+		num_set_overflow();
 
 	if (r.lo < arg1.lo) {
 		r.hi += 1;
 		if (r.hi < 1)
-			num_overflow();
+			num_set_overflow();
 	}
 
 	return r;
@@ -119,13 +133,13 @@ num_t num_sub(const num_t arg1, const num_t arg2)
 
 	/* Overflow in high subtraction */
 	if (r.hi > arg1.hi)
-		num_overflow();
+		num_set_overflow();
 
 	/* Overflow in low subtraction */
 	if (r.lo > arg1.lo) {
 		const uint64_t tmp = r.hi - 1;
 		if (tmp > r.hi)
-			num_overflow();
+			num_set_overflow();
 		r.hi = tmp;
 	}
 	return r;
@@ -140,7 +154,7 @@ num_t num_mul_i(num_t arg1, const uint64_t arg2)
 	for (i=0; i<128; i++) {
 		if (arg1.lo & 0x01) {
 			if (can_overflow)
-				num_overflow();
+				num_set_overflow();
 			reply = num_add(reply, r);
 		}
 
@@ -235,24 +249,26 @@ static inline int _num_set_str(num_t *arg, const char *str, const int base)
 	switch (base) {
 	case 10:
 	{
-		for (i=0; str[i]; i++) {
-			/* Shift */
-			*arg = num_mul_i(*arg, 10);
+		/* We must take care of overflow nicely */
+		num_clear_overflow();
 
+		for (i=0; i < 39 && str[i]; i++) {
 			if (str[i] < '0' || str[i] > '9') {
 				return 1;
 			}
 
+			/* Shift, then add new digit */
+			*arg = num_mul_i(*arg, 10);
 			*arg = num_add(*arg, num_i(str[i] - '0'));
+
+			if (num_test_overflow())
+				return 1;
 		}
 
-		if (str[i]) {
-			return 1;
-		}
 		return 0;
 	}
 	case 16:
-		for (i=0; str[i]; i++) {
+		for (i=0; i<32 && str[i]; i++) {
 			/* Shift */
 			for (byte=0; byte < 4; byte++) {
 				*arg = num_lshift(*arg);
@@ -301,7 +317,7 @@ int num_export(const num_t num, char *buff, enum num_str_type t)
 
 	case NUM_FORMAT_HEX:
 	{
-		char *tmp = mpz_get_str(buff, 16, num);
+		char *tmp = mpz_get_str(buff, -16, num);
 		assert(tmp);
 		if (!tmp) 
 			return 1;
@@ -389,8 +405,15 @@ int num_import(num_t *num, const char *buff, enum num_str_type t)
 #if USE_GMP
 	switch (t) {
 	case NUM_FORMAT_DEC:
+		/* BUG: This does not really work like non-gmp version.
+		 * If there's some rubbish after the number it will get
+		 * ignored by sscanf. Maybe add %n and check if number of
+		 * passed bytes equal to strlen of input. */
 		ret = gmp_sscanf(buff, "%Zu", *num);
-		return ret;
+		if (ret == 1)
+			return 0;
+		else
+			return 1;
 
 	case NUM_FORMAT_HEX:
 	{
