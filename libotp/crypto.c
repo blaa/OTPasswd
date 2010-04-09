@@ -234,24 +234,71 @@ extern int crypto_salted_sha256(const unsigned char *data,
 {
 	int ret;
 	unsigned char *buf = malloc(length + 8);
+	assert(data && salted_hash); /* salted_hash must be atleast 32 + 8 bytes long */
+
 	if (!buf)
 		return 1;
 
+	/* Initialize salting buffer with 8 bytes of salt */
 	if (crypto_file_rng("/dev/urandom", NULL, buf, 8) != 0) {
 		ret = 2;
 		goto cleanup;
 	}
 
-	memcpy(buf+8, data, length);
+	/* Copy salt bytes to the resulting buffer also */
 	memcpy(salted_hash, buf, 8);
 
+
+	/* Copy user password to the hashing buffer just after the salt */
+	memcpy(buf+8, data, length);
+
+
+	/* Hash buffer; put resulting 32 bytes of data into salted_hash */
 	if (crypto_sha256(buf, length+8, salted_hash + 8) != 0) {
 		ret = 3;
 		goto cleanup;
 	}
 
-
 	ret = 0;
+cleanup:
+	free(buf);
+	return ret;
+}
+
+int crypto_verify_salted_sha256(const unsigned char *salted_hash, 
+                                const unsigned char *data, const unsigned int length)
+{
+	int ret = 1;
+	unsigned char salted_hash_new[40];
+
+	if (!salted_hash || !data || length == 0)
+		return 1;
+
+	unsigned char *buf = malloc(length + 8);
+
+	if (!buf)
+		return 1;
+
+	/* Copy salt from salted hash to hashing buffer */
+	memcpy(buf, salted_hash, 8);
+
+	/* and to the resulting hash */
+	memcpy(buf, salted_hash_new, 8);
+
+	/* Copy user password to the hashing buffer just after the salt */
+	memcpy(buf+8, data, length);
+
+	/* Hash buffer; put resulting 32 bytes of data into salted_hash */
+	if (crypto_sha256(buf, length+8, salted_hash_new + 8) != 0) {
+		ret = 3;
+		goto cleanup;
+	}
+
+	if (memcmp(salted_hash_new, salted_hash, sizeof(salted_hash)) == 0)
+		ret = 0; /* Correct */
+	else 
+		ret = 1; /* Incorrect */
+
 cleanup:
 	free(buf);
 	return ret;
@@ -291,3 +338,67 @@ void crypto_print_hex(const unsigned char *data, const unsigned int length)
 	printf("\n");
 }
 
+
+int crypto_binary_to_hex(
+	const unsigned char *binary,
+	const unsigned int length,
+	char *hex)
+{
+	assert(hex && binary);
+	if (!hex || !binary)
+		return 1;
+
+	int i;
+	for (i = 0; i < length; i++) {
+		const int tmp = binary[i];
+		if (snprintf(hex + i*2, 3, "%02X", tmp) != 2) {
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+int crypto_hex_to_binary(const char *hex,
+	const unsigned int length,
+	unsigned char *binary)
+{
+	assert(hex && binary);
+	assert(length % 2 == 0);
+	if (!hex || !binary || length % 2 != 0)
+		return 1;
+
+	int i;
+	char byte = 0;
+
+	/* i:      action:
+	 * 0       Read digit and shift << 4
+	 * 1       Store and zero digit
+	 * 2       Read and shift...
+	 */
+	for (i=0; i<length && hex[i]; i++) {
+		if (hex[i] >= '0' && hex[i] <= '9')
+			byte |= hex[i] - '0';
+		else if (hex[i] >= 'A' && hex[i] <= 'F')
+			byte |= 10 + hex[i] - 'A';
+		else if (hex[i] >= 'a' && hex[i] <= 'f')
+			byte |= 10 + hex[i] - 'a';
+		else {
+			return 1;
+		}
+
+		if (i % 2 == 0)
+			byte <<= 4;
+		else {
+			binary[i / 2] = byte;
+			byte = 0;
+		}
+	}
+
+	if (i != length) {
+		/* Length argument did not matched! */
+		return 1;
+	}
+	
+	return 0;
+}

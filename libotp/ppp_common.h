@@ -22,7 +22,7 @@
 /* Size of fields */
 #define STATE_LABEL_SIZE 30
 #define STATE_CONTACT_SIZE 60
-#define STATE_STATIC_SIZE 64 /* Hexadecimal SHA256 of static password */
+#define STATE_SPASS_SIZE 40 /* Hexadecimal SHA256 (64 bytes) of static password + SALT (16) */
 #define STATE_MAX_FIELD_SIZE 80
 #define STATE_ENTRY_SIZE 512 /* Maximal size of a valid state entry (single line)
 			      * 32 (username) + 64 (key) + 32 (counter) + 60 (contact)

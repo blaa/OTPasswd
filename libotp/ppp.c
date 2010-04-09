@@ -1231,7 +1231,7 @@ char **ppp_spass_set(state *s, const char *spass, int flag)
 {
 	int i;
 	int len;
-	unsigned char sha_buf[40];
+	unsigned char sha_buf[STATE_SPASS_SIZE];
 	static char *err_list[3];
 	int err_count;
 
@@ -1253,7 +1253,7 @@ char **ppp_spass_set(state *s, const char *spass, int flag)
 	if (!spass) {
 		/* Turning off static password */
 		s->spass_set = 0;
-		mpz_set_ui(s->spass, 0);
+		memset(s->spass, 0, sizeof(s->spass));
 		return NULL;
 	}
 
@@ -1268,8 +1268,7 @@ char **ppp_spass_set(state *s, const char *spass, int flag)
 
 	/* Change static password */
 	crypto_salted_sha256((unsigned char *)spass, len, sha_buf);
-	num_import(&s->spass, (char *)sha_buf, NUM_FORMAT_BIN);
-//	num_from_bin(s->spass, sha_buf, sizeof(sha_buf));
+	memcpy(s->spass, sha_buf, STATE_SPASS_SIZE);
 	s->spass_set = 1;
 	s->spass_time = time(NULL);
 	return NULL;
@@ -1277,10 +1276,7 @@ char **ppp_spass_set(state *s, const char *spass, int flag)
 
 int ppp_spass_validate(const state *s, const char *spass)
 {
-	int ret = PPP_ERROR;
 	int len;
-	unsigned char spass_buf[40];
-	unsigned char sha_buf[32];
 
 	assert(s);
 	
@@ -1289,26 +1285,11 @@ int ppp_spass_validate(const state *s, const char *spass)
 	}
 
 	assert(spass);
-
 	len = strlen(spass);
 
-	unsigned char *tmp_buf = malloc(len + 8);
-	if (!tmp_buf)
-		return STATE_NOMEM;
-
-//	num_to_bin(s->spass, spass_buf, sizeof(spass_buf));
-	num_export(s->spass, (char *)spass_buf, NUM_FORMAT_BIN);
-	
-	memcpy(tmp_buf, spass_buf, 8);
-	memcpy(tmp_buf+8, spass, len);
-	
-	crypto_sha256(tmp_buf, len+8, sha_buf);
-
-	if (memcmp(spass_buf + 8, sha_buf, 32) == 0)
-		ret = 0;
-	else 
-		ret = PPP_ERROR_SPASS_INCORRECT;
-
-	free(tmp_buf);
-	return ret;
+	if (crypto_verify_salted_sha256(s->spass, (unsigned char *)spass, len) != 0) {
+		return PPP_ERROR_SPASS_INCORRECT;
+	} else {
+		return 0;
+	}
 }

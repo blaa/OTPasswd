@@ -55,6 +55,7 @@ TODO Major:
               probably (Maybe only on SELINUX)
 
 Todo Minor:
+        * [?] Write testcases for static password
         * [?] policy checking regarding salt. (won't fail sometimes)
         * [?] Will we be pppv3 compatible on big-endian?
         * [?] Sourced key generation (from file, string...)

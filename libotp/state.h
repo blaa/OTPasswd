@@ -57,7 +57,7 @@ typedef struct {
 	unsigned int flags;
 
 	/* Static password (spass) */
-	num_t spass;
+	unsigned char spass[STATE_SPASS_SIZE];
 	int spass_set; /* Bool: 0 - not set, 1 - set */
 
 	/* Timestamp of the last change of static password */

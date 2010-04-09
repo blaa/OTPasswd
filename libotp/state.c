@@ -122,8 +122,6 @@ int state_init(state *s, const char *username)
 	mpz_init(s->max_card);
 	mpz_init(s->max_code);
 
-	mpz_init(s->spass);
-
 	int ret;
 #if USE_GMP
 	const char code_mask[] =
@@ -150,7 +148,6 @@ void state_fini(state *s)
 	mpz_clear(s->counter);
 	mpz_clear(s->latest_card);
 	mpz_clear(s->current_card);
-	mpz_clear(s->spass);
 	mpz_clear(s->salt_mask);
 	mpz_clear(s->code_mask);
 	mpz_clear(s->max_card);

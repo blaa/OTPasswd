@@ -72,11 +72,29 @@ extern int crypto_salted_sha256(
 	const unsigned int length,
 	unsigned char *salted_hash);
 
+extern int crypto_verify_salted_sha256(
+	const unsigned char *salted_hash, 
+	const unsigned char *data,
+	const unsigned int length);
 
 /* Display hexadecimally binary data */
 extern void crypto_print_hex(
 	const unsigned char *data,
 	const unsigned int length);
+
+/* Stores binary data inside 'output' text memory
+ * as hexadecimally encoded string 
+ * length*2 + 1 bytes will be written
+ * */
+extern int crypto_binary_to_hex(
+	const unsigned char *binary,
+	const unsigned int length,
+	char *hex);
+
+extern int crypto_hex_to_binary(
+	const char *hex,
+	const unsigned int length,
+	unsigned char *binary);
 
 
 #endif

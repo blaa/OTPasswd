@@ -32,6 +32,7 @@
 #include "state.h"
 #include "db.h"
 #include "config.h"
+#include "crypto.h"
 
 /******************
  * Static helpers
@@ -606,8 +607,7 @@ int db_file_load(state *s)
 	if (strlen(field[FIELD_SPASS]) == 0) {
 		s->spass_set = 0;
 	} else {
-//		if (mpz_set_str(s->spass, field[FIELD_SPASS], STATE_BASE) != 0) {
-		if (num_import(&s->spass, field[FIELD_SPASS], NUM_FORMAT_HEX) != 0) {
+		if (crypto_hex_to_binary(field[FIELD_SPASS], 80, s->spass) != 0) {
 			print(PRINT_ERROR, "Error while parsing static password.\n");
 			goto cleanup;
 		}
@@ -699,37 +699,31 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 	int tmp;
 
 	/* Converted state parts */
-	char sequence_key[65];
-	char counter[35];
-	char latest_card[35];
-	char *spass = NULL;
+	char sequence_key[65] = {0};
+	char counter[35] = {0};
+	char latest_card[35] = {0};
+	char spass[81] = {0};
 
-	/* Write using ascii-safe approach */
-	int i;
-	for (i = 0; i < 32; i++) {
-		const int tmp = s->sequence_key[i];
-		snprintf(&sequence_key[i*2], 3, "%02X", tmp);
+	if (crypto_binary_to_hex(s->sequence_key, 32, sequence_key) != 0) {
+		print(PRINT_ERROR, "Strange error while converting sequence key into hex\n");
+		goto error;
 	}
-	sequence_key[64] = '\0';
-
-/*	counter = mpz_get_str(NULL, STATE_BASE, s->counter);
-	latest_card = mpz_get_str(NULL, STATE_BASE, s->latest_card);  */
 
 	tmp = 0;
 	tmp += num_export(s->counter, counter, NUM_FORMAT_HEX);
 	tmp += num_export(s->latest_card, latest_card, NUM_FORMAT_HEX);
 
-	if (s->spass_set) {
-		assert(0); /* Do it */
-//		spass = mpz_get_str(NULL, STATE_BASE, s->spass);
-		tmp += num_export(s->spass, spass, NUM_FORMAT_HEX);
-		/* FIXME: THIS WON'T WORK! SPASS IS 256 BIT LONG! + SALT */
-	} else
-		spass = strdup("");
-
-	if (tmp != 0 || !spass) {
+	if (tmp != 0) {
 		print(PRINT_ERROR, "Error while converting numbers\n");
 		goto error;
+	}
+
+	if (s->spass_set) {
+		tmp = crypto_binary_to_hex(s->spass, 40, spass);
+		if (tmp != 0) {
+			print(PRINT_ERROR, "Error while converting static password data\n");
+			goto error;
+		}
 	}
 
 	tmp = snprintf(buffer, buff_length,
@@ -753,7 +747,6 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 	retval = 0;
 error:
 	memset(sequence_key, 0, sizeof(sequence_key));
-	free(spass);
 	return retval;
 }
 

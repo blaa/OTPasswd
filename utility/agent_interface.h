@@ -83,8 +83,8 @@
 #define AGENT_PROTOCOL_VERSION 0
 
 
-/* Maximal size of any transferred argument. 255 should be
- * more then enough as label/contact don't exceed 80 bytes.
+/* Maximal size of any transferred argument string.
+ * 255 should be more then enough as label/contact don't exceed 80 bytes.
  * The only thing which will be limited is static password size 
  */
 #define AGENT_ARG_MAX 255
@@ -104,6 +104,7 @@ struct agent_header {
 
 	/* Bytes in 'data' element */
 	int bytes;
+
 	/* Alternatively number of items (structs) in data */
 	int items;
 	void *data;
