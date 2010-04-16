@@ -47,6 +47,9 @@
 
 
 /*
+ * Agent keeps in memory single copy of state
+ * either loaded by status query or fresh generated.
+ *
  * Possible operations and it's arguments:
  * 1. Key
  *  a) Generate key
@@ -108,6 +111,22 @@ typedef struct agent agent;
 /* Basic routines */
 extern int agent_connect(agent *a);
 extern int agent_disconnect(agent *a);
+
+/*** Actions ***/
+/* TODO: Return passcard? */
+/** Generate key, but do not store it on disc. */
+extern int agent_key_generate(agent *a, int flags);
+
+/** Stores previously generated key */
+extern int agent_key_store(agent *a);
+
+/** Remove user state; warnings about otp enforcements are due to UI */
+extern int agent_key_remove(agent *a);
+
+/** Status query */
+extern int agent_status_update(agent *a);
+extern int agent_get_key(const agent *a, num_t *key);
+
 
 /* Config query */
 extern int agent_config_query_int(agent *a, int field, int *reply);
