@@ -108,29 +108,55 @@
 typedef struct agent agent;
 
 
-/* Basic routines */
+/*** Basic routines ***/
 extern int agent_connect(agent *a);
 extern int agent_disconnect(agent *a);
+extern int agent_select_user(agent *a);
+
+
 
 /*** Actions ***/
-/* TODO: Return passcard? */
-/** Generate key, but do not store it on disc. */
-extern int agent_key_generate(agent *a, int flags);
+/** Generate new key, but do not store it on disc. 
+ * Flags can be set with different command separately. */
+extern int agent_key_generate(agent *a);
 
-/** Stores previously generated key */
+/** Stores previously generated and configured key. */
 extern int agent_key_store(agent *a);
 
 /** Remove user state; warnings about otp enforcements are due to UI */
 extern int agent_key_remove(agent *a);
 
-/** Status query */
-extern int agent_status_update(agent *a);
-extern int agent_get_key(const agent *a, num_t *key);
 
+/*** Flag interface ***/
+/** Set certain (single) flag (oring with current) */
+extern int agent_flag_add(agent *a, int flag);
+
+/** Clear some flag (negate and AND with current) */
+extern int agent_flag_clear(agent *a, int flag);
+
+/** Check if given flag is set in the state */
+extern int agent_flag_check(agent *a, int flag);
+
+
+/** Status query
+ *
+ * Remove held information about state and read new from state file. */
+extern int agent_status_update(agent *a);
+
+/* Set of getters/setters */
+extern int agent_get_key(const agent *a, char *key);
+
+enum AGENT_TYPE {
+	AGENT_COUNTER_UNSALTED,
+	AGENT_COUNTER_SALTED,
+};
+extern int agent_get_num(const agent *a, num_t *key, int type);
+extern int agent_get_int(agent *a, int field, int *reply);
 
 /* Config query */
-extern int agent_config_query_int(agent *a, int field, int *reply);
-extern int agent_config_query_str(agent *a, int field, char **reply); 
+extern int agent_get_passcode(const agent *a, int field, char **reply); 
+
+
 
 
 

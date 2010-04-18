@@ -101,6 +101,64 @@ int agent_disconnect(agent *a)
 }
 
 
+int agent_key_generate(agent *a)
+{
+	int ret;
+	ret = agent_query(a, AGENT_REQ_KEY_GENERATE);
+}
+
+int agent_key_store(agent *a)
+{
+	int ret;
+	ret = agent_query(a, AGENT_REQ_KEY_STORE);
+}
+
+int agent_key_remove(agent *a)
+{
+	int ret;
+	ret = agent_query(a, AGENT_REQ_KEY_REMOVE);
+}
+
+int agent_flag_add(agent *a, int flag)
+{
+}
+
+int agent_flag_clear(agent *a, int flag)
+{
+}
+
+int agent_flag_check(agent *a, int flag)
+{
+}
+
+
+int agent_status_update(agent *a)
+{
+}
+
+int agent_get_key(const agent *a, char *key)
+{
+}
+
+int agent_get_num(const agent *a, num_t *key, int type)
+{
+}
+
+int agent_get_int(agent *a, int field, int *reply)
+{
+}
+
+int agent_get_passcode(const agent *a, int field, char **reply) 
+{
+}
+
+
+
+
+
+
+
+
 /* Config query:
  * ret = agent_config_query_int(agent *a, int field, int *reply);
  * ret = agent_config_query_str(agent *a, int field, char **reply); 
