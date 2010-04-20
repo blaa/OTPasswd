@@ -19,12 +19,13 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/select.h>
+
 
 #define DEBUG 1
 
 #include "agent_interface.h"
 #include "agent_private.h"
-
 
 
 int agent_connect(agent *a, const char *agent_executable))
@@ -39,6 +40,9 @@ int agent_connect(agent *a, const char *agent_executable))
 	int out[2] = {-1, -1};
 	pid_t pid;
 	assert(a);
+
+	a->protocol_version = AGENT_PROTOCOL_VERSION;
+	a->error = 0;
 
 	if (pipe(in) != 0)
 		goto cleanup;
@@ -91,6 +95,7 @@ cleanup:
 
 }
 
+
 int agent_disconnect(agent *a)
 {
 	/* Send quit message */
@@ -100,23 +105,109 @@ int agent_disconnect(agent *a)
 	
 }
 
+int agent_read(const int fd, void *buf, const size_t len) 
+{
+	int ret;
+	ret = read(fd, buf, len);
+	assert(ret == len);
+
+	fd_set rfds;
+	FD_ZERO(&rfds);
+	FD_SET(fd, &rfds);
+	if (select(fd+1, &rfds, NULL, NULL, NULL) == -1) {
+		perror("select");
+		return 1;
+	}
+
+	return ret;
+}
+
+#define _send(field)						\
+	do {							\
+		ret = write(fd, &field, sizeof(field));         \
+		if (ret != sizeof(field))			\
+			return 1;				\
+        } while (0);
+
+#define _recv(field)						      \
+	do {							      \
+		ret = agent_read(fd, &field, sizeof(field));          \
+		if (ret != sizeof(field))			      \
+			return 1;				      \
+        } while (0);
+
+int agent_send_header(const agent *a) 
+{
+	const int fd = a->out;
+	ssize_t ret = 1;
+
+	write(fd, &a->protocol_version, sizeof(a->protocol_version));
+	_send(a->protocol_version);
+	_send(a->type);
+	_send(a->status);
+	_send(a->argument);
+	_send(a->bytes);
+	_send(a->items);
+
+	if (write(fd, a->data, a->bytes) != a->bytes) {
+		return 1;
+	}
+
+	return 0;
+}
+
+int agent_recv_header(const agent *a) 
+{
+	const int fd = a->in;
+	
+
+	
+	return 0;
+}
+
+
+void agent_set_data(agent *a, size_t bytes, const char *data)
+{
+	a->data = data;
+	a->bytes = bytes;
+}
+
+
+int agent_query(agent *a, int request)
+{
+	/* Prepare header struct; 
+	 * don't touch alternate parameters */
+	a->hdr.type = request;
+	if (agent_send_header(a) != 0) {
+		a->error = 1;
+		return 1;
+	}
+
+
+	/* Might hang? */
+	if (agent_recv(a) != 0) {
+		a->error = 1;
+		return 1;
+	}
+
+
+	return a->hdr.status;
+}
+
 
 int agent_key_generate(agent *a)
 {
-	int ret;
-	ret = agent_query(a, AGENT_REQ_KEY_GENERATE);
+	return agent_query(a, AGENT_REQ_KEY_GENERATE);
 }
 
 int agent_key_store(agent *a)
 {
-	int ret;
-	ret = agent_query(a, AGENT_REQ_KEY_STORE);
+	return agent_query(a, AGENT_REQ_KEY_STORE);
 }
 
 int agent_key_remove(agent *a)
 {
-	int ret;
-	ret = agent_query(a, AGENT_REQ_KEY_REMOVE);
+	return agent_query(a, AGENT_REQ_KEY_REMOVE);
 }
 
 int agent_flag_add(agent *a, int flag)

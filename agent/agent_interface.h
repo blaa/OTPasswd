@@ -114,7 +114,6 @@ extern int agent_disconnect(agent *a);
 extern int agent_select_user(agent *a);
 
 
-
 /*** Actions ***/
 /** Generate new key, but do not store it on disc. 
  * Flags can be set with different command separately. */

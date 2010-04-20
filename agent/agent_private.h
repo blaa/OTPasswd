@@ -1,6 +1,8 @@
 #ifndef _AGENT_PRIVATE_H_
 #define _AGENT_PRIVATE_H_
 
+#define AGENT_PROTOCOL_VERSION 0x00000001
+
 enum AGENT_ERROR {
 	AGENT_OK=0,
 	AGENT_ERR=500,
@@ -36,6 +38,9 @@ struct agent_header {
 	/* Request type + Reply type */
 	int type;
 
+	/* Reply status */
+	int status;
+
 	/* Length of a request argument.
 	 * This can be a password, contact, label etc.
 	 */
@@ -46,7 +51,7 @@ struct agent_header {
 
 	/* Alternatively number of items (structs) in data */
 	int items;
-	void *data;
+	const char *data;
 };
 
 struct agent_reply_alphabet {
@@ -70,7 +75,16 @@ typedef struct {
 	/* Child PID */
 	pid_t pid;
 
+	/* Error while communicating with agent? */
+	int error;
+
 	struct agent_header hdr;
 } agent;
+
+
+extern int agent_send_header(const agent *a);
+extern int agent_recv_header(const agent *a);
+
+extern int agent_query(agent *a, int action);
 
 #endif
