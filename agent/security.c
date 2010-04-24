@@ -46,12 +46,10 @@
 
 #include "security.h"
 
-#include "nls.h"
-
 /* Initial remembered values */
 static uid_t real_uid=-1, set_uid=-1;
 static uid_t real_gid=-1, set_gid=-1;
-static int is_suid = 0;
+static int is_suid = 0, has_tty = 0;
 
 extern char **environ;
 
@@ -59,83 +57,81 @@ void security_init(void)
 {
 	int ret;
 
+	/* Don't use stderr or any other pipe. */
+	for (ret=2; ret < 20; ret++)
+		(void) close(ret);
+
+	/* We generally shouldn't have any terminal connected,
+	 * but we want to tell this user nicely. */
+	if (isatty(0) == 1 && isatty(1) == 1) {
+		has_tty = 1;
+	} else {
+		has_tty = 0;
+	}
+
+	ret = chdir("/");
+	if (ret != 0) {
+		if (has_tty)
+			printf("FATAL: Unable to change directory.\n");
+		exit(EXIT_FAILURE);
+	}
+
+	/* Set umask to 700 so others/group won't read our files */
+	umask(S_IWOTH | S_IROTH | S_IXOTH | S_IWGRP | S_IRGRP | S_IXGRP);
+
 	/* Store initial UIDs/GIDs */
 	real_uid = getuid();
 	set_uid = geteuid();
 
 	real_gid = getgid();
 	set_gid = getegid();
-
-	/* Ensure that stdout and stderr exists, so we won't overwrite
-	 * any opened files with stdout data. I wonder if this danger is
-	 * still valid on new Unix systems. 
-	 *
-	 * Also ensure this is terminal and user can't easily lock our 
-	 * output while we have locked file. This could be better done 
-	 * by splitting utility into two programs...
-	 */
-
-	/* 0 - stdin, 1 - stdout, 2 - stderr */
-
-/*
-	int i;
-	for (i=0; i<10; i++)
-		close(i);
-
-	FIXME: FOR DEBUGGING PURPOSES TURNED OFF! 
-	i = open("/dev/tty", O_NOCTTY | O_RDONLY);
-	if (i != 0)
-		exit(EXIT_FAILURE);
-
-	i = open("/dev/tty", O_NOCTTY | O_WRONLY);
-	if (i != 1)
-		exit(EXIT_FAILURE);
-
-	i = open("/dev/tty", O_NOCTTY | O_WRONLY);
-	if (i != 2)
-		exit(EXIT_FAILURE);
-
-	ret = chdir("/");
-	if (ret != 0) {
-		printf(_("Unable to change directory to /\n"));
-		exit(EXIT_FAILURE);
-	}
-*/
-
-	/* Set umask to 700 so others/group won't read our files */
-	umask(S_IWOTH | S_IROTH | S_IXOTH | S_IWGRP | S_IRGRP | S_IXGRP);
-
+	
 	/* Just check if everything is all right... */
 	if (real_gid != set_gid) {
-		printf("We're not supposed to work as SGID program. SUID or nothing.\n");
+		if (has_tty)
+			printf("FATAL: otpagent is not supposed to work as "
+			       "SGID program. SUID root or nothing.\n");
 		exit(EXIT_FAILURE);
 	}
 
 	if (real_uid != set_uid) {
 		is_suid = 1;
+
+		if (set_uid != 0) {
+			if (has_tty) {
+				printf("FATAL: otpagent should be either "
+				       "SUID-root or non-SUID at all.\n"
+				       "       Agent will drop permissions "
+				       "itself to configured user after start.\n");
+			}
+			exit(EXIT_FAILURE);
+		}
 	}
 
-	if (is_suid) {
-		/* Clear the environment. */
+
+	/* Clear the environment. */
 #if OS_FREEBSD
-		environ = NULL;
+	environ = NULL;
 #else
-		ret = clearenv();
+	ret = clearenv();
+	if (ret != 0) {
+		if (has_tty)
+			printf("FATAL: Unable to clear environment\n");
+		exit(EXIT_FAILURE);
+	}
 #endif
-		if (ret != 0) {
-			printf("Unable to clear environment\n");
-			exit(EXIT_FAILURE);
-		}
+	if (environ != NULL || (environ && *environ != NULL)) {
+		if (has_tty)
+			printf("FATAL: Environment not clear!\n");
+		exit(EXIT_FAILURE);
+	}
+	
+	/* Re-set some basic environment variables. 
+	 * Most probably it's completely unnecesary in this app. */
+	putenv("PATH=/bin:/usr/bin");
+	putenv("IFS= \t\n");
 
-		if (environ != NULL || (environ && *environ != NULL)) {
-			printf("Environment not clear!\n");
-			exit(EXIT_FAILURE);
-		}
-
-		/* Re-set required environment variables */
-		putenv("PATH=/bin:/usr/bin");
-		putenv("IFS= \t\n");
-
+	if (is_suid) {
 		/* Disable signals */
 		ret = 0;
 		if (signal(SIGTERM, SIG_IGN) == SIG_ERR)
@@ -154,18 +150,11 @@ void security_init(void)
 			ret++;
 		if (signal(SIGTTOU, SIG_IGN) == SIG_ERR)
 			ret++;
-		if (ret) {
-			printf("Unable to disable signals. Quitting before we touch state files.\n");
-			exit(EXIT_FAILURE);
-		}
 
-		/* We support running as SUID root program
-		 * or non-suid at all */
-		if (set_uid != 0) {
-			printf(
-				"This program is intended for use either without a Set-UID bit set,\n"
-				"or suid-root. In the first mode you're limited to DB=user setting.\n");
-			printf("Configuration error, exiting.\n");
+		if (ret) {
+			if (has_tty)
+				printf("FATAL: Unable to disable signals."
+				       " Quitting before we touch state files.\n");
 			exit(EXIT_FAILURE);
 		}
 
@@ -184,7 +173,8 @@ static void _ensure_no_privileges()
 
 	return;
 error:
-	printf("Privilege check failed. Dying.\n");
+	if (has_tty)
+		printf("Privilege ensurance check failed. Dying.\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -213,7 +203,8 @@ void security_permanent_switch(uid_t uid, uid_t gid)
 	
 	return;
 error:
-	printf("Permanent user switch failed. Dying.\n");
+	if (has_tty)
+		printf("Permanent user switch failed. Dying.\n");
 	exit(EXIT_FAILURE);
 }
 
@@ -237,7 +228,7 @@ void security_permanent_drop(void)
 		goto error;
 	}
 
-	/* We ensure this only if not root, as dropping SUID/SGID
+	/* We ensure this only if not root, as "dropping" SUID/SGID
 	 * permission while being root will still allow us to SUID
 	 * back to set_uid user */
 	if (real_uid != 0)
@@ -245,7 +236,8 @@ void security_permanent_drop(void)
 
 	return;
 error:
-	printf("Permanent privilege drop failed. Dying.\n");
+	if (has_tty)
+		printf("Permanent privilege drop failed. Dying.\n");
 	exit(EXIT_FAILURE);
 }
 

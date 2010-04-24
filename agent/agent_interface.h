@@ -23,6 +23,8 @@
 #ifndef _AGENT_INTERFACE_H_
 #define _AGENT_INTERFACE_H_
 
+#include "num.h"
+
 /*
  * Data is transferred via pipe. Client program has a 
  * pair of descriptors used for communication and agent
@@ -100,19 +102,19 @@
  *
  */
 
-#define AGENT_PATH "agent_otpasswd"
-#define AGENT_PROTOCOL_VERSION 0
-
-
-/* Anonymous struct */
+#ifndef AGENT_INTERNAL
+/* If internal representation is not defined,
+ * define it as anonymous struct */
 typedef struct agent agent;
-
+#endif
 
 /*** Basic routines ***/
-extern int agent_connect(agent *a);
+extern agent *agent_connect(const char *agent_executable);
 extern int agent_disconnect(agent *a);
 extern int agent_select_user(agent *a);
 
+/** Return translated description of last error */
+extern const char *agent_strerror(void);
 
 /*** Actions ***/
 /** Generate new key, but do not store it on disc. 
@@ -140,7 +142,7 @@ extern int agent_flag_check(agent *a, int flag);
 /** Status query
  *
  * Remove held information about state and read new from state file. */
-extern int agent_status_update(agent *a);
+extern int agent_read_state(agent *a);
 
 /* Set of getters/setters */
 extern int agent_get_key(const agent *a, char *key);
@@ -154,8 +156,6 @@ extern int agent_get_int(agent *a, int field, int *reply);
 
 /* Config query */
 extern int agent_get_passcode(const agent *a, int field, char **reply); 
-
-
 
 
 

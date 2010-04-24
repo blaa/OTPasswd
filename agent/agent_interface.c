@@ -24,14 +24,14 @@
 
 #define DEBUG 1
 
-#include "agent_interface.h"
 #include "agent_private.h"
 
+/* For passing errors from certain functions */
+static int agent_errno;
 
-int agent_connect(agent *a, const char *agent_executable))
+agent *agent_connect(const char *agent_executable)
 {
 	int ret = 1;
-	int i;
 	/* in[1]  - stdout of agent;  
 	 * out[0] - stdin of agent; 
 	 * in/out - naming from perspective of parent
@@ -39,9 +39,15 @@ int agent_connect(agent *a, const char *agent_executable))
 	int in[2] = {-1, -1};
 	int out[2] = {-1, -1};
 	pid_t pid;
-	assert(a);
+	agent *a;
 
-	a->protocol_version = AGENT_PROTOCOL_VERSION;
+	a = malloc(sizeof(*a));
+	if (!a) {
+		agent_errno = AGENT_ERR_MEMORY;
+		return NULL;
+	}
+
+	a->hdr.protocol_version = AGENT_PROTOCOL_VERSION;
 	a->error = 0;
 
 	if (pipe(in) != 0)
@@ -53,7 +59,6 @@ int agent_connect(agent *a, const char *agent_executable))
 	/* Verify that agent executable exists */
 	if (agent_executable == NULL)
 		agent_executable = "./agent_otpasswd";
-	
 
 	pid = fork();
 
@@ -69,7 +74,7 @@ int agent_connect(agent *a, const char *agent_executable))
 		dup(in[1]);
 
 		/* Execute agent */
-		execl(agent_executable, NULL);
+		execl(agent_executable, agent_executable, NULL);
 
 		/* Failure */
 		exit(1);
@@ -81,8 +86,8 @@ int agent_connect(agent *a, const char *agent_executable))
 	a->out = out[1];
 
 	/* TODO: Handle some signal? */
-
-	return 0;
+	agent_errno = 0;
+	return a;
 
 cleanup1:
 	if (in[0] != -1) close(in[0]);
@@ -91,18 +96,34 @@ cleanup1:
 	if (out[1] != -1) close(out[1]);
 
 cleanup:
-	return ret;
-
+	agent_errno = ret;
+	free(a);
+	return NULL;
 }
 
 
 int agent_disconnect(agent *a)
 {
+	int ret = 0;
 	/* Send quit message */
-	/* Close descriptors  */
+
 	/* Wait for child to close? */
-	
-	
+
+	/* Close descriptors  */
+	if (a->in != -1)
+		ret += close(a->in);
+	if (a->out != -1)
+		ret += close(a->out);
+
+	/* Free memory */
+	free(a);
+
+	return ret;
+}
+
+const char *agent_strerror(void)
+{
+	return NULL;
 }
 
 int agent_read(const int fd, void *buf, const size_t len) 
@@ -122,17 +143,17 @@ int agent_read(const int fd, void *buf, const size_t len)
 	return ret;
 }
 
-#define _send(field)						\
-	do {							\
-		ret = write(fd, &field, sizeof(field));         \
-		if (ret != sizeof(field))			\
-			return 1;				\
+#define _send(field)	  \
+	do { \
+		ret = write(fd, &a->hdr.field, sizeof(a->hdr.field)); \
+		if (ret != sizeof(a->hdr.field)) \
+			return 1; \
         } while (0);
 
 #define _recv(field)						      \
 	do {							      \
-		ret = agent_read(fd, &field, sizeof(field));          \
-		if (ret != sizeof(field))			      \
+		ret = agent_read(fd, &a->hdr.field, sizeof(a->hdr.field));          \
+		if (ret != sizeof(a->hdr.field))			      \
 			return 1;				      \
         } while (0);
 
@@ -141,36 +162,36 @@ int agent_send_header(const agent *a)
 	const int fd = a->out;
 	ssize_t ret = 1;
 
-	write(fd, &a->protocol_version, sizeof(a->protocol_version));
-	_send(a->protocol_version);
-	_send(a->type);
-	_send(a->status);
-	_send(a->argument);
-	_send(a->bytes);
-	_send(a->items);
+	_send(protocol_version);
+	_send(type);
+	_send(status);
+	_send(int_arg);
+	_send(num_arg);
 
-	if (write(fd, a->data, a->bytes) != a->bytes) {
+	if (write(fd, a->hdr.str_arg, sizeof(a->hdr.str_arg)) != sizeof(a->hdr.str_arg)) {
 		return 1;
 	}
 
 	return 0;
 }
 
-int agent_recv_header(const agent *a) 
+int agent_recv_header(agent *a) 
 {
 	const int fd = a->in;
+	ssize_t ret = 1;
 	
+	_recv(protocol_version);
+	_recv(type);
+	_recv(status);
+	_recv(int_arg);
+	_recv(num_arg);
 
-	
+	if (read(fd, a->hdr.str_arg, sizeof(a->hdr.str_arg)) != sizeof(a->hdr.str_arg)) {
+		return 1;
+	}
 	return 0;
 }
 
-
-void agent_set_data(agent *a, size_t bytes, const char *data)
-{
-	a->data = data;
-	a->bytes = bytes;
-}
 
 
 int agent_query(agent *a, int request)
@@ -185,7 +206,7 @@ int agent_query(agent *a, int request)
 
 
 	/* Might hang? */
-	if (agent_recv(a) != 0) {
+	if (agent_recv_header(a) != 0) {
 		a->error = 1;
 		return 1;
 	}
@@ -200,33 +221,38 @@ int agent_key_generate(agent *a)
 	return agent_query(a, AGENT_REQ_KEY_GENERATE);
 }
 
-int agent_key_store(agent *a)
-{
-	return agent_query(a, AGENT_REQ_KEY_STORE);
-}
-
 int agent_key_remove(agent *a)
 {
 	return agent_query(a, AGENT_REQ_KEY_REMOVE);
 }
 
-int agent_flag_add(agent *a, int flag)
+int agent_key_store(agent *a)
 {
+	return agent_query(a, AGENT_REQ_KEY_STORE);
+}
+
+int agent_flag_set(agent *a, int flag)
+{
+	return agent_query(a, AGENT_REQ_FLAG_SET);
 }
 
 int agent_flag_clear(agent *a, int flag)
 {
+	return agent_query(a, AGENT_REQ_FLAG_CLEAR);
 }
 
 int agent_flag_check(agent *a, int flag)
 {
+	return agent_query(a, AGENT_REQ_FLAG_CHECK);
 }
 
 
-int agent_status_update(agent *a)
+int agent_read_state(agent *a)
 {
+	return agent_query(a, AGENT_REQ_READ_STATE);
 }
 
+/*
 int agent_get_key(const agent *a, char *key)
 {
 }
@@ -242,7 +268,7 @@ int agent_get_int(agent *a, int field, int *reply)
 int agent_get_passcode(const agent *a, int field, char **reply) 
 {
 }
-
+*/
 
 
 
@@ -260,13 +286,13 @@ int agent_testcase(void)
 	int ret;
 	int failures = 0;
 	/* Create some messages and check if they are parsed accordingly */
-	
 
-	agent a;
+	agent *a = NULL;
 
-	ret = agent_connect(&a, NULL);
-	if (ret != 0) {
-		printf("Unable to connect to agent. (err=%d)\n", ret);
+	a = agent_connect(NULL);
+	if (a == NULL) {
+		printf("Unable to connect to agent.\n");
+		puts(agent_strerror());
 		failures++;
 		goto end;
 	}
@@ -275,25 +301,24 @@ int agent_testcase(void)
 
 	/* Gets all information possible about state. Should be done 
 	 * before generating key to ask user about some details. */
-	ret = agent_status(a, AGENT_STATE);
+	ret = agent_read_state(a);
 	/* Check ret */
 	
 	/* Interface for generating key */
-	int flags = agent_get_int(a, AGENT_FLAGS);
+//	int flags = agent_get_int(a, AGENT_FLAGS);
 
 
 
 
-	num_t value;
-	ret = agent_get_num(ar, AGENT_NUM_LATEST_CARD, value);
+//	num_t value;
+//	ret = agent_get_num(ar, AGENT_NUM_LATEST_CARD, value);
 	/* ret might be: AGENT_OK, AGENT_ERR_POLICY, AGENT_PPP_ERROR */
 
 
 
-	agent_disconnect(&a);
 
-cleanup1:
-	agent_disconnect(&a);
+//cleanup1:
+	agent_disconnect(a);
 end:
 	return failures;
 }

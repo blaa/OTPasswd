@@ -24,6 +24,9 @@
 #include <assert.h>
 #include <unistd.h> /* chdir, environ */
 
+/* OTP Agent */
+#include "agent_interface.h"
+
 /* libotp header */
 #include "ppp.h"
 
@@ -545,6 +548,8 @@ cleanup:
 	return retval;
 }
 
+
+#if 0
 extern char **environ;
 int main(int argc, char **argv)
 {
@@ -642,4 +647,35 @@ int main(int argc, char **argv)
 
 	ret = perform_action(argc, argv, &options, cfg);
 	return ret;
+}
+
+#endif
+
+
+
+
+extern char **environ;
+int main(int argc, char **argv)
+{
+	int ret;
+	agent *a = NULL;
+
+	a = agent_connect(NULL);
+	if (a == NULL) {
+		printf("Unable to connect to agent.\n");
+		puts(agent_strerror());
+		return 1;
+	}
+
+	// superuser only: agent_set_user(a, "user");
+	ret = agent_key_generate(a);
+
+	
+
+	ret = agent_disconnect(a);
+	if (ret != 0) { 
+		printf("Error while disconnecting from agent\n");
+	}
+
+	return 0;
 }

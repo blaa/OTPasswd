@@ -29,26 +29,78 @@
 
 /* Utility headers */
 #include "security.h"
-#include "nls.h"
 #include "actions.h"
 #include "testcases.h"
 
-static const char *_program_name(const char *argv0)
+/* Testcase function should be run only if we're not 
+ * a SUID program or when we are run by root.
+ * Also we should be connected to the terminal and
+ * not to a pipe
+ */
+int testcase(cfg_t *cfg)
 {
-	const char *pos;
-	if (!argv0)
-		return "otpasswd";
+	int retval;
+	int tmp;
+	int failed = 0;
 
-	pos = strrchr(argv0, '/');
-	if (pos)
-		return pos+1;
-	else
-		return argv0;
+	printf(("*** Running testcases\n"));
+
+	/* Change DB info so we won't overwrite anything
+	 * important */
+	strcpy(cfg->user_db_path, ".otpasswd_testcase");
+	strcpy(cfg->global_db_path, "/tmp/otshadow_testcase");
+	cfg->db = CONFIG_DB_USER;
+
+	tmp = num_testcase();
+	failed += tmp;
+	if (tmp)
+		printf("******\n*** %d num testcases failed\n******\n", tmp);
+
+	tmp = config_testcase();
+	failed += tmp;
+	if (tmp)
+		printf("******\n*** %d config testcases failed\n******\n", tmp);
+
+	tmp = state_testcase();
+	failed += tmp;
+	if (tmp)
+		printf("******\n*** %d state testcases failed\n******\n", tmp);
+
+	tmp = crypto_testcase();
+	failed += tmp;
+	if (tmp)
+		printf("******\n*** %d crypto testcases failed\n******\n", tmp);
+
+	tmp = card_testcase();
+	failed += tmp;
+	if (tmp)
+		printf("******\n*** %d card testcases failed\n******\n", tmp);
+
+	tmp = ppp_testcase();
+	failed += tmp;
+	if (tmp)
+		printf("******\n*** %d ppp testcases failed\n******\n", tmp);
+
+
+	if (failed) {
+		printf(("***********************************************\n"
+		        "*         !!! %d testcases failed !!!         *\n"
+		        "* Don't use this release until this is fixed! *\n"
+		        "* Note: Testcases should be run with default  *\n"
+		        "* conpilation options and config.             *\n"
+		        "* If unsure, reinstall and rerun --check      *\n"
+		        "***********************************************\n"),
+		       failed);
+		retval = 1;
+	} else {
+		printf(("**********************************\n"
+		        "* All testcases seem successful. *\n"
+		        "**********************************\n"));
+		retval = 0;
+	}
+	return retval;
 }
 
-static void _usage(int argc, const char **argv)
-{
-}
 
 int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 {
@@ -70,16 +122,10 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 	/* Perform action */
 	switch (options->action) {
 	case 0:
-		printf(_("No action specified. Try passing -k, -s, -t or -l\n\n"));
-		_usage(argc, (const char **) argv);
+		printf(("No action specified. Try passing -k, -s, -t or -l\n\n"));
 		retval = 1;
 		goto cleanup;
-
-	case OPTION_HELP:
-		_usage(argc, (const char **)argv);
-		retval = 0;
-		break;
-
+/*
 	case OPTION_KEY:
 	case OPTION_REMOVE:
 		retval = action_key(options);
@@ -114,71 +160,9 @@ int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 	case OPTION_PROMPT:
 		retval = action_print(options);
 		break;
-
-	case OPTION_CHECK:
-		printf(_("*** Running testcases\n"));
-		{
-			int tmp;
-			int failed = 0;
-
-			/* Change DB info so we won't overwrite anything
-			 * important */
-			strcpy(cfg->user_db_path, ".otpasswd_testcase");
-			strcpy(cfg->global_db_path, "/tmp/otshadow_testcase");
-			cfg->db = CONFIG_DB_USER;
-
-			tmp = num_testcase();
-			failed += tmp;
-			if (tmp)
-				printf("******\n*** %d num testcases failed\n******\n", tmp);
-
-			tmp = config_testcase();
-			failed += tmp;
-			if (tmp)
-				printf("******\n*** %d config testcases failed\n******\n", tmp);
-
-			tmp = state_testcase();
-			failed += tmp;
-			if (tmp)
-				printf("******\n*** %d state testcases failed\n******\n", tmp);
-
-			tmp = crypto_testcase();
-			failed += tmp;
-			if (tmp)
-				printf("******\n*** %d crypto testcases failed\n******\n", tmp);
-
-			tmp = card_testcase();
-			failed += tmp;
-			if (tmp)
-				printf("******\n*** %d card testcases failed\n******\n", tmp);
-
-			tmp = ppp_testcase();
-			failed += tmp;
-			if (tmp)
-				printf("******\n*** %d ppp testcases failed\n******\n", tmp);
-
-
-			if (failed) {
-				printf(_("***********************************************\n"
-				         "*         !!! %d testcases failed !!!         *\n"
-				         "* Don't use this release until this is fixed! *\n"
-				         "* Note: Testcases should be run with default  *\n"
-				         "* conpilation options and config.             *\n"
-				         "* If unsure, reinstall and rerun --check      *\n"
-				         "***********************************************\n"),
-					failed);
-				retval = 1;
-			} else {
-				printf(_("**********************************\n"
-				         "* All testcases seem successful. *\n"
-				         "**********************************\n"));
-				retval = 0;
-			}
-			break;
-		}
-
+*/
 	default:
-		printf(_("Program error. You shouldn't end up here.\n"));
+		printf(("Program error. You shouldn't end up here.\n"));
 		assert(0);
 		retval = 1;
 		goto cleanup;
@@ -194,29 +178,17 @@ cleanup:
 	return retval;
 }
 
+
+int agent_loop(void) 
+{
+	return 0;
+}
+
 extern char **environ;
-int main(int argc, char **argv)
+int main(void)
 {
 	int ret;
 	cfg_t *cfg = NULL;
-
-	/* Options passed to utility with command line */
-	options_t options = {
-		.action = 0,
-		.action_arg = NULL,
-		.label = NULL,
-		.contact = NULL,
-
-		.username = NULL,
-
-		.flag_set_mask = 0,
-		.flag_clear_mask = 0,
-		.set_codelength = -1,
-		.set_alphabet = -1,
-	};
-
-	/* 0) Initialize locale */
-	locale_init();
 
 	/* 1) Init safe environment, store current uids, etc. */
 	security_init();
@@ -232,10 +204,10 @@ int main(int argc, char **argv)
 
 	ret = ppp_init(PRINT_STDOUT);
 	if (ret != 0) {
-		puts(_(ppp_get_error_desc(ret)));
+		puts((ppp_get_error_desc(ret)));
 		puts("");
-		printf(_("OTPasswd not correctly installed.\n"));
-		printf(_("Consult installation manual for detailed information.\n"));
+		printf(("OTPasswd not correctly installed.\n"));
+		printf(("Consult installation manual for detailed information.\n"));
 		ppp_fini();
 		return 1;
 	}
@@ -253,7 +225,7 @@ int main(int argc, char **argv)
 		 * Or we're run as SUID user which is also bad.
 		 */
 		printf(
-			_("Database type set to global, MySQL or LDAP, yet program "
+			("Database type set to global, MySQL or LDAP, yet program "
 			  "is not a SUID root.\n"));
 		ppp_fini();
 		return 1;
@@ -284,11 +256,7 @@ int main(int argc, char **argv)
 		break;
 	}
 
-	/* 5) Config read. Privileges dropped. Parse user data. */
-	ret = process_cmd_line(argc, argv, &options, cfg);
-	if (ret != 0)
-		return ret;
 
-	ret = perform_action(argc, argv, &options, cfg);
-	return ret;
+	/* Agent loop */
+	return agent_loop();
 }

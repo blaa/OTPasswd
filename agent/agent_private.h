@@ -1,12 +1,21 @@
 #ifndef _AGENT_PRIVATE_H_
 #define _AGENT_PRIVATE_H_
 
-#define AGENT_PROTOCOL_VERSION 0x00000001
+#define AGENT_INTERNAL 1
+
+#define AGENT_PATH "otpagent"
+#define AGENT_PROTOCOL_VERSION (0xDEAD0000 | 0x00)
+
+#include <unistd.h>
+#include <sys/types.h> /* pid_t etc. */
+
+#include "num.h" /* num_t type */
 
 enum AGENT_ERROR {
 	AGENT_OK=0,
-	AGENT_ERR=500,
-	AGENT_ERR_POLICY=501,
+	AGENT_ERR=5000,
+	AGENT_ERR_MEMORY,
+	AGENT_ERR_POLICY,
 };
 
 enum AGENT_REQUEST {
@@ -20,7 +29,13 @@ enum AGENT_REQUEST {
 	AGENT_REQ_KEY_STORE,
 
 	/** Read state from disc */
-	AGENT_REQ_UPDATE_STATE,
+	AGENT_REQ_READ_STATE,
+
+	AGENT_REQ_FLAG_SET,
+	AGENT_REQ_FLAG_CLEAR,
+	AGENT_REQ_FLAG_CHECK,
+	AGENT_REQ_FLAG_GET, /* <-- FIX */
+
 };
 
 
@@ -38,33 +53,17 @@ struct agent_header {
 	/* Request type + Reply type */
 	int type;
 
-	/* Reply status */
+	/* Reply status/error code */
 	int status;
 
-	/* Length of a request argument.
-	 * This can be a password, contact, label etc.
+	/* Generic arguments */
+	int int_arg;
+	num_t num_arg;
+
+	/* This must be large enought to contain:
+	 * passwords, contact/label, alphabet reply (under 128 chars)
 	 */
-	char argument[AGENT_ARG_MAX];
-
-	/* Bytes in 'data' element */
-	int bytes;
-
-	/* Alternatively number of items (structs) in data */
-	int items;
-	const char *data;
-};
-
-struct agent_reply_alphabet {
-	int id;
-	int policy_accepted;
-	char chars[AGENT_ARG_MAX];
-};
-
-/* Reply containing warnings or error code + description */
-struct agent_reply_string {
-	int type;
-	int code;
-	char data[AGENT_ARG_MAX];
+	char str_arg[AGENT_ARG_MAX];
 };
 
 
@@ -81,10 +80,14 @@ typedef struct {
 	struct agent_header hdr;
 } agent;
 
-
+/* Private helper functions */
 extern int agent_send_header(const agent *a);
-extern int agent_recv_header(const agent *a);
-
+extern int agent_recv_header(agent *a);
 extern int agent_query(agent *a, int action);
+
+
+/* Now include also public interface */
+#include "agent_interface.h"
+
 
 #endif
