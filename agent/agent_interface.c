@@ -18,13 +18,12 @@
  **********************************************************************/
 
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/select.h>
 
 
 #define DEBUG 1
 
 #include "agent_private.h"
+#include "print.h"
 
 /* For passing errors from certain functions */
 static int agent_errno;
@@ -38,7 +37,6 @@ agent *agent_connect(const char *agent_executable)
 	 */
 	int in[2] = {-1, -1};
 	int out[2] = {-1, -1};
-	pid_t pid;
 	agent *a;
 
 	a = malloc(sizeof(*a));
@@ -47,7 +45,6 @@ agent *agent_connect(const char *agent_executable)
 		return NULL;
 	}
 
-	a->hdr.protocol_version = AGENT_PROTOCOL_VERSION;
 	a->error = 0;
 
 	if (pipe(in) != 0)
@@ -58,11 +55,11 @@ agent *agent_connect(const char *agent_executable)
 
 	/* Verify that agent executable exists */
 	if (agent_executable == NULL)
-		agent_executable = "./agent_otpasswd";
+		agent_executable = "./agent_otp";
 
-	pid = fork();
+	a->pid = fork();
 
-	if (pid == 0) {
+	if (a->pid == 0) {
 		/* Prepare pipes */
 		close(in[0]);
 		close(out[1]);
@@ -86,7 +83,31 @@ agent *agent_connect(const char *agent_executable)
 	a->out = out[1];
 
 	/* TODO: Handle some signal? */
-	agent_errno = 0;
+
+
+	/* Read message sent by server to indicate correct initialization
+	 * or any initialization problems */
+	if (agent_wait(a) != 0) {
+		agent_errno = AGENT_ERR_SERVER_INIT;
+		free(a);
+		return NULL;
+	} else {
+		ret = agent_hdr_recv(a);
+		if (ret != 0)
+			goto cleanup;
+		agent_hdr_debug(&a->rhdr);
+		if (a->rhdr.type != AGENT_REQ_INIT) {
+			ret = AGENT_ERR_SERVER_INIT;
+			goto cleanup;
+		}
+
+		ret = a->rhdr.status;
+		if (ret != 0)
+			goto cleanup;
+	}
+
+	print(PRINT_NOTICE, "Agent connection initialized correctly\n");
+	agent_errno = AGENT_OK;
 	return a;
 
 cleanup1:
@@ -101,6 +122,25 @@ cleanup:
 	return NULL;
 }
 
+
+agent *agent_server(void) 
+{
+	agent *a;
+
+	a = malloc(sizeof(*a));
+	if (!a) {
+		agent_errno = AGENT_ERR_MEMORY;
+		return NULL;
+	}
+
+	a->in = 0;
+	a->out = 1;
+
+	a->pid = -1;
+	a->error = 0;
+
+	return a;
+}
 
 int agent_disconnect(agent *a)
 {
@@ -124,95 +164,6 @@ int agent_disconnect(agent *a)
 const char *agent_strerror(void)
 {
 	return NULL;
-}
-
-int agent_read(const int fd, void *buf, const size_t len) 
-{
-	int ret;
-	ret = read(fd, buf, len);
-	assert(ret == len);
-
-	fd_set rfds;
-	FD_ZERO(&rfds);
-	FD_SET(fd, &rfds);
-	if (select(fd+1, &rfds, NULL, NULL, NULL) == -1) {
-		perror("select");
-		return 1;
-	}
-
-	return ret;
-}
-
-#define _send(field)	  \
-	do { \
-		ret = write(fd, &a->hdr.field, sizeof(a->hdr.field)); \
-		if (ret != sizeof(a->hdr.field)) \
-			return 1; \
-        } while (0);
-
-#define _recv(field)						      \
-	do {							      \
-		ret = agent_read(fd, &a->hdr.field, sizeof(a->hdr.field));          \
-		if (ret != sizeof(a->hdr.field))			      \
-			return 1;				      \
-        } while (0);
-
-int agent_send_header(const agent *a) 
-{
-	const int fd = a->out;
-	ssize_t ret = 1;
-
-	_send(protocol_version);
-	_send(type);
-	_send(status);
-	_send(int_arg);
-	_send(num_arg);
-
-	if (write(fd, a->hdr.str_arg, sizeof(a->hdr.str_arg)) != sizeof(a->hdr.str_arg)) {
-		return 1;
-	}
-
-	return 0;
-}
-
-int agent_recv_header(agent *a) 
-{
-	const int fd = a->in;
-	ssize_t ret = 1;
-	
-	_recv(protocol_version);
-	_recv(type);
-	_recv(status);
-	_recv(int_arg);
-	_recv(num_arg);
-
-	if (read(fd, a->hdr.str_arg, sizeof(a->hdr.str_arg)) != sizeof(a->hdr.str_arg)) {
-		return 1;
-	}
-	return 0;
-}
-
-
-
-int agent_query(agent *a, int request)
-{
-	/* Prepare header struct; 
-	 * don't touch alternate parameters */
-	a->hdr.type = request;
-	if (agent_send_header(a) != 0) {
-		a->error = 1;
-		return 1;
-	}
-
-
-	/* Might hang? */
-	if (agent_recv_header(a) != 0) {
-		a->error = 1;
-		return 1;
-	}
-
-
-	return a->hdr.status;
 }
 
 

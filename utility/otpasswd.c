@@ -586,7 +586,7 @@ int main(int argc, char **argv)
 	 * Now, try to read config file, init printing etc.
 	 */
 
-	ret = ppp_init(PRINT_STDOUT);
+	ret = ppp_init(PRINT_STDOUT, NULL);
 	if (ret != 0) {
 		puts(_(ppp_get_error_desc(ret)));
 		puts("");
@@ -654,22 +654,34 @@ int main(int argc, char **argv)
 
 
 
-extern char **environ;
 int main(int argc, char **argv)
 {
 	int ret;
 	agent *a = NULL;
 
-	a = agent_connect(NULL);
+	ret = ppp_init(PRINT_STDOUT, NULL);
+	if (ret != 0) {
+		puts(_(ppp_get_error_desc(ret)));
+		puts("");
+		printf(_("OTPasswd not correctly installed.\n"));
+		printf(_("Consult installation manual for detailed information.\n"));
+		ppp_fini();
+		return 1;
+	}
+	print_config(PRINT_NOTICE|PRINT_STDOUT);
+
+	a = agent_connect("./agent_otp");
 	if (a == NULL) {
 		printf("Unable to connect to agent.\n");
 		puts(agent_strerror());
 		return 1;
 	}
 
+	printf("HERE\n");
+
 	// superuser only: agent_set_user(a, "user");
 	ret = agent_key_generate(a);
-
+	printf("generate returned: %d\n", ret);
 	
 
 	ret = agent_disconnect(a);

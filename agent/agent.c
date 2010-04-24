@@ -23,6 +23,9 @@
 #include <getopt.h>
 #include <assert.h>
 
+/* agent communication */
+#include "agent_private.h"
+
 /* libotp header */
 #include "ppp.h"
 
@@ -30,6 +33,7 @@
 #include "security.h"
 #include "actions.h"
 #include "testcases.h"
+
 
 /* Testcase function should be run only if we're not 
  * a SUID program or when we are run by root.
@@ -201,8 +205,28 @@ cleanup:
 }
 
 
-int agent_loop(void) 
+int do_loop(void) 
 {
+	int ret;
+
+	/* Everything seems fine; send message that we're ready */
+	agent *a = agent_server();
+	if (!a) {
+		print(PRINT_ERROR, "Unable to start agent server\n");
+		return 1;
+	}
+
+	ret = agent_hdr_set(a, 0, 0, NULL, NULL);
+	assert(ret == 0);
+
+	ret = agent_query(a, AGENT_REQ_INIT);
+	assert(ret == 0);
+
+	for (;;) {
+//		ret = agent_hdr_recv(a);
+		
+		/* Wait for request, perform it and reply */
+	}
 	return 0;
 }
 
@@ -307,5 +331,5 @@ int main(int argc, char **argv)
 	}
 
 	/* Agent loop */
-	return agent_loop();
+	return do_loop();
 }

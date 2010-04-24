@@ -16,11 +16,18 @@ enum AGENT_ERROR {
 	AGENT_ERR=5000,
 	AGENT_ERR_MEMORY,
 	AGENT_ERR_POLICY,
+	AGENT_ERR_SERVER_INIT,
+	AGENT_ERR_PROTOCOL_MISMATCH,
+	AGENT_ERR_DISCONNECT,
 };
 
 enum AGENT_REQUEST {
+	/** Additional messaging */
+	AGENT_REQ_INIT = 1,           /**< Informs client that agent started */
+
+
 	/** Generate key */
-	AGENT_REQ_KEY_GENERATE = 1,
+	AGENT_REQ_KEY_GENERATE,
 
 	/** Remove key */
 	AGENT_REQ_KEY_REMOVE,
@@ -68,23 +75,43 @@ struct agent_header {
 
 
 typedef struct {
-	/* Descriptors used for connection */
+	/** Descriptors used for connection */
 	int in, out;
 
-	/* Child PID */
+	/** Child PID */
 	pid_t pid;
 
-	/* Error while communicating with agent? */
+	/** Error while communicating with agent? */
 	int error;
+	
+	/** Send header */
+	struct agent_header shdr;
 
-	struct agent_header hdr;
+	/** Recv header */
+	struct agent_header rhdr;
 } agent;
 
-/* Private helper functions */
-extern int agent_send_header(const agent *a);
-extern int agent_recv_header(agent *a);
+/***
+ * Private helper functions 
+ ***/
+
+/** Configure agent interface to run as server */
+extern agent *agent_server(void);
+
+/** Prepares header for sending */
+extern int agent_hdr_set(agent *a, int status, 
+                         int int_arg, const num_t *num_arg,
+                         const char *str_arg);
+
+extern int agent_hdr_send(const agent *a);
+extern int agent_hdr_recv(agent *a);
 extern int agent_query(agent *a, int action);
 
+/** Wait for incoming data; returns 0 if anything arrived */
+extern int agent_wait(agent *a);
+
+/** Displays header information */
+extern void agent_hdr_debug(const struct agent_header *hdr);
 
 /* Now include also public interface */
 #include "agent_interface.h"

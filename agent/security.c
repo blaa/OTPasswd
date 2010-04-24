@@ -150,6 +150,9 @@ void security_init(void)
 			ret++;
 		if (signal(SIGHUP, SIG_IGN) == SIG_ERR)
 			ret++;
+		/* FIXME: We would rather not ignore SIGPIPE
+		 * and use it to end program when client closes
+		 * pipe end */
 		if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
 			ret++;
 		if (signal(SIGALRM, SIG_IGN) == SIG_ERR)

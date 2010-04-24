@@ -126,7 +126,7 @@ ADD_LIBRARY(otp STATIC libotp/crypto.c libotp/num.c libotp/ppp.c
 	libotp/config.c crypto/polarssl_aes.c crypto/coreutils_sha256.c)
 
 # Library containing agent functions (for both agent and its clients)
-ADD_LIBRARY(agent STATIC agent/agent_interface.c)
+ADD_LIBRARY(agent STATIC agent/agent_interface.c agent/agent_private.c)
 
 
 # Pam module target
@@ -138,13 +138,13 @@ ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/actions.c utility/actions_hel
   utility/testcases.c utility/security.c)
 
 # Agent server
-ADD_EXECUTABLE(otpagent agent/agent.c agent/testcases.c agent/security.c)
+ADD_EXECUTABLE(agent_otp agent/agent.c agent/testcases.c agent/security.c)
 
 
 # Linking targets
-TARGET_LINK_LIBRARIES(pam_otpasswd otp gmp pam)
-TARGET_LINK_LIBRARIES(otpasswd     otp agent gmp)
-TARGET_LINK_LIBRARIES(otpagent     otp agent)
+TARGET_LINK_LIBRARIES(pam_otpasswd  otp gmp pam)
+TARGET_LINK_LIBRARIES(otpasswd      otp agent gmp)
+TARGET_LINK_LIBRARIES(agent_otp     otp agent)
 
 # Man page target
 ADD_CUSTOM_TARGET(man ALL DEPENDS ${man_gz})
