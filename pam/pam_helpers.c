@@ -463,7 +463,7 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
 
 	int retval;
 
-	retval = ppp_init(PRINT_SYSLOG);
+	retval = ppp_init(PRINT_SYSLOG, NULL);
 	if (retval != 0) {
 		print(PRINT_ERROR, "OTPasswd not correctly installed (%s)\n", ppp_get_error_desc(retval));
 		ppp_fini();

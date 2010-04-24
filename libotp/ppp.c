@@ -69,7 +69,7 @@ static const char *alphabets[] = {
 static const int alphabet_cnt = sizeof(alphabets) / sizeof(*alphabets);
 
 
-int ppp_init(int print_flags)
+int ppp_init(int print_flags, const char *print_logfile)
 {
 	int retval = PPP_ERROR;
 	cfg_t *cfg = NULL;
@@ -80,7 +80,7 @@ int ppp_init(int print_flags)
 	umask(077);
 
 	/* Enable logging at biggest log level */
-	print_init(PRINT_NOTICE | print_flags, NULL);
+	print_init(PRINT_NOTICE | print_flags, print_logfile);
 
 	/* Ensure GMP frees memory safely */
 	num_init();

@@ -617,12 +617,12 @@ int ppp_testcase(void)
 
 	/* Statistical tests using following key */
 	memcpy(s.sequence_key, ex_bin, sizeof(s.sequence_key));
-	failed += _ppp_testcase_statistical(&s, 64, 16, 200000);
+	failed += _ppp_testcase_statistical(&s, 64, 16, 120000);
 	/* Following test should fail using norms from first test */
 	// failed += _ppp_testcase_statistical(&s, 88, 16, 500000);
 
 	printf("Character count stats:\n");
-	failed += _ppp_testcase_stat_2(&s, 88, 16, 200000);
+	failed += _ppp_testcase_stat_2(&s, 88, 16, 120000);
 
 	printf("*** PPPv3 compatibility tests\n");
 	printf("* Sequence key = 0.\n");

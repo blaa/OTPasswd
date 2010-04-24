@@ -52,7 +52,7 @@
 /* First libotp function which should be called.
  * Call ppp_fini even if this functions fails.
  * Sets umask, starts printing subsystem and reads configuration. */
-extern int ppp_init(int print_flags);
+extern int ppp_init(int print_flags, const char *print_logfile);
 
 /* Shuts down logging subsystem */
 extern void ppp_fini(void);

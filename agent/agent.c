@@ -22,7 +22,6 @@
 #include <ctype.h>
 #include <getopt.h>
 #include <assert.h>
-#include <unistd.h> /* chdir, environ */
 
 /* libotp header */
 #include "ppp.h"
@@ -37,13 +36,35 @@
  * Also we should be connected to the terminal and
  * not to a pipe
  */
-int testcase(cfg_t *cfg)
+int do_testcase(void)
 {
+	cfg_t *cfg;
 	int retval;
 	int tmp;
 	int failed = 0;
 
-	printf(("*** Running testcases\n"));
+	printf("*** Running testcases\n");
+
+	/* Init ppp for testcases */
+	retval = ppp_init(PRINT_STDOUT, NULL);
+	if (retval != 0) {
+		puts(ppp_get_error_desc(retval));
+		printf("Testcasing failed:\n");
+		printf("OTPasswd not correctly installed.\n");
+		printf("Consult installation manual for detailed information.\n");
+		ppp_fini();
+		return 1;
+	}
+			
+	/* Will succeed, as ppp_init suceeded */
+	cfg = cfg_get();
+	if (!cfg) {
+		printf("FATAL: Unable to read config file.\n");
+		return 1;
+	}
+
+
+
 
 	/* Change DB info so we won't overwrite anything
 	 * important */
@@ -98,13 +119,14 @@ int testcase(cfg_t *cfg)
 		        "**********************************\n"));
 		retval = 0;
 	}
+
+	ppp_fini();
 	return retval;
 }
 
 
 int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 {
-	int ret;
 	int retval;
 
 	/* Reconfigure printing subsystem; -v might be passed */
@@ -184,8 +206,7 @@ int agent_loop(void)
 	return 0;
 }
 
-extern char **environ;
-int main(void)
+int main(int argc, char **argv)
 {
 	int ret;
 	cfg_t *cfg = NULL;
@@ -193,45 +214,74 @@ int main(void)
 	/* 1) Init safe environment, store current uids, etc. */
 	security_init();
 
-	/* After this point we can use stdout. 
-	 * We might be:
-	 * a) Run by root.
-	 * b) Set-uid root. (On DB=global or user)
-	 * c) Not set-uid. (DB=user)
-	 *
-	 * Now, try to read config file, init printing etc.
+	if (!security_is_tty_detached()) {
+		/* We have stdout */
+		if (!security_is_privileged()) {
+			/* And we are not root */
+			printf("FATAL: This program should not be used like this.\n"
+			       "Use appropriate interface instead (like otpasswd).\n");
+			exit(EXIT_FAILURE);
+		}
+		
+		if (argc == 2 && strcmp(argv[1], "--check") == 0) {
+			return do_testcase();
+		} else {
+			printf("FATAL: This program should not be used like this.\n"
+			       "Use appropriate interface instead (like otpasswd)\n"
+			       "\n"
+			       "Since you're running this program as root you can \n"
+			       "run a set of testcases with --check option\n");
+
+			exit(EXIT_FAILURE);
+		}
+	}
+
+
+	/* After this point we:
+	 * a) Have no controlling terminal. 
+	 * b) Can be SUID root (run by root or normal user)
 	 */
 
-	ret = ppp_init(PRINT_STDOUT);
+
+	/***
+	 * Initialization
+	 * Now, try to read config file, init printing, ppp etc.
+	 ***/
+
+	/* TODO/FIXME: Reply our caller frame with error description on initial failure 
+	 */
+
+	/* TODO, FIXME: Remove log from here! */
+	ret = ppp_init(0, "/tmp/OTPAGENT_TESTLOG");
 	if (ret != 0) {
-		puts((ppp_get_error_desc(ret)));
-		puts("");
-		printf(("OTPasswd not correctly installed.\n"));
-		printf(("Consult installation manual for detailed information.\n"));
+		print(PRINT_ERROR, ppp_get_error_desc(ret));
+		print(PRINT_ERROR, "OTPasswd not correctly installed.\n");
+		print(PRINT_ERROR, "Consult installation manual for detailed information.\n");
 		ppp_fini();
 		return 1;
 	}
 
+	/* Will succeed, as ppp_init suceeded */
 	cfg = cfg_get();
 
 	/* If DB is global, mysql or ldap, utility must be SUID root. 
 	 * We can't detect this easily if we are run by root. So, 
 	 * treat root as run by suid.
 	 */
-	if (security_is_suid() == 0 && 
-	    cfg->db != CONFIG_DB_USER &&
+	if (cfg->db != CONFIG_DB_USER &&
+	    security_is_suid() == 0 && 
 	    security_is_privileged() == 0) {
-		/* Something is wrong. We are not SUID.
-		 * Or we're run as SUID user which is also bad.
-		 */
-		printf(
-			("Database type set to global, MySQL or LDAP, yet program "
-			  "is not a SUID root.\n"));
+		/* Something is wrong. We are not SUID/privileged
+		 * and DB is not "USER" so we won't be able to reach it */
+		print(PRINT_ERROR,
+		      "Database type set to global, MySQL or LDAP, yet program "
+		      "is not a SUID root.\n");
 		ppp_fini();
 		return 1;
 	}
 
-	/* 4) We must drop permissions now. 
+
+	/* 4) We must drop permissions now.
 	 * If DB=user - drop to the user who called us.
 	 * If DB=global - drop to cfg->user_uid
 	 */
@@ -255,7 +305,6 @@ int main(void)
 		}
 		break;
 	}
-
 
 	/* Agent loop */
 	return agent_loop();

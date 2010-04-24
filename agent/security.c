@@ -62,11 +62,17 @@ void security_init(void)
 		(void) close(ret);
 
 	/* We generally shouldn't have any terminal connected,
-	 * but we want to tell this user nicely. */
-	if (isatty(0) == 1 && isatty(1) == 1) {
+	 * but we want to tell this user nicely. 
+	 * Allow having tty-stdout and arbitrally stdin,
+	 * but die if stdin is from tty and tty-stdout is not 
+	 */
+
+	if (isatty(1) == 1) {
 		has_tty = 1;
 	} else {
 		has_tty = 0;
+		if (isatty(0) == 1) 
+			exit(EXIT_FAILURE);
 	}
 
 	ret = chdir("/");
@@ -241,7 +247,7 @@ error:
 	exit(EXIT_FAILURE);
 }
 
-int security_is_privileged()
+int security_is_privileged(void)
 {
 	if (real_uid == 0) 
 		return 1;
@@ -249,12 +255,17 @@ int security_is_privileged()
 		return 0;
 }
 
-int security_is_suid()
+int security_is_suid(void)
 {
 	if (is_suid) 
 		return 1;
 	else
 		return 0;
+}
+
+int security_is_tty_detached(void) 
+{
+	return !has_tty;
 }
 
 char *security_get_calling_user(void)

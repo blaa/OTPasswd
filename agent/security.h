@@ -43,6 +43,9 @@ extern int security_is_suid();
 /* Are we run by root? */
 extern int security_is_privileged();
 
+/* Are we connected (in any way) to some tty? */
+extern int security_is_tty_detached(void);
+
 /* Parse user specification (name or UID) ensure it exists */
 extern char *security_parse_user(const char *spec);
 
