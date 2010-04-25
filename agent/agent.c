@@ -204,14 +204,109 @@ cleanup:
 	return retval;
 }
 
+/** Used to communicate how previous request was finished
+ * without returning any important data (but the data might
+ * be set before this command to sent it along)
+ */
+int send_reply(agent *a, int status) 
+{
+	agent_hdr_set_status(a, status);
+	agent_hdr_set_type(a, AGENT_REQ_REPLY);
+	return agent_hdr_send(a);
+}
+
+/** Marks end of initialization (succeeded or not) */
+int send_init_reply(agent *a, int status) 
+{
+	agent_hdr_set_status(a, status);
+	agent_hdr_set_type(a, AGENT_REQ_INIT);
+	return agent_hdr_send(a);
+}
+
+
+
+int do_handle_request(agent *a) 
+{
+	int ret;
+
+	/* Wait for request, perform it and reply */
+	ret = agent_hdr_recv(a);
+	if (ret != 0) {
+		print(PRINT_ERROR, "Client disconnected\n");
+		return 1;
+	}
+		
+	/* Read request parameters */
+	const int r_type = agent_hdr_get_type(a);
+	const int r_status = agent_hdr_get_status(a);
+	const int r_int = agent_hdr_get_arg_int(a);
+	const num_t r_num = agent_hdr_get_arg_num(a);
+	const char *r_str = agent_hdr_get_arg_str(a);
+
+	switch (r_type) {
+	case AGENT_REQ_DISCONNECT:
+		/* Correct close */
+		return 0;
+
+		/* KEY */
+	case AGENT_REQ_KEY_GENERATE:
+		print(PRINT_NOTICE, "Request: KEY_GENERATE\n");
+		send_reply(a, AGENT_ERR);
+		break;
+	case AGENT_REQ_KEY_REMOVE:
+		print(PRINT_NOTICE, "Request: KEY_REMOVE\n");
+		send_reply(a, AGENT_ERR);
+		break;
+	case AGENT_REQ_KEY_STORE:
+		print(PRINT_NOTICE, "Request: KEY_STORE\n");
+		send_reply(a, AGENT_ERR);
+		break;
+
+		/* STATE */
+	case AGENT_REQ_READ_STATE:
+		print(PRINT_NOTICE, "Request: READ_STATE\n");
+		send_reply(a, AGENT_ERR);
+		break;
+
+		/* FLAGS */
+	case AGENT_REQ_FLAG_SET:
+		print(PRINT_NOTICE, "Request: FLAG_SET\n");
+		send_reply(a, AGENT_ERR);
+		break;
+
+	case AGENT_REQ_FLAG_CLEAR:
+		print(PRINT_NOTICE, "Request: FLAG_CLEAR\n");
+		send_reply(a, AGENT_ERR);
+		break;
+
+	case AGENT_REQ_FLAG_CHECK:
+		print(PRINT_NOTICE, "Request: FLAG_CHECK\n");
+		send_reply(a, AGENT_ERR);
+		break;
+
+	case AGENT_REQ_FLAG_GET:
+		print(PRINT_NOTICE, "Request: FLAG_GET\n");
+		send_reply(a, AGENT_ERR);
+		break;
+			
+			
+	default:
+		print(PRINT_ERROR, "Unrecognized request type.\n");
+		return 1;
+	}
+
+	return 0;
+}
+
 
 int do_loop(void) 
 {
 	int ret;
 
 	/* Everything seems fine; send message that we're ready */
-	agent *a = agent_server();
-	if (!a) {
+	agent *a;
+	ret = agent_server(&a);
+	if (ret != AGENT_OK) {
 		print(PRINT_ERROR, "Unable to start agent server\n");
 		return 1;
 	}
@@ -219,15 +314,21 @@ int do_loop(void)
 	ret = agent_hdr_set(a, 0, 0, NULL, NULL);
 	assert(ret == 0);
 
-	ret = agent_query(a, AGENT_REQ_INIT);
-	assert(ret == 0);
+	ret = send_init_reply(a, AGENT_REQ_INIT);
+	if (ret != 0) {
+		print(PRINT_ERROR, "Initial reply error; agent_query returned %d\n", ret);
+		goto end;
+	}
 
 	for (;;) {
-//		ret = agent_hdr_recv(a);
-		
-		/* Wait for request, perform it and reply */
+		ret = do_handle_request(a);
+		if (ret != 0)
+			goto end;
 	}
-	return 0;
+
+end:
+	ppp_fini();
+	return ret;
 }
 
 int main(int argc, char **argv)
@@ -240,24 +341,28 @@ int main(int argc, char **argv)
 
 	if (!security_is_tty_detached()) {
 		/* We have stdout */
-		if (!security_is_privileged()) {
-			/* And we are not root */
-			printf("FATAL: This program should not be used like this.\n"
-			       "Use appropriate interface instead (like otpasswd).\n");
-			exit(EXIT_FAILURE);
-		}
-		
+		/* Check if we should run testcases. */
 		if (argc == 2 && strcmp(argv[1], "--check") == 0) {
-			return do_testcase();
-		} else {
-			printf("FATAL: This program should not be used like this.\n"
-			       "Use appropriate interface instead (like otpasswd)\n"
-			       "\n"
-			       "Since you're running this program as root you can \n"
-			       "run a set of testcases with --check option\n");
-
-			exit(EXIT_FAILURE);
+			if (!security_is_suid() || security_is_privileged()) {
+				/* We're not suid or we are root already */
+				return do_testcase();
+			}
 		}
+
+		printf("FATAL: This program should not be used like this.\n"
+		       "Use appropriate interface instead (like otpasswd).\n\n");
+
+
+		if (!security_is_suid()) {
+			printf("Since this program is not SUID you can run\n"
+			       "a set of testcases with --check option.\n");
+		} else {
+			if (security_is_privileged()) {
+				printf("Since you're running this program as root you can\n"
+				       "run a set of testcases with --check option\n");
+			}
+		}
+		exit(EXIT_FAILURE);
 	}
 
 

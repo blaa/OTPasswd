@@ -22,13 +22,13 @@
 
 #define DEBUG 1
 
+#include "ppp.h" /* Error handling mostly */
+
+#include "nls.h"
 #include "agent_private.h"
 #include "print.h"
 
-/* For passing errors from certain functions */
-static int agent_errno;
-
-agent *agent_connect(const char *agent_executable)
+int agent_connect(agent **a_out, const char *agent_executable)
 {
 	int ret = 1;
 	/* in[1]  - stdout of agent;  
@@ -38,15 +38,18 @@ agent *agent_connect(const char *agent_executable)
 	int in[2] = {-1, -1};
 	int out[2] = {-1, -1};
 	agent *a;
+	*a_out = NULL;
 
+	/* Allocate memory */
 	a = malloc(sizeof(*a));
-	if (!a) {
-		agent_errno = AGENT_ERR_MEMORY;
-		return NULL;
-	}
+	if (!a)
+		return AGENT_ERR_MEMORY;
 
+
+	/* Initialize basic fields */
 	a->error = 0;
 
+	/* Create pipes */
 	if (pipe(in) != 0)
 		goto cleanup;
 		
@@ -76,39 +79,43 @@ agent *agent_connect(const char *agent_executable)
 		/* Failure */
 		exit(1);
 	}
-	close(in[1]);
-	close(out[0]);
+
+	/* Close not our ends of pipes */
+	close(in[1]); 
+	in[1] = -1;
+	
+	close(out[0]);	
+	out[0] = -1;
 
 	a->in = in[0];
 	a->out = out[1];
 
-	/* TODO: Handle some signal? */
 
+	/* TODO: Handle some signal? SIGPIPE? */
 
 	/* Read message sent by server to indicate correct initialization
 	 * or any initialization problems */
 	if (agent_wait(a) != 0) {
-		agent_errno = AGENT_ERR_SERVER_INIT;
-		free(a);
-		return NULL;
+		ret = AGENT_ERR_SERVER_INIT;
+		goto cleanup1;
 	} else {
 		ret = agent_hdr_recv(a);
 		if (ret != 0)
-			goto cleanup;
+			goto cleanup1;
 		agent_hdr_debug(&a->rhdr);
 		if (a->rhdr.type != AGENT_REQ_INIT) {
 			ret = AGENT_ERR_SERVER_INIT;
-			goto cleanup;
+			goto cleanup1;
 		}
 
 		ret = a->rhdr.status;
 		if (ret != 0)
-			goto cleanup;
+			goto cleanup1;
 	}
 
 	print(PRINT_NOTICE, "Agent connection initialized correctly\n");
-	agent_errno = AGENT_OK;
-	return a;
+	*a_out = a;
+	return AGENT_OK;
 
 cleanup1:
 	if (in[0] != -1) close(in[0]);
@@ -117,20 +124,19 @@ cleanup1:
 	if (out[1] != -1) close(out[1]);
 
 cleanup:
-	agent_errno = ret;
 	free(a);
-	return NULL;
+	return ret;
 }
 
 
-agent *agent_server(void) 
+int agent_server(agent **a_out) 
 {
 	agent *a;
+	*a_out = NULL;
 
 	a = malloc(sizeof(*a));
 	if (!a) {
-		agent_errno = AGENT_ERR_MEMORY;
-		return NULL;
+		return AGENT_ERR_MEMORY;
 	}
 
 	a->in = 0;
@@ -139,7 +145,8 @@ agent *agent_server(void)
 	a->pid = -1;
 	a->error = 0;
 
-	return a;
+	*a_out = a;
+	return AGENT_OK;
 }
 
 int agent_disconnect(agent *a)
@@ -161,8 +168,27 @@ int agent_disconnect(agent *a)
 	return ret;
 }
 
-const char *agent_strerror(void)
+const char *agent_strerror(int error)
 {
+	switch (error) {
+	case AGENT_OK:
+		return _("No error");
+	case AGENT_ERR:
+		return _("Generic agent error.");
+	case AGENT_ERR_MEMORY:
+		return _("Error while allocating memory.");
+	case AGENT_ERR_SERVER_INIT:
+		return _("Error during agent initialization.");
+	case AGENT_ERR_PROTOCOL_MISMATCH:
+		return _("Agent protocol mismatch. Reinstall software.");
+	case AGENT_ERR_DISCONNECT:
+		return _("Agent unexpectedly disconnected.");
+
+	default:
+		if (error >= 100 && error <= 2000)
+			return _( ppp_get_error_desc(error) );
+		return _( "Unknown error" );
+	}
 	return NULL;
 }
 
@@ -240,10 +266,10 @@ int agent_testcase(void)
 
 	agent *a = NULL;
 
-	a = agent_connect(NULL);
-	if (a == NULL) {
+	ret = agent_connect(&a, NULL);
+	if (ret != AGENT_OK) {
 		printf("Unable to connect to agent.\n");
-		puts(agent_strerror());
+		puts(agent_strerror(ret));
 		failures++;
 		goto end;
 	}

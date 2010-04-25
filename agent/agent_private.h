@@ -11,20 +11,33 @@
 
 #include "num.h" /* num_t type */
 
+/* Musn't collide with PPP errors from ppp_common.h */
 enum AGENT_ERROR {
 	AGENT_OK=0,
 	AGENT_ERR=5000,
 	AGENT_ERR_MEMORY,
-	AGENT_ERR_POLICY,
 	AGENT_ERR_SERVER_INIT,
 	AGENT_ERR_PROTOCOL_MISMATCH,
 	AGENT_ERR_DISCONNECT,
 };
 
 enum AGENT_REQUEST {
-	/** Additional messaging */
-	AGENT_REQ_INIT = 1,           /**< Informs client that agent started */
+	/*** Additional messaging ***/
 
+	/** Informs client that agent started.
+	 * Args: status is non-zero on error.
+	 */
+	AGENT_REQ_INIT = 1,           
+
+	/** Asks server to quit
+	 * Arguments ignored
+	 */
+	AGENT_REQ_DISCONNECT,	      
+
+	/** Agent reply 
+	 * Arguments depends on what is it reply for.
+	 */
+	AGENT_REQ_REPLY,
 
 	/** Generate key */
 	AGENT_REQ_KEY_GENERATE,
@@ -96,7 +109,7 @@ typedef struct {
  ***/
 
 /** Configure agent interface to run as server */
-extern agent *agent_server(void);
+extern int agent_server(agent **a_out);
 
 /** Prepares header for sending */
 extern int agent_hdr_set(agent *a, int status, 
@@ -112,6 +125,47 @@ extern int agent_wait(agent *a);
 
 /** Displays header information */
 extern void agent_hdr_debug(const struct agent_header *hdr);
+
+/***
+ * Getters
+ ***/
+/** Type getter */
+static inline int agent_hdr_get_type(const agent *a) {
+	return a->rhdr.type;
+}
+
+/** Type setter */
+static inline void agent_hdr_set_type(agent *a, int type) {
+	a->shdr.type = type;
+}
+
+
+/** Status getter */
+static inline int agent_hdr_get_status(const agent *a) {
+	return a->rhdr.type;
+}
+
+/** Status setter */
+static inline void agent_hdr_set_status(agent *a, int status) {
+	a->shdr.status = status;
+}
+
+
+/** Int argument getter */
+static inline int agent_hdr_get_arg_int(const agent *a) {
+	return a->rhdr.int_arg;
+}
+
+/** num_t argument getter */
+static inline num_t agent_hdr_get_arg_num(const agent *a) {
+	return a->rhdr.num_arg;
+}
+
+/** String argument getter */
+static inline const char *agent_hdr_get_arg_str(const agent *a) {
+	return a->rhdr.str_arg;
+}
+
 
 /* Now include also public interface */
 #include "agent_interface.h"

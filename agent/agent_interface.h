@@ -109,12 +109,13 @@ typedef struct agent agent;
 #endif
 
 /*** Basic routines ***/
-extern agent *agent_connect(const char *agent_executable);
+extern int agent_connect(agent **a_out, const char *agent_executable);
 extern int agent_disconnect(agent *a);
 extern int agent_select_user(agent *a);
 
 /** Return translated description of last error */
-extern const char *agent_strerror(void);
+
+extern const char *agent_strerror(int error);
 
 /*** Actions ***/
 /** Generate new key, but do not store it on disc. 

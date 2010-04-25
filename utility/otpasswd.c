@@ -659,6 +659,8 @@ int main(int argc, char **argv)
 	int ret;
 	agent *a = NULL;
 
+	locale_init();
+
 	ret = ppp_init(PRINT_STDOUT, NULL);
 	if (ret != 0) {
 		puts(_(ppp_get_error_desc(ret)));
@@ -670,10 +672,10 @@ int main(int argc, char **argv)
 	}
 	print_config(PRINT_NOTICE|PRINT_STDOUT);
 
-	a = agent_connect("./agent_otp");
-	if (a == NULL) {
-		printf("Unable to connect to agent.\n");
-		puts(agent_strerror());
+	ret = agent_connect(&a, "./agent_otp");
+	if (ret != 0) {
+		printf("Unable to connect to agent: ");
+		puts(agent_strerror(ret));
 		return 1;
 	}
 

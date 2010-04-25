@@ -40,77 +40,78 @@
  * should ignore OTP login and sometimes we should hard-fail.
  */
 enum ppp_errors {
-	STATE_NOMEM = 40,
+	/* Warning: agent_strerror checks ranges of this values */
+	STATE_NOMEM = 100,
 
 	/*** ALWAYS FAIL ***/
 	/* Error while locking (existing) state file */
-	STATE_LOCK_ERROR = 50,
+	STATE_LOCK_ERROR = 110,
 
 	/* Error while parsing - state invalid */
-	STATE_PARSE_ERROR = 51,
+	STATE_PARSE_ERROR,
 
 	/* Counter too big. Key should be regenerated */
-	STATE_NUMSPACE = 52,
+	STATE_NUMSPACE,
 
 	/* File exists, but we're unable to open/read/write
 	 * state file (not a file, permissions might be wrong).
 	 */
-	STATE_IO_ERROR = 53,
+	STATE_IO_ERROR,
 
 	/* User doesn't exists in Unix database
 	 * but was required because of home directory */
-	STATE_NO_SUCH_USER = 54,
+	STATE_NO_SUCH_USER,
 
 	/*** NOT ALWAYS FATAL */
 	/* State doesn't exist.
 	 * If enforce = 0 - ignore OTP.
 	 */
-	STATE_NON_EXISTENT = 55,
+	STATE_NON_EXISTENT,
 
 	/* State exists, is readable, but doesn't have
 	 * user entry. Always causes ignore if enforce=0
 	 */
-	STATE_NO_USER_ENTRY = 56,
+	STATE_NO_USER_ENTRY,
 
 	/*** PPP Errors ***/
 
 	/* Generic error. Should not happen usually. */
-	PPP_ERROR = 100,
+	PPP_ERROR = 1000,
 
 	/* Action denied by policy */
-	PPP_ERROR_POLICY = 101,
+	PPP_ERROR_POLICY,
 
 	/* Input too long */
-	PPP_ERROR_TOO_LONG = 102,
+	PPP_ERROR_TOO_LONG,
 
 	/* Input contains illegal characters */
-	PPP_ERROR_ILL_CHAR = 103,
+	PPP_ERROR_ILL_CHAR,
 
 	/* Value out of range */
-	PPP_ERROR_RANGE = 104,
+	PPP_ERROR_RANGE,
 
 	/* User disabled, while trying some 
 	 * action like authentication */
-	PPP_ERROR_DISABLED = 105,
+	PPP_ERROR_DISABLED,
 
 
 	/* SPass related */
-	PPP_ERROR_SPASS_INCORRECT = 106,
+	PPP_ERROR_SPASS_INCORRECT,
 
 	/*** Errors which can happen only during initialization */
 
 	/* Unable to read config file */
-	PPP_ERROR_CONFIG = 110, 
+	PPP_ERROR_CONFIG,
 
 	/* DB option in config not set. */
-	PPP_ERROR_NOT_CONFIGURED = 111,
+	PPP_ERROR_NOT_CONFIGURED,
 
 	/* Config not owned by root */
-	PPP_ERROR_CONFIG_OWNERSHIP = 112,
+	PPP_ERROR_CONFIG_OWNERSHIP,
 
 	/* Incorrect config permissions
 	 * Probably o+r/g+r and LDAP/MySQL selected */
-	PPP_ERROR_CONFIG_PERMISSIONS = 113,
+	PPP_ERROR_CONFIG_PERMISSIONS,
 };
 
 enum ppp_flags {
