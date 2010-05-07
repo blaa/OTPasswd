@@ -129,21 +129,9 @@ int do_testcase(void)
 }
 
 
-int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
+int perform_action(options_t *options, cfg_t *cfg)
 {
 	int retval;
-
-	/* Reconfigure printing subsystem; -v might be passed */
-	switch (cfg->pam_logging) {
-	case 0: print_config(PRINT_STDOUT | PRINT_NONE); break;
-	case 1: print_config(PRINT_STDOUT | PRINT_ERROR); break;
-	case 2: print_config(PRINT_STDOUT | PRINT_WARN); break; 
-	case 3: print_config(PRINT_STDOUT | PRINT_NOTICE); break; 
-	default:
-		assert(0);
-		retval = 1;
-		goto cleanup;
-	}
 
 	/* Perform action */
 	switch (options->action) {
@@ -223,16 +211,23 @@ int send_init_reply(agent *a, int status)
 	return agent_hdr_send(a);
 }
 
+int verify_policy(const agent *a)
+{
+}
 
 
-int do_handle_request(agent *a) 
+int execute_action(agent *a)
+{
+}
+
+int handle_request(agent *a) 
 {
 	int ret;
 
 	/* Wait for request, perform it and reply */
 	ret = agent_hdr_recv(a);
 	if (ret != 0) {
-		print(PRINT_ERROR, "Client disconnected\n");
+		print(PRINT_ERROR, "Client disconnected while waiting for request header (%d).\n", ret);
 		return 1;
 	}
 		
@@ -243,15 +238,18 @@ int do_handle_request(agent *a)
 	const num_t r_num = agent_hdr_get_arg_num(a);
 	const char *r_str = agent_hdr_get_arg_str(a);
 
+	print(PRINT_NOTICE, "Received request header of type %d\n", r_type);
+
 	switch (r_type) {
 	case AGENT_REQ_DISCONNECT:
 		/* Correct close */
-		return 0;
+		return AGENT_REQ_DISCONNECT;
 
 		/* KEY */
 	case AGENT_REQ_KEY_GENERATE:
 		print(PRINT_NOTICE, "Request: KEY_GENERATE\n");
 		send_reply(a, AGENT_ERR);
+		print(PRINT_NOTICE, "Reply sent!\n");
 		break;
 	case AGENT_REQ_KEY_REMOVE:
 		print(PRINT_NOTICE, "Request: KEY_REMOVE\n");
@@ -299,35 +297,36 @@ int do_handle_request(agent *a)
 }
 
 
-int do_loop(void) 
+int main_loop(agent *a, cfg_t *cfg) 
 {
 	int ret;
 
-	/* Everything seems fine; send message that we're ready */
-	agent *a;
-	ret = agent_server(&a);
-	if (ret != AGENT_OK) {
-		print(PRINT_ERROR, "Unable to start agent server\n");
-		return 1;
-	}
-
-	ret = agent_hdr_set(a, 0, 0, NULL, NULL);
-	assert(ret == 0);
-
-	ret = send_init_reply(a, AGENT_REQ_INIT);
+	ret = send_init_reply(a, 0);
 	if (ret != 0) {
 		print(PRINT_ERROR, "Initial reply error; agent_query returned %d\n", ret);
 		goto end;
 	}
 
+	print(PRINT_NOTICE, "Agent correctly initialized. Looping.\n");
 	for (;;) {
-		ret = do_handle_request(a);
-		if (ret != 0)
+		ret = handle_request(a);
+		/* Correct quit message? */
+		if (ret == AGENT_REQ_DISCONNECT) {
+			print(PRINT_ERROR, "Agent finishing gracefully.\n");
+			ret = 0;
 			goto end;
+		}
+
+		/* Error */
+		if (ret != 0) {
+			print(PRINT_ERROR, "Agent finishing with error %d\n", ret);
+			goto end;
+		}
 	}
 
 end:
 	ppp_fini();
+	agent_disconnect(a);
 	return ret;
 }
 
@@ -371,6 +370,18 @@ int main(int argc, char **argv)
 	 * b) Can be SUID root (run by root or normal user)
 	 */
 
+	/* Initialize agent struct so we can sent information
+	 * about initialization errors */
+	agent *a;
+	ret = agent_server(&a);
+	if (ret != AGENT_OK) {
+		print(PRINT_ERROR, "Unable to start agent server\n");
+		return 1;
+	}
+
+	ret = agent_hdr_set(a, 0, 0, NULL, NULL);
+	assert(ret == 0);
+
 
 	/***
 	 * Initialization
@@ -389,6 +400,7 @@ int main(int argc, char **argv)
 		ppp_fini();
 		return 1;
 	}
+	print_config(PRINT_NOTICE);
 
 	/* Will succeed, as ppp_init suceeded */
 	cfg = cfg_get();
@@ -436,5 +448,5 @@ int main(int argc, char **argv)
 	}
 
 	/* Agent loop */
-	return do_loop();
+	return main_loop(cfg);
 }

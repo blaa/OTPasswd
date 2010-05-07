@@ -48,6 +48,8 @@ int agent_connect(agent **a_out, const char *agent_executable)
 
 	/* Initialize basic fields */
 	a->error = 0;
+	a->s = NULL;
+	a->shdr.protocol_version = AGENT_PROTOCOL_VERSION;
 
 	/* Create pipes */
 	if (pipe(in) != 0)
@@ -77,7 +79,7 @@ int agent_connect(agent **a_out, const char *agent_executable)
 		execl(agent_executable, agent_executable, NULL);
 
 		/* Failure */
-		exit(1);
+		exit(5);
 	}
 
 	/* Close not our ends of pipes */
@@ -97,20 +99,27 @@ int agent_connect(agent **a_out, const char *agent_executable)
 	 * or any initialization problems */
 	if (agent_wait(a) != 0) {
 		ret = AGENT_ERR_SERVER_INIT;
+		print(PRINT_ERROR, "Timeout while waiting for agent initialization frame.\n");
 		goto cleanup1;
 	} else {
 		ret = agent_hdr_recv(a);
-		if (ret != 0)
+		if (ret != 0) {
+			print(PRINT_ERROR, "Error while receiving initial header.\n");
 			goto cleanup1;
+		
+		}
 		agent_hdr_debug(&a->rhdr);
 		if (a->rhdr.type != AGENT_REQ_INIT) {
+			print(PRINT_ERROR, "Initial frame parsing error.\n");
 			ret = AGENT_ERR_SERVER_INIT;
 			goto cleanup1;
 		}
 
 		ret = a->rhdr.status;
-		if (ret != 0)
+		if (ret != 0) {
+			print(PRINT_ERROR, "Agent failed to initialize correctly.\n");
 			goto cleanup1;
+		}
 	}
 
 	print(PRINT_NOTICE, "Agent connection initialized correctly\n");
@@ -133,11 +142,13 @@ int agent_server(agent **a_out)
 {
 	agent *a;
 	*a_out = NULL;
-
 	a = malloc(sizeof(*a));
 	if (!a) {
 		return AGENT_ERR_MEMORY;
 	}
+
+	a->s = NULL;
+	a->shdr.protocol_version = AGENT_PROTOCOL_VERSION;
 
 	a->in = 0;
 	a->out = 1;
@@ -165,6 +176,7 @@ int agent_disconnect(agent *a)
 	/* Free memory */
 	free(a);
 
+	/* TODO: Free/clean state if not NULL */
 	return ret;
 }
 

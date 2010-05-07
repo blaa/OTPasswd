@@ -227,6 +227,7 @@ int parse_flag(options_t *options, const char *arg)
 	return 0;
 }
 
+#if 0
 /* Parse command line. Ensure we do not put any wrong data into options,
  * that is - longer than expected or containing any illegal characters */
 int process_cmd_line(int argc, char **argv, options_t *options, cfg_t *cfg)
@@ -404,6 +405,7 @@ error:
 	return 1;
 }
 
+
 int perform_action(int argc, char **argv, options_t *options, cfg_t *cfg)
 {
 	int ret;
@@ -549,7 +551,6 @@ cleanup:
 }
 
 
-#if 0
 extern char **environ;
 int main(int argc, char **argv)
 {
@@ -661,7 +662,7 @@ int main(int argc, char **argv)
 
 	locale_init();
 
-	ret = ppp_init(PRINT_STDOUT, NULL);
+/*	ret = ppp_init(PRINT_STDOUT, NULL);
 	if (ret != 0) {
 		puts(_(ppp_get_error_desc(ret)));
 		puts("");
@@ -670,21 +671,22 @@ int main(int argc, char **argv)
 		ppp_fini();
 		return 1;
 	}
-	print_config(PRINT_NOTICE|PRINT_STDOUT);
+*/
+	print_init(PRINT_NOTICE|PRINT_STDOUT, NULL);
+	//print_config(PRINT_NOTICE|PRINT_STDOUT);
 
 	ret = agent_connect(&a, "./agent_otp");
 	if (ret != 0) {
-		printf("Unable to connect to agent: ");
+		printf("Unable to connect to agent: (%d) ", ret);
 		puts(agent_strerror(ret));
 		return 1;
 	}
 
 	printf("HERE\n");
-
+	fgetc(stdin);
 	// superuser only: agent_set_user(a, "user");
 	ret = agent_key_generate(a);
-	printf("generate returned: %d\n", ret);
-	
+	printf("generate returned: (%d) %s\n", ret, agent_strerror(ret));
 
 	ret = agent_disconnect(a);
 	if (ret != 0) { 

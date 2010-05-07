@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include <sys/select.h>
 
-
 int agent_wait(agent *a)
 {
 	fd_set rfds;
@@ -38,7 +37,7 @@ static int agent_read(const int fd, void *data, size_t len)
 	void *data_pos = data;
 	int ret;
 
-
+	print(PRINT_ERROR, "AGENT_READ ENTRY\n");
 	for (;;) {
 		/* Copy all buffered data */
 		if (buffered) {
@@ -49,30 +48,38 @@ static int agent_read(const int fd, void *data, size_t len)
 			data_pos += to_go;
 			buff_pos += to_go;			
 		}
-		if (len == 0)
+		if (len == 0) {
+			print(PRINT_ERROR, "HEREOK 1?\n");
 			return AGENT_OK;
+		}
 
 		/* Need some more; buffered is empty now */
 		buff_pos = buff;
 		buffered = read(fd, buff, sizeof(buff));
 		if (buffered == 0) {
+			print(PRINT_ERROR, "HERE 1?\n");
 			return AGENT_ERR_DISCONNECT;
 		}
 
 		if (buffered < 0) {
+			print(PRINT_ERROR, "HERE 2?\n");
 			return AGENT_ERR_DISCONNECT;
 		}
 	}
 
 	ret = read(fd, data, len);
 	if (ret == 0) {
+		print(PRINT_ERROR, "HERE 3?\n");
 		/* End-of-file - second end was closed! */
 		return AGENT_ERR_DISCONNECT;
 	}
-	printf("len: %zd ret: %d\n", len, ret);
 	assert(ret == len);
-	if (ret != len) 
+
+	/* print(PRINT_ERROR, "len: %zd ret: %d\n", len, ret); */
+	if (ret != len) {
+		print(PRINT_ERROR, "HERE 3?\n");
 		return 1;
+	}
 
 /*	fd_set rfds;
 	FD_ZERO(&rfds);
@@ -81,6 +88,7 @@ static int agent_read(const int fd, void *data, size_t len)
 		perror("select");
 		return 1;
 	}*/
+	print(PRINT_ERROR, "HEREOK 2?\n");
 	return AGENT_OK;
 }
 
@@ -103,14 +111,14 @@ static int agent_write(const int fd, const void *buf, const size_t len)
 #define _send(field)	  \
 	do { \
 		ret = agent_write(fd, &a->shdr.field, sizeof(a->shdr.field)); \
-		if (ret != 0) \
+		if (ret != AGENT_OK) \
 			return ret; \
 	} while (0);
 
 #define _recv(field)	  \
 	do { \
 		ret = agent_read(fd, &a->rhdr.field, sizeof(a->rhdr.field)); \
-		if (ret != 0) \
+		if (ret != AGENT_OK) \
 			return ret; \
 	} while (0);
 
@@ -145,11 +153,13 @@ int agent_hdr_recv(agent *a)
 	_recv(num_arg);
 
 	ret = agent_read(fd, a->rhdr.str_arg, sizeof(a->rhdr.str_arg));
-	if (ret != 0) {
+	if (ret != AGENT_OK) {
 		return ret;
 	}
 
 	if (a->rhdr.protocol_version != AGENT_PROTOCOL_VERSION) {
+		print(PRINT_ERROR, "Protocol mismatch detected (%u != %u)\n", 
+		      a->rhdr.protocol_version, AGENT_PROTOCOL_VERSION);
 		return AGENT_ERR_PROTOCOL_MISMATCH;
 	}
 	return AGENT_OK;

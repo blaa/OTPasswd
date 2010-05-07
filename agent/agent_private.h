@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <sys/types.h> /* pid_t etc. */
 
+#include "ppp.h"
 #include "num.h" /* num_t type */
 
 /* Musn't collide with PPP errors from ppp_common.h */
@@ -102,6 +103,9 @@ typedef struct {
 
 	/** Recv header */
 	struct agent_header rhdr;
+
+	/** State currently held by server */
+	state *s;
 } agent;
 
 /***
