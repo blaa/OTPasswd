@@ -45,11 +45,10 @@ int agent_connect(agent **a_out, const char *agent_executable)
 	if (!a)
 		return AGENT_ERR_MEMORY;
 
-
 	/* Initialize basic fields */
 	a->error = 0;
-	a->s = NULL;
 	a->shdr.protocol_version = AGENT_PROTOCOL_VERSION;
+	a->s = NULL;
 
 	/* Create pipes */
 	if (pipe(in) != 0)
@@ -141,14 +140,18 @@ cleanup:
 int agent_server(agent **a_out) 
 {
 	agent *a;
+
 	*a_out = NULL;
 	a = malloc(sizeof(*a));
 	if (!a) {
 		return AGENT_ERR_MEMORY;
 	}
 
-	a->s = NULL;
+	a->username = NULL;
 	a->shdr.protocol_version = AGENT_PROTOCOL_VERSION;
+	a->s = NULL;
+
+
 
 	a->in = 0;
 	a->out = 1;
@@ -160,10 +163,19 @@ int agent_server(agent **a_out)
 	return AGENT_OK;
 }
 
+void agent_set_user(agent *a, char *username)
+{
+	assert(a);
+	assert(username);
+	if (a->username)
+		free(a->username);
+	a->username = username;
+}
+
 int agent_disconnect(agent *a)
 {
 	int ret = 0;
-	/* Send quit message */
+	/* TODO: Send quit message if client */
 
 	/* Wait for child to close? */
 
@@ -173,10 +185,17 @@ int agent_disconnect(agent *a)
 	if (a->out != -1)
 		ret += close(a->out);
 
+	if (a->username)
+		free(a->username);
+
+	if (a->s) {
+		ppp_state_fini(a->s);
+	}
+
 	/* Free memory */
+	memset(a, 0, sizeof(*a));
 	free(a);
 
-	/* TODO: Free/clean state if not NULL */
 	return ret;
 }
 
@@ -204,6 +223,27 @@ const char *agent_strerror(int error)
 	return NULL;
 }
 
+int agent_state_new(agent *a)
+{
+	return agent_query(a, AGENT_REQ_STATE_NEW);
+}
+
+int agent_state_load(agent *a)
+{
+	return agent_query(a, AGENT_REQ_STATE_LOAD);
+}
+
+int agent_state_store(agent *a)
+{
+	return agent_query(a, AGENT_REQ_STATE_STORE);
+}
+
+int agent_state_drop(agent *a)
+{
+	return agent_query(a, AGENT_REQ_STATE_DROP);
+}
+
+
 
 int agent_key_generate(agent *a)
 {
@@ -213,11 +253,6 @@ int agent_key_generate(agent *a)
 int agent_key_remove(agent *a)
 {
 	return agent_query(a, AGENT_REQ_KEY_REMOVE);
-}
-
-int agent_key_store(agent *a)
-{
-	return agent_query(a, AGENT_REQ_KEY_STORE);
 }
 
 int agent_flag_set(agent *a, int flag)
@@ -235,11 +270,6 @@ int agent_flag_check(agent *a, int flag)
 	return agent_query(a, AGENT_REQ_FLAG_CHECK);
 }
 
-
-int agent_read_state(agent *a)
-{
-	return agent_query(a, AGENT_REQ_READ_STATE);
-}
 
 /*
 int agent_get_key(const agent *a, char *key)
@@ -290,7 +320,7 @@ int agent_testcase(void)
 
 	/* Gets all information possible about state. Should be done 
 	 * before generating key to ask user about some details. */
-	ret = agent_read_state(a);
+	ret = agent_state_load(a);
 	/* Check ret */
 	
 	/* Interface for generating key */

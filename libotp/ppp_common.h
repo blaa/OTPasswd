@@ -144,8 +144,12 @@ enum ppp_options {
 	/* Unlock state DB */
 	PPP_UNLOCK = 4,
 
+	/* Remove previously loaded user state file */
+	PPP_REMOVE = 8,
+
 	/* Do not keep lock when loading. */
-	PPP_DONT_LOCK = 8,
+	PPP_DONT_LOCK = 16,
+
 };
 
 

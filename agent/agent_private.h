@@ -14,31 +14,64 @@
 
 /* Musn't collide with PPP errors from ppp_common.h */
 enum AGENT_ERROR {
+	/*** Generic ***/
 	AGENT_OK=0,
 	AGENT_ERR=5000,
+
+	/* Incorrect request */
+	AGENT_ERR_REQ, 
+	/* Incorrect request argument */
+	AGENT_ERR_REQ_ARG,
+	
+	/*** Initial errors ***/
+	AGENT_ERR_INIT_CONFIGURATION,
+	AGENT_ERR_INIT_PRIVILEGES,
+	AGENT_ERR_INIT_USER,
+
+	/*** Various errors ***/
 	AGENT_ERR_MEMORY,
+	AGENT_ERR_POLICY,
 	AGENT_ERR_SERVER_INIT,
 	AGENT_ERR_PROTOCOL_MISMATCH,
 	AGENT_ERR_DISCONNECT,
 };
 
 enum AGENT_REQUEST {
-	/*** Additional messaging ***/
+	/*** Generic requests/messages ***/
 
 	/** Informs client that agent started.
 	 * Args: status is non-zero on error.
 	 */
-	AGENT_REQ_INIT = 1,           
+	AGENT_REQ_INIT = 1,
 
 	/** Asks server to quit
 	 * Arguments ignored
 	 */
 	AGENT_REQ_DISCONNECT,	      
 
+	/** Set username of which we're going
+	 * to mess state data. Can be used exclusively
+	 * by privileged user */
+	AGENT_REQ_USER_SET,
+
 	/** Agent reply 
 	 * Arguments depends on what is it reply for.
 	 */
 	AGENT_REQ_REPLY,
+
+	/*** State related request ***/
+	/** Call before generating new key */
+	AGENT_REQ_STATE_NEW,
+
+	/** Call before doing state queries or to check if state exists */
+	AGENT_REQ_STATE_LOAD,
+
+	/** Store key */
+	AGENT_REQ_STATE_STORE,
+
+	/** Forget loaded/new state */
+	AGENT_REQ_STATE_DROP,
+
 
 	/** Generate key */
 	AGENT_REQ_KEY_GENERATE,
@@ -46,16 +79,13 @@ enum AGENT_REQUEST {
 	/** Remove key */
 	AGENT_REQ_KEY_REMOVE,
 
-	/** Store key */
-	AGENT_REQ_KEY_STORE,
-
-	/** Read state from disc */
-	AGENT_REQ_READ_STATE,
-
 	AGENT_REQ_FLAG_SET,
 	AGENT_REQ_FLAG_CLEAR,
 	AGENT_REQ_FLAG_CHECK,
 	AGENT_REQ_FLAG_GET, /* <-- FIX */
+
+	/* Verify that the state is consistent with policy */
+	AGENT_REQ_VERIFY,
 
 };
 
@@ -104,7 +134,12 @@ typedef struct {
 	/** Recv header */
 	struct agent_header rhdr;
 
-	/** State currently held by server */
+	/** Username owning state; used only if ran by privileged user */
+	char *username;
+
+	/** State currently held by agent
+	 * Currently only freshly generated key can be
+	 * stored here */
 	state *s;
 } agent;
 

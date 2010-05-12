@@ -27,9 +27,6 @@
 /* OTP Agent */
 #include "agent_interface.h"
 
-/* libotp header */
-#include "ppp.h"
-
 /* Utility headers */
 #include "security.h"
 #include "nls.h"

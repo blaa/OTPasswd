@@ -293,6 +293,30 @@ int ppp_state_verify(const state *s)
 	return 0;
 }
 
+
+int ppp_alphabet_get(int id, const char **alphabet)
+{
+	const cfg_t *cfg = cfg_get();
+	const int verify = ppp_verify_alphabet(id);
+	assert(cfg);
+	assert(alphabet);
+
+	switch (verify) {
+	case PPP_ERROR_POLICY:
+		if (id == 0) {
+			/* 0 - custom */
+			*alphabet = cfg->alphabet_custom;
+		} else {
+			*alphabet = alphabets[id];
+		}
+
+	default:
+	case PPP_ERROR_RANGE:
+		*alphabet = NULL;
+	}
+	return verify;
+}
+
 void ppp_alphabet_print(void)
 {
 	const cfg_t *cfg = cfg_get();
@@ -772,6 +796,31 @@ int ppp_state_release(state *s, int flags)
 {
 	int ret;
 	int retval = 0;
+
+	if ((flags & PPP_STORE) && (flags & PPP_REMOVE)) {
+		print(PRINT_ERROR, "Do not combine PPP_STORE and PPP_REMOVE flags.\n");
+		assert(0);
+		return 1;
+	}
+
+	if (flags & PPP_CHECK_POLICY) {
+		const cfg_t *cfg = cfg_get();
+		assert(cfg);
+		if (cfg->key_removal == CONFIG_DISALLOW) {
+			return PPP_ERROR_POLICY;
+		}
+		/* WARN: Doesn't check if will we overwrite state entry
+		 * with new key when KEY_REGENERATE is DISALLOW. This test
+		 * is done in ppp_state_generate. Hopefully. */
+	}
+
+	if (flags & PPP_REMOVE) {
+		if ((ret = state_store(s, 1)) != 0) {
+			print(PRINT_ERROR, "Error while removing state entry\n");
+			print(PRINT_NOTICE, "(%d: %s)\n", ret, ppp_get_error_desc(ret));
+			retval++;
+		}
+	}
 	
 	if (flags & PPP_STORE) {
 		if ((ret = state_store(s, 0)) != 0) {
@@ -791,6 +840,49 @@ int ppp_state_release(state *s, int flags)
 
 	return retval;
 }
+
+int ppp_key_generate(state *s, int flags)
+{
+	int ret;
+	const int policy = flags & PPP_CHECK_POLICY;
+	const cfg_t *cfg = cfg_get();
+	assert(s);
+	assert(cfg);
+
+	/* State musn't be locked currently */
+	if (s->lock != -1) {
+		print(PRINT_ERROR, "Unable to generate key while holding a lock on state db\n");
+		assert(0); /* This is programing error */
+		return PPP_ERROR;
+	}
+
+	if (policy && cfg->key_regeneration == CONFIG_DISALLOW) {
+		state tmp_s;
+		ret = state_init(&tmp_s, s->username);
+		if (ret != 0) {
+			print(PRINT_ERROR, "Unable to init temporary state\n");
+			return PPP_ERROR;
+		}
+	
+		ret = ppp_state_load(&tmp_s, PPP_DONT_LOCK);
+		state_fini(&tmp_s);
+
+		if (ret == 0) {
+			return PPP_ERROR_POLICY;
+		}
+	}
+
+	/* TODO/FIXME: Die if existing state is disabled! */
+
+	ret = state_key_generate(s);
+	if (ret != 0) {
+		print(PRINT_ERROR, "Error while generating new key (in state block)\n");
+		return ret;
+	}
+
+	return 0;
+}
+
 
 /*******************
  * Atomic combos

@@ -111,19 +111,31 @@ typedef struct agent agent;
 /*** Basic routines ***/
 extern int agent_connect(agent **a_out, const char *agent_executable);
 extern int agent_disconnect(agent *a);
-extern int agent_select_user(agent *a);
+extern void agent_set_user(agent *a, char *username);
 
 /** Return translated description of last error */
 
 extern const char *agent_strerror(int error);
 
 /*** Actions ***/
+
+/** Creates new state - done before generating key. */
+extern int agent_state_new(agent *a);
+
+/** Loads users state information. */
+extern int agent_state_load(agent *a);
+
+/** Drops loaded or new state */
+extern int agent_state_drop(agent *a);
+
+/** Stores previously generated and configured key. */
+extern int agent_state_store(agent *a);
+
+
 /** Generate new key, but do not store it on disc. 
  * Flags can be set with different command separately. */
 extern int agent_key_generate(agent *a);
 
-/** Stores previously generated and configured key. */
-extern int agent_key_store(agent *a);
 
 /** Remove user state; warnings about otp enforcements are due to UI */
 extern int agent_key_remove(agent *a);
@@ -140,10 +152,7 @@ extern int agent_flag_clear(agent *a, int flag);
 extern int agent_flag_check(agent *a, int flag);
 
 
-/** Status query
- *
- * Remove held information about state and read new from state file. */
-extern int agent_read_state(agent *a);
+/** Status query */
 
 /* Set of getters/setters */
 extern int agent_get_key(const agent *a, char *key);
@@ -158,9 +167,7 @@ extern int agent_get_int(agent *a, int field, int *reply);
 /* Config query */
 extern int agent_get_passcode(const agent *a, int field, char **reply); 
 
-
-
-void agent_set(agent *a);
+// void agent_set(agent *a);
 
 
 #endif

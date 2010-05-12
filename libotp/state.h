@@ -113,6 +113,12 @@ typedef struct {
 	 * and can have some other db_ related information
 	 * (like descriptor of opened lock file) */
 	int lock;	
+
+	/* Set to '1' if new key was generated and was not stored yet
+	 * otherwise equals 0. When this flag is set we can store new state
+	 * entry without previously locking it before reading as the counter 
+	 * value will be overwritten nevertheless. */
+	int new_key;
 } state;
 
 

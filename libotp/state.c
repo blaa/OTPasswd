@@ -91,6 +91,7 @@ int state_init(state *s, const char *username)
 	s->spass_time = 0;
 	s->channel_time = 0;
 	s->lock = -1;
+	s->new_key = 0;
 
 	s->prompt = NULL;
 
@@ -175,20 +176,7 @@ int state_key_generate(state *s)
 
 	const int salt = s->flags & FLAG_SALTED;
 
-	printf("Generating new %s key.\n\n", salt ? "salted" : "not salted");
-	puts(
-		"Hint: Move your mouse, cause some disc activity (`find /` is good)\n"
-		"or type on keyboard to make the progress faster.\n");
-
-/*
-	if (crypto_rng(entropy_pool, pseudo_random, 1) != 0) {
-		print(PRINT_ERROR, "Unable to get enough pseudo random bytes\n");
-		return 1;
-	}
-*/
-
-	/* Gather entropy from random, then fallback to urandom... */
-	printf("Gathering entropy...");
+	/* Gather entropy from random + urandom to speed things up... */
 	if (crypto_file_rng("/dev/random", NULL,
 		    entropy_pool, real_random) != 0)
 	{
@@ -202,7 +190,6 @@ int state_key_generate(state *s)
 		print_perror(PRINT_ERROR, "Unable to open /dev/random");
 		return 1;
 	}
-	printf("DONE\n");
 
 	if (salt == 0) {
 		crypto_sha256(entropy_pool, sizeof(entropy_pool), s->sequence_key);
@@ -220,7 +207,6 @@ int state_key_generate(state *s)
 		unsigned char cnt_bin[32];
 		crypto_sha256(entropy_pool + sizeof(entropy_pool)/2, sizeof(entropy_pool)/2, cnt_bin);
 		num_import(&s->counter, (char *)cnt_bin, NUM_FORMAT_BIN);
-//		num_from_bin(s->counter, cnt_bin, 16); /* Counter is 128 bit only */
 		mpz_and(s->counter, s->counter, s->salt_mask);
 		mpz_set_ui(s->latest_card, 0);
 
@@ -230,6 +216,7 @@ int state_key_generate(state *s)
 		s->flags |= FLAG_SALTED;
 	}
 
+	s->new_key = 1;
 	return 0;
 }
 
@@ -300,7 +287,24 @@ int state_load(state *s)
 int state_store(state *s, int remove)
 {
 	cfg_t *cfg = cfg_get();
+	int locked = 0;
+	int ret = 1;
 	assert(cfg);
+
+	if (s->new_key == 1) {
+		/* State musn't be locked already! */
+		assert(s->lock <= 0); 
+		if (s->lock > 0)
+			return STATE_LOCK_ERROR;
+
+		/* Lock state for this write exclusively */
+		ret = state_lock(s);
+		if (ret != 0) {
+			print(PRINT_ERROR, "Unable to lock file for writing!\n");
+			return STATE_LOCK_ERROR;
+		}
+		locked = 1;
+	}
 
 	if (s->lock <= 0) {
 		print(PRINT_ERROR,
@@ -309,18 +313,33 @@ int state_store(state *s, int remove)
 		return 2;
 	}
 
+	s->new_key = 0;
+
 	switch (cfg->db) {
 	case CONFIG_DB_USER:
 	case CONFIG_DB_GLOBAL:
-		return db_file_store(s, remove);
+		ret = db_file_store(s, remove);
+		break;
 
 	case CONFIG_DB_MYSQL:
-		return db_mysql_store(s, remove);
+		ret = db_mysql_store(s, remove);
+		break;
 
 	case CONFIG_DB_LDAP:
-		return db_ldap_store(s, remove);
+		ret = db_ldap_store(s, remove);
+		break;
 	default:
 		assert(0);
-		return 1;
+		ret = 1;
+		break;
 	}
+
+	if (locked) {
+		/* Unlock recently locked state */
+		if (state_unlock(s) != 0) {
+			print(PRINT_WARN, "Strange error while unlocking the file");
+		}
+	}
+
+	return ret;
 }

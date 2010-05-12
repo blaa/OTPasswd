@@ -137,7 +137,7 @@ SET_TARGET_PROPERTIES(pam_otpasswd PROPERTIES PREFIX "")
 ADD_EXECUTABLE(otpasswd utility/otpasswd.c)
 
 # Agent server
-ADD_EXECUTABLE(agent_otp agent/agent.c agent/testcases.c agent/security.c)
+ADD_EXECUTABLE(agent_otp agent/agent.c agent/request.c agent/testcases.c agent/security.c)
 
 
 # Linking targets

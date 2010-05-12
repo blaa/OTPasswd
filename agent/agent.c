@@ -25,13 +25,13 @@
 
 /* agent communication */
 #include "agent_private.h"
+#include "request.h"
 
 /* libotp header */
 #include "ppp.h"
 
 /* Utility headers */
 #include "security.h"
-#include "actions.h"
 #include "testcases.h"
 
 
@@ -128,81 +128,6 @@ int do_testcase(void)
 	return retval;
 }
 
-
-int perform_action(options_t *options, cfg_t *cfg)
-{
-	int retval;
-
-	/* Perform action */
-	switch (options->action) {
-	case 0:
-		printf(("No action specified. Try passing -k, -s, -t or -l\n\n"));
-		retval = 1;
-		goto cleanup;
-/*
-	case OPTION_KEY:
-	case OPTION_REMOVE:
-		retval = action_key(options);
-		break;
-
-	case OPTION_SPASS:
-		retval = action_spass(options);
-		break;
-
-	case OPTION_ALPHABETS:
-	case OPTION_CONFIG:
-	case OPTION_INFO:
-	case OPTION_INFO_KEY:
-		retval = action_flags(options);
-		break;
-
-	case OPTION_AUTH:
-		ret = action_authenticate(options);
-		if (ret == 0)
-			retval = 1;
-		else
-			retval = 0;
-		break;
-	case OPTION_VERSION:
-		retval = action_license(options);
-		break;
-
-	case OPTION_WARN:
-	case OPTION_SKIP:
-	case OPTION_TEXT:
-	case OPTION_LATEX:
-	case OPTION_PROMPT:
-		retval = action_print(options);
-		break;
-*/
-	default:
-		printf(("Program error. You shouldn't end up here.\n"));
-		assert(0);
-		retval = 1;
-		goto cleanup;
-	}
-
-
-cleanup:
-	free(options->action_arg);
-	free(options->label);
-	free(options->contact);
-	free(options->username);
-	ppp_fini();
-	return retval;
-}
-
-/** Used to communicate how previous request was finished
- * without returning any important data (but the data might
- * be set before this command to sent it along)
- */
-int send_reply(agent *a, int status) 
-{
-	agent_hdr_set_status(a, status);
-	agent_hdr_set_type(a, AGENT_REQ_REPLY);
-	return agent_hdr_send(a);
-}
-
 /** Marks end of initialization (succeeded or not) */
 int send_init_reply(agent *a, int status) 
 {
@@ -211,105 +136,20 @@ int send_init_reply(agent *a, int status)
 	return agent_hdr_send(a);
 }
 
-int verify_policy(const agent *a)
-{
-}
-
-
-int execute_action(agent *a)
-{
-}
-
-int handle_request(agent *a) 
-{
-	int ret;
-
-	/* Wait for request, perform it and reply */
-	ret = agent_hdr_recv(a);
-	if (ret != 0) {
-		print(PRINT_ERROR, "Client disconnected while waiting for request header (%d).\n", ret);
-		return 1;
-	}
-		
-	/* Read request parameters */
-	const int r_type = agent_hdr_get_type(a);
-	const int r_status = agent_hdr_get_status(a);
-	const int r_int = agent_hdr_get_arg_int(a);
-	const num_t r_num = agent_hdr_get_arg_num(a);
-	const char *r_str = agent_hdr_get_arg_str(a);
-
-	print(PRINT_NOTICE, "Received request header of type %d\n", r_type);
-
-	switch (r_type) {
-	case AGENT_REQ_DISCONNECT:
-		/* Correct close */
-		return AGENT_REQ_DISCONNECT;
-
-		/* KEY */
-	case AGENT_REQ_KEY_GENERATE:
-		print(PRINT_NOTICE, "Request: KEY_GENERATE\n");
-		send_reply(a, AGENT_ERR);
-		print(PRINT_NOTICE, "Reply sent!\n");
-		break;
-	case AGENT_REQ_KEY_REMOVE:
-		print(PRINT_NOTICE, "Request: KEY_REMOVE\n");
-		send_reply(a, AGENT_ERR);
-		break;
-	case AGENT_REQ_KEY_STORE:
-		print(PRINT_NOTICE, "Request: KEY_STORE\n");
-		send_reply(a, AGENT_ERR);
-		break;
-
-		/* STATE */
-	case AGENT_REQ_READ_STATE:
-		print(PRINT_NOTICE, "Request: READ_STATE\n");
-		send_reply(a, AGENT_ERR);
-		break;
-
-		/* FLAGS */
-	case AGENT_REQ_FLAG_SET:
-		print(PRINT_NOTICE, "Request: FLAG_SET\n");
-		send_reply(a, AGENT_ERR);
-		break;
-
-	case AGENT_REQ_FLAG_CLEAR:
-		print(PRINT_NOTICE, "Request: FLAG_CLEAR\n");
-		send_reply(a, AGENT_ERR);
-		break;
-
-	case AGENT_REQ_FLAG_CHECK:
-		print(PRINT_NOTICE, "Request: FLAG_CHECK\n");
-		send_reply(a, AGENT_ERR);
-		break;
-
-	case AGENT_REQ_FLAG_GET:
-		print(PRINT_NOTICE, "Request: FLAG_GET\n");
-		send_reply(a, AGENT_ERR);
-		break;
-			
-			
-	default:
-		print(PRINT_ERROR, "Unrecognized request type.\n");
-		return 1;
-	}
-
-	return 0;
-}
-
-
 int main_loop(agent *a, cfg_t *cfg) 
 {
 	int ret;
 
 	ret = send_init_reply(a, 0);
 	if (ret != 0) {
-		print(PRINT_ERROR, "Initial reply error; agent_query returned %d\n", ret);
+		print(PRINT_ERROR, "Initial reply error; agent_hdr_send returned %d\n", ret);
 		goto end;
 	}
 
 	print(PRINT_NOTICE, "Agent correctly initialized. Looping.\n");
 	for (;;) {
-		ret = handle_request(a);
+		ret = request_handle(a);
+
 		/* Correct quit message? */
 		if (ret == AGENT_REQ_DISCONNECT) {
 			print(PRINT_ERROR, "Agent finishing gracefully.\n");
@@ -382,6 +222,15 @@ int main(int argc, char **argv)
 	ret = agent_hdr_set(a, 0, 0, NULL, NULL);
 	assert(ret == 0);
 
+	char *username = security_get_calling_user();
+	if (!username) {
+		print(PRINT_ERROR, "Unable to locate current user\n");
+		ret = AGENT_ERR_INIT_USER;
+		goto init_error;
+	}
+
+	agent_set_user(a, username);
+	username = NULL;
 
 	/***
 	 * Initialization
@@ -397,15 +246,15 @@ int main(int argc, char **argv)
 		print(PRINT_ERROR, ppp_get_error_desc(ret));
 		print(PRINT_ERROR, "OTPasswd not correctly installed.\n");
 		print(PRINT_ERROR, "Consult installation manual for detailed information.\n");
-		ppp_fini();
-		return 1;
+		ret = AGENT_ERR_INIT_CONFIGURATION;
+		goto init_error;
 	}
 	print_config(PRINT_NOTICE);
 
 	/* Will succeed, as ppp_init suceeded */
 	cfg = cfg_get();
 
-	/* If DB is global, mysql or ldap, utility must be SUID root. 
+	/* If DB is global, mysql or ldap, agent must be SUID root. 
 	 * We can't detect this easily if we are run by root. So, 
 	 * treat root as run by suid.
 	 */
@@ -417,8 +266,8 @@ int main(int argc, char **argv)
 		print(PRINT_ERROR,
 		      "Database type set to global, MySQL or LDAP, yet program "
 		      "is not a SUID root.\n");
-		ppp_fini();
-		return 1;
+		ret = AGENT_ERR_INIT_PRIVILEGES;
+		goto init_error;
 	}
 
 
@@ -448,5 +297,12 @@ int main(int argc, char **argv)
 	}
 
 	/* Agent loop */
-	return main_loop(cfg);
+	return main_loop(a, cfg);
+
+
+init_error:
+	ppp_fini();
+	send_init_reply(a, ret);
+	agent_disconnect(a);
+	return 1;
 }
