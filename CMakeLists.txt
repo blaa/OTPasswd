@@ -134,7 +134,7 @@ ADD_LIBRARY(pam_otpasswd SHARED pam/pam_helpers.c pam/pam_otpasswd.c)
 SET_TARGET_PROPERTIES(pam_otpasswd PROPERTIES PREFIX "")
 
 # Password management target
-ADD_EXECUTABLE(otpasswd utility/otpasswd.c)
+ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/actions.c)
 
 # Agent server
 ADD_EXECUTABLE(agent_otp agent/agent.c agent/request.c agent/testcases.c agent/security.c)

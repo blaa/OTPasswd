@@ -16,12 +16,12 @@
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
  **********************************************************************/
 
+#include "agent_private.h"
+#include "security.h"
+
 /***
  * Private helper functions
  ***/
-#include "agent_private.h"
-#include "actions.h"
-#include "security.h"
 
 /** Used to communicate how previous request was finished
  * without returning any important data (but the data might
