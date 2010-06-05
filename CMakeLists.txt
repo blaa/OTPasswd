@@ -76,7 +76,7 @@ INCLUDE_DIRECTORIES(${PAM_INCLUDE_DIR})
 LINK_DIRECTORIES(${GMP_LIBRARY_DIR})
 
 # Module and PAM uses libotp, so add it's include to path...
-INCLUDE_DIRECTORIES(libotp/ crypto/ agent/)
+INCLUDE_DIRECTORIES(common/ libotp/ crypto/ agent/)
 
 ##
 # Manuals
@@ -119,31 +119,33 @@ ENDFOREACH(man)
 # Targets
 ##
 
+# Common functions library (64 bit numbers and logging)
+ADD_LIBRARY(common STATIC common/print.c common/num.c)
+
 # Library containing common functions
-ADD_LIBRARY(otp STATIC libotp/crypto.c libotp/num.c libotp/ppp.c 
-	libotp/state.c libotp/print.c libotp/passcards.c
+ADD_LIBRARY(otp STATIC libotp/crypto.c libotp/ppp.c 
+	libotp/state.c libotp/passcards.c
         libotp/db_file.c libotp/db_mysql.c libotp/db_ldap.c
 	libotp/config.c crypto/polarssl_aes.c crypto/coreutils_sha256.c)
 
 # Library containing agent functions (for both agent and its clients)
 ADD_LIBRARY(agent STATIC agent/agent_interface.c agent/agent_private.c)
 
-
 # Pam module target
 ADD_LIBRARY(pam_otpasswd SHARED pam/pam_helpers.c pam/pam_otpasswd.c) 
 SET_TARGET_PROPERTIES(pam_otpasswd PROPERTIES PREFIX "")
 
 # Password management target
-ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/actions.c)
+ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/actions.c utility/actions_helpers.c)
 
 # Agent server
 ADD_EXECUTABLE(agent_otp agent/agent.c agent/request.c agent/testcases.c agent/security.c)
 
 
 # Linking targets
-TARGET_LINK_LIBRARIES(pam_otpasswd  otp gmp pam)
-TARGET_LINK_LIBRARIES(otpasswd      agent otp gmp)
-TARGET_LINK_LIBRARIES(agent_otp     otp agent)
+TARGET_LINK_LIBRARIES(pam_otpasswd  common otp pam)
+TARGET_LINK_LIBRARIES(otpasswd      agent common otp)
+TARGET_LINK_LIBRARIES(agent_otp     agent common otp)
 
 # Man page target
 ADD_CUSTOM_TARGET(man ALL DEPENDS ${man_gz})

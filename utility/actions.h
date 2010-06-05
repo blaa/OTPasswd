@@ -79,7 +79,10 @@ extern int action_spass(const options_t *options);
 extern int action_license(const options_t *options);
 
 /* Generates/Regenerates new key (-k) */
-extern int action_key(const options_t *options);
+extern int action_key_generate(const options_t *options);
+
+/* Removes key */
+extern int action_key_remove(const options_t *options);
 
 /* Command line authentication (-a) */
 extern int action_authenticate(const options_t *options);

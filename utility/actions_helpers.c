@@ -17,34 +17,20 @@
  **********************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include <ctype.h>
 
 /* For ah_get_pass turning echo off */
 #include <termios.h>
 #include <unistd.h>
 
-#define PPP_INTERNAL 1
+#include "print.h"
 
 /* For options_t struct */
 #include "actions.h" 
 #include "actions_helpers.h"
 #include "security.h"
 #include "nls.h"
-
-int ah_init_state(const options_t *options, int load)
-{
-	int ret = 1;
-	return ret;
-}
-
-
-int ah_fini_state(state **s, int store)
-{
-	int ret = 1;
-	return ret;
-}
-
-
 
 int ah_yes_or_no(const char *msg)
 {
@@ -86,6 +72,69 @@ int ah_enforced_yes_or_no(const char *msg)
 	return ret;
 }
 
+const char *ah_get_pass(void)
+{
+	struct termios t;
+	static char buf[128], buf2[128];
+	char *res = NULL;
+	int copy = -1;
+
+	/* Turn off echo */
+	if (tcgetattr(0, &t) != 0) {
+		print(PRINT_ERROR, _("Unable to turn off characters visibility!\n"));
+		return NULL;
+	}
+	
+	copy = t.c_lflag;
+	t.c_lflag &= ~ECHO;
+
+	if (tcsetattr(0, 0, &t) != 0) {
+		print(PRINT_ERROR, _("Unable to turn off characters visibility!\n"));
+		return NULL;
+	}
+	
+	/* Ask question */
+	printf(_("Static password: "));
+	res = fgets(buf, sizeof(buf), stdin);
+	if (res == NULL) {
+		print(PRINT_ERROR, "Unable to read static password\n");
+		goto cleanup;
+	}
+	printf("\n");
+
+	printf(_("Repeat password: "));
+	res = fgets(buf2, sizeof(buf2), stdin);
+	if (res == NULL) {
+		print(PRINT_ERROR, "Unable to read static password\n");
+		goto cleanup;
+	}
+	printf("\n");
+
+	if (strcmp(buf, buf2) == 0)
+		res = buf;
+	else {
+		printf(_("Sorry passwords do not match.\n"));
+		res = NULL;
+	}
+
+	const int len = strlen(buf);
+	if (len != 0) {
+		/* Strip \n */
+		buf[len-1] = '\0';
+	}
+
+cleanup:
+	/* Turn echo back on */
+	t.c_lflag = copy;
+	if (tcsetattr(0, 0, &t) != 0) {
+		print(PRINT_ERROR, _("WARNING: Unable to turn on characters visibility!\n"));
+	}
+
+	return res;
+}
+
+
+#if 0
 void ah_show_state(const state *s)
 {
 	/* Calculate unsalted counter so we can show it user */
@@ -526,64 +575,4 @@ error:
 }
 
 
-const char *ah_get_pass(void)
-{
-	struct termios t;
-	static char buf[128], buf2[128];
-	char *res = NULL;
-	int copy = -1;
-
-	/* Turn off echo */
-	if (tcgetattr(0, &t) != 0) {
-		print(PRINT_ERROR, _("Unable to turn off characters visibility!\n"));
-		return NULL;
-	}
-	
-	copy = t.c_lflag;
-	t.c_lflag &= ~ECHO;
-
-	if (tcsetattr(0, 0, &t) != 0) {
-		print(PRINT_ERROR, _("Unable to turn off characters visibility!\n"));
-		return NULL;
-	}
-	
-	/* Ask question */
-	printf(_("Static password: "));
-	res = fgets(buf, sizeof(buf), stdin);
-	if (res == NULL) {
-		print(PRINT_ERROR, "Unable to read static password\n");
-		goto cleanup;
-	}
-	printf("\n");
-
-	printf(_("Repeat password: "));
-	res = fgets(buf2, sizeof(buf2), stdin);
-	if (res == NULL) {
-		print(PRINT_ERROR, "Unable to read static password\n");
-		goto cleanup;
-	}
-	printf("\n");
-
-	if (strcmp(buf, buf2) == 0)
-		res = buf;
-	else {
-		printf(_("Sorry passwords do not match.\n"));
-		res = NULL;
-	}
-
-	const int len = strlen(buf);
-	if (len != 0) {
-		/* Strip \n */
-		buf[len-1] = '\0';
-	}
-
-cleanup:
-	/* Turn echo back on */
-	t.c_lflag = copy;
-	if (tcsetattr(0, 0, &t) != 0) {
-		print(PRINT_ERROR, _("WARNING: Unable to turn on characters visibility!\n"));
-	}
-
-	return res;
-}
-
+#endif

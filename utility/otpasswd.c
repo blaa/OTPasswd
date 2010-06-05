@@ -392,7 +392,7 @@ error:
 }
 
 
-static int perform_action(int argc, const char **argv, const options_t *options)
+static int perform_action(int argc, char **argv, const options_t *options)
 {
 	int ret;
 	int retval;
@@ -421,8 +421,10 @@ static int perform_action(int argc, const char **argv, const options_t *options)
 		break;
 
 	case OPTION_KEY:
+		retval = action_key_generate(options);
+		break;
 	case OPTION_REMOVE:
-		retval = action_key(options);
+		retval = action_key_remove(options);
 		break;
 
 	case OPTION_SPASS:
@@ -474,7 +476,7 @@ cleanup:
 }
 
 
-int run_cli(int argc, const char **argv)
+int run_cli(int argc, char **argv)
 {
 	int ret;
 

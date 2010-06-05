@@ -26,13 +26,13 @@
 
 #include <assert.h>
 
-/* libotp header */
-#define PPP_INTERNAL
-#include "ppp.h"
+/* agent interface */
+#include "agent_interface.h"
+#include "print.h"
 
 /* Utility headers */
 #include "actions.h"
-#include "security.h"
+#include "actions_helpers.h"
 
 /* Authenticate; returns boolean; 1 - authenticated */
 int action_authenticate(const options_t *options)
@@ -40,6 +40,7 @@ int action_authenticate(const options_t *options)
 	int retval = 0;
 
 	/* TODO: Call agent action here */
+#if 0
 	switch (retval) {
 	case 0:
 		/* Correctly authenticated */
@@ -80,34 +81,53 @@ int action_authenticate(const options_t *options)
 	}
 
 cleanup:
+#endif
 	return retval;
 }
 
-/* Generate new key */
-/* FIXME: This function needs rewriting to use PPP.c interface
- * instead of state */
-int action_key(const options_t *options)
+/* Remove key */
+int action_key_remove(const options_t *options)
 {
-	cfg_t *cfg = cfg_get();
-	int retval = 1;
-
-	int remove = options->action == OPTION_KEY ? 0 : 1;
-
+#if 0
 	if (remove && 
 	    security_is_privileged() == 0 &&
 	    cfg->key_removal == CONFIG_DISALLOW) {
 		printf(_("Key removal denied by policy.\n"));
 		return 1;
 	}
+		/* If we were supposed to remove the key do it now */
+		if (remove) {
+			if (state_lock(&s) != 0) {
+				print(PRINT_ERROR, _("Unable to lock state for removing.\n"));
+				goto cleanup;
+			}
 
-	int ret;
-	state s;
+			ret = state_store(&s, 1);
 
-	if (state_init(&s, options->username) != 0) {
-		print(PRINT_ERROR, _("Unable to initialize state\n"));
-		return 1;
-	}
+			if (state_unlock(&s) != 0) {
+				print(PRINT_ERROR, _("Unable to unlock state database.\n"));
+				/* As we will soon quit don't die here */
+			}
 
+			if (ret == 0) {
+				printf(_("Key removed!\n"));
+				retval = 0;
+			} else {
+				printf(_("Error while removing key!\n"));
+				retval = 1;
+			}
+			goto cleanup;
+		}
+#endif
+
+}
+
+/* Generate new key */
+int action_key_generate(const options_t *options)
+{
+	int retval = 1;
+
+#if 0
 	/* Check existance of previous key */
 	if (state_load(&s) == 0) {
 
@@ -138,30 +158,6 @@ int action_key(const options_t *options)
 			goto cleanup;
 		}
 
-		/* If we were supposed to remove the key do it now */
-		if (remove) {
-			if (state_lock(&s) != 0) {
-				print(PRINT_ERROR, _("Unable to lock state for removing.\n"));
-				goto cleanup;
-			}
-
-			ret = state_store(&s, 1);
-
-			if (state_unlock(&s) != 0) {
-				print(PRINT_ERROR, _("Unable to unlock state database.\n"));
-				/* As we will soon quit don't die here */
-			}
-
-			if (ret == 0) {
-				printf(_("Key removed!\n"));
-				retval = 0;
-			} else {
-				printf(_("Error while removing key!\n"));
-				retval = 1;
-			}
-			goto cleanup;
-		}
-
 		/* We are not removing, read flags, update them
 		 * with user options and ask if he likes it */
 		ret = ah_update_flags(options, &s, 1);
@@ -189,6 +185,7 @@ int action_key(const options_t *options)
 
 
 		}
+
 	} else {
 		if (remove) {
 			printf(_("Unable to load your state, nothing to remove.\n"));
@@ -270,6 +267,7 @@ int action_key(const options_t *options)
 
 cleanup:
 	state_fini(&s);
+#endif 
 	return retval;
 }
 
@@ -299,16 +297,16 @@ int action_license(const options_t *options)
 
 int action_spass(const options_t *options)
 {
-	const cfg_t *cfg = cfg_get();
-
 	char **err_list;
 	int i;
 	int ret;
 
+/*
 	if (cfg->spass_change != CONFIG_ALLOW && !security_is_privileged()) {
 		printf(_("Modification of a static password denied by the policy.\n"));
 		return 1;
 	}
+*/
 
 	/* This must be done when the state is NOT locked */
 	const char *pass = ah_get_pass();
@@ -319,45 +317,18 @@ int action_spass(const options_t *options)
 
 	i = strlen(pass);
 
-	state *s;
-	ret = ah_init_state(&s, options, 1);
-	if (ret != 0) {
-		return ret;
-	}
-
 	ret = 1;
 	if (i == 0) {
-		err_list = ppp_spass_set(s, NULL,
-		                         PPP_CHECK_POLICY);
-		if (err_list && err_list[0]) {
-			for (i=0; err_list[i]; i++)
-				puts(_(err_list[i]));
-			goto cleanup;
-		}
+		/* TODO */
 		printf(_("Turned static password off.\n"));
 	} else {
-		/* Ensure password length/difficulty */
-		err_list = ppp_spass_set(s, pass,
-		                         PPP_CHECK_POLICY);
-		if (err_list && err_list[0]) {
-			for (i=0; err_list[i]; i++)
-				puts(_(err_list[i]));
-			goto cleanup;
-		}
+		/* TODO */
 		printf(_("Static password set.\n"));
 	}
 
 	ret = 0;
 
 cleanup:
-	if (ret == 0) {
-		/* Save */
-		if (ah_fini_state(&s, 1) != 0)
-			ret = 1;
-	} else {
-		/* Do not save */
-		ah_fini_state(&s, 0);
-	}
 
 	return ret;
 }
@@ -368,24 +339,17 @@ int action_flags(const options_t *options)
 	int retval = 1;
 	int ret;
 	int save_state = 0;
-	state *s;
-
-	cfg_t *cfg = cfg_get();
 
 	if (options->action == OPTION_ALPHABETS) {
 		/* This does not require state. */
-		ppp_alphabet_print();
+		/* TODO */
 		return 0;
 	}
 
 	/* Initialize, lock, read, calculate additional card info... */
-	ret = ah_init_state(&s, options, 1);
-	if (ret != 0) {
-		return ret;
-	}
-
 	switch(options->action) {
 	case OPTION_CONFIG:
+/*   TODO 
 		ret = ah_update_flags(options, s, 0);
 		if (ret != 0) {
 			retval = ret;
@@ -396,11 +360,11 @@ int action_flags(const options_t *options)
 		    options->set_codelength || options->set_alphabet ||
 		    options->label || options->contact) {
 			save_state = 1;
-		}
+			} */
 		break;
 
 	case OPTION_INFO: /* State info */
-		if (security_is_privileged())
+/*		if (security_is_privileged())
 			printf(_("* User    = %s\n"), s->username);
 		printf(_("* Your current state:\n"));
 		ah_show_state(s);
@@ -409,9 +373,11 @@ int action_flags(const options_t *options)
 
 		save_state = 0;
 		retval = 0;
+*/
 		goto cleanup;
 
 	case OPTION_INFO_KEY: /* Key info */
+/*
 		if (cfg->key_print == CONFIG_ALLOW || security_is_privileged()) {
 			if (security_is_privileged())
 				printf(_("User    = %s\n"), s->username);
@@ -422,13 +388,13 @@ int action_flags(const options_t *options)
 			retval = 1;
 		}
 		save_state = 0;
-
+*/
 		goto cleanup;
 
 
 	default:
 	case OPTION_ALPHABETS:
-		/* List alphabets ought be done before */
+		/* List alphabets ought to be done before */
 		printf(_("Program error. You should never end up here.\n"));
 		assert(0);
 		retval = 1;
@@ -437,6 +403,7 @@ int action_flags(const options_t *options)
 
 	retval = 0;
 cleanup:
+#if 0
 	/* save_state musn't be true if retval is */
 	assert(!(retval && save_state));
 
@@ -452,16 +419,14 @@ cleanup:
 				printf(_("Configuration not changed.\n"));
 		}
 	}
+#endif
 	return retval;
 }
 
 int action_print(const options_t *options)
 {
-	cfg_t *cfg = cfg_get();
 	int retval = 1;
 	int ret;
-
-	state *s;
 
 	/* If 1, we will try to update state at the end of function */
 	int save_state = 0;
@@ -472,7 +437,7 @@ int action_print(const options_t *options)
 
 	/* And which to look at: 1 - code, 2 - card */
 	int selected = 0; 
-
+#if 0
 	if (options->action == OPTION_TEXT || options->action == OPTION_LATEX)
 		if (security_is_privileged() == 0 && cfg->passcode_print == CONFIG_DISALLOW) {
 			printf(_("Passcode printing denied by policy.\n"));
@@ -687,5 +652,6 @@ cleanup:
 			printf(_("Error while finalizing state. (No changes to write)\n"));
 		}
 	}
+#endif
 	return retval;
 }

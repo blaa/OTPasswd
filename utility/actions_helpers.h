@@ -19,27 +19,22 @@
 #ifndef _ACTIONS_HELPERS_H_
 #define _ACTIONS_HELPERS_H_
 
-#include "ppp.h"
-
 enum {
 	QUERY_YES=0,
 	QUERY_NO=2,
 	QUERY_OBSCURE=1
 };
 
-/* Secure init/load state. Should be used everywhere
- * when state would be locked anyway (we can't block execution
- * after this function). */
-int ah_init_state(state **s, const options_t *options, int load);
-
-/* Finish anything started by "_load_state" */
-int ah_fini_state(state **s, int store);
-
 /* Ask user once and return _YES, _NO or _OBSCURE */
 int ah_yes_or_no(const char *msg);
 
 /* Ask user until he gives up and answers. */
 int ah_enforced_yes_or_no(const char *msg);
+
+/* Read password without echoing characters to console */
+const char *ah_get_pass(void);
+
+#if 0
 
 /* Check if passcard is in range */
 int ah_is_passcard_in_range(const state *s, const num_t passcard);
@@ -62,10 +57,7 @@ int ah_update_flags(options_t *options, state *s, int generation);
 /* Parse code specification and store resulting data in arguments */
 int ah_parse_code_spec(const state *s, const char *spec, num_t *passcard, num_t *passcode);
 
-
-
-const char *ah_get_pass(void);
-
+#endif
 
 
 #endif
