@@ -117,9 +117,6 @@ typedef struct {
 	 * Currently only freshly generated key can be
 	 * stored here */
 	state *s;
-
-	/* New state was generated, we can save this state if allowed */
-	int new_state;
 } agent;
 
 /***

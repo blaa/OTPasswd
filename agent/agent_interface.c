@@ -49,7 +49,6 @@ int agent_connect(agent **a_out, const char *agent_executable)
 	a->error = 0;
 	a->shdr.protocol_version = AGENT_PROTOCOL_VERSION;
 	a->s = NULL;
-	a->new_state = 0;
 
 	/* Create pipes */
 	if (pipe(in) != 0)
@@ -211,6 +210,8 @@ const char *agent_strerror(int error)
 		return _("Generic agent error.");
 	case AGENT_ERR_MEMORY:
 		return _("Error while allocating memory.");
+	case AGENT_ERR_POLICY:
+		return _("Requested action denied by policy.");
 	case AGENT_ERR_SERVER_INIT:
 		return _("Error during agent initialization.");
 	case AGENT_ERR_PROTOCOL_MISMATCH:
@@ -219,6 +220,9 @@ const char *agent_strerror(int error)
 		return _("Agent unexpectedly disconnected.");
 	case AGENT_ERR_MUST_CREATE_STATE:
 		return _("Coding error: Must create state before generating key.");
+	case AGENT_ERR_MUST_DROP_STATE:
+		return _("Coding error: Must drop state before removing it.");
+
 	case AGENT_ERR_NO_STATE:
 		return _("Coding error: Action requires created/read state.");
 

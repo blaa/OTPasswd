@@ -290,6 +290,8 @@ int state_store(state *s, int remove)
 	int locked = 0;
 	int ret = 1;
 	assert(cfg);
+	assert(s);
+	assert(!(s->new_key && remove));
 
 	if (s->new_key == 1) {
 		/* State musn't be locked already! */

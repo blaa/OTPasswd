@@ -794,7 +794,7 @@ cleanup1:
 
 int ppp_state_release(state *s, int flags)
 {
-	int ret;
+	int ret1, ret2;
 	int retval = 0;
 
 	if ((flags & PPP_STORE) && (flags & PPP_REMOVE)) {
@@ -815,30 +815,39 @@ int ppp_state_release(state *s, int flags)
 	}
 
 	if (flags & PPP_REMOVE) {
-		if ((ret = state_store(s, 1)) != 0) {
+		if ((ret1 = state_store(s, 1)) != 0) {
 			print(PRINT_ERROR, "Error while removing state entry\n");
-			print(PRINT_NOTICE, "(%d: %s)\n", ret, ppp_get_error_desc(ret));
+			print(PRINT_NOTICE, "(%d: %s)\n", 
+			      ret1, ppp_get_error_desc(ret1));
 			retval++;
 		}
-	}
-	
-	if (flags & PPP_STORE) {
-		if ((ret = state_store(s, 0)) != 0) {
+	} else if (flags & PPP_STORE) {
+		if ((ret1 = state_store(s, 0)) != 0) {
 			print(PRINT_ERROR, "Error while storing state file\n");
-			print(PRINT_NOTICE, "(%d: %s)\n", ret, ppp_get_error_desc(ret));
+			print(PRINT_NOTICE, "(%d: %s)\n", 
+			      ret1, ppp_get_error_desc(ret1));
 			retval++;
 		}
 	}
 
 	if (flags & PPP_UNLOCK) {
-		if ((ret = state_unlock(s)) != 0) {
+		if ((ret2 = state_unlock(s)) != 0) {
 			print(PRINT_ERROR, "Error while unlocking state file\n");
-			print(PRINT_NOTICE, "(%d: %s)\n", ret, ppp_get_error_desc(ret));
+			print(PRINT_NOTICE, "(%d: %s)\n", 
+			      ret2, ppp_get_error_desc(ret2));
 			retval++;
 		}
 	}
 
-	return retval;
+	if (retval) {
+		/* Return earlier error or unknown */
+		if (ret1)
+			return ret1;
+		else if (ret2)
+			return ret2;
+		return 1; /* Unknown error */
+	}
+	return 0;
 }
 
 int ppp_key_generate(state *s, int flags)

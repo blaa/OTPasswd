@@ -161,10 +161,6 @@ typedef struct {
 	 * Policy configuration
 	 * 1 - enable, 0 - disable
 	 ***/
-	/* Implemented */
-
-	/* Not-implemented */
-
 	/* User can generate himself a key */
 	int key_generation;
 

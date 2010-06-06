@@ -163,6 +163,13 @@ int action_key_remove(const options_t *options, agent *a)
 		return 1;
 	}
 
+	ret = agent_state_drop(a);
+	if (ret != 0) {
+		printf(_("Error while dropping state! %d (%s)\n"), 
+		       ret, agent_strerror(ret));
+		return ret;
+	}
+
 	ret = agent_key_remove(a);
 	if (ret == 0) {
 		printf(_("Key removed!\n"));
@@ -170,7 +177,7 @@ int action_key_remove(const options_t *options, agent *a)
 	} else {
 		printf(_("Error while removing key! %d (%s)\n"), 
 		       ret, agent_strerror(ret));
-		return 1;
+		return ret;
 	}
 }
 

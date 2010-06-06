@@ -138,6 +138,7 @@ enum AGENT_ERROR {
 
 	/*** Coding/assumptions errors ***/
 	AGENT_ERR_MUST_CREATE_STATE,
+	AGENT_ERR_MUST_DROP_STATE,
 	AGENT_ERR_NO_STATE,
 };
 
