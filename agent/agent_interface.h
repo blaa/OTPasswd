@@ -108,10 +108,43 @@
 typedef struct agent agent;
 #endif
 
+/* Error description of PPP internals */
+#include "ppp_common.h"
+
+/** Error description structure. 
+ * Musn't collide with PPP errors from ppp_common.h 
+ */
+enum AGENT_ERROR {
+	/*** Generic ***/
+	AGENT_OK=0,
+	AGENT_ERR=5000,
+
+	/* Incorrect request */
+	AGENT_ERR_REQ, 
+	/* Incorrect request argument */
+	AGENT_ERR_REQ_ARG,
+	
+	/*** Initial errors ***/
+	AGENT_ERR_INIT_CONFIGURATION,
+	AGENT_ERR_INIT_PRIVILEGES,
+	AGENT_ERR_INIT_USER,
+
+	/*** Various errors ***/
+	AGENT_ERR_MEMORY,
+	AGENT_ERR_POLICY,
+	AGENT_ERR_SERVER_INIT,
+	AGENT_ERR_PROTOCOL_MISMATCH,
+	AGENT_ERR_DISCONNECT,
+
+	/*** Coding/assumptions errors ***/
+	AGENT_ERR_MUST_CREATE_STATE,
+	AGENT_ERR_NO_STATE,
+};
+
 /*** Basic routines ***/
 extern int agent_connect(agent **a_out, const char *agent_executable);
 extern int agent_disconnect(agent *a);
-extern void agent_set_user(agent *a, char *username);
+extern int agent_set_user(agent *a, char *username);
 
 /** Return translated description of last error */
 

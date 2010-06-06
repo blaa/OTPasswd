@@ -49,6 +49,7 @@ int agent_connect(agent **a_out, const char *agent_executable)
 	a->error = 0;
 	a->shdr.protocol_version = AGENT_PROTOCOL_VERSION;
 	a->s = NULL;
+	a->new_state = 0;
 
 	/* Create pipes */
 	if (pipe(in) != 0)
@@ -163,13 +164,15 @@ int agent_server(agent **a_out)
 	return AGENT_OK;
 }
 
-void agent_set_user(agent *a, char *username)
+int agent_set_user(agent *a, char *username)
 {
+	/* TODO: This should fail for non-existent user */
 	assert(a);
 	assert(username);
 	if (a->username)
 		free(a->username);
 	a->username = username;
+	return 0;
 }
 
 int agent_disconnect(agent *a)
@@ -214,6 +217,10 @@ const char *agent_strerror(int error)
 		return _("Agent protocol mismatch. Reinstall software.");
 	case AGENT_ERR_DISCONNECT:
 		return _("Agent unexpectedly disconnected.");
+	case AGENT_ERR_MUST_CREATE_STATE:
+		return _("Coding error: Must create state before generating key.");
+	case AGENT_ERR_NO_STATE:
+		return _("Coding error: Action requires created/read state.");
 
 	default:
 		if (error >= 100 && error <= 2000)

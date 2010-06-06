@@ -17,10 +17,6 @@
  **********************************************************************/
 #include "nls.h"
 
-#ifndef PROG_VERSION
-#define PROG_VERSION _("v0.6-dev")
-#endif
-
 #include <stdio.h>
 #include <string.h>
 
@@ -34,8 +30,66 @@
 #include "actions.h"
 #include "actions_helpers.h"
 
+/** Executed before any other actions */
+int action_init(options_t *options, agent **a)
+{
+	int ret;
+
+	assert(a && *a == NULL);
+	assert(options);
+
+	/* 1) Connect to agent */
+	ret = agent_connect(a, "./agent_otp");
+	if (ret != 0) {
+		printf("Unable to connect to agent: (%d) ", ret);
+		puts(agent_strerror(ret));
+		return 1;
+	}
+
+	/* 2) Change username if required */	
+	if (options->username) {
+		ret = agent_set_user(*a, options->username);
+		if (ret != 0) {
+			printf("Error while setting user: %d (%s)\n", 
+			       ret, agent_strerror(ret));
+			return ret;
+		}
+	}
+
+	/* 3) Load state, as most of actions do it anyway */
+	ret = agent_state_load(*a);
+	switch (ret) {
+	case STATE_NON_EXISTENT:
+	case STATE_NO_USER_ENTRY:
+		options->user_has_state = 0;
+		break;
+	case AGENT_OK:
+		options->user_has_state = 1;
+		break;
+	default:
+		printf(_("Error while loading user state: %d (%s)\n"), 
+		       ret, agent_strerror(ret));
+		return ret;
+	}
+
+	/* TODO: Check if this state is correct, like, 
+	 * can it still generate passcodes? */
+	return 0;
+}
+
+int action_fini(agent *a)
+{
+	int ret;
+	ret = agent_disconnect(a);
+	if (ret != 0) { 
+		print(PRINT_WARN, "Error while disconnecting from agent\n");
+	}
+	return ret;
+}
+
+
 /* Authenticate; returns boolean; 1 - authenticated */
-int action_authenticate(const options_t *options)
+int action_authenticate(const options_t *options, agent *a)
 {
 	int retval = 0;
 
@@ -86,138 +140,131 @@ cleanup:
 }
 
 /* Remove key */
-int action_key_remove(const options_t *options)
+int action_key_remove(const options_t *options, agent *a)
 {
-#if 0
-	if (remove && 
-	    security_is_privileged() == 0 &&
-	    cfg->key_removal == CONFIG_DISALLOW) {
-		printf(_("Key removal denied by policy.\n"));
+	int ret;
+	if (options->user_has_state == 0) {
+		printf(_("Unable to load your state, nothing to remove.\n"));
 		return 1;
 	}
-		/* If we were supposed to remove the key do it now */
-		if (remove) {
-			if (state_lock(&s) != 0) {
-				print(PRINT_ERROR, _("Unable to lock state for removing.\n"));
-				goto cleanup;
-			}
 
-			ret = state_store(&s, 1);
+	/* TODO: Pre-check policy */
+	/* TODO: Check enforcement! This will render account unusable of enforcement is enabled */
 
-			if (state_unlock(&s) != 0) {
-				print(PRINT_ERROR, _("Unable to unlock state database.\n"));
-				/* As we will soon quit don't die here */
-			}
+	puts(
+		"*********************************************************\n"
+		"* This will irreversibly erase your current key, making *\n"
+		"*    all already printed passcards worthless!           *\n"
+		"*********************************************************\n"
+	);
 
-			if (ret == 0) {
-				printf(_("Key removed!\n"));
-				retval = 0;
-			} else {
-				printf(_("Error while removing key!\n"));
-				retval = 1;
-			}
-			goto cleanup;
-		}
-#endif
+	if (ah_yes_or_no(_("Are you sure you want to continue?")) != 0) {
+		printf(_("Stopping\n"));
+		return 1;
+	}
 
+	ret = agent_key_remove(a);
+	if (ret == 0) {
+		printf(_("Key removed!\n"));
+		return 0;
+	} else {
+		printf(_("Error while removing key! %d (%s)\n"), 
+		       ret, agent_strerror(ret));
+		return 1;
+	}
 }
 
 /* Generate new key */
-int action_key_generate(const options_t *options)
+int action_key_generate(const options_t *options, agent *a)
 {
 	int retval = 1;
 
-#if 0
+	/* TODO: pre-verify policy (DISABLE) and die if impossible */
+	/*
+	printf(_("Your current state is disabled. Cannot regenerate "
+	"until you remove the disabled flag.\n")); */
+
+	/* printf(_("Key regeneration denied by policy.\n")); */
+
 	/* Check existance of previous key */
-	if (state_load(&s) == 0) {
+	if (options->user_has_state) {
+		/* TODO: pre-verify policy (REGENERATION) and die if impossible */
 
-		/* Check regeneration policy */
-		if (!remove && 
-		    security_is_privileged() == 0 &&
-		    cfg->key_regeneration == CONFIG_DISALLOW) {
-			printf(_("Key regeneration denied by policy.\n"));
-			goto cleanup;
-		}
-
-		if (s.flags & FLAG_DISABLED) {
-			printf(_("Your current state is disabled. Cannot regenerate "
-			         "until you remove the disabled flag.\n"));
-			goto cleanup;
-		}
-
-		/* We loaded state correctly, key exists */
 		puts(
-			"*************************************************\n"
-			"* This will irreversibly erase your key, making *\n"
-			"*    all already printed passcards worthless!   *\n"
-			"*************************************************\n"
+			"*********************************************************\n"
+			"* This will irreversibly erase your current key, making *\n"
+			"*    all already printed passcards worthless!           *\n"
+			"*********************************************************\n"
 		);
 
 		if (ah_yes_or_no(_("Are you sure you want to continue?")) != 0) {
 			printf(_("Stopping\n"));
-			goto cleanup;
-		}
-
-		/* We are not removing, read flags, update them
-		 * with user options and ask if he likes it */
-		ret = ah_update_flags(options, &s, 1);
-		if (ret != 0) {
 			retval = 1;
 			goto cleanup;
 		}
 
-		printf(_("This is your previous configuration updated with command line options:\n"));
-		ah_show_flags(&s);
+		/* TODO: Read user flags, update with flags passed via command line, ask
+		 * if he likes it */
+		/* printf(_("This is your previous configuration updated with command line options:\n"));
+		   ah_show_flags(&s);
 		printf(_("\nYou can either use it, or start with default one "
 			 "(modified by any --config options).\n"));
+
 		if (ah_enforced_yes_or_no(
 			    _("Do you want to keep this configuration?")) == QUERY_NO) {
 			printf(_("Reverting to defaults.\n"));
-			state_fini(&s);
-			state_init(&s, options->username);
 
-			/* Use default salting from config */
+			// Use default salting from config 
 			ret = ah_update_flags(options, &s, 1);
 			if (ret != 0) {
 				retval = 1;
 				goto cleanup;
 			}
+		*/
 
-
-		}
-
-	} else {
-		if (remove) {
-			printf(_("Unable to load your state, nothing to remove.\n"));
+		/* Drop current state */
+		retval = agent_state_drop(a);
+		if (retval != 0) {
+			printf(_("Error while dropping state: %d (%s)"), 
+			       retval, agent_strerror(retval));
 			goto cleanup;
 		}
-
+	} else {
+		/* TODO: pre-verify policy (DISABLE) and die if impossible */
+		/*
 		if (!remove && 
 		    security_is_privileged() == 0 &&
 		    cfg->key_generation == CONFIG_DISALLOW) {
 			printf(_("Key generation denied by policy.\n"));
 			goto cleanup;
 		}
+		*/
+		/* Not loaded */
 
-		/* Failed, state_load might have changed something in struct, reinit. */
-		state_fini(&s);
-		state_init(&s, options->username);
-
-		/* Use default salting from config */
-		ret = ah_update_flags(options, &s, 1);
-		if (ret != 0) {
-			retval = 1;
-			goto cleanup;
-		}
 	}
 
-	if (state_key_generate(&s) != 0) {
-		print(PRINT_ERROR, _("Unable to generate new key\n"));
+	retval = agent_state_new(a);
+	if (retval != 0) {
+		printf(_("Error while creating new state: %d (%s)"), 
+		       retval, agent_strerror(retval));
 		goto cleanup;
 	}
 
-	mpz_add_ui(s.latest_card, s.latest_card, 1);
-	ppp_calculate(&s);
+	/* TODO: Set flags here */
+
+	printf(_("HINT: To generate key we need to gather lots of random data.\n"
+		 "To make this process faster you can move your mouse or cause\n"
+		 "some network or disc activity\n"));
+
+	retval = agent_key_generate(a);
+	if (retval != 0) {
+		print(PRINT_ERROR, _("Unable to generate new key: %d (%s)\n"), 
+		      retval, agent_strerror(retval));
+		goto cleanup;
+	}
+	
+	printf(_("Key generated successfully.\n"));
+
 	puts(
 		"\n"
 		"*****************************************************\n"
@@ -226,80 +273,44 @@ int action_key_generate(const options_t *options)
 		"* ability to log into your system!                  *\n"
 		"*****************************************************\n"
 	);
-	char *card = card_ascii(&s, s.latest_card);
+
+	/* TODO: char *card = card_ascii(a, num_i(0));
 	puts(card);
 	free(card);
+	*/
 
 	do {
-		ret = ah_yes_or_no(_("Are you ready to start using this one-time passwords?"));
-		if (ret == 1) {
+		retval = ah_yes_or_no(_("Are you ready to start using this "
+		                        "one-time passwords?"));
+		if (retval == 1) {
 			printf(_("Please answer 'yes' or 'no'.\n"));
 			continue;
 		}
-	} while (ret != 0 && ret != 2);
+	} while (retval != 0 && retval != 2);
 
-	if (ret != 0) {
-		printf(_("Wiping out key. One-time passwords not enabled.\n"));
+	if (retval != 0) {
+		printf(_("Wiping out key. User state left unchanged.\n"));
 		goto cleanup;
 	}
 
 	/* Lock, store, unlock */
-	if (state_lock(&s) != 0) {
-		print(PRINT_ERROR, _("Unable to lock state database.\n"));
-		goto cleanup;
-	}
-
-	ret = state_store(&s, 0);
-
-	if (state_unlock(&s) != 0) {
-		print(PRINT_ERROR, _("Unable to unlock state database.\n"));
-		/* As we will soon quit don't die here */
-	}
-
-	if (ret != 0) {
-		print(PRINT_ERROR, _("Unable to save state.\n"));
-		print(PRINT_NOTICE, "(%s)\n", ppp_get_error_desc(ret));
+	retval = agent_state_store(a);
+	if (retval != 0) {
+		printf(_("Unable to store new key: %d (%s)\n"),
+		       retval, agent_strerror(retval));
 		goto cleanup;
 	}
 
 	printf(_("Key stored! One-time passwords enabled for this account.\n"));
-	retval = 0;
 
+	retval = 0;
 cleanup:
-	state_fini(&s);
-#endif 
 	return retval;
 }
 
-int action_license(const options_t *options)
+int action_spass(const options_t *options, agent *a)
 {
-	printf(
-		_("OTPasswd - One-Time Password Authentication System.\n"
-		  "Version %s \n"
-		  "Copyright (C) 2009, 2010 Tomasz bla Fortuna <bla@thera.be>\n"
-		  "\n"
-		  "This program is free software: you can redistribute it and/or modify\n"
-		  "it under the terms of the GNU General Public License as published by\n"
-		  "the Free Software Foundation, either version 3 of the License, or\n"
-		  "(at your option) any later version.\n"
-		  "\n"
-		  "This program is distributed in the hope that it will be useful,\n"
-		  "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-		  "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
-		  "GNU General Public License for more details.\n"
-		  "\n"
-		  "You should have received a copy of the GNU General Public License\n"
-		  "along with this program in a LICENSE file.\n"),
-		  PROG_VERSION
-	);
-	return 0;
-}
-
-int action_spass(const options_t *options)
-{
-	char **err_list;
 	int i;
-	int ret;
 
 /*
 	if (cfg->spass_change != CONFIG_ALLOW && !security_is_privileged()) {
@@ -317,28 +328,21 @@ int action_spass(const options_t *options)
 
 	i = strlen(pass);
 
-	ret = 1;
 	if (i == 0) {
 		/* TODO */
-		printf(_("Turned static password off.\n"));
+		printf(_("TODO: Turned static password off.\n"));
+		return 0;
 	} else {
 		/* TODO */
-		printf(_("Static password set.\n"));
+		printf(_("TODO: Static password set.\n"));
+		return 0;
 	}
-
-	ret = 0;
-
-cleanup:
-
-	return ret;
 }
 
 /* Update flags based on mask which are stored in options struct */
-int action_flags(const options_t *options)
+int action_flags(const options_t *options, agent *a)
 {
 	int retval = 1;
-	int ret;
-	int save_state = 0;
 
 	if (options->action == OPTION_ALPHABETS) {
 		/* This does not require state. */
@@ -426,17 +430,18 @@ cleanup:
 int action_print(const options_t *options)
 {
 	int retval = 1;
-	int ret;
+//	int ret;
 
 	/* If 1, we will try to update state at the end of function */
-	int save_state = 0;
+//	int save_state = 0;
 
 	/* Passcard/code to print */
-	num_t passcard_num;
-	num_t passcode_num;
+//	num_t passcard_num;
+//	num_t passcode_num;
 
 	/* And which to look at: 1 - code, 2 - card */
-	int selected = 0; 
+//	int selected = 0; 
+
 #if 0
 	if (options->action == OPTION_TEXT || options->action == OPTION_LATEX)
 		if (security_is_privileged() == 0 && cfg->passcode_print == CONFIG_DISALLOW) {

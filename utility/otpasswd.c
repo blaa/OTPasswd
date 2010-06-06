@@ -16,6 +16,10 @@
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
  **********************************************************************/
 
+#ifndef PROG_VERSION
+#define PROG_VERSION "v0.6-dev"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -50,7 +54,32 @@ static const char *_program_name(const char *argv0)
 		return argv0;
 }
 
-static void _usage(int argc, const char **argv)
+/** Print author, license and quit. */
+static void _show_license(void)
+{
+	printf(
+		_("OTPasswd - One-Time Password Authentication System.\n"
+		  "Version %s \n"
+		  "Copyright (C) 2009, 2010 Tomasz bla Fortuna <bla@thera.be>\n"
+		  "\n"
+		  "This program is free software: you can redistribute it and/or modify\n"
+		  "it under the terms of the GNU General Public License as published by\n"
+		  "the Free Software Foundation, either version 3 of the License, or\n"
+		  "(at your option) any later version.\n"
+		  "\n"
+		  "This program is distributed in the hope that it will be useful,\n"
+		  "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+		  "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+		  "GNU General Public License for more details.\n"
+		  "\n"
+		  "You should have received a copy of the GNU General Public License\n"
+		  "along with this program in a LICENSE file.\n"),
+		  PROG_VERSION
+	);
+}
+
+/** Show program parameters */
+static void _show_usage(int argc, const char **argv)
 {
 	const char *prog_name =	_program_name(argc >= 2 ? argv[0] : NULL);
 	fprintf(stdout, _(
@@ -286,6 +315,9 @@ int process_cmd_line(int argc, char **argv, options_t *options)
 		switch (c) {
 			/* Argument-less actions */
 		case OPTION_VERSION:
+			_show_license();
+			goto error;
+
 		case OPTION_WARN:
 		case OPTION_KEY:
 		case OPTION_REMOVE:
@@ -342,7 +374,7 @@ int process_cmd_line(int argc, char **argv, options_t *options)
 
 		case '?':
 			/* getopt_long already printed an error message. */
-			_usage(argc, (const char **)argv);
+			_show_usage(argc, (const char **)argv);
 			goto error;
 
 		case OPTION_USER:
@@ -392,61 +424,72 @@ error:
 }
 
 
-static int perform_action(int argc, char **argv, const options_t *options)
+static int perform_action(int argc, char **argv, options_t *options)
 {
 	int ret;
-	int retval;
+	int retval = 1;
 
 	/* Reconfigure printing subsystem; -v might be passed */
 	switch (options->verbose) {
 	case 0: 
 		break;
-	case 1: print_config(PRINT_STDOUT | PRINT_WARN); break; 
+	case 1: 
+		print_config(PRINT_STDOUT | PRINT_WARN); 
+		break; 
 
 	default:
-	case 2: print_config(PRINT_STDOUT | PRINT_NOTICE); break; 
+	case 2: 
+		print_config(PRINT_STDOUT | PRINT_NOTICE); 
+		break; 
 	}
+
+	/* Perform pre-action preparations (set user, check state existance) */
+	agent *a = NULL;
+	ret = action_init(options, &a);
+	if (ret != 0) {
+		retval = ret;
+		goto cleanup;
+	}
+     
 
 	/* Perform action */
 	switch (options->action) {
 	case 0:
 		printf(_("No action specified. Try passing -k, -s, -t or -l\n\n"));
-		_usage(argc, (const char **) argv);
+		_show_usage(argc, (const char **) argv);
 		retval = 1;
 		goto cleanup;
 
 	case OPTION_HELP:
-		_usage(argc, (const char **)argv);
+		_show_usage(argc, (const char **)argv);
 		retval = 0;
 		break;
 
 	case OPTION_KEY:
-		retval = action_key_generate(options);
+		retval = action_key_generate(options, a);
 		break;
+
 	case OPTION_REMOVE:
-		retval = action_key_remove(options);
+		retval = action_key_remove(options, a);
 		break;
 
 	case OPTION_SPASS:
-		retval = action_spass(options);
+		retval = action_spass(options, a);
 		break;
 
 	case OPTION_ALPHABETS:
 	case OPTION_CONFIG:
 	case OPTION_INFO:
 	case OPTION_INFO_KEY:
-		retval = action_flags(options);
+		retval = action_flags(options, a);
 		break;
 
 	case OPTION_AUTH:
-		ret = action_authenticate(options);
+		ret = action_authenticate(options, a);
 		if (ret == 0)
 			retval = 1;
 		else
 			retval = 0;
-		break;
-	case OPTION_VERSION:
-		retval = action_license(options);
 		break;
 
 	case OPTION_WARN:
@@ -468,6 +511,8 @@ static int perform_action(int argc, char **argv, const options_t *options)
 
 
 cleanup:
+	action_fini(a);
+
 	free(options->action_arg);
 	free(options->label);
 	free(options->contact);
@@ -494,39 +539,39 @@ int run_cli(int argc, char **argv)
 		.flag_clear_mask = 0,
 		.set_codelength = -1,
 		.set_alphabet = -1,
+
+		.user_has_state = 0,
 	};
 
 	/* 0) Initialize locale */
 	locale_init();
 
-	ret = process_cmd_line(argc, argv, &options);
-	if (ret != 0)
-		return ret;
 
+	/* 1) Parse command line, store data in options struct */
+	ret = process_cmd_line(argc, argv, &options);
+	if (ret != 0) {
+		/* Error already printed */
+		return ret;
+	}
+
+	/* 3) Execute actions according to options struct */
 	ret = perform_action(argc, argv, &options);
+
 	return ret;
 }
 
 
 int main(int argc, char **argv)
 {
-	int ret;
-	agent *a = NULL;
-
-	locale_init();
 
 	print_init(PRINT_NOTICE|PRINT_STDOUT, NULL);
-
-	ret = agent_connect(&a, "./agent_otp");
-	if (ret != 0) {
-		printf("Unable to connect to agent: (%d) ", ret);
-		puts(agent_strerror(ret));
-		return 1;
-	}
 
 	return run_cli(argc, argv);
 	
 	fgetc(stdin);
+
+	/*
+	int ret;
 	// superuser only: agent_set_user(a, "user");
 	ret = agent_key_generate(a);
 	printf("generate returned: (%d) %s\n", ret, agent_strerror(ret));
@@ -535,6 +580,7 @@ int main(int argc, char **argv)
 	if (ret != 0) { 
 		printf("Error while disconnecting from agent\n");
 	}
+	*/
 
 	return 0;
 }

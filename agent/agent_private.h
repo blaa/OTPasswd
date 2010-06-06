@@ -12,30 +12,6 @@
 #include "ppp.h"
 #include "num.h" /* num_t type */
 
-/* Musn't collide with PPP errors from ppp_common.h */
-enum AGENT_ERROR {
-	/*** Generic ***/
-	AGENT_OK=0,
-	AGENT_ERR=5000,
-
-	/* Incorrect request */
-	AGENT_ERR_REQ, 
-	/* Incorrect request argument */
-	AGENT_ERR_REQ_ARG,
-	
-	/*** Initial errors ***/
-	AGENT_ERR_INIT_CONFIGURATION,
-	AGENT_ERR_INIT_PRIVILEGES,
-	AGENT_ERR_INIT_USER,
-
-	/*** Various errors ***/
-	AGENT_ERR_MEMORY,
-	AGENT_ERR_POLICY,
-	AGENT_ERR_SERVER_INIT,
-	AGENT_ERR_PROTOCOL_MISMATCH,
-	AGENT_ERR_DISCONNECT,
-};
-
 enum AGENT_REQUEST {
 	/*** Generic requests/messages ***/
 
@@ -141,6 +117,9 @@ typedef struct {
 	 * Currently only freshly generated key can be
 	 * stored here */
 	state *s;
+
+	/* New state was generated, we can save this state if allowed */
+	int new_state;
 } agent;
 
 /***

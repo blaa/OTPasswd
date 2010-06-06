@@ -31,7 +31,9 @@ static int _send_reply(agent *a, int status)
 {
 	agent_hdr_set_status(a, status);
 	agent_hdr_set_type(a, AGENT_REQ_REPLY);
-	return agent_hdr_send(a);
+	int ret = agent_hdr_send(a);
+	print(PRINT_NOTICE, "Reply sent (%d)\n", ret);
+	return ret;
 }
 
 /* Initialize state; possibly by loading from file  */
@@ -41,6 +43,7 @@ static int _state_init(agent *a, int load, int lock)
 
 	assert(a);
 	assert(a->s == NULL);
+	a->new_state = 0;
 
 	ret = ppp_state_init(&a->s, a->username);
 	if (ret != 0) {
@@ -62,6 +65,7 @@ static int _state_init(agent *a, int load, int lock)
 		a->s = NULL;
 	}
 
+	print(PRINT_NOTICE, "State initialization done (%d)\n", ret);
 	return ret;
 }
 
@@ -69,7 +73,12 @@ static int _state_init(agent *a, int load, int lock)
 static int _state_fini(agent *a, int store, int remove)
 {
 	int ret;
-	assert(!store != !remove); /* Not at once */
+	assert(!(store && remove)); /* Not at once */
+	assert(a->s);
+
+	if (!a->s) {
+		return AGENT_ERR_NO_STATE;
+	}
 
 	/* We store changes into the file
 	 * We don't need to unlock just yet - ppp_fini
@@ -80,16 +89,19 @@ static int _state_fini(agent *a, int store, int remove)
 		flags = PPP_REMOVE;
 	else if (store)
 		flags = PPP_STORE;
+
 	ret = ppp_state_release(a->s, flags);
 
 	if (ret != 0) {
-		print(PRINT_ERROR, "Error while saving state data. State not changed. [%d]\n", ret);
+		print(PRINT_ERROR, 
+		      "Error while saving state data. State not changed. [%d]\n", ret);
 	}
 
 	ppp_state_fini(a->s);
 
 	a->s = NULL;
 
+	print(PRINT_NOTICE, "State finalization done (%d)\n", ret);
 	return ret;
 }
 
@@ -162,11 +174,12 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 	/* Read request parameters */
 	const int r_type = agent_hdr_get_type(a);
-	const int r_status = agent_hdr_get_status(a);
-	const int r_int = agent_hdr_get_arg_int(a);
-	const num_t r_num = agent_hdr_get_arg_num(a);
+//	const int r_status = agent_hdr_get_status(a);
+//	const int r_int = agent_hdr_get_arg_int(a);
+//	const num_t r_num = agent_hdr_get_arg_num(a);
 	const char *r_str = agent_hdr_get_arg_str(a);
 
+	print(PRINT_NOTICE, "Executing request %d\n", r_type);
 	switch (r_type) {
 	case AGENT_REQ_DISCONNECT:
 		/* Correct disconnect */
@@ -174,7 +187,9 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		if (a->s) {
 			ret = _state_fini(a, 0, 0);
 			if (ret != 0) {
-				print(PRINT_WARN, "Error while handling finalizing state during disconnect: %s\n",
+				print(PRINT_WARN, 
+				      "Error while handling finalizing "
+				      "state during disconnect: %s\n",
 				      agent_strerror(ret));
 			}
 		}
@@ -217,8 +232,10 @@ static int request_execute(agent *a, const cfg_t *cfg)
 			      agent_strerror(ret));
 			return ret;
 		}
+		a->new_state = 1;
+		_send_reply(a, ret);
+		break;
 
-		return AGENT_OK;
 
 	case AGENT_REQ_STATE_LOAD:
 		if (a->s)
@@ -229,9 +246,10 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		if (ret != 0) {
 			print(PRINT_WARN, "Error while handling STATE_LOAD: %s\n",
 			      agent_strerror(ret));
-			return ret;
-		} else 
-			return AGENT_OK;
+		} 
+		a->new_state = 0;
+		_send_reply(a, ret);
+		break;
 
 	case AGENT_REQ_STATE_STORE:
 		ret = _state_fini(a, 1, 0);
@@ -248,7 +266,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		} else {
 			/* Nothing to drop */
 			print(PRINT_WARN, "Unable to drop non-existant state\n");
-			ret = AGENT_ERR;
+			ret = AGENT_ERR_NO_STATE;
 		}
 		_send_reply(a, ret);
 		break;
@@ -260,7 +278,8 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 		if (!a->s) {
 			print(PRINT_ERROR, "Must create new state first\n");
-			return AGENT_ERR;
+			_send_reply(a, AGENT_ERR_MUST_CREATE_STATE);
+			break;
 		}
 
 		ret = ppp_key_generate(a->s, ppp_flags);
@@ -271,8 +290,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 			ret = AGENT_OK;
 		}
 
-		_send_reply(a, AGENT_ERR);
-		print(PRINT_NOTICE, "Reply sent!\n");
+		_send_reply(a, ret);
 		break;
 
 	case AGENT_REQ_KEY_REMOVE:
@@ -282,7 +300,8 @@ static int request_execute(agent *a, const cfg_t *cfg)
 				print(PRINT_ERROR, "Error while removing user state\n");
 			}
 		} else {
-			print(PRINT_ERROR, "State must be loaded before trying to remove it from system.\n");
+			print(PRINT_ERROR,
+			      "State must be loaded before trying to remove it from system.\n");
 			ret = AGENT_ERR;
 		}
 		
@@ -316,14 +335,13 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		return 1;
 	}
 
-	return 0;
+	return AGENT_OK;
 }
 
 
 /***
  * Public interface used by agent.c
  ***/
-
 int request_handle(agent *a) 
 {
 	int ret;
@@ -340,10 +358,10 @@ int request_handle(agent *a)
 		
 	/* Read request parameters */
 	const int r_type = agent_hdr_get_type(a);
-	const int r_status = agent_hdr_get_status(a);
-	const int r_int = agent_hdr_get_arg_int(a);
-	const num_t r_num = agent_hdr_get_arg_num(a);
-	const char *r_str = agent_hdr_get_arg_str(a);
+//	const int r_status = agent_hdr_get_status(a);
+//	const int r_int = agent_hdr_get_arg_int(a);
+//	const num_t r_num = agent_hdr_get_arg_num(a);
+//	const char *r_str = agent_hdr_get_arg_str(a);
 
 	print(PRINT_NOTICE, "Received request header of type %d\n", r_type);
 

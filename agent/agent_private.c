@@ -37,7 +37,6 @@ static int agent_read(const int fd, void *data, size_t len)
 	void *data_pos = data;
 	int ret;
 
-	print(PRINT_ERROR, "AGENT_READ ENTRY\n");
 	for (;;) {
 		/* Copy all buffered data */
 		if (buffered) {
@@ -49,7 +48,6 @@ static int agent_read(const int fd, void *data, size_t len)
 			buff_pos += to_go;			
 		}
 		if (len == 0) {
-			print(PRINT_ERROR, "HEREOK 1?\n");
 			return AGENT_OK;
 		}
 
@@ -57,19 +55,16 @@ static int agent_read(const int fd, void *data, size_t len)
 		buff_pos = buff;
 		buffered = read(fd, buff, sizeof(buff));
 		if (buffered == 0) {
-			print(PRINT_ERROR, "HERE 1?\n");
 			return AGENT_ERR_DISCONNECT;
 		}
 
 		if (buffered < 0) {
-			print(PRINT_ERROR, "HERE 2?\n");
 			return AGENT_ERR_DISCONNECT;
 		}
 	}
 
 	ret = read(fd, data, len);
 	if (ret == 0) {
-		print(PRINT_ERROR, "HERE 3?\n");
 		/* End-of-file - second end was closed! */
 		return AGENT_ERR_DISCONNECT;
 	}
@@ -77,7 +72,6 @@ static int agent_read(const int fd, void *data, size_t len)
 
 	/* print(PRINT_ERROR, "len: %zd ret: %d\n", len, ret); */
 	if (ret != len) {
-		print(PRINT_ERROR, "HERE 3?\n");
 		return 1;
 	}
 
@@ -88,7 +82,6 @@ static int agent_read(const int fd, void *data, size_t len)
 		perror("select");
 		return 1;
 	}*/
-	print(PRINT_ERROR, "HEREOK 2?\n");
 	return AGENT_OK;
 }
 
@@ -206,7 +199,6 @@ int agent_query(agent *a, int request)
 		a->error = 1;
 		return ret;
 	}
-
 
 	/* Might hang? */
 	ret = agent_hdr_recv(a);

@@ -24,7 +24,7 @@
 #ifndef _ACTIONS_H_
 #define _ACTIONS_H_
 
-#include "config.h"
+#include "agent_interface.h"
 
 /* Constants used for parsing input data.
  * Shared between otpasswd.c and _actions. */
@@ -52,7 +52,7 @@ enum {
 	OPTION_ALPHABETS = 'A',
 };
 
-/* Struct holding "user CLI request" information */
+/* Struct holding "user CLI request" information and some additional fields */
 typedef struct {
 	char action;
 	char *action_arg;
@@ -66,28 +66,34 @@ typedef struct {
 	unsigned int flag_clear_mask;
 	int set_codelength;
 	int set_alphabet;
+	
+	/* Additional fields required by all actions */
+	int user_has_state;
 } options_t;
 
+/** Pre-action preparations like checking if user has state */
+extern int action_init(options_t *options, agent **a);
 
-/* Configures user state, prints state information (-c -i) */
-extern int action_flags(const options_t *options);
+/** Post-action clean up */
+extern int action_fini(agent *a);
 
-/* Sets user static password. */
-extern int action_spass(const options_t *options);
 
-/* Print author, license and quit. */
-extern int action_license(const options_t *options);
+/** Configures user state, prints state information (-c -i) */
+extern int action_flags(const options_t *options, agent *a);
 
-/* Generates/Regenerates new key (-k) */
-extern int action_key_generate(const options_t *options);
+/** Sets user static password. */
+extern int action_spass(const options_t *options, agent *a);
 
-/* Removes key */
-extern int action_key_remove(const options_t *options);
+/** Generates/Regenerates new key (-k) */
+extern int action_key_generate(const options_t *options, agent *a);
 
-/* Command line authentication (-a) */
-extern int action_authenticate(const options_t *options);
+/** Removes key */
+extern int action_key_remove(const options_t *options, agent *a);
 
-/* Print passcode or passcard or skip (-t -l -s) */
+/** Command line authentication (-a) */
+extern int action_authenticate(const options_t *options, agent *a);
+
+/** Print passcode or passcard or skip (-t -l -s) */
 extern int action_print(const options_t *options);
 
 #endif
