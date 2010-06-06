@@ -176,14 +176,14 @@ extern int agent_key_remove(agent *a);
 
 
 /*** Flag interface ***/
-/** Set certain (single) flag (oring with current) */
+/** Set certain flags (oring with current) */
 extern int agent_flag_add(agent *a, int flag);
 
 /** Clear some flag (negate and AND with current) */
 extern int agent_flag_clear(agent *a, int flag);
 
-/** Check if given flag is set in the state */
-extern int agent_flag_check(agent *a, int flag);
+/** Read set of state flags */
+extern int agent_flag_get(agent *a);
 
 
 /** Status query */

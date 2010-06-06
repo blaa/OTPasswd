@@ -134,21 +134,36 @@ cleanup:
 }
 
 
-#if 0
-void ah_show_state(const state *s)
+int ah_show_state(agent *a)
 {
-	/* Calculate unsalted counter so we can show it user */
-	num_t tmp;
-	mpz_init(tmp);
+	int ret;
+	num_t current_card, unsalted_counter, latest_card, 
+		max_card, max_code;
+	const char *which = NULL;
+
+	if ((ret = agent_get_num(a, &current_card, PPP_FIELD_CURRENT_CARD)) != 0) {
+		which = "current card";
+		goto error;
+	}
+
+	if ((ret = agent_get_num(a, &current_card, PPP_FIELD_UNSALTED_COUNTER)) != 0) {
+		which = "counter";
+		goto error;
+	}
+
+	if ((ret = agent_get_num(a, &current_card, PPP_FIELD_UNSALTED_COUNTER)) != 0) {
+		which = "counter";
+		goto error;
+	}
+
 
 	printf(_("Current card        = "));
-	num_print_dec(s->current_card);
+	num_print_dec(current_card);
 	printf("\n");
 
 	/* Counter */
-	ppp_get_mpz(s, PPP_FIELD_UNSALTED_COUNTER, &tmp);
 	printf(_("Current code        = "));
-	num_print_dec(tmp);
+	num_print_dec(unsalted_counter);
 	printf("\n");
 
 	ppp_get_mpz(s, PPP_FIELD_LATEST_CARD, &tmp);
@@ -166,16 +181,37 @@ void ah_show_state(const state *s)
 	num_print_dec(tmp);
 	printf("\n");
 
-	mpz_clear(tmp);
+	return 0;
+error:
+	print(PRINT_ERROR, "Error while reading state data: %s (%d)\n",
+	      agent_strerror(ret), ret);
+	return ret;
 }
 
-void ah_show_flags(const state *s)
+int ah_show_flags(agent *a)
 {
-	cfg_t *cfg = cfg_get();
-	int alphabet = ppp_get_int(s, PPP_FIELD_ALPHABET);
-	int code_length = ppp_get_int(s, PPP_FIELD_CODE_LENGTH);
+	int ret;
 
-	int flags = ppp_get_int(s, PPP_FIELD_FLAGS);
+	int flags = -1;
+	int codelength = -1;
+	int alphabet = -1;
+	const char *label = NULL;
+	const char *contact = NULL;
+
+	/*** Query agent for required data ***/
+	ret = agent_flag_get(a);
+	if (ret != 0) {
+		print(PRINT_ERROR, _("Unable to read flags: %s (%d)\n"), 
+		      agent_strerror(ret), ret);
+		goto cleanup;
+	}
+	flags = agent_hdr_get_arg_int(a);
+
+	/* const num_t r_num = agent_hdr_get_arg_num(a);
+	   const char *r_str = agent_hdr_get_arg_str(a);
+	*/
+	
+
 
 	/* Display flags */
 	if (flags & FLAG_SHOW)
@@ -197,11 +233,6 @@ void ah_show_flags(const state *s)
 		printf(_("(salt=off)\n"));
 
 
-	const char *label = NULL;
-	const char *contact = NULL;
-	ppp_get_str(s, PPP_FIELD_LABEL, &label);
-	ppp_get_str(s, PPP_FIELD_LABEL, &contact);
-
 	if (label && strlen(label) > 0) {
 		printf(_("Passcard label=\"%s\", "), label);
 	} else {
@@ -221,7 +252,7 @@ void ah_show_flags(const state *s)
 	}
 
 	/* Verify policy and inform user what's wrong, so he can fix it. */
-
+#if 0
 	if (ppp_verify_alphabet(alphabet) != 0) {
 		printf(_("WARNING: Current alphabet setting is "
 		       "inconsistent with the policy!\n"));
@@ -254,6 +285,7 @@ void ah_show_flags(const state *s)
 		printf(_("WARNING: Key is not salted, but policy "
 		       "denies such configuration. Regenerate key!\n"));
 	}
+#endif
 }
 
 void ah_show_keys(const state *s)
@@ -269,6 +301,8 @@ void ah_show_keys(const state *s)
 	num_print_hex(s->counter, 1);
 	printf("\n");
 }
+
+#if 0
 
 int ah_update_flags(options_t *options, state *s, int generation)
 {

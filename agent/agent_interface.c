@@ -222,7 +222,6 @@ const char *agent_strerror(int error)
 		return _("Coding error: Must create state before generating key.");
 	case AGENT_ERR_MUST_DROP_STATE:
 		return _("Coding error: Must drop state before removing it.");
-
 	case AGENT_ERR_NO_STATE:
 		return _("Coding error: Action requires created/read state.");
 
@@ -266,19 +265,36 @@ int agent_key_remove(agent *a)
 	return agent_query(a, AGENT_REQ_KEY_REMOVE);
 }
 
-int agent_flag_set(agent *a, int flag)
+int agent_flag_add(agent *a, int flag)
 {
-	return agent_query(a, AGENT_REQ_FLAG_SET);
+	int ret = agent_hdr_set(a, 0, flag, NULL, NULL);
+	assert(ret == AGENT_OK);
+	return agent_query(a, AGENT_REQ_FLAG_ADD);
 }
 
 int agent_flag_clear(agent *a, int flag)
 {
+	int ret = agent_hdr_set(a, 0, flag, NULL, NULL);
+	assert(ret == AGENT_OK);
 	return agent_query(a, AGENT_REQ_FLAG_CLEAR);
 }
 
-int agent_flag_check(agent *a, int flag)
+int agent_flag_get(agent *a)
 {
-	return agent_query(a, AGENT_REQ_FLAG_CHECK);
+	return agent_query(a, AGENT_REQ_FLAG_GET);
+}
+
+
+int agent_get_num(const agent *a, num_t *num, int type)
+{
+	int ret = agent_hdr_set(a, 0, type, NULL, NULL);
+	assert(ret == AGENT_OK);
+
+	ret = agent_query(a, AGENT_REQ_GET_NUM);
+	if (ret != 0)
+		return ret;
+	*num = agent_hdr_get_arg_num(a);
+	return AGENT_OK;
 }
 
 
@@ -287,9 +303,6 @@ int agent_get_key(const agent *a, char *key)
 {
 }
 
-int agent_get_num(const agent *a, num_t *key, int type)
-{
-}
 
 int agent_get_int(agent *a, int field, int *reply)
 {

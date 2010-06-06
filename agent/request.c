@@ -121,8 +121,8 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 {
 	/* Read request parameters */
 	const int r_type = agent_hdr_get_type(a);
-/*
-	const int r_status = agent_hdr_get_status(a);
+
+/*	const int r_status = agent_hdr_get_status(a);
 	const int r_int = agent_hdr_get_arg_int(a);
 	const num_t r_num = agent_hdr_get_arg_num(a);
 	const char *r_str = agent_hdr_get_arg_str(a);
@@ -168,27 +168,23 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 		}
 		return AGENT_OK;
 
+		/* Those which doesn't require policy check */
 	case AGENT_REQ_STATE_NEW:
 	case AGENT_REQ_STATE_LOAD:
 	case AGENT_REQ_STATE_STORE:
+	case AGENT_REQ_STATE_DROP:
+	case AGENT_REQ_GET_NUM:
 		return AGENT_OK;
 
 
 		/* FLAGS */
-	case AGENT_REQ_FLAG_SET:
-		break;
-
+	case AGENT_REQ_FLAG_ADD:
 	case AGENT_REQ_FLAG_CLEAR:
-		break;
-
-	case AGENT_REQ_FLAG_CHECK:
-		break;
-
 	case AGENT_REQ_FLAG_GET:
-		break;
-			
+		return AGENT_OK;
+
 	default:
-		print(PRINT_ERROR, "Unrecognized request type.\n");
+		print(PRINT_ERROR, "Unrecognized request type. (%d)\n", r_type);
 		return AGENT_ERR;
 	}
 
@@ -204,7 +200,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 	/* Read request parameters */
 	const int r_type = agent_hdr_get_type(a);
 //	const int r_status = agent_hdr_get_status(a);
-//	const int r_int = agent_hdr_get_arg_int(a);
+	const int r_int = agent_hdr_get_arg_int(a);
 //	const num_t r_num = agent_hdr_get_arg_num(a);
 	const char *r_str = agent_hdr_get_arg_str(a);
 
@@ -346,29 +342,67 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 		/* FLAGS */
-	case AGENT_REQ_FLAG_SET:
-		print(PRINT_NOTICE, "Request: FLAG_SET\n");
-		_send_reply(a, AGENT_ERR);
+	case AGENT_REQ_FLAG_ADD:
+	{
+		int new_flags = ppp_get_int(a->s, PPP_FIELD_FLAGS);
+		new_flags |= r_int;
+		ret = ppp_set_int(a->s, PPP_FIELD_FLAGS, new_flags, PPP_CHECK_POLICY);
+		if (ret != 0) {
+			print(PRINT_WARN, "Error while adding flags (%d).\n", ret);
+		} else 
+			ret = AGENT_OK;
+		_send_reply(a, ret);
 		break;
+	}
 
 	case AGENT_REQ_FLAG_CLEAR:
-		print(PRINT_NOTICE, "Request: FLAG_CLEAR\n");
-		_send_reply(a, AGENT_ERR);
+	{
+		int new_flags = ppp_get_int(a->s, PPP_FIELD_FLAGS);
+		new_flags &= ~r_int;
+		ret = ppp_set_int(a->s, PPP_FIELD_FLAGS, new_flags, PPP_CHECK_POLICY);
+		if (ret != 0) {
+			print(PRINT_WARN, "Error while clearing flags (%d).\n", ret);
+		} else 
+			ret = AGENT_OK;
+		_send_reply(a, ret);
 		break;
-
-	case AGENT_REQ_FLAG_CHECK:
-		print(PRINT_NOTICE, "Request: FLAG_CHECK\n");
-		_send_reply(a, AGENT_ERR);
-		break;
-
+	}
+	
 	case AGENT_REQ_FLAG_GET:
 		print(PRINT_NOTICE, "Request: FLAG_GET\n");
-		_send_reply(a, AGENT_ERR);
+		if (!a->s) {
+			ret = AGENT_ERR_NO_STATE;
+		} else {
+			const int flags = ppp_get_int(a->s, PPP_FIELD_FLAGS);
+			ret = agent_hdr_set(a, 0, flags, NULL, NULL);
+			assert(ret == AGENT_OK);
+
+			ret = AGENT_OK;			
+		}
+
+		_send_reply(a, ret);
+		break;
+
+	case AGENT_REQ_GET_NUM:
+		if (!a->s) {
+			ret = AGENT_ERR_NO_STATE;
+		} else {
+			num_t tmp;
+			ret = ppp_get_mpz(a->s, r_int, &tmp);
+			if (ret != 0) {
+				print(PRINT_ERROR, "Illegal num_t request.\n");
+				ret = AGENT_ERR;
+			} else {
+				ret = agent_hdr_set(a, 0, 0, &tmp, NULL); 
+				assert(ret == AGENT_OK);
+				ret = AGENT_OK;
+			}
+		}
+		_send_reply(a, ret);
 		break;
 			
-			
 	default:
-		print(PRINT_ERROR, "Unrecognized request type.\n");
+		print(PRINT_ERROR, "Unrecognized request type (%d).\n", r_type);
 		return 1;
 	}
 

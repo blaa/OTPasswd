@@ -50,8 +50,8 @@ int action_init(options_t *options, agent **a)
 	if (options->username) {
 		ret = agent_set_user(*a, options->username);
 		if (ret != 0) {
-			printf("Error while setting user: %d (%s)\n", 
-			       ret, agent_strerror(ret));
+			printf("Error while setting user: %s (%d)\n", 
+			       agent_strerror(ret), ret);
 			return ret;
 		}
 	}
@@ -67,8 +67,8 @@ int action_init(options_t *options, agent **a)
 		options->user_has_state = 1;
 		break;
 	default:
-		printf(_("Error while loading user state: %d (%s)\n"), 
-		       ret, agent_strerror(ret));
+		printf(_("Error while loading user state: %s (%d)\n"), 
+		       agent_strerror(ret), ret);
 		return ret;
 	}
 
@@ -165,8 +165,8 @@ int action_key_remove(const options_t *options, agent *a)
 
 	ret = agent_state_drop(a);
 	if (ret != 0) {
-		printf(_("Error while dropping state! %d (%s)\n"), 
-		       ret, agent_strerror(ret));
+		printf(_("Error while dropping state! %s (%d)\n"), 
+		       agent_strerror(ret), ret);
 		return ret;
 	}
 
@@ -175,8 +175,8 @@ int action_key_remove(const options_t *options, agent *a)
 		printf(_("Key removed!\n"));
 		return 0;
 	} else {
-		printf(_("Error while removing key! %d (%s)\n"), 
-		       ret, agent_strerror(ret));
+		printf(_("Error while removing key! %s (%d)\n"), 
+		       agent_strerror(ret), ret);
 		return ret;
 	}
 }
@@ -232,8 +232,8 @@ int action_key_generate(const options_t *options, agent *a)
 		/* Drop current state */
 		retval = agent_state_drop(a);
 		if (retval != 0) {
-			printf(_("Error while dropping state: %d (%s)"), 
-			       retval, agent_strerror(retval));
+			printf(_("Error while dropping state: %s (%d)"), 
+			       agent_strerror(retval), retval);
 			goto cleanup;
 		}
 	} else {
@@ -250,22 +250,44 @@ int action_key_generate(const options_t *options, agent *a)
 
 	}
 
+	/* Create new state */
 	retval = agent_state_new(a);
 	if (retval != 0) {
-		printf(_("Error while creating new state: %d (%s)"), 
-		       retval, agent_strerror(retval));
+		printf(_("Error while creating new state: %s (%d)"), 
+		       agent_strerror(retval), retval);
 		goto cleanup;
 	}
 
-	/* TODO: Set flags here */
+	/* Set flags */
+	retval = agent_flag_add(a, options->flag_set_mask);
+	if (retval != 0) {
+		print(PRINT_ERROR, _("Unable to set required flags: %s (%d)\n"), 
+		      agent_strerror(retval), retval);
+		goto cleanup;
+	}
 
+	retval = agent_flag_clear(a, options->flag_clear_mask);
+	if (retval != 0) {
+		print(PRINT_ERROR, _("Unable to clear required flags: %s (%d)\n"), 
+		      agent_strerror(retval), retval);
+		goto cleanup;
+	}
+
+
+	/* Display user flags */
+	retval = ah_show_flags(a);
+	if (retval != 0) {
+		goto cleanup;
+	}
+
+	/* Generate the key */
 	printf(_("HINT: To generate key we need to gather lots of random data.\n"
 		 "To make this process faster you can move your mouse or cause\n"
 		 "some network or disc activity\n"));
 
 	retval = agent_key_generate(a);
 	if (retval != 0) {
-		print(PRINT_ERROR, _("Unable to generate new key: %d (%s)\n"), 
+		print(PRINT_ERROR, _("Unable to generate new key: %s (%d)\n"), 
 		      retval, agent_strerror(retval));
 		goto cleanup;
 	}
@@ -303,8 +325,8 @@ int action_key_generate(const options_t *options, agent *a)
 	/* Lock, store, unlock */
 	retval = agent_state_store(a);
 	if (retval != 0) {
-		printf(_("Unable to store new key: %d (%s)\n"),
-		       retval, agent_strerror(retval));
+		printf(_("Unable to store new key: %s (%d)\n"),
+		       agent_strerror(retval), retval);
 		goto cleanup;
 	}
 

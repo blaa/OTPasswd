@@ -55,14 +55,15 @@ enum AGENT_REQUEST {
 	/** Remove key */
 	AGENT_REQ_KEY_REMOVE,
 
-	AGENT_REQ_FLAG_SET,
+	AGENT_REQ_FLAG_ADD,
 	AGENT_REQ_FLAG_CLEAR,
-	AGENT_REQ_FLAG_CHECK,
-	AGENT_REQ_FLAG_GET, /* <-- FIX */
+	AGENT_REQ_FLAG_GET,
 
 	/* Verify that the state is consistent with policy */
 	AGENT_REQ_VERIFY,
 
+	/* Universal getters */
+	AGENT_REQ_GET_NUM,
 };
 
 

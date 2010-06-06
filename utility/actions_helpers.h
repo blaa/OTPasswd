@@ -34,6 +34,15 @@ int ah_enforced_yes_or_no(const char *msg);
 /* Read password without echoing characters to console */
 const char *ah_get_pass(void);
 
+/* Show user flags */
+int ah_show_flags(agent *a);
+
+/* Show user state (current codes/cards) */
+void ah_show_state(agent *a);
+
+/* Show user key/counter */
+void ah_show_keys(agent *a);
+
 #if 0
 
 /* Check if passcard is in range */
@@ -42,14 +51,6 @@ int ah_is_passcard_in_range(const state *s, const num_t passcard);
 /* Check if passcode is in range */
 int ah_is_passcode_in_range(const state *s, const num_t passcard);
 
-/* Show user state (current codes/cards) */
-void ah_show_state(const state *s);
-
-/* Show user flags */
-void ah_show_flags(const state *s);
-
-/* Show user key/counter */
-void ah_show_keys(const state *s);
 
 /* Update state flags. Checks policy. If generation is 1 we allow salt changes. */
 int ah_update_flags(options_t *options, state *s, int generation);
@@ -57,7 +58,6 @@ int ah_update_flags(options_t *options, state *s, int generation);
 /* Parse code specification and store resulting data in arguments */
 int ah_parse_code_spec(const state *s, const char *spec, num_t *passcard, num_t *passcode);
 
-#endif
-
+#endif 
 
 #endif

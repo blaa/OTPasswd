@@ -27,7 +27,7 @@
 /* With DEBUG_POSITIONS messages printed on 
  * stdout get information about their source */
 #ifndef DEBUG_POSITIONS
-#define DEBUG_POSITIONS 0
+#define DEBUG_POSITIONS 1
 #endif
 
 enum PRINT_FLAGS {

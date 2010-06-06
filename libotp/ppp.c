@@ -1012,7 +1012,8 @@ int ppp_set_int(state *s, int field, unsigned int arg, int options)
 		break;
 
 	case PPP_FIELD_CODE_LENGTH:
-		/* Always check policy */
+		/* Always check policy (as creating incorrect state
+		 * will make PAM fail nevertheless) */
 		ret = ppp_verify_code_length(arg);
 		if (ret != 0)
 			return ret;
@@ -1036,9 +1037,10 @@ int ppp_set_int(state *s, int field, unsigned int arg, int options)
 			return PPP_ERROR;
 		}
 
-		if (options & PPP_CHECK_POLICY) {
-			/* TODO: Check policy */
-		}
+		/* Always check policy */		
+		ret = ppp_verify_flags(arg);
+		if (ret != 0)
+			return ret;
 
 		s->flags = arg;
 		break;
