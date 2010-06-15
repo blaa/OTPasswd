@@ -38,7 +38,7 @@ const char *ah_get_pass(void);
 int ah_show_flags(agent *a);
 
 /* Show user state (current codes/cards) */
-void ah_show_state(agent *a);
+int ah_show_state(agent *a);
 
 /* Show user key/counter */
 void ah_show_keys(agent *a);

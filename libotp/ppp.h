@@ -209,26 +209,6 @@ extern int ppp_state_verify(const state *s);
 /*******************************************
  * State Getters / Setters
  ******************************************/
-enum {
-	PPP_FIELD_FAILURES = 1,		/* unsigned int */
-	PPP_FIELD_RECENT_FAILURES,	/* unsigned int */
-	PPP_FIELD_CODE_LENGTH,		/* unsigned int */
-	PPP_FIELD_ALPHABET,		/* unsigned int */
-	PPP_FIELD_FLAGS,		/* unsigned int */
-
-	PPP_FIELD_COUNTER, 		/* mpz */
-	PPP_FIELD_UNSALTED_COUNTER, 	/* mpz */
-	PPP_FIELD_LATEST_CARD,		/* mpz */
-	PPP_FIELD_MAX_CARD,		/* mpz */
-	PPP_FIELD_MAX_CODE,		/* mpz */
-	
-
-	PPP_FIELD_USERNAME,		/* char * */
-	PPP_FIELD_PROMPT,		/* char * */
-	PPP_FIELD_CONTACT,		/* char * */
-	PPP_FIELD_LABEL,		/* char * */
-};
-
 /* Setters return '2' if argument is invalid 
  * (because of policy for example), both 
  * setters and getters return '1' if field is invalid 
@@ -236,8 +216,10 @@ enum {
 
 /** Get a value out of state and place at "arg" memory location.
  * In some cases this can also be int, not unsigned int.
+ * Return value might not be checked if program is debugged
+ * with assert.
  */
-extern unsigned int ppp_get_int(const state *s, int field);
+extern int ppp_get_int(const state *s, int field, unsigned int *arg);
 
 /** Get long number from state. */
 extern int ppp_get_mpz(const state *s, int field, num_t *arg);

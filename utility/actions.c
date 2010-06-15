@@ -275,10 +275,13 @@ int action_key_generate(const options_t *options, agent *a)
 
 
 	/* Display user flags */
+	printf(_("Your current set of flags:\n"));
 	retval = ah_show_flags(a);
 	if (retval != 0) {
 		goto cleanup;
 	}
+
+	printf("\n\n");
 
 	/* Generate the key */
 	printf(_("HINT: To generate key we need to gather lots of random data.\n"

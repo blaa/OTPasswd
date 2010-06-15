@@ -174,6 +174,8 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 	case AGENT_REQ_STATE_STORE:
 	case AGENT_REQ_STATE_DROP:
 	case AGENT_REQ_GET_NUM:
+	case AGENT_REQ_GET_INT:
+	case AGENT_REQ_GET_STR:
 		return AGENT_OK;
 
 
@@ -344,7 +346,8 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		/* FLAGS */
 	case AGENT_REQ_FLAG_ADD:
 	{
-		int new_flags = ppp_get_int(a->s, PPP_FIELD_FLAGS);
+		unsigned int new_flags;
+		ppp_get_int(a->s, PPP_FIELD_FLAGS, &new_flags);
 		new_flags |= r_int;
 		ret = ppp_set_int(a->s, PPP_FIELD_FLAGS, new_flags, PPP_CHECK_POLICY);
 		if (ret != 0) {
@@ -357,7 +360,9 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 	case AGENT_REQ_FLAG_CLEAR:
 	{
-		int new_flags = ppp_get_int(a->s, PPP_FIELD_FLAGS);
+		unsigned int new_flags;
+		ppp_get_int(a->s, PPP_FIELD_FLAGS, &new_flags);
+
 		new_flags &= ~r_int;
 		ret = ppp_set_int(a->s, PPP_FIELD_FLAGS, new_flags, PPP_CHECK_POLICY);
 		if (ret != 0) {
@@ -373,7 +378,8 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		if (!a->s) {
 			ret = AGENT_ERR_NO_STATE;
 		} else {
-			const int flags = ppp_get_int(a->s, PPP_FIELD_FLAGS);
+			unsigned int flags;
+			ppp_get_int(a->s, PPP_FIELD_FLAGS, &flags);
 			ret = agent_hdr_set(a, 0, flags, NULL, NULL);
 			assert(ret == AGENT_OK);
 
@@ -390,7 +396,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 			num_t tmp;
 			ret = ppp_get_mpz(a->s, r_int, &tmp);
 			if (ret != 0) {
-				print(PRINT_ERROR, "Illegal num_t request.\n");
+				print(PRINT_ERROR, "Illegal num request.\n");
 				ret = AGENT_ERR;
 			} else {
 				ret = agent_hdr_set(a, 0, 0, &tmp, NULL); 
@@ -400,6 +406,43 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		}
 		_send_reply(a, ret);
 		break;
+
+	case AGENT_REQ_GET_INT:
+		if (!a->s) {
+			ret = AGENT_ERR_NO_STATE;
+		} else {
+			unsigned int tmp;
+			(void) ppp_get_int(a->s, r_int, &tmp);
+
+			ret = agent_hdr_set(a, 0, tmp, NULL, NULL); 
+			assert(ret == AGENT_OK);
+			ret = AGENT_OK;
+		}
+		_send_reply(a, ret);
+		break;
+
+	case AGENT_REQ_GET_STR:
+		if (!a->s) {
+			ret = AGENT_ERR_NO_STATE;
+		} else {
+			const char *tmp = NULL;
+			(void) ppp_get_str(a->s, r_int, &tmp);
+
+			/* This might fail because of length */
+			ret = agent_hdr_set(a, 0, 0, NULL, tmp); 
+			assert(ret == AGENT_OK);
+			if (ret != AGENT_OK) {
+				print(PRINT_CRITICAL,
+				      "Programmer error. Some str field (%d) "
+				      "won't fit in agent structure.\n", r_int);
+				ret = AGENT_ERR;
+			} else {
+				ret = AGENT_OK;
+			}
+		}
+		_send_reply(a, ret);
+		break;
+
 			
 	default:
 		print(PRINT_ERROR, "Unrecognized request type (%d).\n", r_type);

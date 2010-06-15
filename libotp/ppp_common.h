@@ -153,5 +153,29 @@ enum ppp_options {
 };
 
 
+/* For getters / setters. Identifies some fields in state */
+enum {
+	PPP_FIELD_FAILURES = 1,		/* unsigned int */
+	PPP_FIELD_RECENT_FAILURES,	/* unsigned int */
+	PPP_FIELD_CODE_LENGTH,		/* unsigned int */
+	PPP_FIELD_ALPHABET,		/* unsigned int */
+	PPP_FIELD_FLAGS,		/* unsigned int */
+
+	PPP_FIELD_COUNTER, 		/* mpz */
+	PPP_FIELD_UNSALTED_COUNTER, 	/* mpz */
+	PPP_FIELD_LATEST_CARD,		/* mpz */
+	PPP_FIELD_CURRENT_CARD,		/* mpz */
+	PPP_FIELD_MAX_CARD,		/* mpz */
+	PPP_FIELD_MAX_CODE,		/* mpz */
+	
+
+	PPP_FIELD_USERNAME,		/* char * */
+	PPP_FIELD_PROMPT,		/* char * */
+	PPP_FIELD_CONTACT,		/* char * */
+	PPP_FIELD_LABEL,		/* char * */
+};
+
+
+
 #endif
 

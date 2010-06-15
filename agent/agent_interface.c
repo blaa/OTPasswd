@@ -279,13 +279,20 @@ int agent_flag_clear(agent *a, int flag)
 	return agent_query(a, AGENT_REQ_FLAG_CLEAR);
 }
 
-int agent_flag_get(agent *a)
+int agent_flag_get(agent *a, int *flags)
 {
-	return agent_query(a, AGENT_REQ_FLAG_GET);
+	int ret;
+	assert(flags);
+
+	ret = agent_query(a, AGENT_REQ_FLAG_GET);
+	if (ret != 0)
+		return ret;
+	*flags = agent_hdr_get_arg_int(a);
+	return AGENT_OK;
 }
 
 
-int agent_get_num(const agent *a, num_t *num, int type)
+int agent_get_num(agent *a, num_t *num, int type)
 {
 	int ret = agent_hdr_set(a, 0, type, NULL, NULL);
 	assert(ret == AGENT_OK);
@@ -297,16 +304,42 @@ int agent_get_num(const agent *a, num_t *num, int type)
 	return AGENT_OK;
 }
 
+int agent_get_int(agent *a, int *integer, int type)
+{
+	int ret = agent_hdr_set(a, 0, type, NULL, NULL);
+	assert(ret == AGENT_OK);
+
+	ret = agent_query(a, AGENT_REQ_GET_INT);
+	if (ret != 0)
+		return ret;
+	*integer = agent_hdr_get_arg_int(a);
+	return AGENT_OK;
+}
+
+int agent_get_str(agent *a, char **str, int type)
+{
+	assert(str);
+	int ret = agent_hdr_set(a, 0, type, NULL, NULL);
+	assert(ret == AGENT_OK);
+
+	ret = agent_query(a, AGENT_REQ_GET_STR);
+	if (ret != 0) {
+		*str = NULL;
+		return ret;
+	}
+	const char *tmp_str = agent_hdr_get_arg_str(a);
+	assert(tmp_str);
+	*str = strdup(tmp_str);
+
+	return AGENT_OK;
+
+}
 
 /*
 int agent_get_key(const agent *a, char *key)
 {
 }
 
-
-int agent_get_int(agent *a, int field, int *reply)
-{
-}
 
 int agent_get_passcode(const agent *a, int field, char **reply) 
 {

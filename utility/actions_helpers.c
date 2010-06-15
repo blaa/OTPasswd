@@ -26,6 +26,9 @@
 
 #include "print.h"
 
+#include "ppp_common.h"
+#include "agent_interface.h"
+
 /* For options_t struct */
 #include "actions.h" 
 #include "actions_helpers.h"
@@ -146,13 +149,23 @@ int ah_show_state(agent *a)
 		goto error;
 	}
 
-	if ((ret = agent_get_num(a, &current_card, PPP_FIELD_UNSALTED_COUNTER)) != 0) {
+	if ((ret = agent_get_num(a, &unsalted_counter, PPP_FIELD_UNSALTED_COUNTER)) != 0) {
 		which = "counter";
 		goto error;
 	}
 
-	if ((ret = agent_get_num(a, &current_card, PPP_FIELD_UNSALTED_COUNTER)) != 0) {
-		which = "counter";
+	if ((ret = agent_get_num(a, &latest_card, PPP_FIELD_LATEST_CARD)) != 0) {
+		which = "latest card";
+		goto error;
+	}
+
+	if ((ret = agent_get_num(a, &max_card, PPP_FIELD_MAX_CARD)) != 0) {
+		which = "max card";
+		goto error;
+	}
+
+	if ((ret = agent_get_num(a, &max_card, PPP_FIELD_MAX_CODE)) != 0) {
+		which = "max code";
 		goto error;
 	}
 
@@ -166,19 +179,16 @@ int ah_show_state(agent *a)
 	num_print_dec(unsalted_counter);
 	printf("\n");
 
-	ppp_get_mpz(s, PPP_FIELD_LATEST_CARD, &tmp);
 	printf(_("Latest printed card = "));
-	num_print_dec(tmp);
+	num_print_dec(latest_card);
 	printf("\n");
 
-	ppp_get_mpz(s, PPP_FIELD_MAX_CARD, &tmp);
 	printf(_("Max card            = "));
-	num_print_dec(tmp);
+	num_print_dec(max_card);
 	printf("\n");
 
-	ppp_get_mpz(s, PPP_FIELD_MAX_CODE, &tmp);
 	printf(_("Max code            = "));
-	num_print_dec(tmp);
+	num_print_dec(max_code);
 	printf("\n");
 
 	return 0;
@@ -193,23 +203,42 @@ int ah_show_flags(agent *a)
 	int ret;
 
 	int flags = -1;
-	int codelength = -1;
+	int code_length = -1;
 	int alphabet = -1;
-	const char *label = NULL;
-	const char *contact = NULL;
+	char *label = NULL;
+	char *contact = NULL;
 
 	/*** Query agent for required data ***/
-	ret = agent_flag_get(a);
+	ret = agent_flag_get(a, &flags);
 	if (ret != 0) {
 		print(PRINT_ERROR, _("Unable to read flags: %s (%d)\n"), 
 		      agent_strerror(ret), ret);
 		goto cleanup;
 	}
-	flags = agent_hdr_get_arg_int(a);
 
-	/* const num_t r_num = agent_hdr_get_arg_num(a);
-	   const char *r_str = agent_hdr_get_arg_str(a);
-	*/
+	if ((ret = agent_get_int(a, &code_length, PPP_FIELD_CODE_LENGTH)) != 0) {
+		print(PRINT_ERROR, _("Unable to read code length: %s (%d)\n"), 
+		      agent_strerror(ret), ret);
+		goto cleanup;
+	}
+
+	if ((ret = agent_get_int(a, &alphabet, PPP_FIELD_ALPHABET)) != 0) {
+		print(PRINT_ERROR, _("Unable to read alphabet id: %s (%d)\n"), 
+		      agent_strerror(ret), ret);
+		goto cleanup;
+	}
+
+	if ((ret = agent_get_str(a, &contact, PPP_FIELD_CONTACT)) != 0) {
+		print(PRINT_ERROR, _("Unable to read contact: %s (%d)\n"), 
+		      agent_strerror(ret), ret);
+		goto cleanup;
+	}
+
+	if ((ret = agent_get_str(a, &label, PPP_FIELD_LABEL)) != 0) {
+		print(PRINT_ERROR, _("Unable to read label: %s (%d)\n"), 
+		      agent_strerror(ret), ret);
+		goto cleanup;
+	}
 	
 
 
@@ -225,7 +254,7 @@ int ah_show_flags(agent *a)
 		printf(_("disabled=off "));
 
 	printf(_("alphabet=%d "), alphabet);
-	printf(_("codelength=%d "), code_length);
+	printf(_("code_length=%d "), code_length);
 
 	if (flags & FLAG_SALTED)
 		printf(_("(salt=on)\n"));
@@ -244,12 +273,13 @@ int ah_show_flags(agent *a)
 	} else {
 		printf(_("no contact information.\n"));
 	}
-
+/* TODO 
 	if (s->spass_set) {
 		printf(_("Static password is set.\n"));
 	} else {
 		printf(_("Static password is not set.\n"));
 	}
+*/
 
 	/* Verify policy and inform user what's wrong, so he can fix it. */
 #if 0
@@ -286,7 +316,19 @@ int ah_show_flags(agent *a)
 		       "denies such configuration. Regenerate key!\n"));
 	}
 #endif
+
+
+	ret = 0;
+cleanup:
+	if (contact)
+		free(contact);
+	if (label)
+		free(label);
+
+	return ret;
 }
+
+#if 0
 
 void ah_show_keys(const state *s)
 {
@@ -301,8 +343,6 @@ void ah_show_keys(const state *s)
 	num_print_hex(s->counter, 1);
 	printf("\n");
 }
-
-#if 0
 
 int ah_update_flags(options_t *options, state *s, int generation)
 {

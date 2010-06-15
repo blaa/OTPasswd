@@ -183,20 +183,26 @@ extern int agent_flag_add(agent *a, int flag);
 extern int agent_flag_clear(agent *a, int flag);
 
 /** Read set of state flags */
-extern int agent_flag_get(agent *a);
+extern int agent_flag_get(agent *a, int *flags);
 
 
 /** Status query */
 
 /* Set of getters/setters */
-extern int agent_get_key(const agent *a, char *key);
-
+/* Taken from ppp_common.h...
 enum AGENT_TYPE {
 	AGENT_COUNTER_UNSALTED,
 	AGENT_COUNTER_SALTED,
 };
-extern int agent_get_num(const agent *a, num_t *key, int type);
-extern int agent_get_int(agent *a, int field, int *reply);
+*/
+extern int agent_get_num(agent *a, num_t *key, int type);
+extern int agent_get_int(agent *a, int *integer, int type);
+
+/* Getters returning string data allocates it; you 
+ * have to free it yourself */
+extern int agent_get_str(agent *a, char **str, int type);
+extern int agent_get_key(const agent *a, char *key);
+
 
 /* Config query */
 extern int agent_get_passcode(const agent *a, int field, char **reply); 

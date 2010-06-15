@@ -983,20 +983,38 @@ cleanup:
  * Getters / Setters
  **************************************/
 
-unsigned int ppp_get_int(const state *s, int field)
+int ppp_get_int(const state *s, int field, unsigned int *arg)
 {
+	assert(arg);
+
 	switch (field) {
-	case PPP_FIELD_FAILURES:        return s->failures;
-	case PPP_FIELD_RECENT_FAILURES: return s->recent_failures;
-	case PPP_FIELD_CODE_LENGTH:     return s->code_length;
-	case PPP_FIELD_ALPHABET:        return s->alphabet;
-	case PPP_FIELD_FLAGS:           return s->flags;
+	case PPP_FIELD_FAILURES:        
+		*arg = s->failures; 
+		break;
+
+	case PPP_FIELD_RECENT_FAILURES: 
+		*arg = s->recent_failures; 
+		break;
+
+	case PPP_FIELD_CODE_LENGTH:     
+		*arg = s->code_length; 
+		break;
+
+	case PPP_FIELD_ALPHABET: 
+		*arg = s->alphabet; 
+		break;
+
+	case PPP_FIELD_FLAGS:  
+		*arg = s->flags;
+		break;
 
 	default:
 		print(PRINT_CRITICAL, "Illegal field passed to ppp_get_int\n");
+		*arg = -1;
 		assert(0);
 		return PPP_ERROR;
 	}
+	return 0;
 }
 
 int ppp_set_int(state *s, int field, unsigned int arg, int options)
@@ -1172,6 +1190,7 @@ int ppp_get_str(const state *s, int field, const char **arg)
 	default:
 		print(PRINT_CRITICAL, "Illegal field passed to ppp_get_str\n");
 		assert(0);
+		*arg = NULL;
 		return PPP_ERROR;
 	}
 

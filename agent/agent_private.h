@@ -64,6 +64,8 @@ enum AGENT_REQUEST {
 
 	/* Universal getters */
 	AGENT_REQ_GET_NUM,
+	AGENT_REQ_GET_INT,
+	AGENT_REQ_GET_STR,
 };
 
 
