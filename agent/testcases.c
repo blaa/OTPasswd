@@ -102,6 +102,8 @@ int crypto_testcase(void)
 /***************************
  * Passcards testcases
  **************************/
+#if 0
+/* TODO: Reimplement in utility */
 int card_testcase(void)
 {
 	unsigned char hash[32];
@@ -187,6 +189,7 @@ int card_testcase(void)
 
 	return failed;
 }
+#endif
 
 /***************************
  * State Testcases

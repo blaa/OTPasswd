@@ -95,11 +95,13 @@ int do_testcase(void)
 	failed += tmp;
 	if (tmp)
 		printf("******\n*** %d crypto testcases failed\n******\n", tmp);
-
+	/*
 	tmp = card_testcase();
 	failed += tmp;
 	if (tmp)
 		printf("******\n*** %d card testcases failed\n******\n", tmp);
+	*/
+	printf("******\n*** TODO: card testcases \n******\n");
 
 	tmp = ppp_testcase();
 	failed += tmp;

@@ -211,8 +211,7 @@ extern int agent_set_str(agent *a, int field, const char *str);
 extern int agent_get_alphabet(agent *a, int id, const char **alphebet);
 
 /* Config query */
-extern int agent_get_passcode(const agent *a, int field, char **reply); 
-
+extern int agent_get_passcode(agent *a, num_t counter, char *reply); 
 // void agent_set(agent *a);
 
 

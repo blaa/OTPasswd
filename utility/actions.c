@@ -474,6 +474,158 @@ cleanup:
 	return retval;
 }
 
+
+
+int action_print(const options_t *options, agent *a)
+{
+	int retval = 1;
+	int ret;
+
+	/* If 1, we will try to update state at the end of function */
+	int save_state = 0;
+
+	/* Passcard/code to print */
+	num_t item = num_i(0);
+
+	/* And which to look at. */
+	int selected;
+
+
+	/* Do we have to just show any warnings? */
+	if (options->action == OPTION_WARN) {
+/*		int e = ppp_get_warning_conditions(s);
+		const char *warn;
+		while ((warn = ppp_get_warning_message(s, &e)) != NULL) {
+			const char *format = "*** OTPasswd Warning: %s\n";
+			printf(format, warn);
+		}
+*/
+		printf(_("Not implemented.\n"));
+		return 0;
+	}
+
+
+	/* Parse argument */
+	selected = ah_parse_code_spec(a, options->action_arg, &item);
+	if ((selected != PRINT_CODE) && (selected != PRINT_CARD)) {
+		return selected;
+	}
+
+	/*
+	 * Parsed! Now print/skip the thing requested
+	 */
+
+	if (selected == PRINT_CARD) { /* Card */
+		printf(_("Not implemented.\n"));
+/*
+		char *card;
+		switch (options->action) {
+		case OPTION_TEXT:
+			card = card_ascii(s, passcard_num);
+			if (!card) {
+				print(PRINT_ERROR, _("Error while printing "
+				      "card (not enough memory?)\n"));
+				goto cleanup;
+			}
+			puts(card);
+			free(card);
+			break;
+
+		case OPTION_LATEX:
+			card = card_latex(s, passcard_num);
+			if (!card) {
+				print(PRINT_ERROR, _("Error while printing "
+				      "card (not enough memory?)\n"));
+				goto cleanup;
+			}
+			puts(card);
+			free(card);
+			break;
+
+		case OPTION_PROMPT:
+			print(PRINT_ERROR, _("Option requires passcode as argument\n"));
+			break;
+		}
+*/
+	} else {
+		char passcode[17];
+		//const char *prompt;
+		switch (options->action) {
+		case OPTION_TEXT:
+			/* ppp_get_passcode wants internal
+			 * passcodes (with salt) */
+			ret = agent_get_passcode(a, item, passcode);
+			if (ret != 0) {
+				print(PRINT_ERROR, _("Error while calculating passcode\n"));
+				goto cleanup;
+			}
+			printf("%s\n", passcode);
+			break;
+
+		case OPTION_LATEX:
+			printf(_("LaTeX parameter works only with"
+			         " passcard specification\n"));
+			break;
+
+		case OPTION_PROMPT:
+			/* Don't save state after this operation */
+			/*
+			mpz_set(s->counter, passcode_num);
+			ppp_calculate(s);
+			ppp_get_str(s, PPP_FIELD_PROMPT, &prompt);
+			printf("%s\n", prompt);
+			assert(save_state == 0);
+			*/
+			printf(_("Not implemented.\n"));
+			break;
+		}
+	}
+
+	/* Increment latest_card printed in some circumstances:
+	 * 1) "next" argument used with option --text or --latex
+	 * Maybe:
+	 * When printing latest_card + 1 card?
+	 */
+#if 0
+	int do_increment = 0;
+	if (strcasecmp(options->action_arg, "next") == 0) {
+		if (options->action == OPTION_LATEX || 
+		    options->action == OPTION_TEXT)
+			do_increment = 1;
+	}
+
+	/* Increment "latest_card" in state if appropriate  */
+	if (do_increment) {
+		/* If current code is further than s->latest_card
+		 * Then ignore this setting and start printing
+		 * from current_card */
+		if (mpz_cmp(s->current_card, s->latest_card) > 0) {
+			/* Set next to current, or current + 5 for LaTeX */
+			if (options->action == OPTION_LATEX) {
+				mpz_add_ui(s->latest_card, s->current_card, 5);
+			} else {
+				mpz_set(s->latest_card, s->current_card);
+			}
+		} else {
+			/* Increment by 1 or by 6 for LaTeX */
+			mpz_add_ui(
+				s->latest_card,
+				s->latest_card,
+				options->action == OPTION_LATEX ? 6 : 1);
+		}
+		save_state = 1;
+	}
+#endif
+	retval = 0;
+
+cleanup:
+	mpz_clear(item);
+
+	return retval;
+}
+
+
+
 /* Update flags based on mask which are stored in options struct */
 int action_config(const options_t *options, agent *a)
 {
@@ -498,7 +650,8 @@ int action_config(const options_t *options, agent *a)
 
 
 
-int action_print(const options_t *options)
+
+int action_skip(const options_t *options)
 {
 	int retval = 1;
 //	int ret;
@@ -558,122 +711,66 @@ int action_print(const options_t *options)
 	 */
 	if (selected == 2) { /* Card */
 		char *card;
-		switch (options->action) {
-		case OPTION_TEXT:
-			card = card_ascii(s, passcard_num);
-			if (!card) {
-				print(PRINT_ERROR, _("Error while printing "
-				      "card (not enough memory?)\n"));
-				goto cleanup;
-			}
-			puts(card);
-			free(card);
-			break;
-
-		case OPTION_LATEX:
-			card = card_latex(s, passcard_num);
-			if (!card) {
-				print(PRINT_ERROR, _("Error while printing "
-				      "card (not enough memory?)\n"));
-				goto cleanup;
-			}
-			puts(card);
-			free(card);
-			break;
-
-		case OPTION_SKIP:
-			/* Skip to passcard... */
-			ret = ppp_get_passcode_number(s, passcard_num,
-						      &passcode_num, 'A', 1);
-			if (ret != 0) {
-				print(PRINT_ERROR,
-				      _("Error while generating destination passcode\n"));
-				goto cleanup;
-			}
-
-			ret = mpz_cmp(s->counter, passcode_num);
-			if (ret > 0) {
-				/* Skipping backwards */
-				if (cfg->backward_skipping == CONFIG_ALLOW
-				    || security_is_privileged()) {
-					/* Allowed or root */
-					printf(_("**********************************\n"
-					         "* WARNING: You should never skip *\n"
-					         "* backwards to reuse your codes! *\n"
-					         "**********************************\n"));
-				} else {
-					printf(_("Skipping backwards denied by policy.\n"));
-					break;
-				}
-			} else if (ret == 0) {
-				printf(_("Ignoring skip to the current passcode.\n"));
+		/* Skip to passcard... */
+		ret = ppp_get_passcode_number(s, passcard_num,
+		                              &passcode_num, 'A', 1);
+		if (ret != 0) {
+			print(PRINT_ERROR,
+			      _("Error while generating destination passcode\n"));
+			goto cleanup;
+		}
+		
+		ret = mpz_cmp(s->counter, passcode_num);
+		if (ret > 0) {
+			/* Skipping backwards */
+			if (cfg->backward_skipping == CONFIG_ALLOW
+			    || security_is_privileged()) {
+				/* Allowed or root */
+				printf(_("**********************************\n"
+				         "* WARNING: You should never skip *\n"
+				         "* backwards to reuse your codes! *\n"
+				         "**********************************\n"));
+			} else {
+				printf(_("Skipping backwards denied by policy.\n"));
 				break;
 			}
-
-			printf(_("Skipped to specified passcard.\n"));
-			mpz_set(s->counter, passcode_num);
-			save_state = 1;
-			break;
-
-		case OPTION_PROMPT:
-			print(PRINT_ERROR, _("Option requires passcode as argument\n"));
+		} else if (ret == 0) {
+			printf(_("Ignoring skip to the current passcode.\n"));
 			break;
 		}
+		
+		printf(_("Skipped to specified passcard.\n"));
+		mpz_set(s->counter, passcode_num);
+		save_state = 1;
+		break;
 	} else {
 		char passcode[17];
 		const char *prompt;
-		switch (options->action) {
-		case OPTION_TEXT:
-			/* ppp_get_passcode wants internal
-			 * passcodes (with salt) */
-			ret = ppp_get_passcode(s, passcode_num, passcode);
-			if (ret != 0) {
-				print(PRINT_ERROR, _("Error while calculating passcode\n"));
-				goto cleanup;
-			}
-			printf("%s\n", passcode);
-			break;
 
-		case OPTION_LATEX:
-			printf(_("LaTeX parameter works only with"
-			         " passcard specification\n"));
-			break;
-
-		case OPTION_SKIP:
-			/* Skip to passcode */
-			ret = mpz_cmp(s->counter, passcode_num);
-			if (ret > 0) {
-				/* Skipping backwards */
-				if (cfg->backward_skipping == CONFIG_ALLOW
-				    || security_is_privileged()) {
-					/* Allowed or root */
-					printf(_("**********************************\n"
-					         "* WARNING: You should never skip *\n"
-					         "* backwards to reuse your codes! *\n"
-					         "**********************************\n"));
-				} else {
-					printf(_("Skipping backwards denied by policy.\n"));
-					break;
-				}
-			} else if (ret == 0) {
-				printf(_("Ignoring skip to the current passcode.\n"));
+		/* Skip to passcode */
+		ret = mpz_cmp(s->counter, passcode_num);
+		if (ret > 0) {
+			/* Skipping backwards */
+			if (cfg->backward_skipping == CONFIG_ALLOW
+			    || security_is_privileged()) {
+				/* Allowed or root */
+				printf(_("**********************************\n"
+				         "* WARNING: You should never skip *\n"
+				         "* backwards to reuse your codes! *\n"
+				         "**********************************\n"));
+			} else {
+				printf(_("Skipping backwards denied by policy.\n"));
 				break;
 			}
-
-			printf(_("Skipped to specified passcode.\n"));
-			mpz_set(s->counter, passcode_num);
-			save_state = 1;
-			break;
-
-		case OPTION_PROMPT:
-			/* Don't save state after this operation */
-			mpz_set(s->counter, passcode_num);
-			ppp_calculate(s);
-			ppp_get_str(s, PPP_FIELD_PROMPT, &prompt);
-			printf("%s\n", prompt);
-			assert(save_state == 0);
+		} else if (ret == 0) {
+			printf(_("Ignoring skip to the current passcode.\n"));
 			break;
 		}
+		
+		printf(_("Skipped to specified passcode.\n"));
+		mpz_set(s->counter, passcode_num);
+		save_state = 1;
+		break;
 	}
 
 	/* Increment latest_card printed in some circumstances:

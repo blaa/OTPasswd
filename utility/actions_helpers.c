@@ -146,10 +146,10 @@ int ah_show_state(agent *a)
 		max_card, max_code;
 	const char *which = NULL;
 
-	/*if ((ret = agent_get_num(a, PPP_FIELD_CURRENT_CARD, &current_card)) != 0) {
+	if ((ret = agent_get_num(a, PPP_FIELD_CURRENT_CARD, &current_card)) != 0) {
 		which = "current card";
 		goto error;
-		}*/
+	}
 
 	if ((ret = agent_get_num(a, PPP_FIELD_UNSALTED_COUNTER, &unsalted_counter)) != 0) {
 		which = "counter";
@@ -172,12 +172,10 @@ int ah_show_state(agent *a)
 	}
 
 
-/*	printf(_("Current card        = "));
+	printf(_("Current card        = "));
 	num_print_dec(current_card);
 	printf("\n");
-*/
 
-	/* Counter */
 	printf(_("Current code        = "));
 	num_print_dec(unsalted_counter);
 	printf("\n");
@@ -196,8 +194,8 @@ int ah_show_state(agent *a)
 
 	return 0;
 error:
-	print(PRINT_ERROR, "Error while reading state data: %s (%d)\n",
-	      agent_strerror(ret), ret);
+	print(PRINT_ERROR, "Error while reading field %s: %s (%d)\n",
+	      which, agent_strerror(ret), ret);
 	return ret;
 }
 
@@ -448,6 +446,186 @@ error:
 
 }
 
+
+/* Parse specification of passcode or passcard from "spec" string
+ * Result returned as item. Code returned from function 
+ * (PRINT_CODE or PRINT_CARD) determines what was decoded.
+ */
+int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
+{
+	int ret;
+	int selected;
+
+
+	num_t current_card, unsalted_counter, latest_card, 
+		max_card, max_code;
+	const char *which = NULL;
+
+	if ((ret = agent_get_num(a, PPP_FIELD_CURRENT_CARD, &current_card)) != 0) {
+		which = "current card";
+		goto error;
+	}
+
+	if ((ret = agent_get_num(a, PPP_FIELD_UNSALTED_COUNTER, &unsalted_counter)) != 0) {
+		which = "counter";
+		goto error;
+	}
+
+	if ((ret = agent_get_num(a, PPP_FIELD_LATEST_CARD, &latest_card)) != 0) {
+		which = "latest card";
+		goto error;
+	}
+
+	if ((ret = agent_get_num(a, PPP_FIELD_MAX_CARD, &max_card)) != 0) {
+		which = "max card";
+		goto error;
+	}
+
+	if ((ret = agent_get_num(a, PPP_FIELD_MAX_CODE, &max_code)) != 0) {
+		which = "max code";
+		goto error;
+	}
+
+
+
+	/* Determine what user wants to print(or skip) and parse it to
+	 * either passcode number or passcard number. Remember what was
+	 * read to selected so later we can print it
+	 */
+	if (strcasecmp(spec, "current") == 0) {
+		/* Current passcode */
+		selected = PRINT_CODE;
+		mpz_set(*item, unsalted_counter);
+	} else if (strcasecmp(spec, "[current]") == 0) {
+		/* Current passcard */
+		selected = PRINT_CARD;
+		mpz_set(*item, current_card);
+	} else if ((strcasecmp(spec, "next") == 0) ||
+		   (strcasecmp(spec, "[next]") == 0)) {
+		/* Next passcard. */
+		selected = PRINT_CARD;
+
+		/* Set passcard to latest_card + 1, but if 
+		 * current code is further than s->latest_card
+		 * then start printing from current_card */
+		if (mpz_cmp(current_card, latest_card) > 0) {
+			mpz_set(*item, current_card);
+		} else {
+			mpz_add_ui(*item, latest_card, 1);
+		}
+	} else if (isascii(spec[0]) && isalpha(spec[0])) {
+		/* Format: CRR[number]; TODO: allow RRC[number] */
+		char column;
+		int row;
+		char number[41];
+		ret = sscanf(spec, "%c%d[%40[^]]s]", &column, &row, number);
+		column = toupper(column);
+		if (ret != 3 || (column < OPTION_ALPHABETS || column > 'J')) {
+			printf(_("Incorrect passcode specification. (%d)\n"), ret);
+			goto error;
+		}
+
+		ret = num_import(item, number, NUM_FORMAT_DEC);
+		if (ret != 0) {
+			printf(_("Incorrect passcard specification (%s).\n"), number);
+			goto error;
+		}
+
+/*
+		if (!ah_is_passcard_in_range(s, *passcard)) {
+			printf(_("Passcard number out of range. "
+			         "First passcard has number 1.\n"));
+			goto error;
+		}
+*/
+		/* ppp_get_passcode_number adds salt as needed */
+		/*
+		ret = ppp_get_passcode_number(s, *passcard, passcode, column, row);
+		if (ret != 0) {
+			printf(_("Error while parsing passcard description.\n"));
+			goto error;
+		}
+		*/
+
+		selected = PRINT_CODE;
+
+	} else if (isdigit(spec[0])) {
+		/* All characters must be a digit! */
+		int i;
+		for (i=0; spec[i]; i++) {
+			if (!isdigit(spec[i])) {
+				printf(_("Illegal passcode number!\n"));
+				goto error;
+			}
+		}
+
+		/* number -- passcode number */
+		ret = num_import(item, spec, NUM_FORMAT_DEC);
+		if (ret != 0) {
+			printf(_("Error while parsing passcode number.\n"));
+			goto error;
+		}
+
+		if (mpz_cmp(num_i(1), *item) > 0) {
+			ret = 1;
+			printf(_("Passcode number out of range.\n"));
+			goto error;
+		}
+
+/*		if (!ah_is_passcode_in_range(s, *passcode)) {
+			printf(_("Passcode number out of range.\n"));
+			goto error;
+		}
+*/
+		mpz_sub_ui(*item, *item, 1);
+
+
+		selected = PRINT_CODE;
+	} else if (spec[0] == '[' && spec[strlen(spec)-1] == ']') {
+		/* [number] -- passcard number */
+
+		/* Erase [,] characters */
+		char number[41] = {0};
+		ret = sscanf(spec, "[%40[^]s]", number);
+		if (ret != 1) {
+			printf("Strange error while parsing passcard number.\n");
+			goto error;
+		}
+
+		ret = num_import(item, number, NUM_FORMAT_DEC);
+		if (ret != 0) {
+			printf(_("Error while parsing passcard number (%s).\n"), number);
+			goto error;
+		}
+
+		if (mpz_cmp(num_i(1), *item) > 0) {
+			ret = 1;
+			printf(_("Passcode number out of range.\n"));
+			goto error;
+		}
+
+/*
+		if (!ah_is_passcard_in_range(s, *passcard)) {
+			printf(_("Passcard out of accessible range.\n"));
+			goto error;
+		}
+*/
+		selected = PRINT_CARD;
+	} else {
+		printf(_("Illegal argument passed to option.\n"));
+		goto error;
+	}
+
+	return selected;
+
+error:
+	print(PRINT_ERROR, "Error while reading field %s: %s (%d)\n",
+	      which, agent_strerror(ret), ret);
+	return 5;
+}
+
+
+
 #if 0
 
 int ah_update_flags(options_t *options, state *s, int generation)
@@ -624,134 +802,6 @@ int ah_update_flags(options_t *options, state *s, int generation)
 	ppp_flag_add(s, options->flag_set_mask);
 	ppp_flag_del(s, options->flag_clear_mask);
 	return 0;
-}
-
-/* Parse specification of passcode or passcard from "spec" string
- * Result save to passcode (and return 1) or to passcard (and return 2)
- * any other return value means error 
- */
-int ah_parse_code_spec(const state *s, const char *spec, num_t *passcard, num_t *passcode)
-{
-	int ret;
-	int selected;
-
-	/* Determine what user wants to print(or skip) and parse it to
-	 * either passcode number or passcard number. Remember what was
-	 * read to selected so later we can print it
-	 */
-	if (strcasecmp(spec, "current") == 0) {
-		/* Current passcode */
-		selected = 1;
-		mpz_set(*passcode, s->counter);
-	} else if (strcasecmp(spec, "[current]") == 0) {
-		/* Current passcode */
-		selected = 2;
-		mpz_set(*passcard, s->current_card);
-	} else if ((strcasecmp(spec, "next") == 0) ||
-		   (strcasecmp(spec, "[next]") == 0)) {
-		/* Next passcard. */
-		selected = 2;
-
-		/* Set passcard to latest_card + 1, but if 
-		 * current code is further than s->latest_card
-		 * then start printing from current_card */
-		if (mpz_cmp(s->current_card, s->latest_card) > 0) {
-			mpz_set(*passcard, s->current_card);
-		} else {
-			mpz_add_ui(*passcard, s->latest_card, 1);
-		}
-	} else if (isascii(spec[0]) && isalpha(spec[0])) {
-		/* Format: CRR[number]; TODO: allow RRC[number] */
-		char column;
-		int row;
-		char number[41];
-		ret = sscanf(spec, "%c%d[%40[^]]s]", &column, &row, number);
-		column = toupper(column);
-		if (ret != 3 || (column < OPTION_ALPHABETS || column > 'J')) {
-			printf(_("Incorrect passcode specification. (%d)\n"), ret);
-			goto error;
-		}
-
-		ret = num_import(passcard, number, NUM_FORMAT_DEC);
-		if (ret != 0) {
-			printf(_("Incorrect passcard specification (%s).\n"), number);
-			goto error;
-		}
-
-		if (!ah_is_passcard_in_range(s, *passcard)) {
-			printf(_("Passcard number out of range. "
-			         "First passcard has number 1.\n"));
-			goto error;
-		}
-
-		/* ppp_get_passcode_number adds salt as needed */
-		ret = ppp_get_passcode_number(s, *passcard, passcode, column, row);
-		if (ret != 0) {
-			printf(_("Error while parsing passcard description.\n"));
-			goto error;
-		}
-
-		selected = 1;
-
-	} else if (isdigit(spec[0])) {
-		/* All characters must be a digit! */
-		int i;
-		for (i=0; spec[i]; i++) {
-			if (!isdigit(spec[i])) {
-				printf(_("Illegal passcode number!\n"));
-				goto error;
-			}
-		}
-
-		/* number -- passcode number */
-		ret = num_import(passcode, spec, NUM_FORMAT_DEC);
-		if (ret != 0) {
-			printf(_("Error while parsing passcode number.\n"));
-			goto error;
-		}
-
-		if (!ah_is_passcode_in_range(s, *passcode)) {
-			printf(_("Passcode number out of range.\n"));
-			goto error;
-		}
-
-		mpz_sub_ui(*passcode, *passcode, 1);
-
-		/* Add salt as this number came from user */
-		ppp_add_salt(s, passcode);
-
-		selected = 1;
-	} else if (spec[0] == '[' && spec[strlen(spec)-1] == ']') {
-		/* [number] -- passcard number */
-
-		/* Erase [,] characters */
-		char number[41] = {0};
-		ret = sscanf(spec, "[%40[^]s]", number);
-		if (ret != 1) {
-			printf("Strange error while parsing passcard number.\n");
-			goto error;
-		}
-
-		ret = num_import(passcard, number, NUM_FORMAT_DEC);
-		if (ret != 0) {
-			printf(_("Error while parsing passcard number (%s).\n"), number);
-			goto error;
-		}
-
-		if (!ah_is_passcard_in_range(s, *passcard)) {
-			printf(_("Passcard out of accessible range.\n"));
-			goto error;
-		}
-
-		selected = 2;
-	} else {
-		printf(_("Illegal argument passed to option.\n"));
-		goto error;
-	}
-
-	return selected;
-error:
-	return 5;
 }
 
 

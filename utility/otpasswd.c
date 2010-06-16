@@ -503,7 +503,7 @@ static int perform_action(int argc, char **argv, options_t *options)
 	case OPTION_TEXT:
 	case OPTION_LATEX:
 	case OPTION_PROMPT:
-		retval = action_print(options);
+		retval = action_print(options, a);
 		break;
 
 	case OPTION_CHECK:

@@ -412,14 +412,32 @@ int agent_set_str(agent *a, int field, const char *str)
 }
 
 
+int agent_get_passcode(agent *a, const num_t counter, char *reply)
+{
+	assert(a);
+	assert(reply);
+
+	agent_hdr_init(a, 0);
+	agent_hdr_set_num(a, &counter);
+
+	int ret = agent_query(a, AGENT_REQ_GET_PASSCODE);
+	if (ret != AGENT_OK)
+		return ret;
+
+
+	const char *tmp_str = agent_hdr_get_arg_str(a);
+	assert(tmp_str);
+	strncpy(reply, tmp_str, 16);
+	reply[16] = '\0';
+
+
+	return ret;
+}
 
 
 /*
 
 
-int agent_get_passcode(const agent *a, int field, char **reply) 
-{
-}
 */
 
 

@@ -55,9 +55,16 @@ enum AGENT_REQUEST {
 	/** Remove key */
 	AGENT_REQ_KEY_REMOVE,
 
+	/* Flags */
 	AGENT_REQ_FLAG_ADD,
 	AGENT_REQ_FLAG_CLEAR,
 	AGENT_REQ_FLAG_GET,
+
+	/* Get passcode of specified number */
+	AGENT_REQ_GET_PASSCODE,
+	/* Skip to passcode */
+	AGENT_REQ_SKIP,
+
 
 	/* Verify that the state is consistent with policy */
 	AGENT_REQ_VERIFY,

@@ -124,7 +124,7 @@ ADD_LIBRARY(common STATIC common/print.c common/num.c)
 
 # Library containing common functions
 ADD_LIBRARY(otp STATIC libotp/crypto.c libotp/ppp.c 
-	libotp/state.c libotp/passcards.c
+	libotp/state.c 
         libotp/db_file.c libotp/db_mysql.c libotp/db_ldap.c
 	libotp/config.c crypto/polarssl_aes.c crypto/coreutils_sha256.c)
 
@@ -136,7 +136,7 @@ ADD_LIBRARY(pam_otpasswd SHARED pam/pam_helpers.c pam/pam_otpasswd.c)
 SET_TARGET_PROPERTIES(pam_otpasswd PROPERTIES PREFIX "")
 
 # Password management target
-ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/actions.c utility/actions_helpers.c)
+ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/actions.c utility/actions_helpers.c utility/cards.c)
 
 # Agent server
 ADD_EXECUTABLE(agent_otp agent/agent.c agent/request.c agent/testcases.c agent/security.c)

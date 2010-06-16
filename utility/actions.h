@@ -96,6 +96,6 @@ extern int action_key_remove(const options_t *options, agent *a);
 extern int action_authenticate(const options_t *options, agent *a);
 
 /** Print passcode or passcard or skip (-t -l -s) */
-extern int action_print(const options_t *options);
+extern int action_print(const options_t *options, agent *a);
 
 #endif

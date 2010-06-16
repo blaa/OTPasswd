@@ -187,6 +187,19 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 		else
 			return AGENT_OK;
 
+	case AGENT_REQ_GET_PASSCODE:
+		if (!security_is_privileged() && cfg->passcode_print == CONFIG_DISALLOW)
+			return AGENT_ERR_POLICY;
+		else
+			return AGENT_OK;
+
+	case AGENT_REQ_SKIP:
+		if (!security_is_privileged() && cfg->skipping == CONFIG_DISALLOW)
+			return AGENT_ERR_POLICY;
+		else
+			return AGENT_OK;
+
+
 	case AGENT_REQ_SET_NUM:
 	case AGENT_REQ_SET_INT:
 	case AGENT_REQ_SET_STR:
@@ -226,7 +239,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 //	const int r_status = agent_hdr_get_status(a);
 	const int r_int = agent_hdr_get_arg_int(a);
 	const int r_int2 = agent_hdr_get_arg_int2(a);
-	//const num_t r_num = agent_hdr_get_arg_num(a);
+	const num_t r_num = agent_hdr_get_arg_num(a);
 	const char *r_str = agent_hdr_get_arg_str(a);
 
 	print(PRINT_NOTICE, "Executing request %d\n", r_type);
@@ -475,6 +488,30 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		/* Immediately remove key from this part of memory */
 		if (r_int == PPP_FIELD_KEY)
 			agent_hdr_sanitize(a);
+		break;
+
+	case AGENT_REQ_GET_PASSCODE:
+		if (!a->s) {
+			/* This doesn't need to work atomically */
+			ret = AGENT_ERR_NO_STATE;
+		} else {
+			agent_hdr_init(a, 0);
+			char passcode[20];
+			
+			ret = ppp_get_passcode(a->s, r_num, passcode);
+			if (ret == 0) {
+				ret = agent_hdr_set_str(a, passcode);
+				assert(ret == 0);
+			}
+		}
+
+		_send_reply(a, ret);
+		break;
+
+	case AGENT_REQ_SKIP:
+		/* Not implemented */
+		ret = AGENT_ERR;
+		_send_reply(a, ret);
 		break;
 
 	case AGENT_REQ_GET_ALPHABET:

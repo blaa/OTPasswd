@@ -41,7 +41,6 @@
 #include "print.h"
 #include "config.h"
 #include "crypto.h"
-#include "passcards.h"
 #include "num.h"
 
 
@@ -125,8 +124,8 @@ extern int ppp_failures(const state *s, int zero);
  *************************************/
 /** Calculate a single passcode using Perfect Paper Passwords
  * algorithm using Key from state. Counter is universal
- * and passed as argument (which is not further mangled,
- * so it has to have a salt included). 
+ * and passed as argument; it may or may not have salt. 
+ * if needed salt will be added.
  * char *passcode must have enough place. Minimum 17 bytes.
  */
 extern int ppp_get_passcode(const state *s, const num_t counter, char *passcode);

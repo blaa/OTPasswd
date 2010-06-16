@@ -25,6 +25,11 @@ enum {
 	QUERY_OBSCURE=1
 };
 
+enum { 
+	PRINT_CODE = 1,
+	PRINT_CARD = 2
+};
+
 /** Ask user once and return _YES, _NO or _OBSCURE */
 extern int ah_yes_or_no(const char *msg);
 
@@ -46,6 +51,9 @@ extern int ah_show_keys(agent *a, const options_t *options);
 /** Set options defined by user - one, by one */
 extern int ah_set_options(agent *a, const options_t *options);
 
+/** Parse code specification and store resulting data in arguments */
+extern int ah_parse_code_spec(agent *a, const char *spec, num_t *item);
+
 #if 0
 
 /* Check if passcard is in range */
@@ -58,8 +66,6 @@ extern int ah_is_passcode_in_range(const state *s, const num_t passcard);
 /* Update state flags. Checks policy. If generation is 1 we allow salt changes. */
 extern int ah_update_flags(options_t *options, state *s, int generation);
 
-/* Parse code specification and store resulting data in arguments */
-extern int ah_parse_code_spec(const state *s, const char *spec, num_t *passcard, num_t *passcode);
 
 #endif 
 

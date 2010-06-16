@@ -22,10 +22,12 @@
 #include <unistd.h>
 #include "num.h"
 
-#define PPP_INTERNAL 1
-#include "ppp.h"
+#include "agent_interface.h"
 
-char *card_ascii(const state *s, const num_t passcard)
+
+
+#if 0
+char *card_ascii(agent *a, const num_t passcard)
 {
 	const char columns[] = "ABCDEFGHIJKLMNOP";
 	const int whitespace = 1;
@@ -231,3 +233,4 @@ char *card_latex(const state *s, const num_t number)
 	return whole_card;
 }
 
+#endif

@@ -348,8 +348,12 @@ void ppp_add_salt(const state *s, num_t *passcode)
 {
 	if (s->flags & FLAG_SALTED) {
 		num_t salt;
+		/* Calculate "free" salt out of counter */
 		mpz_init_set(salt, s->counter);
 		mpz_and(salt, salt, s->salt_mask);
+		/* Remove existing salt if any from passcode */
+		mpz_and(*passcode, *passcode, s->code_mask);
+		/* Add salt */
 		mpz_add(*passcode, *passcode, salt);
 		mpz_clear(salt);
 	}
@@ -381,6 +385,8 @@ int ppp_get_passcode_number(const state *s, const num_t passcard, num_t *passcod
 	return 0;
 }
 
+
+
 int ppp_get_passcode(const state *s, const num_t counter, char *passcode)
 {
 	unsigned char cnt_bin[16];
@@ -407,12 +413,17 @@ int ppp_get_passcode(const state *s, const num_t counter, char *passcode)
 	if (!passcode)
 		return 2;
 
+	/* Counter might be salted or unsalted, so make sure
+	 * we work with salted version */
+	num_t salted_counter = counter;
+	ppp_add_salt(s, &salted_counter);
+
 	mpz_init(quotient);
 	mpz_init(cipher);
 
 	/* Convert numbers to binary */
 //	num_to_bin(counter, cnt_bin, 16);
-	num_export(counter, (char *)cnt_bin, NUM_FORMAT_BIN);
+	num_export(salted_counter, (char *)cnt_bin, NUM_FORMAT_BIN);
 
 	/* Encrypt counter with key */
 	ret = crypto_aes_encrypt(s->sequence_key, cnt_bin, cipher_bin);
@@ -450,6 +461,7 @@ clear:
 	memset(cnt_bin, 0, sizeof(cnt_bin));
 	memset(cipher_bin, 0, sizeof(cipher_bin));
 
+	mpz_clear(salted_counter);
 	mpz_clear(quotient);
 	mpz_clear(cipher);
 	return ret;
@@ -1089,6 +1101,10 @@ int ppp_get_mpz(const state *s, int field, num_t *arg)
 			mpz_and(*arg, *arg, s->code_mask);
 		}
 		mpz_add_ui(*arg, *arg, 1);
+		break;
+
+	case PPP_FIELD_CURRENT_CARD:
+		mpz_set(*arg, s->current_card);
 		break;
 
 	case PPP_FIELD_LATEST_CARD:
