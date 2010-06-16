@@ -371,7 +371,25 @@ int action_info(const options_t *options, agent *a)
 
 	if (options->action == OPTION_ALPHABETS) {
 		/* This does not require state. */
-		/* TODO */
+		int id;
+		const char *alphabet;
+		printf(_("Alphabet list ([-] means \"denied by policy\"): \n"));
+		for (id = 0; ; id++) {
+			alphabet = NULL;
+			retval = agent_get_alphabet(a, id, &alphabet);
+			if (retval == PPP_ERROR_RANGE) {
+				/* That's it */
+				break;
+			} else if (retval == PPP_ERROR_POLICY) {
+				printf("ID=%d [-] %s\n", id, alphabet);
+			} else if (retval == 0) {
+				printf("ID=%d [+] %s\n", id, alphabet);
+			} else {
+				print(PRINT_ERROR, "Error while querying for alphabet string.\n");
+				return retval;
+			}
+		}
+
 		return 0;
 	}
 

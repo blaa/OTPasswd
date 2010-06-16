@@ -204,6 +204,9 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 	case AGENT_REQ_FLAG_GET:
 		return AGENT_OK;
 
+	case AGENT_REQ_GET_ALPHABET:
+		return AGENT_OK;
+
 	default:
 		print(PRINT_ERROR, "Unrecognized request type. (%d)\n", r_type);
 		return AGENT_ERR;
@@ -474,7 +477,19 @@ static int request_execute(agent *a, const cfg_t *cfg)
 			agent_hdr_sanitize(a);
 		break;
 
+	case AGENT_REQ_GET_ALPHABET:
+	{
+		const char *alphabet = NULL;
+		agent_hdr_init(a, 0);
 
+		ret = ppp_alphabet_get(r_int, &alphabet);
+
+		int tmp = agent_hdr_set_str(a, alphabet);
+		assert(tmp == AGENT_OK);
+
+		_send_reply(a, ret);
+		break;
+	}
 	case AGENT_REQ_SET_INT:
 		/* This sets PPP field: alphabet, codelength, but not flags. */
 		if (!a->s) {

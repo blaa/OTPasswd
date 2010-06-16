@@ -338,7 +338,7 @@ int ah_show_keys(agent *a, const options_t *options)
 	num_t counter;
 	int ret;
 
-	if ((ret = agent_get_bin_str(a, PPP_FIELD_KEY, key, 32)) != 0) {
+	if ((ret = agent_get_key(a, key)) != 0) {
 		print(PRINT_ERROR, _("Unable to read key: %s (%d)\n"), 
 		      agent_strerror(ret), ret);
 		goto sanitize;

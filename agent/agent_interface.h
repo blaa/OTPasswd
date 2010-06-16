@@ -201,12 +201,14 @@ extern int agent_get_int(agent *a, int field, int *integer);
 /* Getters returning string data allocates it; you 
  * have to free it yourself */
 extern int agent_get_str(agent *a, int field, char **str);
-extern int agent_get_bin_str(agent *a, int field, unsigned char *str, unsigned int length);
-extern int agent_get_key(const agent *a, char *key);
+/* key must have prepared place for 32 bytes */
+extern int agent_get_key(agent *a, unsigned char *key);
 
 /* Setters */
 extern int agent_set_int(agent *a, int field, int integer);
 extern int agent_set_str(agent *a, int field, const char *str);
+
+extern int agent_get_alphabet(agent *a, int id, const char **alphebet);
 
 /* Config query */
 extern int agent_get_passcode(const agent *a, int field, char **reply); 

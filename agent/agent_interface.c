@@ -107,7 +107,7 @@ int agent_connect(agent **a_out, const char *agent_executable)
 			goto cleanup1;
 		
 		}
-		agent_hdr_debug(&a->rhdr);
+
 		if (a->rhdr.type != AGENT_REQ_INIT) {
 			print(PRINT_ERROR, "Initial frame parsing error.\n");
 			ret = AGENT_ERR_SERVER_INIT;
@@ -121,7 +121,6 @@ int agent_connect(agent **a_out, const char *agent_executable)
 		}
 	}
 
-	print(PRINT_NOTICE, "Agent connection initialized correctly\n");
 	*a_out = a;
 	return AGENT_OK;
 
@@ -339,18 +338,13 @@ int agent_get_str(agent *a, int field, char **str)
 
 }
 
-int agent_get_bin_str(agent *a, int field, unsigned char *str, unsigned int length)
+int agent_get_key(agent *a, unsigned char *key)
 {
-	assert(str);
+	assert(a);
+	assert(key);
 
 	agent_hdr_init(a, 0);
-	agent_hdr_set_int(a, field, 0);
-
-	if (length >= AGENT_ARG_MAX) {
-		print(PRINT_CRITICAL, "Binary string length too big.\n");
-		assert(0);
-		return 1;
-	}
+	agent_hdr_set_int(a, PPP_FIELD_KEY, 0);
 
 	int ret = agent_query(a, AGENT_REQ_GET_STR);
 	if (ret != 0) {
@@ -360,11 +354,31 @@ int agent_get_bin_str(agent *a, int field, unsigned char *str, unsigned int leng
 	const unsigned char *tmp_str = (unsigned char *)agent_hdr_get_arg_str(a);
 	assert(tmp_str);
 
-	memcpy(str, tmp_str, length);
+	memcpy(key, tmp_str, 32);
 
 	return AGENT_OK;
-
 }
+
+
+int agent_get_alphabet(agent *a, int id, const char **alphabet)
+{
+	assert(a);
+	assert(alphabet);
+
+	agent_hdr_init(a, 0);
+	agent_hdr_set_int(a, id, 0);
+
+	int ret = agent_query(a, AGENT_REQ_GET_ALPHABET);
+	if (ret != 0 && ret != PPP_ERROR_POLICY) {
+		*alphabet = NULL;
+		return ret;
+	}
+
+	*alphabet = agent_hdr_get_arg_str(a);
+
+	return ret;
+}
+
 
 
 /* Setters */
@@ -401,9 +415,6 @@ int agent_set_str(agent *a, int field, const char *str)
 
 
 /*
-int agent_get_key(const agent *a, char *key)
-{
-}
 
 
 int agent_get_passcode(const agent *a, int field, char **reply) 

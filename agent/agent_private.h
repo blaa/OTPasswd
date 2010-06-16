@@ -66,6 +66,7 @@ enum AGENT_REQUEST {
 	AGENT_REQ_GET_NUM,
 	AGENT_REQ_GET_INT,
 	AGENT_REQ_GET_STR,
+	AGENT_REQ_GET_ALPHABET,
 
 	/* State field setters. Can work with new 
 	 * states or when no state exists (then they perform

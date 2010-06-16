@@ -497,6 +497,9 @@ static int perform_action(int argc, char **argv, options_t *options)
 
 	case OPTION_WARN:
 	case OPTION_SKIP:
+		printf(_("Unimplemented.\n"));
+		break;
+
 	case OPTION_TEXT:
 	case OPTION_LATEX:
 	case OPTION_PROMPT:

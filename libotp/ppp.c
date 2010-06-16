@@ -158,7 +158,7 @@ int ppp_verify_alphabet(int id)
 	const int max = cfg->alphabet_max_length;
 
 	/* Check if it's legal */
-	if (id < 0 || id > alphabet_cnt)
+	if (id < 0 || id >= alphabet_cnt)
 		return PPP_ERROR_RANGE;
 
 	/* Fail also if changing is denied and this
@@ -301,19 +301,19 @@ int ppp_alphabet_get(int id, const char **alphabet)
 	assert(cfg);
 	assert(alphabet);
 
-	switch (verify) {
-	case PPP_ERROR_POLICY:
-		if (id == 0) {
-			/* 0 - custom */
-			*alphabet = cfg->alphabet_custom;
-		} else {
-			*alphabet = alphabets[id];
-		}
-
-	default:
-	case PPP_ERROR_RANGE:
+	if (verify == PPP_ERROR_RANGE) {
 		*alphabet = NULL;
+		return PPP_ERROR_RANGE;
 	}
+
+	/* In range, but might be denied */
+	if (id == 0) {
+		/* 0 - custom */
+		*alphabet = cfg->alphabet_custom;
+	} else {
+		*alphabet = alphabets[id];
+	}
+
 	return verify;
 }
 
