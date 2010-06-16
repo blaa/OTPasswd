@@ -219,9 +219,6 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	ret = agent_hdr_set(a, 0, 0, NULL, NULL);
-	assert(ret == 0);
-
 	char *username = security_get_calling_user();
 	if (!username) {
 		print(PRINT_ERROR, "Unable to locate current user\n");
@@ -229,6 +226,7 @@ int main(int argc, char **argv)
 		goto init_error;
 	}
 
+	agent_hdr_init(a, 0);
 	agent_set_user(a, username);
 	username = NULL;
 

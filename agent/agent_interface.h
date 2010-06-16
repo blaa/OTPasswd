@@ -195,14 +195,17 @@ enum AGENT_TYPE {
 	AGENT_COUNTER_SALTED,
 };
 */
-extern int agent_get_num(agent *a, num_t *key, int type);
-extern int agent_get_int(agent *a, int *integer, int type);
+extern int agent_get_num(agent *a, int field, num_t *key);
+extern int agent_get_int(agent *a, int field, int *integer);
 
 /* Getters returning string data allocates it; you 
  * have to free it yourself */
-extern int agent_get_str(agent *a, char **str, int type);
+extern int agent_get_str(agent *a, int field, char **str);
 extern int agent_get_key(const agent *a, char *key);
 
+/* Setters */
+extern int agent_set_int(agent *a, int field, int integer);
+extern int agent_set_str(agent *a, int field, const char *str);
 
 /* Config query */
 extern int agent_get_passcode(const agent *a, int field, char **reply); 

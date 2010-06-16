@@ -144,35 +144,36 @@ int ah_show_state(agent *a)
 		max_card, max_code;
 	const char *which = NULL;
 
-	if ((ret = agent_get_num(a, &current_card, PPP_FIELD_CURRENT_CARD)) != 0) {
+	/*if ((ret = agent_get_num(a, PPP_FIELD_CURRENT_CARD, &current_card)) != 0) {
 		which = "current card";
 		goto error;
-	}
+		}*/
 
-	if ((ret = agent_get_num(a, &unsalted_counter, PPP_FIELD_UNSALTED_COUNTER)) != 0) {
+	if ((ret = agent_get_num(a, PPP_FIELD_UNSALTED_COUNTER, &unsalted_counter)) != 0) {
 		which = "counter";
 		goto error;
 	}
 
-	if ((ret = agent_get_num(a, &latest_card, PPP_FIELD_LATEST_CARD)) != 0) {
+	if ((ret = agent_get_num(a, PPP_FIELD_LATEST_CARD, &latest_card)) != 0) {
 		which = "latest card";
 		goto error;
 	}
 
-	if ((ret = agent_get_num(a, &max_card, PPP_FIELD_MAX_CARD)) != 0) {
+	if ((ret = agent_get_num(a, PPP_FIELD_MAX_CARD, &max_card)) != 0) {
 		which = "max card";
 		goto error;
 	}
 
-	if ((ret = agent_get_num(a, &max_card, PPP_FIELD_MAX_CODE)) != 0) {
+	if ((ret = agent_get_num(a, PPP_FIELD_MAX_CODE, &max_code)) != 0) {
 		which = "max code";
 		goto error;
 	}
 
 
-	printf(_("Current card        = "));
+/*	printf(_("Current card        = "));
 	num_print_dec(current_card);
 	printf("\n");
+*/
 
 	/* Counter */
 	printf(_("Current code        = "));
@@ -216,25 +217,25 @@ int ah_show_flags(agent *a)
 		goto cleanup;
 	}
 
-	if ((ret = agent_get_int(a, &code_length, PPP_FIELD_CODE_LENGTH)) != 0) {
+	if ((ret = agent_get_int(a, PPP_FIELD_CODE_LENGTH, &code_length)) != 0) {
 		print(PRINT_ERROR, _("Unable to read code length: %s (%d)\n"), 
 		      agent_strerror(ret), ret);
 		goto cleanup;
 	}
 
-	if ((ret = agent_get_int(a, &alphabet, PPP_FIELD_ALPHABET)) != 0) {
+	if ((ret = agent_get_int(a, PPP_FIELD_ALPHABET, &alphabet)) != 0) {
 		print(PRINT_ERROR, _("Unable to read alphabet id: %s (%d)\n"), 
 		      agent_strerror(ret), ret);
 		goto cleanup;
 	}
 
-	if ((ret = agent_get_str(a, &contact, PPP_FIELD_CONTACT)) != 0) {
+	if ((ret = agent_get_str(a, PPP_FIELD_CONTACT, &contact)) != 0) {
 		print(PRINT_ERROR, _("Unable to read contact: %s (%d)\n"), 
 		      agent_strerror(ret), ret);
 		goto cleanup;
 	}
 
-	if ((ret = agent_get_str(a, &label, PPP_FIELD_LABEL)) != 0) {
+	if ((ret = agent_get_str(a, PPP_FIELD_LABEL, &label)) != 0) {
 		print(PRINT_ERROR, _("Unable to read label: %s (%d)\n"), 
 		      agent_strerror(ret), ret);
 		goto cleanup;
@@ -327,6 +328,88 @@ cleanup:
 
 	return ret;
 }
+
+
+int ah_set_options(agent *a, const options_t *options)
+{
+	int retval;
+	const char *what = NULL;
+
+	printf("FLAGS SET: %d CLEAR: %d\n",
+	       options->flag_set_mask, options->flag_clear_mask);
+	printf("Alphabet: %d Code length: %d\n",
+	       options->set_alphabet, options->set_codelength);
+	printf("Contact: %s Label: %s\n",
+	       options->contact, options->label);
+
+
+
+	/* Set flags */
+	if (options->flag_set_mask != 0) {
+		retval = agent_flag_add(a, options->flag_set_mask);
+		if (retval != 0) {
+			what = "adding flag";
+			goto error;
+		}
+	}
+
+	if (options->flag_clear_mask != 0) {
+		retval = agent_flag_clear(a, options->flag_clear_mask);
+		if (retval != 0) {
+			what = "clearing flag";
+			goto error;
+		}
+	}
+
+	/* Set code length */
+	if (options->set_codelength != -1) {
+		print(PRINT_NOTICE, "Trying to set code length.\n");
+		retval = agent_set_int(a, PPP_FIELD_CODE_LENGTH, options->set_codelength);
+		if (retval != 0) {
+			what = "code length";
+			goto error;
+		}
+
+	}
+	/* Set alphabet */
+	if (options->set_alphabet != -1) {
+		print(PRINT_NOTICE, "Trying to set alphabet to %d.\n", options->set_alphabet);
+		retval = agent_set_int(a, PPP_FIELD_ALPHABET, options->set_alphabet);		
+		if (retval != 0) {
+			what = "alphabet";
+			goto error;
+		}
+	}
+
+	/* Set contact */
+	if (options->contact) {
+		print(PRINT_NOTICE, "Trying to set contact.\n");
+		retval = agent_set_str(a, PPP_FIELD_CONTACT, options->contact);
+		if (retval != 0) {
+			what = "contact";
+			goto error;
+		}
+	}
+
+	/* Set label */
+	if (options->label) {
+		print(PRINT_NOTICE, "Trying to set label.\n");
+		retval = agent_set_str(a, PPP_FIELD_LABEL, options->label);
+		if (retval != 0) {
+			what = "label";
+			goto error;
+		}
+	}
+
+
+	return 0;
+error:
+	print(PRINT_ERROR, _("Unable to set required option (what: %s): %s (%d)\n"), 
+	      what, agent_strerror(retval), retval);
+	return retval;
+
+}
+
 
 #if 0
 

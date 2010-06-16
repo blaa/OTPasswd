@@ -66,6 +66,14 @@ enum AGENT_REQUEST {
 	AGENT_REQ_GET_NUM,
 	AGENT_REQ_GET_INT,
 	AGENT_REQ_GET_STR,
+
+	/* State field setters. Can work with new 
+	 * states or when no state exists (then they perform
+	 * operation atomically) */
+	AGENT_REQ_SET_NUM,
+	AGENT_REQ_SET_INT,
+	AGENT_REQ_SET_STR,
+
 };
 
 
@@ -80,17 +88,23 @@ struct agent_header {
 	 * version */
 	int protocol_version;
 
-	/* Request type + Reply type */
+	/* Request type + Reply type 
+	 * Example: Set int field.
+	 */
 	int type;
 
 	/* Reply status/error code */
 	int status;
 
 	/* Generic arguments */
-	int int_arg;
+	/* int_arg example: What field to set 
+	 * int_arg2 example: the value of a field
+	 */
+	int int_arg;             
+	int int_arg2;
 	num_t num_arg;
 
-	/* This must be large enought to contain:
+	/* This must be large enough to contain:
 	 * passwords, contact/label, alphabet reply (under 128 chars)
 	 */
 	char str_arg[AGENT_ARG_MAX];
@@ -130,12 +144,16 @@ typedef struct {
 extern int agent_server(agent **a_out);
 
 /** Prepares header for sending */
-extern int agent_hdr_set(agent *a, int status, 
-                         int int_arg, const num_t *num_arg,
-                         const char *str_arg);
+extern void agent_hdr_init(agent *a, int status);
+extern void agent_hdr_set_num(agent *a, const num_t *num_arg);
+extern void agent_hdr_set_int(agent *a, int int_arg, int int_arg2);
+extern int agent_hdr_set_str(agent *a, const char *str_arg);
 
+/** Send, receive a header */
 extern int agent_hdr_send(const agent *a);
 extern int agent_hdr_recv(agent *a);
+
+/** Send header of query type and return result */
 extern int agent_query(agent *a, int action);
 
 /** Wait for incoming data; returns 0 if anything arrived */
@@ -172,6 +190,11 @@ static inline void agent_hdr_set_status(agent *a, int status) {
 /** Int argument getter */
 static inline int agent_hdr_get_arg_int(const agent *a) {
 	return a->rhdr.int_arg;
+}
+
+/** Second int argument getter */
+static inline int agent_hdr_get_arg_int2(const agent *a) {
+	return a->rhdr.int_arg2;
 }
 
 /** num_t argument getter */

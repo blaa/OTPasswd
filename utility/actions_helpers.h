@@ -25,23 +25,26 @@ enum {
 	QUERY_OBSCURE=1
 };
 
-/* Ask user once and return _YES, _NO or _OBSCURE */
+/** Ask user once and return _YES, _NO or _OBSCURE */
 int ah_yes_or_no(const char *msg);
 
-/* Ask user until he gives up and answers. */
+/** Ask user until he gives up and answers. */
 int ah_enforced_yes_or_no(const char *msg);
 
-/* Read password without echoing characters to console */
+/** Read password without echoing characters to console */
 const char *ah_get_pass(void);
 
-/* Show user flags */
+/** Show user flags */
 int ah_show_flags(agent *a);
 
-/* Show user state (current codes/cards) */
+/** Show user state (current codes/cards) */
 int ah_show_state(agent *a);
 
-/* Show user key/counter */
+/** Show user key/counter */
 void ah_show_keys(agent *a);
+
+/** Set options defined by user - one, by one */
+int ah_set_options(agent *a, const options_t *options);
 
 #if 0
 

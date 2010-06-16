@@ -124,6 +124,7 @@ int agent_hdr_send(const agent *a)
 	_send(type);
 	_send(status);
 	_send(int_arg);
+	_send(int_arg2);
 	_send(num_arg);
 
 	ret = agent_write(fd, a->shdr.str_arg, sizeof(a->shdr.str_arg));
@@ -143,6 +144,7 @@ int agent_hdr_recv(agent *a)
 	_recv(type);
 	_recv(status);
 	_recv(int_arg);
+	_recv(int_arg2);
 	_recv(num_arg);
 
 	ret = agent_read(fd, a->rhdr.str_arg, sizeof(a->rhdr.str_arg));
@@ -158,21 +160,35 @@ int agent_hdr_recv(agent *a)
 	return AGENT_OK;
 }
 
-int agent_hdr_set(agent *a, int status, 
-                  int int_arg, const num_t *num_arg, const char *str_arg)
+void agent_hdr_init(agent *a, int status)
 {
 	assert(a);
 
 	a->shdr.protocol_version = AGENT_PROTOCOL_VERSION;
 	a->shdr.status = status;
-	a->shdr.int_arg = int_arg;
-	
-	if (num_arg) {
-		a->shdr.num_arg = *num_arg;
-	} else {
-		a->shdr.num_arg = num_i(0);
-	}
 
+	a->shdr.int_arg = a->shdr.int_arg2 = 0;
+	a->shdr.num_arg = num_i(0);
+	memset(a->shdr.str_arg, 0, sizeof(a->shdr.str_arg));
+}
+
+void agent_hdr_set_num(agent *a, const num_t *num_arg)
+{
+	if (num_arg)
+		a->shdr.num_arg = *num_arg;
+}
+
+void agent_hdr_set_int(agent *a, int int_arg, int int_arg2)
+{
+	a->shdr.int_arg = int_arg;
+	a->shdr.int_arg2 = int_arg2;
+}
+
+
+int agent_hdr_set_str(agent *a, const char *str_arg)
+{
+	assert(a);
+	
 	if (str_arg) {
 		const int length = strlen(str_arg);
 		assert(length < sizeof(a->shdr.str_arg));
@@ -186,6 +202,7 @@ int agent_hdr_set(agent *a, int status,
 
 	return AGENT_OK;
 }
+
 
 int agent_query(agent *a, int request)
 {

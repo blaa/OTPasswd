@@ -77,9 +77,11 @@ extern int action_init(options_t *options, agent **a);
 /** Post-action clean up */
 extern int action_fini(agent *a);
 
+/** Prints state information (-c -i) and alphabets */
+extern int action_info(const options_t *options, agent *a);
 
-/** Configures user state, prints state information (-c -i) */
-extern int action_flags(const options_t *options, agent *a);
+/** Configures user state */
+extern int action_config(const options_t *options, agent *a);
 
 /** Sets user static password. */
 extern int action_spass(const options_t *options, agent *a);

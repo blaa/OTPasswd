@@ -986,6 +986,7 @@ cleanup:
 int ppp_get_int(const state *s, int field, unsigned int *arg)
 {
 	assert(arg);
+	assert(s);
 
 	switch (field) {
 	case PPP_FIELD_FAILURES:        
@@ -1020,6 +1021,7 @@ int ppp_get_int(const state *s, int field, unsigned int *arg)
 int ppp_set_int(state *s, int field, unsigned int arg, int options)
 {
 	int ret;
+	assert(s);
 	switch (field) {
 	case PPP_FIELD_FAILURES:
 		s->failures = arg;
@@ -1075,6 +1077,7 @@ int ppp_set_int(state *s, int field, unsigned int arg, int options)
 
 int ppp_get_mpz(const state *s, int field, num_t *arg)
 {
+	assert(s);
 	switch (field) {
 	case PPP_FIELD_COUNTER:
 		mpz_set(*arg, s->counter);
@@ -1113,6 +1116,7 @@ int ppp_get_mpz(const state *s, int field, num_t *arg)
 /* ppp_get_str helpers! */
 static void _ppp_dispose_prompt(state *s)
 {
+	assert(s);
 	if (!s->prompt)
 		return;
 
@@ -1133,6 +1137,7 @@ static const char *_ppp_get_prompt(state *s)
 	int length = sizeof(intro)-1 + 3 + 5 + 1;
 	char num[50];
 
+	assert(s);
 	if (s->prompt)
 		_ppp_dispose_prompt(s);
 

@@ -259,16 +259,9 @@ int action_key_generate(const options_t *options, agent *a)
 	}
 
 	/* Set flags */
-	retval = agent_flag_add(a, options->flag_set_mask);
+	retval = ah_set_options(a, options);
 	if (retval != 0) {
 		print(PRINT_ERROR, _("Unable to set required flags: %s (%d)\n"), 
-		      agent_strerror(retval), retval);
-		goto cleanup;
-	}
-
-	retval = agent_flag_clear(a, options->flag_clear_mask);
-	if (retval != 0) {
-		print(PRINT_ERROR, _("Unable to clear required flags: %s (%d)\n"), 
 		      agent_strerror(retval), retval);
 		goto cleanup;
 	}
@@ -372,7 +365,7 @@ int action_spass(const options_t *options, agent *a)
 }
 
 /* Update flags based on mask which are stored in options struct */
-int action_flags(const options_t *options, agent *a)
+int action_info(const options_t *options, agent *a)
 {
 	int retval = 1;
 
@@ -384,32 +377,28 @@ int action_flags(const options_t *options, agent *a)
 
 	/* Initialize, lock, read, calculate additional card info... */
 	switch(options->action) {
-	case OPTION_CONFIG:
-/*   TODO 
-		ret = ah_update_flags(options, s, 0);
-		if (ret != 0) {
-			retval = ret;
-			goto cleanup;
-		}
-
-		if (options->flag_set_mask || options->flag_clear_mask ||
-		    options->set_codelength || options->set_alphabet ||
-		    options->label || options->contact) {
-			save_state = 1;
-			} */
-		break;
-
 	case OPTION_INFO: /* State info */
 /*		if (security_is_privileged())
 			printf(_("* User    = %s\n"), s->username);
-		printf(_("* Your current state:\n"));
-		ah_show_state(s);
-		printf(_("\n* Your current flags:\n"));
-		ah_show_flags(s);
-
-		save_state = 0;
-		retval = 0;
 */
+		printf(_("* Your current state:\n"));
+		retval = ah_show_state(a);
+
+		if (retval != 0) {
+			print(PRINT_ERROR, _("Error while printing state information.\n"));
+			goto cleanup;
+		}
+
+		printf(_("\n* Your current flags:\n"));
+		retval = ah_show_flags(a);
+
+		if (retval != 0) {
+			print(PRINT_ERROR, _("Error while printing state flags.\n"));
+			goto cleanup;
+		}
+
+
+		retval = 0;
 		goto cleanup;
 
 	case OPTION_INFO_KEY: /* Key info */
@@ -458,6 +447,30 @@ cleanup:
 #endif
 	return retval;
 }
+
+/* Update flags based on mask which are stored in options struct */
+int action_config(const options_t *options, agent *a)
+{
+
+	/* Initialize, lock, read, calculate additional card info... */
+/*      TODO 
+        ret = ah_update_flags(options, s, 0);
+        if (ret != 0) {
+                retval = ret;
+                goto cleanup;
+        }
+
+	if (options->flag_set_mask || options->flag_clear_mask ||
+	    options->set_codelength || options->set_alphabet ||
+	    options->label || options->contact) {
+		save_state = 1;
+		} */
+
+	
+	return 1;
+}
+
+
 
 int action_print(const options_t *options)
 {

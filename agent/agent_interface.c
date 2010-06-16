@@ -265,17 +265,18 @@ int agent_key_remove(agent *a)
 	return agent_query(a, AGENT_REQ_KEY_REMOVE);
 }
 
+
 int agent_flag_add(agent *a, int flag)
 {
-	int ret = agent_hdr_set(a, 0, flag, NULL, NULL);
-	assert(ret == AGENT_OK);
+	agent_hdr_init(a, 0);
+	agent_hdr_set_int(a, flag, 0);
 	return agent_query(a, AGENT_REQ_FLAG_ADD);
 }
 
 int agent_flag_clear(agent *a, int flag)
 {
-	int ret = agent_hdr_set(a, 0, flag, NULL, NULL);
-	assert(ret == AGENT_OK);
+	agent_hdr_init(a, 0);
+	agent_hdr_set_int(a, flag, 0);
 	return agent_query(a, AGENT_REQ_FLAG_CLEAR);
 }
 
@@ -284,6 +285,7 @@ int agent_flag_get(agent *a, int *flags)
 	int ret;
 	assert(flags);
 
+	agent_hdr_init(a, 0);
 	ret = agent_query(a, AGENT_REQ_FLAG_GET);
 	if (ret != 0)
 		return ret;
@@ -292,41 +294,43 @@ int agent_flag_get(agent *a, int *flags)
 }
 
 
-int agent_get_num(agent *a, num_t *num, int type)
+int agent_get_num(agent *a, int field, num_t *num)
 {
-	int ret = agent_hdr_set(a, 0, type, NULL, NULL);
-	assert(ret == AGENT_OK);
+	agent_hdr_init(a, 0);
+	agent_hdr_set_int(a, field, 0);
 
-	ret = agent_query(a, AGENT_REQ_GET_NUM);
+	int ret = agent_query(a, AGENT_REQ_GET_NUM);
 	if (ret != 0)
 		return ret;
 	*num = agent_hdr_get_arg_num(a);
 	return AGENT_OK;
 }
 
-int agent_get_int(agent *a, int *integer, int type)
+int agent_get_int(agent *a, int field, int *integer)
 {
-	int ret = agent_hdr_set(a, 0, type, NULL, NULL);
-	assert(ret == AGENT_OK);
+	agent_hdr_init(a, 0);
+	agent_hdr_set_int(a, field, 0);
 
-	ret = agent_query(a, AGENT_REQ_GET_INT);
+	int ret = agent_query(a, AGENT_REQ_GET_INT);
 	if (ret != 0)
 		return ret;
 	*integer = agent_hdr_get_arg_int(a);
 	return AGENT_OK;
 }
 
-int agent_get_str(agent *a, char **str, int type)
+int agent_get_str(agent *a, int field, char **str)
 {
 	assert(str);
-	int ret = agent_hdr_set(a, 0, type, NULL, NULL);
-	assert(ret == AGENT_OK);
 
-	ret = agent_query(a, AGENT_REQ_GET_STR);
+	agent_hdr_init(a, 0);
+	agent_hdr_set_int(a, field, 0);
+
+	int ret = agent_query(a, AGENT_REQ_GET_STR);
 	if (ret != 0) {
 		*str = NULL;
 		return ret;
 	}
+
 	const char *tmp_str = agent_hdr_get_arg_str(a);
 	assert(tmp_str);
 	*str = strdup(tmp_str);
@@ -334,6 +338,39 @@ int agent_get_str(agent *a, char **str, int type)
 	return AGENT_OK;
 
 }
+
+/* Setters */
+int agent_set_int(agent *a, int field, int integer)
+{
+	agent_hdr_init(a, 0);
+	agent_hdr_set_int(a, field, integer);
+
+	int ret = agent_query(a, AGENT_REQ_SET_INT);
+	if (ret != 0)
+		return ret;
+	else
+		return AGENT_OK;
+}
+
+int agent_set_str(agent *a, int field, const char *str)
+{
+	agent_hdr_init(a, 0);
+	agent_hdr_set_int(a, field, 0);
+	int ret = agent_hdr_set_str(a, str);
+	if (ret != AGENT_OK) {
+		print(PRINT_CRITICAL, "Label too long to send, check limits in program.\n");
+		return ret;
+	}
+
+	ret = agent_query(a, AGENT_REQ_SET_STR);
+	if (ret != 0)
+		return ret;
+	else
+		return AGENT_OK;
+}
+
+
+
 
 /*
 int agent_get_key(const agent *a, char *key)

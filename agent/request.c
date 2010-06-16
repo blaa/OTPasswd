@@ -178,6 +178,16 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 	case AGENT_REQ_GET_STR:
 		return AGENT_OK;
 
+	case AGENT_REQ_SET_NUM:
+	case AGENT_REQ_SET_INT:
+	case AGENT_REQ_SET_STR:
+		/* TODO FIXME: Only with new state! */
+		/* Well. This should work itself; if state exists
+		 * we will be able to store it only if it's new
+		 * and if it doesn't exists we must read it ourselves
+		 */
+		return AGENT_OK;
+
 
 		/* FLAGS */
 	case AGENT_REQ_FLAG_ADD:
@@ -203,7 +213,8 @@ static int request_execute(agent *a, const cfg_t *cfg)
 	const int r_type = agent_hdr_get_type(a);
 //	const int r_status = agent_hdr_get_status(a);
 	const int r_int = agent_hdr_get_arg_int(a);
-//	const num_t r_num = agent_hdr_get_arg_num(a);
+	const int r_int2 = agent_hdr_get_arg_int2(a);
+	//const num_t r_num = agent_hdr_get_arg_num(a);
 	const char *r_str = agent_hdr_get_arg_str(a);
 
 	print(PRINT_NOTICE, "Executing request %d\n", r_type);
@@ -346,6 +357,9 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		/* FLAGS */
 	case AGENT_REQ_FLAG_ADD:
 	{
+		/* TODO Ensure a->s exists, if not - read state, do duty and finish */
+		assert(a->s);
+
 		unsigned int new_flags;
 		ppp_get_int(a->s, PPP_FIELD_FLAGS, &new_flags);
 		new_flags |= r_int;
@@ -360,6 +374,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 	case AGENT_REQ_FLAG_CLEAR:
 	{
+		assert(a->s);
 		unsigned int new_flags;
 		ppp_get_int(a->s, PPP_FIELD_FLAGS, &new_flags);
 
@@ -380,8 +395,8 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		} else {
 			unsigned int flags;
 			ppp_get_int(a->s, PPP_FIELD_FLAGS, &flags);
-			ret = agent_hdr_set(a, 0, flags, NULL, NULL);
-			assert(ret == AGENT_OK);
+			agent_hdr_init(a, 0);
+			agent_hdr_set_int(a, flags, 0);
 
 			ret = AGENT_OK;			
 		}
@@ -399,8 +414,9 @@ static int request_execute(agent *a, const cfg_t *cfg)
 				print(PRINT_ERROR, "Illegal num request.\n");
 				ret = AGENT_ERR;
 			} else {
-				ret = agent_hdr_set(a, 0, 0, &tmp, NULL); 
-				assert(ret == AGENT_OK);
+				agent_hdr_init(a, 0);
+				agent_hdr_set_num(a, &tmp);
+
 				ret = AGENT_OK;
 			}
 		}
@@ -414,8 +430,8 @@ static int request_execute(agent *a, const cfg_t *cfg)
 			unsigned int tmp;
 			(void) ppp_get_int(a->s, r_int, &tmp);
 
-			ret = agent_hdr_set(a, 0, tmp, NULL, NULL); 
-			assert(ret == AGENT_OK);
+			agent_hdr_init(a, 0);
+			agent_hdr_set_int(a, tmp, 0);
 			ret = AGENT_OK;
 		}
 		_send_reply(a, ret);
@@ -429,8 +445,8 @@ static int request_execute(agent *a, const cfg_t *cfg)
 			(void) ppp_get_str(a->s, r_int, &tmp);
 
 			/* This might fail because of length */
-			ret = agent_hdr_set(a, 0, 0, NULL, tmp); 
-			assert(ret == AGENT_OK);
+			agent_hdr_init(a, 0);
+			ret = agent_hdr_set_str(a, tmp);
 			if (ret != AGENT_OK) {
 				print(PRINT_CRITICAL,
 				      "Programmer error. Some str field (%d) "
@@ -443,6 +459,46 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		_send_reply(a, ret);
 		break;
 
+
+	case AGENT_REQ_SET_INT:
+		/* This sets PPP field: alphabet, codelength, but not flags. */
+		if (!a->s) {
+			/* TODO: Not yet supported */
+			ret = AGENT_ERR_NO_STATE;
+		} else {
+			ret = ppp_set_int(a->s, r_int, r_int2, ppp_flags);
+			print(PRINT_NOTICE, "SET_INT: FIELD=%d new value=%d flags=%d\n", r_int, r_int2, ppp_flags);
+			if (ret != 0) {
+				print(PRINT_ERROR, "Error while setting integer in state\n");
+			} else {
+				ret = AGENT_OK;
+			}
+		}
+		_send_reply(a, ret);
+		break;
+
+	case AGENT_REQ_SET_STR:
+		if (!a->s) {
+			/* TODO: Not yet supported */
+			ret = AGENT_ERR_NO_STATE;
+		} else {
+			ret = ppp_set_str(a->s, r_int, r_str, ppp_flags);
+			if (ret != 0) {
+				print(PRINT_ERROR, "Error while setting integer in state\n");
+			} else {
+				ret = AGENT_OK;
+			}
+		}
+		_send_reply(a, ret);
+		break;
+
+	case AGENT_REQ_SET_NUM:
+		/* Not yet implemented. Is it required at all? */
+		ret = AGENT_ERR;
+		_send_reply(a, ret);
+		break;
+
+		break;
 			
 	default:
 		print(PRINT_ERROR, "Unrecognized request type (%d).\n", r_type);

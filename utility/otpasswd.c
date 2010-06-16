@@ -477,11 +477,14 @@ static int perform_action(int argc, char **argv, options_t *options)
 		retval = action_spass(options, a);
 		break;
 
-	case OPTION_ALPHABETS:
-	case OPTION_CONFIG:
 	case OPTION_INFO:
 	case OPTION_INFO_KEY:
-		retval = action_flags(options, a);
+	case OPTION_ALPHABETS:
+		retval = action_info(options, a);
+		break;
+
+	case OPTION_CONFIG:
+		retval = action_config(options, a);
 		break;
 
 	case OPTION_AUTH:
@@ -568,7 +571,6 @@ int main(int argc, char **argv)
 
 	return run_cli(argc, argv);
 	
-	fgetc(stdin);
 
 	/*
 	int ret;
