@@ -172,6 +172,11 @@ void agent_hdr_init(agent *a, int status)
 	memset(a->shdr.str_arg, 0, sizeof(a->shdr.str_arg));
 }
 
+void agent_hdr_sanitize(agent *a)
+{
+	agent_hdr_init(a, 0);
+}
+
 void agent_hdr_set_num(agent *a, const num_t *num_arg)
 {
 	if (num_arg)
@@ -195,6 +200,24 @@ int agent_hdr_set_str(agent *a, const char *str_arg)
 		if (length >= sizeof(a->shdr.str_arg))
 			return 1;
 		strncpy(a->shdr.str_arg, str_arg, sizeof(a->shdr.str_arg) - 1);
+	} else {
+		memset(a->shdr.str_arg, 0, sizeof(a->shdr.str_arg));
+	}
+	
+
+	return AGENT_OK;
+}
+
+
+int agent_hdr_set_bin_str(agent *a, const char *str_arg, int length)
+{
+	assert(a);
+	
+	if (str_arg) {
+		assert(length < sizeof(a->shdr.str_arg));
+		if (length >= sizeof(a->shdr.str_arg))
+			return 1;
+		memcpy(a->shdr.str_arg, str_arg, length);
 	} else {
 		memset(a->shdr.str_arg, 0, sizeof(a->shdr.str_arg));
 	}

@@ -35,6 +35,8 @@
 #include "security.h"
 #include "nls.h"
 
+#include "crypto.h" /* crypto_print_hex */
+
 int ah_yes_or_no(const char *msg)
 {
 	char buf[20];
@@ -330,6 +332,42 @@ cleanup:
 }
 
 
+int ah_show_keys(agent *a, const options_t *options)
+{
+	unsigned char key[32];
+	num_t counter;
+	int ret;
+
+	if ((ret = agent_get_bin_str(a, PPP_FIELD_KEY, key, 32)) != 0) {
+		print(PRINT_ERROR, _("Unable to read key: %s (%d)\n"), 
+		      agent_strerror(ret), ret);
+		goto sanitize;
+	}
+
+	if ((ret = agent_get_num(a, PPP_FIELD_COUNTER, &counter)) != 0) {
+		print(PRINT_ERROR, _("Unable to read (salted) counter: %s (%d)\n"), 
+		      agent_strerror(ret), ret);
+		goto sanitize;
+	}
+
+	/* Print key in LSB as PPPv3 likes */
+	printf(_("Key     = ")); crypto_print_hex(key, 32);
+
+	/* This prints data MSB */
+	printf(_("Counter = "));
+	num_print_hex(counter, 1);
+	printf("\n");
+
+	ret = 0;
+
+sanitize:
+	memset(key, 0, sizeof(key));
+	assert(sizeof(key) == 32);
+	counter = num_ii(0,0);
+	return ret;
+}
+
+
 int ah_set_options(agent *a, const options_t *options)
 {
 	int retval;
@@ -410,22 +448,7 @@ error:
 
 }
 
-
 #if 0
-
-void ah_show_keys(const state *s)
-{
-	assert(s->codes_on_card > 0);
-
-	/* Print key in LSB as PPPv3 likes */
-	printf(_("Key     = ")); crypto_print_hex(s->sequence_key, 32);
-
-	/* This prints data MSB */
-	/* gmp_printf(_("Key     = %064ZX\n"), s->sequence_key); */
-	printf(_("Counter = "));
-	num_print_hex(s->counter, 1);
-	printf("\n");
-}
 
 int ah_update_flags(options_t *options, state *s, int generation)
 {

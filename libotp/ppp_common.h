@@ -161,6 +161,7 @@ enum {
 	PPP_FIELD_ALPHABET,		/* unsigned int */
 	PPP_FIELD_FLAGS,		/* unsigned int */
 
+	PPP_FIELD_KEY,			/* String, getters return hexes */
 	PPP_FIELD_COUNTER, 		/* mpz */
 	PPP_FIELD_UNSALTED_COUNTER, 	/* mpz */
 	PPP_FIELD_LATEST_CARD,		/* mpz */

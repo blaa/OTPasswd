@@ -145,9 +145,14 @@ extern int agent_server(agent **a_out);
 
 /** Prepares header for sending */
 extern void agent_hdr_init(agent *a, int status);
+/* Clear all data from header */
+extern void agent_hdr_sanitize(agent *a);
 extern void agent_hdr_set_num(agent *a, const num_t *num_arg);
 extern void agent_hdr_set_int(agent *a, int int_arg, int int_arg2);
 extern int agent_hdr_set_str(agent *a, const char *str_arg);
+/* Allows \x00 bytes inside str */
+extern int agent_hdr_set_bin_str(agent *a, const char *str_arg, int length);
+
 
 /** Send, receive a header */
 extern int agent_hdr_send(const agent *a);

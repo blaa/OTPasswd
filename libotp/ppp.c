@@ -1192,6 +1192,11 @@ int ppp_get_str(const state *s, int field, const char **arg)
 		*arg = s->label;
 		break;
 
+	case PPP_FIELD_KEY:
+		/* It may contain \x00! Still it's always 32 byte long */
+		*arg = (const char *)s->sequence_key;
+		break;
+
 	default:
 		print(PRINT_CRITICAL, "Illegal field passed to ppp_get_str\n");
 		assert(0);

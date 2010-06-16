@@ -375,12 +375,13 @@ int action_info(const options_t *options, agent *a)
 		return 0;
 	}
 
+	if (options->username)
+		printf(_("* User    = %s\n"), options->username);
+
+
 	/* Initialize, lock, read, calculate additional card info... */
 	switch(options->action) {
 	case OPTION_INFO: /* State info */
-/*		if (security_is_privileged())
-			printf(_("* User    = %s\n"), s->username);
-*/
 		printf(_("* Your current state:\n"));
 		retval = ah_show_state(a);
 
@@ -402,6 +403,11 @@ int action_info(const options_t *options, agent *a)
 		goto cleanup;
 
 	case OPTION_INFO_KEY: /* Key info */
+		retval = ah_show_keys(a, options);
+		if (retval != 0) {
+			print(PRINT_ERROR, _("Error while printing user key data.\n"));
+		}
+
 /*
 		if (cfg->key_print == CONFIG_ALLOW || security_is_privileged()) {
 			if (security_is_privileged())
@@ -414,6 +420,8 @@ int action_info(const options_t *options, agent *a)
 		}
 		save_state = 0;
 */
+		
+
 		goto cleanup;
 
 

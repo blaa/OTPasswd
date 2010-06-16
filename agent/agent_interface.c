@@ -339,6 +339,34 @@ int agent_get_str(agent *a, int field, char **str)
 
 }
 
+int agent_get_bin_str(agent *a, int field, unsigned char *str, unsigned int length)
+{
+	assert(str);
+
+	agent_hdr_init(a, 0);
+	agent_hdr_set_int(a, field, 0);
+
+	if (length >= AGENT_ARG_MAX) {
+		print(PRINT_CRITICAL, "Binary string length too big.\n");
+		assert(0);
+		return 1;
+	}
+
+	int ret = agent_query(a, AGENT_REQ_GET_STR);
+	if (ret != 0) {
+		return ret;
+	}
+
+	const unsigned char *tmp_str = (unsigned char *)agent_hdr_get_arg_str(a);
+	assert(tmp_str);
+
+	memcpy(str, tmp_str, length);
+
+	return AGENT_OK;
+
+}
+
+
 /* Setters */
 int agent_set_int(agent *a, int field, int integer)
 {

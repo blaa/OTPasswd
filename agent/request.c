@@ -121,9 +121,10 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 {
 	/* Read request parameters */
 	const int r_type = agent_hdr_get_type(a);
+	const int r_int = agent_hdr_get_arg_int(a);
 
 /*	const int r_status = agent_hdr_get_status(a);
-	const int r_int = agent_hdr_get_arg_int(a);
+
 	const num_t r_num = agent_hdr_get_arg_num(a);
 	const char *r_str = agent_hdr_get_arg_str(a);
 */
@@ -175,8 +176,16 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 	case AGENT_REQ_STATE_DROP:
 	case AGENT_REQ_GET_NUM:
 	case AGENT_REQ_GET_INT:
-	case AGENT_REQ_GET_STR:
+
 		return AGENT_OK;
+
+	case AGENT_REQ_GET_STR:
+		if ((r_int == PPP_FIELD_KEY || r_int == PPP_FIELD_COUNTER)
+		    && cfg->key_print != CONFIG_ALLOW 
+		    && !security_is_privileged())
+			return AGENT_ERR_POLICY;
+		else
+			return AGENT_OK;
 
 	case AGENT_REQ_SET_NUM:
 	case AGENT_REQ_SET_INT:
@@ -446,7 +455,10 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 			/* This might fail because of length */
 			agent_hdr_init(a, 0);
-			ret = agent_hdr_set_str(a, tmp);
+			if (r_int == PPP_FIELD_KEY)
+				ret = agent_hdr_set_bin_str(a, tmp, 32);
+			else
+				ret = agent_hdr_set_str(a, tmp);
 			if (ret != AGENT_OK) {
 				print(PRINT_CRITICAL,
 				      "Programmer error. Some str field (%d) "
@@ -457,6 +469,9 @@ static int request_execute(agent *a, const cfg_t *cfg)
 			}
 		}
 		_send_reply(a, ret);
+		/* Immediately remove key from this part of memory */
+		if (r_int == PPP_FIELD_KEY)
+			agent_hdr_sanitize(a);
 		break;
 
 

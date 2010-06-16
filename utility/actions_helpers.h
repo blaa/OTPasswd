@@ -26,40 +26,40 @@ enum {
 };
 
 /** Ask user once and return _YES, _NO or _OBSCURE */
-int ah_yes_or_no(const char *msg);
+extern int ah_yes_or_no(const char *msg);
 
 /** Ask user until he gives up and answers. */
-int ah_enforced_yes_or_no(const char *msg);
+extern int ah_enforced_yes_or_no(const char *msg);
 
 /** Read password without echoing characters to console */
-const char *ah_get_pass(void);
+extern const char *ah_get_pass(void);
 
 /** Show user flags */
-int ah_show_flags(agent *a);
+extern int ah_show_flags(agent *a);
 
 /** Show user state (current codes/cards) */
-int ah_show_state(agent *a);
+extern int ah_show_state(agent *a);
 
 /** Show user key/counter */
-void ah_show_keys(agent *a);
+extern int ah_show_keys(agent *a, const options_t *options);
 
 /** Set options defined by user - one, by one */
-int ah_set_options(agent *a, const options_t *options);
+extern int ah_set_options(agent *a, const options_t *options);
 
 #if 0
 
 /* Check if passcard is in range */
-int ah_is_passcard_in_range(const state *s, const num_t passcard);
+extern int ah_is_passcard_in_range(const state *s, const num_t passcard);
 
 /* Check if passcode is in range */
-int ah_is_passcode_in_range(const state *s, const num_t passcard);
+extern int ah_is_passcode_in_range(const state *s, const num_t passcard);
 
 
 /* Update state flags. Checks policy. If generation is 1 we allow salt changes. */
-int ah_update_flags(options_t *options, state *s, int generation);
+extern int ah_update_flags(options_t *options, state *s, int generation);
 
 /* Parse code specification and store resulting data in arguments */
-int ah_parse_code_spec(const state *s, const char *spec, num_t *passcard, num_t *passcode);
+extern int ah_parse_code_spec(const state *s, const char *spec, num_t *passcard, num_t *passcode);
 
 #endif 
 
