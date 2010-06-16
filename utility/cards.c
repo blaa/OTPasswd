@@ -20,29 +20,67 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "num.h"
 
+#include "nls.h"
+#include "print.h"
+#include "ppp_common.h"
+#include "num.h"
 #include "agent_interface.h"
 
+/* FIXME: Same table in ppp.c; do something about it... */
+static int _len_to_card_size[] = {
+	-1, /* use up index 0, just to make it easier */
+	-1, /* minimal length is 2 */
+	11, /* which fits 11 passcodes in row */
+	8,
+	7,
+	5, /* 5 - 6 */
+	5,
+	4, /* 7 */
+	3, /* 8 - 10 */
+	3,
+	3,
+	2, /* 11 - 16 */
+	2,
+	2,
+	2,
+	2,
+	2,
+
+};
 
 
-#if 0
+
 char *card_ascii(agent *a, const num_t passcard)
 {
+	int ret;
+
 	const char columns[] = "ABCDEFGHIJKLMNOP";
 	const int whitespace = 1;
 	const int label_max = STATE_LABEL_SIZE;	/* Maximal length of label */
 	const int num_min = 8;			/* Minimal size for number on card */
 
-	char *label, whole_card_num[50], *printed_card_num;
-	int label_len, card_num_len;
+	char whole_card_num[50];
+	char *printed_card_num = NULL;
 	int i;
 
-	assert(s->code_length > 1 && s->code_length < 17);
-	assert(s->codes_in_row >= 2 && s->codes_on_card > 10);
+
+	/***
+	 * Read require state data
+	 ***/
+	char *label = NULL;
+	int code_length;
+	if ((ret = agent_get_int(a, PPP_FIELD_CODE_LENGTH, &code_length)) != 0) {
+		print(PRINT_ERROR, _("Unable to read code length: %s (%d)\n"), 
+		      agent_strerror(ret), ret);
+		goto error;
+	}
 
 	/* Calculate what you can */
-	const int width = (whitespace + s->code_length) * s->codes_in_row + 3;
+	const int codes_in_row = _len_to_card_size[code_length];
+	const int codes_on_card = codes_in_row * ROWS_PER_CARD;
+
+	const int width = (whitespace + code_length) * codes_in_row + 3;
 	const int size = (width + 1) * (ROWS_PER_CARD + 2) + 1;
 	const int label_len_max = width - num_min;
 
@@ -56,16 +94,23 @@ char *card_ascii(agent *a, const num_t passcard)
 	memset(card, ' ', size);
 
 	/* Determine a label */
-	label_len = strlen(s->label);
-	if (label_len > 0) {
-		label = strdup(s->label);
+	if ((ret = agent_get_str(a, PPP_FIELD_LABEL, &label)) != 0) {
+		print(PRINT_ERROR, _("Unable to read label: %s (%d)\n"), 
+		      agent_strerror(ret), ret);
+		goto error;
+	}
+	
+	if (label && strlen(label) > 0) {
+		label = strdup(label);
 	} else {
 		/* Read hostname */
 		label = malloc(label_max + 1);
 		gethostname(label, label_max);
 		label[label_max] = '\0'; /* Ensure string is null-terminated */
-		label_len = strlen(label);
+
 	}
+
+	int label_len = strlen(label);
 
 	/* Get card number */
 	num_t tmp;
@@ -76,7 +121,7 @@ char *card_ascii(agent *a, const num_t passcard)
 	mpz_clear(tmp);
 	printed_card_num = whole_card_num;
 
-	card_num_len = strlen(whole_card_num);
+	int card_num_len = strlen(whole_card_num);
 
 	/* We limit label only if there's no place for num */
 	if (label_len > label_len_max) {
@@ -109,9 +154,9 @@ char *card_ascii(agent *a, const num_t passcard)
 	do {
 		*card = columns[i];
 		i++;
-		card += s->code_length + whitespace;
+		card += code_length + whitespace;
 
-	} while (i < s->codes_in_row);
+	} while (i < codes_in_row);
 	card -= whitespace - 1;
 	*(card-1) = '\n';
 
@@ -119,22 +164,26 @@ char *card_ascii(agent *a, const num_t passcard)
 	num_t code_num;
 	mpz_init(code_num);
 	mpz_sub_ui(code_num, passcard, 1);
-	mpz_mul_ui(code_num, code_num, s->codes_on_card);
-
-	ppp_add_salt(s, &code_num);
+	mpz_mul_ui(code_num, code_num, codes_on_card);
 
 	for (i = 1; i < 1 + ROWS_PER_CARD; i++) {
 		sprintf(card, "%2d: ", i);
 		card += 4;
 		int y;
-		for (y=0; y < s->codes_in_row; y++) {
+		for (y=0; y < codes_in_row; y++) {
 			char passcode[17];
-			ppp_get_passcode(s, code_num, passcode);
-			memcpy(card, passcode, s->code_length);
-			if (y + 1 != s->codes_in_row) {
-				card += s->code_length + whitespace;
+			ret = agent_get_passcode(a, code_num, passcode);
+			if (ret != 0) {
+				print(PRINT_ERROR, _("Unable to read passcode: %s (%d)\n"), 
+				      agent_strerror(ret), ret);
+				goto error;
+			}
+
+			memcpy(card, passcode, code_length);
+			if (y + 1 != codes_in_row) {
+				card += code_length + whitespace;
 			} else {
-				card += s->code_length;
+				card += code_length;
 				*card = '\n';
 				card++;
 			}
@@ -148,8 +197,17 @@ char *card_ascii(agent *a, const num_t passcard)
 
 	whole_card[size-1] = '\0';
 	return whole_card;
+
+error:
+	if (label)
+		free(label);
+	if (whole_card)
+		free(whole_card);
+
+	return NULL;
 }
 
+#if 0
 char *card_latex(const state *s, const num_t number)
 {
 	const char intro[] =

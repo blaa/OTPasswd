@@ -29,6 +29,7 @@
 /* Utility headers */
 #include "actions.h"
 #include "actions_helpers.h"
+#include "cards.h"
 
 /** Executed before any other actions */
 int action_init(options_t *options, agent **a)
@@ -481,9 +482,6 @@ int action_print(const options_t *options, agent *a)
 	int retval = 1;
 	int ret;
 
-	/* If 1, we will try to update state at the end of function */
-	int save_state = 0;
-
 	/* Passcard/code to print */
 	num_t item = num_i(0);
 
@@ -516,12 +514,10 @@ int action_print(const options_t *options, agent *a)
 	 */
 
 	if (selected == PRINT_CARD) { /* Card */
-		printf(_("Not implemented.\n"));
-/*
 		char *card;
 		switch (options->action) {
 		case OPTION_TEXT:
-			card = card_ascii(s, passcard_num);
+			card = card_ascii(a, item);
 			if (!card) {
 				print(PRINT_ERROR, _("Error while printing "
 				      "card (not enough memory?)\n"));
@@ -530,9 +526,9 @@ int action_print(const options_t *options, agent *a)
 			puts(card);
 			free(card);
 			break;
-
+/* TODO
 		case OPTION_LATEX:
-			card = card_latex(s, passcard_num);
+			card = card_latex(a, item);
 			if (!card) {
 				print(PRINT_ERROR, _("Error while printing "
 				      "card (not enough memory?)\n"));
@@ -541,12 +537,11 @@ int action_print(const options_t *options, agent *a)
 			puts(card);
 			free(card);
 			break;
-
+*/
 		case OPTION_PROMPT:
 			print(PRINT_ERROR, _("Option requires passcode as argument\n"));
 			break;
 		}
-*/
 	} else {
 		char passcode[17];
 		//const char *prompt;
