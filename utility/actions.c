@@ -614,7 +614,7 @@ int action_print(const options_t *options, agent *a)
 	retval = 0;
 
 cleanup:
-	mpz_clear(item);
+	num_clear(item);
 
 	return retval;
 }
@@ -805,8 +805,8 @@ int action_skip(const options_t *options)
 	retval = 0;
 
 cleanup:
-	mpz_clear(passcode_num);
-	mpz_clear(passcard_num);
+	num_clear(passcode_num);
+	num_clear(passcard_num);
 
 	/* If anything failed save_state should be zero */
 	assert((save_state == 0) || (save_state && (retval == 0)));

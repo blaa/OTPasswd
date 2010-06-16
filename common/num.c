@@ -26,7 +26,6 @@
 /******************************
  * Own 128 bit library test
  *****************************/
-#if !USE_GMP
 
 static char num_overflow = 0;
 
@@ -195,13 +194,10 @@ uint64_t num_div_i(num_t *result, const num_t divwhat, const uint64_t divby)
 	return remainder;
 }
 
-#endif
-
 
 /***********************************************
  * Conversions
  **********************************************/
-#if !USE_GMP
 
 /* Returns string containing number in human-readable endianness */
 static inline int _num_get_str(const num_t arg, char *buff, const int base)
@@ -297,54 +293,9 @@ static inline int _num_set_str(num_t *arg, const char *str, const int base)
 		return 1;
 	}
 }
-#endif
 
 int num_export(const num_t num, char *buff, enum num_str_type t) 
 {
-#if USE_GMP
-	size_t size = 1;
-
-
-	switch (t) {
-	case NUM_FORMAT_DEC:
-	{
-		char *tmp = mpz_get_str(buff, 10, num);
-		assert(tmp);
-		if (!tmp) 
-			return 1;
-		return 0;
-	}
-
-	case NUM_FORMAT_HEX:
-	{
-		char *tmp = mpz_get_str(buff, -16, num);
-		assert(tmp);
-		if (!tmp) 
-			return 1;
-		return 0;
-	}
-
-	case NUM_FORMAT_PPP_HEX:
-		break;
-	case NUM_FORMAT_BIN:
-	{
-		const int length = 16;
-		/* Handle 0 numbers; otherwise nothing would be written to data */
-		if (mpz_cmp_si(num, 0) == 0)
-			memset(buff, 0, length);
-		else 
-			(void) mpz_export(buff, &size, 1, length, -1, 0, num);
-		assert(size == 1);
-
-		return 0;
-	}
-	default:
-		/* Incorrect input */
-		assert(0); 
-		return 1;
-	}
-
-#else
 	int ret;
 /* static inline int _num_get_str(const num_t arg, char *buff, const int base)
  */
@@ -391,7 +342,6 @@ int num_export(const num_t num, char *buff, enum num_str_type t)
 		assert(0); 
 		return 1;
 	}
-#endif
 	return 1;
 }
 
@@ -402,46 +352,6 @@ int num_export(const num_t num, char *buff, enum num_str_type t)
 int num_import(num_t *num, const char *buff, enum num_str_type t)
 {
 	int ret;
-#if USE_GMP
-	switch (t) {
-	case NUM_FORMAT_DEC:
-		/* BUG: This does not really work like non-gmp version.
-		 * If there's some rubbish after the number it will get
-		 * ignored by sscanf. Maybe add %n and check if number of
-		 * passed bytes equal to strlen of input. */
-		ret = gmp_sscanf(buff, "%Zu", *num);
-		if (ret == 1)
-			return 0;
-		else
-			return 1;
-
-	case NUM_FORMAT_HEX:
-	{
-		ret = gmp_sscanf(buff, "%ZX", *num);
-		if (ret == 1)
-			return 0;
-		else
-			return 1;
-	}
-
-	case NUM_FORMAT_PPP_HEX:
-		assert(0);
-		break;
-
-	case NUM_FORMAT_BIN: 
-	{
-		const int length = 16;
-		mpz_import(*num, 1, 1, length, -1 /* LSB to match ppp behaviour */ , 0, buff);
-	}
-		return 0;
-
-	default:
-		/* Incorrect input */
-		assert(0); 
-		return 1;
-	}
-
-#else
 	switch (t) {
 	case NUM_FORMAT_DEC:
 		ret = _num_set_str(num, buff, 10);
@@ -462,7 +372,6 @@ int num_import(num_t *num, const char *buff, enum num_str_type t)
 		assert(0); 
 		return 1;
 	}
-#endif
 	return 1;
 }
 
@@ -501,45 +410,3 @@ void num_print_dec(const num_t arg)
 	printf("%s", buf);
 }
 
-
-/********************************
- * Helpers for GMP follow
- *******************************/
-
-/* All functions are inline currently and testcase
- * was moved away to testcases.c */
-#if USE_GMP
-static void *allocate_function(size_t alloc_size)
-{
-	void *tmp = malloc(alloc_size);
-	if (!tmp) {
-		print(PRINT_ERROR, "Not enough memory!\n");
-		exit(EXIT_FAILURE);
-	}
-	return tmp;
-}
-
-static void free_function(void *ptr, size_t size)
-{
-	memset(ptr, 0, size);
-	free(ptr);
-}
-
-static void *reallocate_function(void *ptr, size_t old_size, size_t new_size)
-{
-	const size_t copy_size = old_size < new_size ? old_size : new_size;
-	void *new_ptr = allocate_function(new_size);
-	memcpy(new_ptr, ptr, copy_size);
-	free_function(ptr, old_size);
-	return new_ptr;
-}
-#endif
-
-void num_init(void)
-{
-#if USE_GMP
-	mp_set_memory_functions(allocate_function,
-				reallocate_function,
-				free_function);
-#endif
-}

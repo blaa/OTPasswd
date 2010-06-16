@@ -507,7 +507,10 @@ static int perform_action(int argc, char **argv, options_t *options)
 		break;
 
 	case OPTION_CHECK:
-		assert(0);
+		printf(_("Unimplemented.\n"));
+		retval = 1;
+		goto cleanup;
+
 	default:
 		printf(_("Program error. You shouldn't end up here.\n"));
 		assert(0);

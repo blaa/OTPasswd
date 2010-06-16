@@ -26,23 +26,12 @@
 #define _NUM_H_
 
 /* Configuration */
-#ifndef USE_GMP
-#define USE_GMP 0
-#endif
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
 
 #include <assert.h>
-
-#if USE_GMP
-
-#include <gmp.h>
-typedef mpz_t num_t;
-
-#endif
 
 /******************************
  * Own 128 bit library test
@@ -57,8 +46,6 @@ typedef mpz_t num_t;
  * (destination, arg1, arg2)
  * And destination can equal arg1
  */
-
-#if !USE_GMP
 
 typedef struct {
 	uint64_t hi;
@@ -92,6 +79,8 @@ extern num_t num_rshift(const num_t arg);
  *****************************/
 extern int num_cmp_i(const num_t arg1, const uint64_t arg2);
 extern int num_cmp(num_t arg1, num_t arg2);
+#define num_sgn(a) num_cmp((a), num_i(0))
+
 
 /*****************************
  * Arithmetic operations
@@ -101,37 +90,11 @@ extern num_t num_sub(const num_t arg1, const num_t arg2);
 extern num_t num_mul_i(num_t arg1, const uint64_t arg2);
 extern uint64_t num_div_i(num_t *result, const num_t divwhat, const uint64_t divby);
 
-
-/* Macros used to substitute GMP for our own function set */
-#define mpz_and(c, a, b) do { (c) = num_and(a, b); } while (0)
-#define mpz_add(c, a, b) do { (c) = num_add(a, b); } while (0)
-#define mpz_add_ui(c, a, b) do { (c) = num_add(a, num_i(b)); } while (0)
-#define mpz_sub(c, a, b) do { (c) = num_sub(a, b); } while (0)
-#define mpz_sub_ui(c, a, b) do { (c) = num_sub(a, num_i(b)); } while (0)
-
-#define mpz_mul(c, a, b) do { (c) = num_mul_i(a, num_i(b)); } while (0)
-#define mpz_mul_ui(c, a, b) do { (c) = num_mul_i(a, b); } while (0)
-#define mpz_fdiv_q_ui(quot, divwhat, divby) num_div_i(&quot, divwhat, divby)
-#define mpz_div_ui(quot, divwhat, divby) num_div_i(&quot, divwhat, divby)
-
-#define mpz_set(a, b) do { (a) = b; } while(0)
-#define mpz_set_ui(a, b) do { (a) = num_i(b); } while(0)
-
-#define mpz_get_str(x, base, a) num_get_str(a, base)
-#define mpz_set_str(a, b, base) num_set_str(&a, b, base)
-#define mpz_init_set_str(a, b, base) do { (a) = num_get_hex(a, b); } while (0)
-
-#define mpz_cmp(a, b) num_cmp(a, b)
-#define mpz_cmp_ui(a, b) num_cmp(a, num_i(b))
-#define mpz_sgn(a) mpz_cmp(a, num_i(0))
-
-#define mpz_clear(a) do { (a) = num_i(0); } while (0)
-#define mpz_init(a) do { (a) = num_i(0); } while (0)
-#define mpz_set_d(a, b) do { (a) = num_i(b); } while (0)
-#define mpz_init_set(a, b) do { (a) = (b); } while (0)
+#define num_add_i(a, b) num_add((a), num_i(b))
+#define num_sub_i(a, b) num_sub((a), num_i(b))
+#define num_clear(a) do { (a) = num_i(0); } while (0)
 
 
-#endif
 
 
 

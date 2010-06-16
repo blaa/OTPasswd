@@ -82,9 +82,6 @@ int ppp_init(int print_flags, const char *print_logfile)
 	/* Enable logging at biggest log level */
 	print_init(PRINT_NOTICE | print_flags, print_logfile);
 
-	/* Ensure GMP frees memory safely */
-	num_init();
-
 	/* Load default options + ones defined in config file */
 	cfg = cfg_get();
 
@@ -193,60 +190,36 @@ int ppp_verify_range(const state *s)
 	/* ppp_calculate must've been called before */
 	assert(s->codes_on_card > 0);
 
-	/* Verify key size */
-/* FIXME: Not needed anymore 
-	const char max_key_hex[] =
-		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
-		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
-	num_t max_key;
-	mpz_init_set_str(max_key, max_key_hex, 16);
-
-	if (mpz_cmp(s->sequence_key, max_key) > 0) {
-		print(PRINT_ERROR, "State file corrupted. Key number too big\n");
-		mpz_clear(max_key);
-		return STATE_PARSE_ERROR;
-	}
-	mpz_clear(max_key);
-*/
-
 	/* Verify counter size */
 	num_t max_counter;
-#if USE_GMP
-	const char max_counter_hex[] =
-		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
-
-	mpz_init_set_str(max_counter, max_counter_hex, 16);
-#else
 	max_counter = num_ii(0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFULL);
-#endif
 
-	if (mpz_cmp(s->counter, max_counter) > 0) {
+	if (num_cmp(s->counter, max_counter) > 0) {
 		print(PRINT_ERROR, "State file corrupted. Counter number too big\n");
-		mpz_clear(max_counter);
+		num_clear(max_counter);
 		return STATE_PARSE_ERROR;
 	}
-	mpz_clear(max_counter);
+	num_clear(max_counter);
 
 	/* Check if we have runned out of available passcodes */
 
 	/* Retrieve current counter without salt */
 	num_t just_counter;
-	mpz_init(just_counter);
 	if (s->flags & FLAG_SALTED) {
-		mpz_and(just_counter, s->counter, s->code_mask);
+		just_counter = num_and(s->counter, s->code_mask);
 	} else {
-		mpz_set(just_counter, s->counter);
+		just_counter = s->counter;
 	}
 
 	/* Equal is too big because max_code is calculated starting from 1
 	 * whereas counter starts from 0 */
-	if (mpz_cmp(just_counter, s->max_code) >= 0) {
+	if (num_cmp(just_counter, s->max_code) >= 0) {
 		/* Whoops */
-		mpz_clear(just_counter);
+		num_clear(just_counter);
 		return STATE_NUMSPACE;
 	}
 
-	mpz_clear(just_counter);
+	num_clear(just_counter);
 	return 0;
 }
 
@@ -347,15 +320,14 @@ void ppp_alphabet_print(void)
 void ppp_add_salt(const state *s, num_t *passcode)
 {
 	if (s->flags & FLAG_SALTED) {
-		num_t salt;
+		num_t salt = s->counter;
 		/* Calculate "free" salt out of counter */
-		mpz_init_set(salt, s->counter);
-		mpz_and(salt, salt, s->salt_mask);
+		salt = num_and(salt, s->salt_mask);
 		/* Remove existing salt if any from passcode */
-		mpz_and(*passcode, *passcode, s->code_mask);
+		*passcode = num_and(*passcode, s->code_mask);
 		/* Add salt */
-		mpz_add(*passcode, *passcode, salt);
-		mpz_clear(salt);
+		*passcode = num_add(*passcode, salt);
+		num_clear(salt);
 	}
 }
 
@@ -373,12 +345,12 @@ int ppp_get_passcode_number(const state *s, const num_t passcard, num_t *passcod
 
 	/* Start with calculating first passcode on card */
 	/* passcode = (passcard-1)*codes_on_card + salt */
-	mpz_sub_ui(*passcode, passcard, 1);
-	mpz_mul_ui(*passcode, *passcode, s->codes_on_card);
+	*passcode = num_sub_i(passcard, 1);
+	*passcode = num_mul_i(*passcode, s->codes_on_card);
 
 	/* Then add location on card */
-	mpz_add_ui(*passcode, *passcode, (row - 1) * s->codes_in_row);
-	mpz_add_ui(*passcode, *passcode, column - 'A');
+	*passcode = num_add_i(*passcode, (row - 1) * s->codes_in_row);
+	*passcode = num_add_i(*passcode, column - 'A');
 
 	/* Add salt if required */
 	ppp_add_salt(s, passcode);
@@ -391,20 +363,14 @@ int ppp_get_passcode(const state *s, const num_t counter, char *passcode)
 {
 	unsigned char cnt_bin[16];
 	unsigned char cipher_bin[16];
-	num_t cipher;
-	num_t quotient;
+	num_t cipher = num_i(0);
+	num_t quotient = num_i(0);
 	int i;
 
 	int ret;
 
 	const cfg_t *cfg = cfg_get();
 	assert(cfg);
-
-	/* Assure range during development */
-#if USE_GMP
-	assert(mpz_tstbit(counter, 128) == 0);
-	assert(mpz_sgn(s->counter) >= 0);
-#endif
 
 	/* Check for illegal data */
 	assert(s->code_length >= 2 && s->code_length <= 16);
@@ -417,9 +383,6 @@ int ppp_get_passcode(const state *s, const num_t counter, char *passcode)
 	 * we work with salted version */
 	num_t salted_counter = counter;
 	ppp_add_salt(s, &salted_counter);
-
-	mpz_init(quotient);
-	mpz_init(cipher);
 
 	/* Convert numbers to binary */
 //	num_to_bin(counter, cnt_bin, 16);
@@ -449,8 +412,8 @@ int ppp_get_passcode(const state *s, const num_t counter, char *passcode)
 	const int alphabet_len = strlen(alphabet);
 
 	for (i=0; i<s->code_length; i++) {
-		unsigned long int r = mpz_fdiv_q_ui(quotient, cipher, alphabet_len);
-		mpz_set(cipher, quotient);
+		unsigned long int r = num_div_i(&quotient, cipher, alphabet_len);
+		cipher = quotient;
 
 		passcode[i] = alphabet[r];
 	}
@@ -461,9 +424,9 @@ clear:
 	memset(cnt_bin, 0, sizeof(cnt_bin));
 	memset(cipher_bin, 0, sizeof(cipher_bin));
 
-	mpz_clear(salted_counter);
-	mpz_clear(quotient);
-	mpz_clear(cipher);
+	num_clear(salted_counter);
+	num_clear(quotient);
+	num_clear(cipher);
 	return ret;
 }
 
@@ -541,22 +504,21 @@ void ppp_calculate(state *s)
 
 	/* Do some checks */
 	assert(s->code_length >= 2 && s->code_length <= 16);
-	assert(mpz_sgn(s->counter) >= 0);
+	assert(num_sgn(s->counter) >= 0);
 
 	s->codes_in_row = _len_to_card_size[s->code_length];
 	s->codes_on_card = s->codes_in_row * ROWS_PER_CARD;
 
 	/* Calculate current card */
-	num_t unsalted_counter;
-	mpz_init_set(unsalted_counter, s->counter);
+	num_t unsalted_counter = s->counter;
 	if (s->flags & FLAG_SALTED) {
-		mpz_and(unsalted_counter, unsalted_counter, s->code_mask);
+		unsalted_counter = num_and(unsalted_counter, s->code_mask);
 	}
 
-	unsigned long int r = mpz_fdiv_q_ui(s->current_card, unsalted_counter, s->codes_on_card);
-	mpz_add_ui(s->current_card, s->current_card, 1);
+	unsigned long int r = num_div_i(&s->current_card, unsalted_counter, s->codes_on_card);
+	s->current_card = num_add_i(s->current_card, 1);
 
-	mpz_clear(unsalted_counter);
+	num_clear(unsalted_counter);
 
 	/* Calculate column/row using rest from division */
 	int current_column = r % s->codes_in_row;
@@ -566,19 +528,15 @@ void ppp_calculate(state *s)
 
 	/* Calculate max passcard */
 	if (s->flags & FLAG_SALTED) {
-		mpz_set(s->max_card, s->code_mask);
+		s->max_card = s->code_mask;
 	} else {
 		const char max_hex[] =
 			"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
 		assert(sizeof(max_hex)  == 33);
-#if USE_GMP
-		mpz_set_str(s->max_card, max_hex, 16);
-#else
 		s->max_card = num_ii(0xFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL);
-#endif
 	}
 
-	mpz_div_ui(s->max_card, s->max_card, s->codes_on_card);
+	num_div_i(&s->max_card, s->max_card, s->codes_on_card);
 
 	/* s->max_card is now technically correct, but
 	 * we must be sure, that the last passcode is not
@@ -587,15 +545,15 @@ void ppp_calculate(state *s)
 	 * This should not happen... but, just for the sake
 	 * of simplicity.
 	 */
-	mpz_sub_ui(s->max_card, s->max_card, 1);
+	s->max_card = num_sub_i(s->max_card, 1);
 
 	/* Calculate max passcode.
 	 * This is the last passcode on last card.
 	 * (Which does not equal last counter value)
 	 * Cards and codes are calculated from 1 here.
 	 */
-	mpz_set(s->max_code, s->max_card);
-	mpz_mul_ui(s->max_code, s->max_code, s->codes_on_card);
+	s->max_code = s->max_card;
+	s->max_code = num_mul_i(s->max_code, s->codes_on_card);
 }
 
 /******************
@@ -607,7 +565,7 @@ int ppp_get_warning_conditions(const state *s)
 
 	assert(s->codes_on_card > 0);
 
-	int tmp = mpz_cmp(s->current_card, s->latest_card);
+	int tmp = num_cmp(s->current_card, s->latest_card);
 	if (tmp == 0)
 		warnings |= PPP_WARN_LAST_CARD;
 	else if (tmp > 0)
@@ -932,19 +890,18 @@ int ppp_increment(state *s)
 	}
 
 	/* Hold temporarily current counter */
-	num_t tmp;
-	mpz_init_set(tmp, s->counter);
+	num_t tmp = s->counter;
 
 	/* Increment and save state */
-	mpz_add_ui(s->counter, s->counter, 1);
+	s->counter = num_add_i(s->counter, 1);
 
 	/* We will return it's return value if anything failed */
 	ret = ppp_state_release(s, PPP_STORE | PPP_UNLOCK);
 
 	/* Restore current counter */
-	mpz_set(s->counter, tmp);
+	s->counter = tmp;
 
-	mpz_clear(tmp);
+	num_clear(tmp);
 	return ret;
 
 error:
@@ -1092,36 +1049,36 @@ int ppp_get_mpz(const state *s, int field, num_t *arg)
 	assert(s);
 	switch (field) {
 	case PPP_FIELD_COUNTER:
-		mpz_set(*arg, s->counter);
+		*arg = s->counter;
 		break;
 
 	case PPP_FIELD_UNSALTED_COUNTER:
-		mpz_set(*arg, s->counter);
+		*arg = s->counter;
 		if (s->flags & FLAG_SALTED) {
-			mpz_and(*arg, *arg, s->code_mask);
+			*arg = num_and(*arg, s->code_mask);
 		}
-		mpz_add_ui(*arg, *arg, 1);
+		*arg = num_add_i(*arg, 1);
 		break;
 
 	case PPP_FIELD_CURRENT_CARD:
-		mpz_set(*arg, s->current_card);
+		*arg = s->current_card;
 		break;
 
 	case PPP_FIELD_LATEST_CARD:
-		mpz_set(*arg, s->latest_card);
+		*arg = s->latest_card;
 		break;
 
 	case PPP_FIELD_MAX_CARD:
-		mpz_set(*arg, s->max_card);
+		*arg = s->max_card;
 		break;
 
 	case PPP_FIELD_MAX_CODE:
-		mpz_set(*arg, s->max_code);
+		*arg = s->max_code;
 		break;
 
 	default:
 		print(PRINT_CRITICAL, "Illegal field passed to ppp_get_mpz\n");
-		mpz_set_ui(*arg, 0);
+		*arg = num_i(0);
 		assert(0);
 		return PPP_ERROR;
 	}

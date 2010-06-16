@@ -27,6 +27,7 @@
 #include "num.h"
 #include "agent_interface.h"
 
+
 /* FIXME: Same table in ppp.c; do something about it... */
 static int _len_to_card_size[] = {
 	-1, /* use up index 0, just to make it easier */
@@ -113,12 +114,10 @@ char *card_ascii(agent *a, const num_t passcard)
 	int label_len = strlen(label);
 
 	/* Get card number */
-	num_t tmp;
-	mpz_init_set(tmp, passcard);
+	num_t tmp = passcard;
 	
 	num_export(tmp, whole_card_num, NUM_FORMAT_DEC);
-//	whole_card_num = mpz_get_str(NULL, 10, tmp);
-	mpz_clear(tmp);
+	num_clear(tmp);
 	printed_card_num = whole_card_num;
 
 	int card_num_len = strlen(whole_card_num);
@@ -162,9 +161,8 @@ char *card_ascii(agent *a, const num_t passcard)
 
 	/* Passcodes */
 	num_t code_num;
-	mpz_init(code_num);
-	mpz_sub_ui(code_num, passcard, 1);
-	mpz_mul_ui(code_num, code_num, codes_on_card);
+	code_num = num_sub_i(passcard, 1);
+	code_num = num_mul_i(code_num, codes_on_card);
 
 	for (i = 1; i < 1 + ROWS_PER_CARD; i++) {
 		sprintf(card, "%2d: ", i);
@@ -187,13 +185,12 @@ char *card_ascii(agent *a, const num_t passcard)
 				*card = '\n';
 				card++;
 			}
-			mpz_add_ui(code_num, code_num, 1);
+			code_num = num_add_i(code_num, 1);
 		}
 	}
-	mpz_clear(code_num);
+	num_clear(code_num);
 
 	free(label);
-//	free(whole_card_num);
 
 	whole_card[size-1] = '\0';
 	return whole_card;
@@ -207,8 +204,7 @@ error:
 	return NULL;
 }
 
-#if 0
-char *card_latex(const state *s, const num_t number)
+char *card_latex(agent *a, const num_t number)
 {
 	const char intro[] =
 		"\\documentclass[11pt,twocolumn,a4paper]{article}\n"
@@ -238,8 +234,7 @@ char *card_latex(const state *s, const num_t number)
 		return NULL;
 	memset(whole_card, 0, size);
 
-	num_t n;
-	mpz_init(n);
+	num_t n = num_i(0);
 
 	memcpy(card_pos, intro, sizeof(intro) - 1);
 	card_pos += sizeof(intro) - 1;
@@ -247,8 +242,8 @@ char *card_latex(const state *s, const num_t number)
 	memcpy(card_pos, block_start, sizeof(block_start) - 1);
 	card_pos += sizeof(block_start) - 1;
 	for (i=0; i<=2; i++) {
-		mpz_add_ui(n, number, i);
-		char *part = card_ascii(s, n);
+		n = num_add_i(number, i);
+		char *part = card_ascii(a, n);
 		memcpy(card_pos, part, strlen(part));
 		card_pos += strlen(part);
 		free(part);
@@ -267,9 +262,9 @@ char *card_latex(const state *s, const num_t number)
 	memcpy(card_pos, block_start, sizeof(block_start) - 1);
 	card_pos += sizeof(block_start) - 1;
 	for (i=3; i<=5; i++) {
-		mpz_add_ui(n, number, i);
+		n = num_add_i(number, i);
 
-		char *part = card_ascii(s, n);
+		char *part = card_ascii(a, n);
 		memcpy(card_pos, part, strlen(part));
 		card_pos += strlen(part);
 		free(part);
@@ -280,7 +275,7 @@ char *card_latex(const state *s, const num_t number)
 		}
 	}
 
-	mpz_clear(n);
+	num_clear(n);
 
 	memcpy(card_pos, block_stop, sizeof(block_stop) - 1);
 	card_pos += sizeof(block_stop) - 1;
@@ -290,5 +285,3 @@ char *card_latex(const state *s, const num_t number)
 
 	return whole_card;
 }
-
-#endif

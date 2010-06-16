@@ -67,13 +67,10 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
 ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
 
 # Detect include dirs
-FIND_PATH(GMP_INCLUDE_DIR gmp.h /usr/include/gmp /usr/local/include/gmp)
 FIND_PATH(PAM_INCLUDE_DIR pam_modules.h /usr/include/security /usr/include/pam)
-FIND_PATH(GMP_LIBRARY_DIR libgmp.so /lib /usr/lib /usr/local/lib)
 
-INCLUDE_DIRECTORIES(${GMP_INCLUDE_DIR})
 INCLUDE_DIRECTORIES(${PAM_INCLUDE_DIR})
-LINK_DIRECTORIES(${GMP_LIBRARY_DIR})
+
 
 # Module and PAM uses libotp, so add it's include to path...
 INCLUDE_DIRECTORIES(common/ libotp/ crypto/ agent/)

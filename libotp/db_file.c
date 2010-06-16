@@ -645,14 +645,14 @@ int db_file_load(state *s)
 	}
 
 	/* Everything is read. Now - check if it's correct */
-	if (mpz_sgn(s->counter) == -1) {
+	if (num_sgn(s->counter) == -1) {
 		print(PRINT_ERROR,
 		      "Read a negative counter. "
 		      "State file is corrupted.\n");
 		goto cleanup;
 	}
 
-	if (mpz_sgn(s->latest_card) == -1) {
+	if (num_sgn(s->latest_card) == -1) {
 		print(PRINT_ERROR,
 		      "Latest printed card is negative. "
 		      "State file is corrupted.\n");

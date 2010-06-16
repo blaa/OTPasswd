@@ -495,11 +495,11 @@ int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
 	if (strcasecmp(spec, "current") == 0) {
 		/* Current passcode */
 		selected = PRINT_CODE;
-		mpz_set(*item, unsalted_counter);
+		*item = unsalted_counter;
 	} else if (strcasecmp(spec, "[current]") == 0) {
 		/* Current passcard */
 		selected = PRINT_CARD;
-		mpz_set(*item, current_card);
+		*item = current_card;
 	} else if ((strcasecmp(spec, "next") == 0) ||
 		   (strcasecmp(spec, "[next]") == 0)) {
 		/* Next passcard. */
@@ -508,10 +508,10 @@ int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
 		/* Set passcard to latest_card + 1, but if 
 		 * current code is further than s->latest_card
 		 * then start printing from current_card */
-		if (mpz_cmp(current_card, latest_card) > 0) {
-			mpz_set(*item, current_card);
+		if (num_cmp(current_card, latest_card) > 0) {
+			*item = current_card;
 		} else {
-			mpz_add_ui(*item, latest_card, 1);
+			*item = num_add_i(latest_card, 1);
 		}
 	} else if (isascii(spec[0]) && isalpha(spec[0])) {
 		/* Format: CRR[number]; TODO: allow RRC[number] */
@@ -566,7 +566,7 @@ int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
 			goto error;
 		}
 
-		if (mpz_cmp(num_i(1), *item) > 0) {
+		if (num_cmp(num_i(1), *item) > 0) {
 			ret = 1;
 			printf(_("Passcode number out of range.\n"));
 			goto error;
@@ -577,7 +577,7 @@ int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
 			goto error;
 		}
 */
-		mpz_sub_ui(*item, *item, 1);
+		*item = num_sub_i(*item, 1);
 
 
 		selected = PRINT_CODE;
@@ -598,7 +598,7 @@ int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
 			goto error;
 		}
 
-		if (mpz_cmp(num_i(1), *item) > 0) {
+		if (num_cmp(num_i(1), *item) > 0) {
 			ret = 1;
 			printf(_("Passcode number out of range.\n"));
 			goto error;

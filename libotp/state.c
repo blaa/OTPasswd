@@ -116,27 +116,17 @@ int state_init(state *s, const char *username)
 	s->username = strdup(username);
 
 	/** GMP numbers initialization */
-	mpz_init(s->counter);
-	mpz_init(s->latest_card);
-	mpz_init(s->current_card);
+	s->counter = num_i(0);
+	s->latest_card = num_i(0);
+	s->current_card = num_i(0);
 
-	mpz_init(s->max_card);
-	mpz_init(s->max_code);
+	s->max_card = num_i(0);
+	s->max_code = num_i(0);
 
 	int ret;
-#if USE_GMP
-	const char code_mask[] =
-		"000000000000000000000000FFFFFFFF";
-
-	ret = mpz_init_set_str(s->salt_mask, salt_mask, 16);
-	assert(ret == 0);
-	ret = mpz_init_set_str(s->code_mask, code_mask, 16);
-	assert(ret == 0);
-#else
 	ret = num_import(&s->salt_mask, "FFFFFFFFFFFFFFFFFFFFFFFF00000000", NUM_FORMAT_HEX);
 	assert(ret == 0);
 	s->code_mask = num_i(4294967295ULL);
-#endif
 
 	return 0;
 }
@@ -146,13 +136,13 @@ void state_fini(state *s)
 	if (s->lock > 0)
 		state_unlock(s);
 
-	mpz_clear(s->counter);
-	mpz_clear(s->latest_card);
-	mpz_clear(s->current_card);
-	mpz_clear(s->salt_mask);
-	mpz_clear(s->code_mask);
-	mpz_clear(s->max_card);
-	mpz_clear(s->max_code);
+	num_clear(s->counter);
+	num_clear(s->latest_card);
+	num_clear(s->current_card);
+	num_clear(s->salt_mask);
+	num_clear(s->code_mask);
+	num_clear(s->max_card);
+	num_clear(s->max_code);
 
 	if (s->prompt) {
 		const int length = strlen(s->prompt);
@@ -195,8 +185,8 @@ int state_key_generate(state *s)
 		crypto_sha256(entropy_pool, sizeof(entropy_pool), s->sequence_key);
 		memset(entropy_pool, 0, sizeof(entropy_pool));
 
-		mpz_set_d(s->counter, 0);
-		mpz_set_d(s->latest_card, 0);
+		s->counter = num_i(0);
+		s->latest_card = num_i(0);
 
 		s->flags &= ~(FLAG_SALTED); 
 	} else {
@@ -207,8 +197,8 @@ int state_key_generate(state *s)
 		unsigned char cnt_bin[32];
 		crypto_sha256(entropy_pool + sizeof(entropy_pool)/2, sizeof(entropy_pool)/2, cnt_bin);
 		num_import(&s->counter, (char *)cnt_bin, NUM_FORMAT_BIN);
-		mpz_and(s->counter, s->counter, s->salt_mask);
-		mpz_set_ui(s->latest_card, 0);
+		s->counter = num_and(s->counter, s->salt_mask);
+		s->latest_card = num_i(0);
 
 		memset(entropy_pool, 0, sizeof(entropy_pool));
 		memset(cnt_bin, 0, sizeof(cnt_bin));

@@ -210,12 +210,14 @@ int state_testcase(void)
 	ppp_flag_del(&s1, FLAG_SALTED);
 	test++; if (state_key_generate(&s1) != 0)
 		printf("state_testcase[%2d] failed(%d)\n", test, failed++);
-	mpz_set_ui(s1.counter, 321323211UL);
+	
+	s1.counter = num_i(321323211UL);
 
 
+	/*
 	test++; if (state_lock(&s1) != 0)
 		printf("state_testcase[%2d] failed(%d)\n", test, failed++);
-
+	*/
 	test++; if (state_store(&s1, 0) != 0)
 		printf("state_testcase[%2d] failed(%d)\n", test, failed++);
 
@@ -235,10 +237,10 @@ int state_testcase(void)
 		crypto_print_hex(s2.sequence_key, sizeof(s2.sequence_key));
 	}
 
-	test++; if (mpz_cmp(s1.counter, s2.counter) != 0)
+	test++; if (num_cmp(s1.counter, s2.counter) != 0)
 		printf("state_testcase[%2d] failed(%d)\n", test, failed++);
 
-	test++; if (mpz_cmp(s1.latest_card, s2.latest_card) != 0)
+	test++; if (num_cmp(s1.latest_card, s2.latest_card) != 0)
 		printf("state_testcase[%2d] failed(%d)\n", test, failed++);
 
 	test++; if (s1.flags != s2.flags || s1.code_length != s2.code_length)
@@ -281,22 +283,18 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 
 	unsigned char cnt_bin[16];
 	unsigned char cipher_bin[16];
-	num_t counter;
-	num_t cipher;
-	num_t quotient;
+	num_t counter = num_i(0);
+	num_t cipher = num_i(0);
+	num_t quotient = num_i(0);
 	int i;
 	unsigned int cnt;
 
 	int ret;
 	int failed = 0;
 
-	mpz_init(counter);
-	mpz_init(quotient);
-	mpz_init(cipher);
-
 	printf("ppp_testcase_stat: Evaluating %d bits distribution in %u passcodes\n", bits_to_test, tests);
 	for (cnt = 0; cnt < tests; cnt++) {
-		mpz_add_ui(counter, counter, 1);
+		counter = num_add_i(counter, 1);
 		num_export(counter, (char *)cnt_bin, NUM_FORMAT_BIN);
 //		num_to_bin(counter, cnt_bin, 16);
 
@@ -314,8 +312,8 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 		int bit = 0;
 		int y;
 		for (i=0; i<code_length; i++) {
-			unsigned long int r = mpz_fdiv_q_ui(quotient, cipher, alphabet_len);
-			mpz_set(cipher, quotient);
+			unsigned long int r = num_div_i(&quotient, cipher, alphabet_len);
+			cipher = quotient;
 
 			// calculate things in r
 			for (y=0; y<bits_in_character; y++) {
@@ -372,9 +370,9 @@ clear:
 	memset(cnt_bin, 0, sizeof(cnt_bin));
 	memset(cipher_bin, 0, sizeof(cipher_bin));
 
-	mpz_clear(quotient);
-	mpz_clear(cipher);
-	mpz_clear(counter);
+	num_clear(quotient);
+	num_clear(cipher);
+	num_clear(counter);
 
 	return failed;
 }
@@ -394,26 +392,21 @@ static int _ppp_testcase_stat_2(const state *s,
 
 	unsigned char cnt_bin[16];
 	unsigned char cipher_bin[16];
-	num_t counter;
-	num_t cipher;
-	num_t quotient;
+	num_t counter = num_i(0);
+	num_t cipher = num_i(0);
+	num_t quotient = num_i(0);
 
 	int i;
 	unsigned int cnt;
 
 	int ret;
 
-	mpz_init(counter);
-	mpz_init(quotient);
-	mpz_init(cipher);
-
 	printf("ppp_testcase_stat: Evaluating character distribution in %u passcodes\n", tests);
 	for (cnt = 0; cnt < tests; cnt++) {
 		/* Increment counter */
-		mpz_add_ui(counter, counter, 119);
+		counter = num_add_i(counter, 119);
 
 		/* Convert to binary for encryption */
-//		num_to_bin(counter, cnt_bin, 16);
 		num_export(counter, (char *)cnt_bin, NUM_FORMAT_BIN);
 
 		/* Encrypt counter with key */
@@ -424,12 +417,11 @@ static int _ppp_testcase_stat_2(const state *s,
 		}
 
 		/* Convert result back to number */
-//		num_from_bin(cipher, cipher_bin, 16);
 		num_import(&cipher, (char *)cipher_bin, NUM_FORMAT_BIN);
 
 		for (i=0; i<code_length; i++) {
-			unsigned long int r = mpz_fdiv_q_ui(quotient, cipher, alphabet_len);
-			mpz_set(cipher, quotient);
+			unsigned long int r = num_div_i(&quotient, cipher, alphabet_len);
+			cipher = quotient;
 
 			/* r selects passcode */
 			char_count[r]++;
@@ -477,9 +469,9 @@ clear:
 	memset(cnt_bin, 0, sizeof(cnt_bin));
 	memset(cipher_bin, 0, sizeof(cipher_bin));
 
-	mpz_clear(quotient);
-	mpz_clear(cipher);
-	mpz_clear(counter);
+	num_clear(quotient);
+	num_clear(cipher);
+	num_clear(counter);
 
 	return failed;
 }
@@ -569,7 +561,7 @@ cleanup:
 }
 
 #define _PPP_TEST(cnt,len, col, row, code)			\
-mpz_set_ui(s.counter, (cnt)); s.code_length = (len);		\
+s.counter = num_i(cnt); s.code_length = (len);			\
 ppp_calculate(&s);						\
 tmp = num_export(s.counter, buf1, NUM_FORMAT_DEC);		\
 assert(tmp == 0); 						\
@@ -1087,7 +1079,7 @@ int num_testcase(void)
 	} else
 		printf("PASSED\n");
 	
-	mpz_clear(tmp_num);
+	num_clear(tmp_num);
 
 #endif
 	return failed;
