@@ -117,13 +117,14 @@ ENDFOREACH(man)
 ##
 
 # Common functions library (64 bit numbers and logging)
-ADD_LIBRARY(common STATIC common/print.c common/num.c)
+ADD_LIBRARY(common STATIC common/print.c common/num.c 
+            common/crypto.c crypto/polarssl_aes.c 
+            crypto/coreutils_sha256.c)
 
 # Library containing common functions
-ADD_LIBRARY(otp STATIC libotp/crypto.c libotp/ppp.c 
-	libotp/state.c 
+ADD_LIBRARY(otp STATIC libotp/ppp.c libotp/state.c 
         libotp/db_file.c libotp/db_mysql.c libotp/db_ldap.c
-	libotp/config.c crypto/polarssl_aes.c crypto/coreutils_sha256.c)
+	libotp/config.c)
 
 # Library containing agent functions (for both agent and its clients)
 ADD_LIBRARY(agent STATIC agent/agent_interface.c agent/agent_private.c)

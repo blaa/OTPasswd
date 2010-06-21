@@ -56,14 +56,14 @@ static int _state_init(agent *a, int flags)
 		return ret;
 	}
 
-	if (!(flags && _LOAD)) {
+	if (!(flags & _LOAD)) {
 		/* Just initialize */
 		return 0;
 	}
 
-	if (flags && _LOCK)
+	if (flags & _LOCK) {
 		ret = ppp_state_load(a->s, 0);
-	else
+	} else
 		ret = ppp_state_load(a->s, PPP_DONT_LOCK);
 
 	if (ret != 0) {
@@ -176,7 +176,6 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 	case AGENT_REQ_STATE_DROP:
 	case AGENT_REQ_GET_NUM:
 	case AGENT_REQ_GET_INT:
-
 		return AGENT_OK;
 
 	case AGENT_REQ_GET_STR:
@@ -242,9 +241,9 @@ static int request_execute(agent *a, const cfg_t *cfg)
 	const num_t r_num = agent_hdr_get_arg_num(a);
 	const char *r_str = agent_hdr_get_arg_str(a);
 
-	print(PRINT_NOTICE, "Executing request %d\n", r_type);
 	switch (r_type) {
 	case AGENT_REQ_DISCONNECT:
+		print(PRINT_NOTICE, "Executing (%d): Disconnect\n", r_type);
 		/* Correct disconnect */
 		/* Clear data */
 		if (a->s) {
@@ -260,6 +259,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 	case AGENT_REQ_USER_SET:
 	{
+		print(PRINT_NOTICE, "Executing (%d): User set\n", r_type);
 		if (!r_str) {
 			_send_reply(a, AGENT_ERR_REQ);
 			break;
@@ -286,6 +286,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 		/* STATE */
 	case AGENT_REQ_STATE_NEW:
+		print(PRINT_NOTICE, "Executing (%d): State new\n", r_type);
 		if (a->s)
 			return AGENT_ERR;
 
@@ -300,6 +301,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 
 	case AGENT_REQ_STATE_LOAD:
+		print(PRINT_NOTICE, "Executing (%d): State load\n", r_type);
 		if (a->s)
 			return AGENT_ERR;
 
@@ -313,6 +315,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_STATE_STORE:
+		print(PRINT_NOTICE, "Executing (%d): State store\n", r_type);
 		ret = _state_fini(a, _STORE);
 		if (ret != 0) {
 			print(PRINT_WARN, "Error while handling STATE_STORE: %s\n",
@@ -322,6 +325,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_STATE_DROP:
+		print(PRINT_NOTICE, "Executing (%d): State drop\n", r_type);
 		if (a->s) {
 			ret = _state_fini(a, _NONE);
 		} else {
@@ -335,8 +339,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 		/* KEY */
 	case AGENT_REQ_KEY_GENERATE:
-		print(PRINT_NOTICE, "Request: KEY_GENERATE\n");
-
+		print(PRINT_NOTICE, "Executing (%d): Key generate\n", r_type);
 		if (!a->s) {
 			print(PRINT_ERROR, "Must create new state first\n");
 			_send_reply(a, AGENT_ERR_MUST_CREATE_STATE);
@@ -355,6 +358,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_KEY_REMOVE:
+		print(PRINT_NOTICE, "Executing (%d): Key remove\n", r_type);
 		if (a->s) {
 			print(PRINT_ERROR, "Must drop state before removing it.\n");
 			ret = AGENT_ERR_MUST_DROP_STATE;
@@ -382,6 +386,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		/* FLAGS */
 	case AGENT_REQ_FLAG_ADD:
 	{
+		print(PRINT_NOTICE, "Executing (%d): Flag add\n", r_type);
 		/* TODO Ensure a->s exists, if not - read state, do duty and finish */
 		assert(a->s);
 
@@ -399,6 +404,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 	case AGENT_REQ_FLAG_CLEAR:
 	{
+		print(PRINT_NOTICE, "Executing (%d): Flag clear\n", r_type);
 		assert(a->s);
 		unsigned int new_flags;
 		ppp_get_int(a->s, PPP_FIELD_FLAGS, &new_flags);
@@ -414,6 +420,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 	}
 	
 	case AGENT_REQ_FLAG_GET:
+		print(PRINT_NOTICE, "Executing (%d): Flag get\n", r_type);
 		print(PRINT_NOTICE, "Request: FLAG_GET\n");
 		if (!a->s) {
 			ret = AGENT_ERR_NO_STATE;
@@ -430,6 +437,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_GET_NUM:
+		print(PRINT_NOTICE, "Executing (%d): Get num\n", r_type);
 		if (!a->s) {
 			ret = AGENT_ERR_NO_STATE;
 		} else {
@@ -449,6 +457,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_GET_INT:
+		print(PRINT_NOTICE, "Executing (%d): Get int\n", r_type);
 		if (!a->s) {
 			ret = AGENT_ERR_NO_STATE;
 		} else {
@@ -463,6 +472,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_GET_STR:
+		print(PRINT_NOTICE, "Executing (%d): Get str\n", r_type);
 		if (!a->s) {
 			ret = AGENT_ERR_NO_STATE;
 		} else {
@@ -491,6 +501,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_GET_PASSCODE:
+		print(PRINT_NOTICE, "Executing (%d): Get passcode\n", r_type);
 		if (!a->s) {
 			/* This doesn't need to work atomically */
 			ret = AGENT_ERR_NO_STATE;
@@ -509,6 +520,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_SKIP:
+		print(PRINT_NOTICE, "Executing (%d): Skip\n", r_type);
 		/* Not implemented */
 		ret = AGENT_ERR;
 		_send_reply(a, ret);
@@ -516,6 +528,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 	case AGENT_REQ_GET_ALPHABET:
 	{
+		print(PRINT_NOTICE, "Executing (%d): Get alphabet\n", r_type);
 		const char *alphabet = NULL;
 		agent_hdr_init(a, 0);
 
@@ -528,6 +541,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 	}
 	case AGENT_REQ_SET_INT:
+		print(PRINT_NOTICE, "Executing (%d): Set int\n", r_type);
 		/* This sets PPP field: alphabet, codelength, but not flags. */
 		if (!a->s) {
 			/* TODO: Not yet supported */
@@ -545,6 +559,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_SET_STR:
+		print(PRINT_NOTICE, "Executing (%d): Set str\n", r_type);
 		if (!a->s) {
 			/* TODO: Not yet supported */
 			ret = AGENT_ERR_NO_STATE;
@@ -560,6 +575,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_SET_NUM:
+		print(PRINT_NOTICE, "Executing (%d): Set num\n", r_type);
 		/* Not yet implemented. Is it required at all? */
 		ret = AGENT_ERR;
 		_send_reply(a, ret);

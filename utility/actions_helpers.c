@@ -371,15 +371,6 @@ int ah_set_options(agent *a, const options_t *options)
 	int retval;
 	const char *what = NULL;
 
-	printf("FLAGS SET: %d CLEAR: %d\n",
-	       options->flag_set_mask, options->flag_clear_mask);
-	printf("Alphabet: %d Code length: %d\n",
-	       options->set_alphabet, options->set_codelength);
-	printf("Contact: %s Label: %s\n",
-	       options->contact, options->label);
-
-
-
 	/* Set flags */
 	if (options->flag_set_mask != 0) {
 		retval = agent_flag_add(a, options->flag_set_mask);

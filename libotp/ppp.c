@@ -820,6 +820,15 @@ int ppp_state_release(state *s, int flags)
 	return 0;
 }
 
+int ppp_is_locked(const state *s) 
+{
+	assert(s);
+	if (s->lock <= 0)
+		return 0;
+	else
+		return 1;
+}
+
 int ppp_key_generate(state *s, int flags)
 {
 	int ret;

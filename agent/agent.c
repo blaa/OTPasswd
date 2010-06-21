@@ -148,7 +148,7 @@ int main_loop(agent *a, cfg_t *cfg)
 		goto end;
 	}
 
-	print(PRINT_NOTICE, "Agent correctly initialized. Looping.\n");
+	print(PRINT_NOTICE, "\n\n*** Agent correctly initialized. Looping.\n");
 	for (;;) {
 		ret = request_handle(a);
 

@@ -300,10 +300,9 @@ int action_key_generate(const options_t *options, agent *a)
 		"*****************************************************\n"
 	);
 
-	/* TODO: char *card = card_ascii(a, num_i(0));
+	char *card = card_ascii(a, num_i(1));
 	puts(card);
 	free(card);
-	*/
 
 	do {
 		retval = ah_yes_or_no(_("Are you ready to start using this "

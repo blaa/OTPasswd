@@ -78,6 +78,10 @@ extern int ppp_state_load(state *s, int flags);
  * If flags&PPP_UNLOCK will unlock state after writing. */
 extern int ppp_state_release(state *s, int flags);
 
+/** Check whether state is locked */
+extern int ppp_is_locked(const state *s);
+
+
 /** Generate key.
  * On contrary to any other actions, state shouldn't be locked
  * this time and ppp_state_release will allow storing freshly
