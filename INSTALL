@@ -114,32 +114,35 @@ will happen.
 
 2. Package Dependencies
 =======================
-OTPasswd may be installed either through compilation from source, or
-if available, from a pre-compiled binary package.  Regardless of the
-installation type, OTPasswd requires the GNU Multiple-Precision (GMP)
-library.  Additional packages are required when OTPasswd is compiled from
-source, namely, the CMake cross-platform build system, as well as the
-corresponding -dev packages for both GMP and PAM.  All of these packages
-should be available in your distribution's repositories.
+OTPasswd may be installed either through compilation from source, or if
+available, from a pre-compiled binary package.  OTPasswd has no external
+runtime dependencies except for PAM. Additional packages are required when
+OTPasswd is compiled from source, namely, the CMake cross-platform build
+system, as well as the corresponding -dev packages for PAM.  To generate
+documentation of internal API one is required to install Doxygen.  All of these
+packages should be available in your distribution's repositories.
 
 The following table provides a number of known configurations under which
 OTPasswd is known to compile and run.  This table is not intended to be
 comprehensive, but merely to serve as a point of reference.
 
-   Distribution     Type     Package       Version
-   ---------------  -------  ------------  ---------------------
-   Ubuntu 8.04 LTS  Runtime  libpam0g      0.99.7.1-5ubuntu6.1
-                             libgmp3c2     2:4.2.2+dfsg-1ubuntu2
-                    Build    cmake         2.4.7-1build1
-                             libpam0g-dev  0.99.7.1-5ubuntu6.1
-                             libgmp3-dev   2:4.2.2+dfsg-1ubuntu2
-   FreeBSD 8.0
+   Distribution     Type     Package         Comment
+   ---------------  -------  ------------    ---------------------
+   Debian
+   Ubuntu 8.04
+   Ubuntu 10.04     Runtime  libpam0g
+                    Build    cmake
+                             build-essential 
+                             libpam-dev
+
+To ensure you have all required dependencies when using either Debian
+or Ubuntu you may want to use command:
+# apt-get install cmake libpam-dev build-essential
 
 Future versions of OTPasswd may optionally use MySQL and LDAP.  It is also
 possible that a GNU Autotools build system will eventually either replace,
 or serve as an alternative to CMake.  These options may therefore introduce
 a different set of package dependencies.
-
 
 
 3. Installation (Source Package)
@@ -168,6 +171,10 @@ then instead of using 'make install' you can copy the following files:
       Linux: /usr/bin/
       FreeBSD: /usr/local/bin/
 
+   c) OTP agent executable 'otp_agent'
+      Linux: /usr/bin
+      FreeBSD: /usr/local/bin/
+
    c) PAM configuration
       Copy into /etc/pam.d one of files:        
       Linux:      example/otpasswd-login
@@ -177,7 +184,7 @@ then instead of using 'make install' you can copy the following files:
 
 When using 'GLOBAL DB' mode you should create a unique system user
 exclusively for OTPasswd. /etc/otpasswd should be owned by this user
-and otpasswd utility binary should be SUID-root.
+and otpasswd agent (not utility) binary should be SUID-root.
 By default, no OTPasswd binaries are SUID.
 
 
