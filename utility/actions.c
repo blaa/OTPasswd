@@ -81,6 +81,7 @@ int action_init(options_t *options, agent **a)
 int action_fini(agent *a)
 {
 	int ret;
+	assert(a);
 	ret = agent_disconnect(a);
 	if (ret != 0) { 
 		print(PRINT_WARN, "Error while disconnecting from agent\n");
@@ -94,8 +95,7 @@ int action_authenticate(const options_t *options, agent *a)
 {
 	int retval = 0;
 
-	/* TODO: Call agent action here */
-#if 0
+	retval = agent_authenticate(a, options->action_arg);
 	switch (retval) {
 	case 0:
 		/* Correctly authenticated */
@@ -130,13 +130,13 @@ int action_authenticate(const options_t *options, agent *a)
 		goto cleanup;
 
 	default: /* Any other problem - error */
-		printf(_("Authentication failed (state increment error).\n"));
+		printf(_("Authentication failed with internal error.\n"));
+		printf(_("Agent error: %s\n"), agent_strerror(retval));
 		retval = 0;
 		goto cleanup;
 	}
 
 cleanup:
-#endif
 	return retval;
 }
 
@@ -188,6 +188,7 @@ int action_key_generate(const options_t *options, agent *a)
 	int retval = 1;
 
 	/* TODO: pre-verify policy (DISABLE) and die if impossible */
+
 	/*
 	printf(_("Your current state is disabled. Cannot regenerate "
 	"until you remove the disabled flag.\n")); */
@@ -509,7 +510,7 @@ int action_print(const options_t *options, agent *a)
 	}
 
 	/*
-	 * Parsed! Now print/skip the thing requested
+	 * Parsed! Now print the thing requested
 	 */
 
 	if (selected == PRINT_CARD) { /* Card */
@@ -638,81 +639,53 @@ int action_config(const options_t *options, agent *a)
 		save_state = 1;
 		} */
 
-	
+	printf(_("Unimplemented!"));
 	return 1;
 }
 
 
 
-
-int action_skip(const options_t *options)
+int action_skip(const options_t *options, agent *a)
 {
-	int retval = 1;
-//	int ret;
-
-	/* If 1, we will try to update state at the end of function */
-//	int save_state = 0;
+	int ret;
 
 	/* Passcard/code to print */
-//	num_t passcard_num;
-//	num_t passcode_num;
+	num_t item = num_i(0);
 
-	/* And which to look at: 1 - code, 2 - card */
-//	int selected = 0; 
+	/* And which to look at: PRINT_CODE / PRINT_CARD*/
+	int selected = 0; 
 
-#if 0
-	if (options->action == OPTION_TEXT || options->action == OPTION_LATEX)
-		if (security_is_privileged() == 0 && cfg->passcode_print == CONFIG_DISALLOW) {
-			printf(_("Passcode printing denied by policy.\n"));
-			return 1;
-		}
-
-	if (options->action == OPTION_SKIP)
-		if (security_is_privileged() == 0 && cfg->skipping == CONFIG_DISALLOW) {
-			printf(_("Passcode skipping denied by policy.\n"));
-			return 1;
-		}
-
-	ret = ah_init_state(&s, options, 1);
-	if (ret != 0) {
-		return ret;
-	}
-
-	/* From this point we must free these two */
-	mpz_init(passcard_num);
-	mpz_init(passcode_num);
-
-	/* Do we have to just show any warnings? */
-	if (options->action == OPTION_WARN) {
-		int e = ppp_get_warning_conditions(s);
-		const char *warn;
-		while ((warn = ppp_get_warning_message(s, &e)) != NULL) {
-			const char *format = "*** OTPasswd Warning: %s\n";
-			printf(format, warn);
-		}
-		retval = 0;
-		goto cleanup;
-	}
 
 	/* Parse argument */
-	selected = ah_parse_code_spec(s, options->action_arg, &passcard_num, &passcode_num);
-	if ((selected != 1) && (selected != 2)) {
-		goto cleanup;
+	selected = ah_parse_code_spec(a, options->action_arg, &item);
+	if ((selected != PRINT_CODE) && (selected != PRINT_CARD)) {
+		return selected;
 	}
 
+
+	if (selected == PRINT_CARD) { /* Card */
+		/* Convert card number to code number */
+		num_t passcode_num = num_i(0);
+
+		ret = ah_get_passcode_number(a, item, &passcode_num, 'A', 1);
+		if (ret != 0) {
+			print(PRINT_ERROR,
+			      _("Error while generating destination passcode\n"));
+			return ret;
+		}
+	} 
+
+	/* Now in 'item' there's a passcode number for sure; common skip */
+	
+
+
+#if 0
 	/*
 	 * Parsed! Now print/skip the thing requested
 	 */
 	if (selected == 2) { /* Card */
 		char *card;
 		/* Skip to passcard... */
-		ret = ppp_get_passcode_number(s, passcard_num,
-		                              &passcode_num, 'A', 1);
-		if (ret != 0) {
-			print(PRINT_ERROR,
-			      _("Error while generating destination passcode\n"));
-			goto cleanup;
-		}
 		
 		ret = mpz_cmp(s->counter, passcode_num);
 		if (ret > 0) {
@@ -820,5 +793,9 @@ cleanup:
 		}
 	}
 #endif
-	return retval;
+
+
+	return ret;
 }
+
+

@@ -142,13 +142,6 @@ extern int ppp_get_current(const state *s, char *passcode);
  * be generated for current passcode (i.e. reserved by ppp_increment call) */
 extern int ppp_authenticate(const state *s, const char *passcode);
 
-/** Decode external card number and XY code position into a counter 
- * This function decreases passcard by one so counting starts at '1'.
- * Counter is created with salt included. Result returned in 'passcode'. */
-extern int ppp_get_passcode_number(
-	const state *s, const num_t passcard,
-	num_t *passcode, char column, char row);
-
 /** Adds a salt to given passcode if salt is used.
  * In other words: converts from user supplied passcode
  * into system passcode number. */

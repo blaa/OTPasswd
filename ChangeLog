@@ -18,7 +18,7 @@ Done:
           - Clean memory so there're no key/counter leaks
         * [+] Do not store things in mpz_t which don't need it (spass)
         * [+] Sanitize gettext environment
-
+	* [+] Accept 2G[2] passcode specification entries.
 In progress:
         * [?] Cleanup PPP interface. This should look like follows.
               "State" is class implementing some basic features of
@@ -34,7 +34,6 @@ TODO Major:
         * [%] Parameter -c alphabet=3,codelenght=8 is accepted but doesn't
               work. 
         * [%] Printing with -l when skipped to the last passcard works.
-	* [?] Accept 2G[2] passcode specification entries.
         * [?] Parametrize PAM messages.
         * [?] OOB Channel usage time updates + DoS security
         * [?] Static password expire warnings + enforcement. 
@@ -42,7 +41,7 @@ TODO Major:
         * [?] Key quality checking (duplicates)
         * [?] "Problem solving section" in docs, mentioning use of -v on
               errors in the first place.
-        * [?] Global DB should work with users which aren't in passwd.
+        * [?] Global DB should work with users which aren't in /etc/passwd.
               Should it?
         * [?] Check if lock files are links. if so. fail. Or rather always unlink
               before overwritting.

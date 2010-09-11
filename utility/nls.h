@@ -33,7 +33,9 @@ static inline void locale_init(void)
 	(void) bindtextdomain("otpasswd", "/usr/share/locale");
 	(void) textdomain("otpasswd");
 }
+
 #else
+
 #	define _(t) (t)
 
 static inline void locale_init(void)

@@ -82,6 +82,8 @@ enum AGENT_REQUEST {
 	AGENT_REQ_SET_INT,
 	AGENT_REQ_SET_STR,
 
+	/* Authenticate user with password */
+	AGENT_REQ_AUTHENTICATE,
 };
 
 

@@ -152,7 +152,7 @@ ADD_CUSTOM_TARGET(man ALL DEPENDS ${man_gz})
 # Install target
 ##
 SET(CMAKE_INSTALL_PREFIX /usr)
-INSTALL(TARGETS pam_otpasswd otpasswd
+INSTALL(TARGETS pam_otpasswd otpasswd agent_otp
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION /lib/security)
 

@@ -187,14 +187,7 @@ extern int agent_flag_get(agent *a, int *flags);
 
 
 /** Status query */
-
 /* Set of getters/setters */
-/* Taken from ppp_common.h...
-enum AGENT_TYPE {
-	AGENT_COUNTER_UNSALTED,
-	AGENT_COUNTER_SALTED,
-};
-*/
 extern int agent_get_num(agent *a, int field, num_t *key);
 extern int agent_get_int(agent *a, int field, int *integer);
 
@@ -212,6 +205,10 @@ extern int agent_get_alphabet(agent *a, int id, const char **alphebet);
 
 /* Config query */
 extern int agent_get_passcode(agent *a, num_t counter, char *reply); 
+
+/** Try to authenticate */
+extern int agent_authenticate(agent *a, const char *passcode); 
+
 // void agent_set(agent *a);
 
 

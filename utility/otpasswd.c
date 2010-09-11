@@ -109,7 +109,9 @@ static void _show_usage(int argc, const char **argv)
 		"Where <which> might be one of:\n"
 		"  number         - a decimal number of a passcode\n"
 		"  [number]       - a passcard number\n"
-		"  CRR[number]    - a passcode in passcard of a given number.\n"
+		"\n"
+		"  CRR[number] or RRC[number] \n"
+		"                 - a passcode in passcard of a given number.\n"
 		"                   C is column (A through G), RR - row (1..10)\n"
 		"  current        - passcode used for next time authentication\n"
 		"  [current]      - passcard containing current passcode\n"
@@ -122,13 +124,13 @@ static void _show_usage(int argc, const char **argv)
 	        "           Print key and counter used for generating passcodes.\n"
 		"           Warning: This will print private data.\n"
 		"  -c, --config <arg>\n"
-		"           Manages various settings:\n"
+		"           Can be passed multiple times. Manages various settings:\n"
 		"           show=<on|off> configure visibility of passcode during\n"
 		"                         authentication.\n"
 		"           alphabet=<ID|list>\n"
 		"                         select passcode alphabet. Use 'list' argument\n"
 		"                         to get IDs of available alphabets.\n"
-		"           codelenght=<length>\n"
+		"           codelength=<length>\n"
 		"                         select passcode length.\n"
 		"\n"
 		"           contact=X     Set contact info (e.g. phone number) with\n"
@@ -159,6 +161,7 @@ static void _show_usage(int argc, const char **argv)
 		"           Display license, warranty, version and author information.\n"
 		"  -h, --help\n"
 		"           Display this message\n"
+		"  OBSOLETE:\n"
 		"  --check  Run all testcases. WARNING: Requires default config file.\n"
 
 		"\n"
@@ -495,8 +498,12 @@ static int perform_action(int argc, char **argv, options_t *options)
 			retval = 0;
 		break;
 
-	case OPTION_WARN:
 	case OPTION_SKIP:
+		printf(_("Unimplemented?\n"));
+		ret = action_skip(options, a);
+		break;
+
+	case OPTION_WARN:
 		printf(_("Unimplemented.\n"));
 		break;
 
@@ -507,7 +514,7 @@ static int perform_action(int argc, char **argv, options_t *options)
 		break;
 
 	case OPTION_CHECK:
-		printf(_("Unimplemented.\n"));
+		printf(_("OBSOLETE: Most of the checks were moved into AGENT.\n"));
 		retval = 1;
 		goto cleanup;
 
@@ -520,17 +527,19 @@ static int perform_action(int argc, char **argv, options_t *options)
 
 
 cleanup:
-	action_fini(a);
+	if (a)
+		action_fini(a);
 
-	free(options->action_arg);
-	free(options->label);
-	free(options->contact);
-	free(options->username);
+	free(options->action_arg), options->action_arg = NULL;
+	free(options->label), options->label = NULL;
+	free(options->contact), options->contact = NULL;
+	free(options->username), options->username = NULL;
 	return retval;
 }
 
 
-int run_cli(int argc, char **argv)
+/** Starts command-line interface of the utility */
+static inline int run_cli(int argc, char **argv)
 {
 	int ret;
 

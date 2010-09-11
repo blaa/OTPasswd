@@ -331,34 +331,6 @@ void ppp_add_salt(const state *s, num_t *passcode)
 	}
 }
 
-int ppp_get_passcode_number(const state *s, const num_t passcard, num_t *passcode, char column, char row)
-{
-	if (column < 'A' || column >= 'A' + s->codes_in_row) {
-		print(PRINT_NOTICE, "Column out of possible range!\n");
-		return 1;
-	}
-
-	if (row < 1 || row > 10) {
-		print(PRINT_NOTICE, "Row out of range!\n");
-		return 1;
-	}
-
-	/* Start with calculating first passcode on card */
-	/* passcode = (passcard-1)*codes_on_card + salt */
-	*passcode = num_sub_i(passcard, 1);
-	*passcode = num_mul_i(*passcode, s->codes_on_card);
-
-	/* Then add location on card */
-	*passcode = num_add_i(*passcode, (row - 1) * s->codes_in_row);
-	*passcode = num_add_i(*passcode, column - 'A');
-
-	/* Add salt if required */
-	ppp_add_salt(s, passcode);
-	return 0;
-}
-
-
-
 int ppp_get_passcode(const state *s, const num_t counter, char *passcode)
 {
 	unsigned char cnt_bin[16];
@@ -985,6 +957,18 @@ int ppp_get_int(const state *s, int field, unsigned int *arg)
 
 	case PPP_FIELD_FLAGS:  
 		*arg = s->flags;
+		break;
+
+	case PPP_FIELD_CODES_ON_CARD:
+		/* Ask about this only when already calculated */
+		assert(s->codes_on_card != 0); 
+		*arg = s->codes_on_card;
+		break;
+
+	case PPP_FIELD_CODES_IN_ROW:
+		/* Ask about this only when already calculated */
+		assert(s->codes_in_row != 0); 
+		*arg = s->codes_in_row;
 		break;
 
 	default:

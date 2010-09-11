@@ -54,6 +54,17 @@ extern int ah_set_options(agent *a, const options_t *options);
 /** Parse code specification and store resulting data in arguments */
 extern int ah_parse_code_spec(agent *a, const char *spec, num_t *item);
 
+/** Decode external card number and XY code position into a counter 
+ * This function decreases passcard by one so counting starts at '1'.
+ * Counter is created with salt included. Result returned in 'passcode'. */
+extern int ah_get_passcode_number(agent *a, 
+                                  const num_t passcard, 
+                                  num_t *passcode, char column, char row);
+
+
+
+
+
 #if 0
 
 /* Check if passcard is in range */
@@ -65,6 +76,9 @@ extern int ah_is_passcode_in_range(const state *s, const num_t passcard);
 
 /* Update state flags. Checks policy. If generation is 1 we allow salt changes. */
 extern int ah_update_flags(options_t *options, state *s, int generation);
+
+
+
 
 
 #endif 

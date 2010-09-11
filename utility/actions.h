@@ -95,7 +95,11 @@ extern int action_key_remove(const options_t *options, agent *a);
 /** Command line authentication (-a) */
 extern int action_authenticate(const options_t *options, agent *a);
 
-/** Print passcode or passcard or skip (-t -l -s) */
+/** Print passcode or passcard (-t -l) */
 extern int action_print(const options_t *options, agent *a);
+
+/** Skip passcode or passcard (-s) */
+extern int action_skip(const options_t *options, agent *a);
+
 
 #endif

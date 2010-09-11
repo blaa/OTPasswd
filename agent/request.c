@@ -169,6 +169,11 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 		}
 		return AGENT_OK;
 
+
+	case AGENT_REQ_AUTHENTICATE:
+		/* TODO: Add it from scratch later */
+		return AGENT_OK;
+
 		/* Those which doesn't require policy check */
 	case AGENT_REQ_STATE_NEW:
 	case AGENT_REQ_STATE_LOAD:
@@ -526,6 +531,27 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		_send_reply(a, ret);
 		break;
 
+	case AGENT_REQ_AUTHENTICATE:
+		print(PRINT_NOTICE, "Executing (%d): Authenticate\n", r_type);
+
+		/* State must exist, but doesn't need to be already read. */
+		if (!a->s) {
+			ret = AGENT_ERR_NO_STATE;
+		} else {
+			ret = ppp_increment(a->s);
+			if (ret == 0) {
+				ret = ppp_authenticate(a->s, r_str);
+				if (ret != 0) {
+					print(PRINT_NOTICE, "CLI authentication failed.\n");
+				}
+			} else {
+				print(PRINT_NOTICE, "Agent: ppp_increment failed.\n");
+			}
+		}
+		_send_reply(a, ret);
+		break;
+
+
 	case AGENT_REQ_GET_ALPHABET:
 	{
 		print(PRINT_NOTICE, "Executing (%d): Get alphabet\n", r_type);
@@ -540,6 +566,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		_send_reply(a, ret);
 		break;
 	}
+
 	case AGENT_REQ_SET_INT:
 		print(PRINT_NOTICE, "Executing (%d): Set int\n", r_type);
 		/* This sets PPP field: alphabet, codelength, but not flags. */

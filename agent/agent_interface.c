@@ -57,9 +57,11 @@ int agent_connect(agent **a_out, const char *agent_executable)
 	if (pipe(out) != 0)
 		goto cleanup1;
 
-	/* Verify that agent executable exists */
-	if (agent_executable == NULL)
+	/* Verify that agent executable PATH exists */
+	if (agent_executable == NULL) {
+		print(PRINT_NOTICE, "NOTICE: No path for OTP Agent given, using default ./agent_otp\n");
 		agent_executable = "./agent_otp";
+	}
 
 	a->pid = fork();
 
@@ -177,8 +179,8 @@ int agent_disconnect(agent *a)
 {
 	int ret = 0;
 	/* TODO: Send quit message if client */
-
-	/* Wait for child to close? */
+	/* TODO: Wait for child to close? */
+	assert(a);
 
 	/* Close descriptors  */
 	if (a->in != -1)
@@ -227,7 +229,7 @@ const char *agent_strerror(int error)
 	default:
 		if (error >= 100 && error <= 2000)
 			return _( ppp_get_error_desc(error) );
-		return _( "Unknown error" );
+		return _( "Not an agent/PPP error." );
 	}
 	return NULL;
 }
@@ -435,10 +437,29 @@ int agent_get_passcode(agent *a, const num_t counter, char *reply)
 }
 
 
-/*
+int agent_authenticate(agent *a, const char *passcode)
+{
+	int ret;
+	assert(a);
+	assert(passcode);
+
+	agent_hdr_init(a, 0);
+
+	ret = agent_hdr_set_str(a, passcode);
+	if (ret != AGENT_OK) {
+		print(PRINT_CRITICAL, "Passcode too long to send to agent.\n");
+		return ret;
+	}
+
+	ret = agent_query(a, AGENT_REQ_AUTHENTICATE);
+	if (ret != AGENT_OK)
+		return ret;
+
+	ret = agent_hdr_get_arg_int(a);
+	return ret;
+}
 
 
-*/
 
 
 

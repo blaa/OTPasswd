@@ -447,36 +447,54 @@ int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
 	int ret;
 	int selected;
 
-
 	num_t current_card, unsalted_counter, latest_card, 
 		max_card, max_code;
+
+	int has_passcard_mark = 0, has_row_mark = 0, i;
+	const int length = strlen(spec);
+
 	const char *which = NULL;
 
+	/* This data is needed to perform all conversions */
 	if ((ret = agent_get_num(a, PPP_FIELD_CURRENT_CARD, &current_card)) != 0) {
 		which = "current card";
-		goto error;
+		goto agent_error;
 	}
 
 	if ((ret = agent_get_num(a, PPP_FIELD_UNSALTED_COUNTER, &unsalted_counter)) != 0) {
 		which = "counter";
-		goto error;
+		goto agent_error;
 	}
 
 	if ((ret = agent_get_num(a, PPP_FIELD_LATEST_CARD, &latest_card)) != 0) {
 		which = "latest card";
-		goto error;
+		goto agent_error;
 	}
 
 	if ((ret = agent_get_num(a, PPP_FIELD_MAX_CARD, &max_card)) != 0) {
 		which = "max card";
-		goto error;
+		goto agent_error;
 	}
 
 	if ((ret = agent_get_num(a, PPP_FIELD_MAX_CODE, &max_code)) != 0) {
 		which = "max code";
-		goto error;
+		goto agent_error;
 	}
 
+
+	/* Has it got [ or ]? */
+	for (i = 0; i < length; i++) {
+		if (spec[i] == '[' || spec[i] == ']')
+			has_passcard_mark = 1;
+
+		/* This will detect also current/next etc. so validate after eliminating those options */
+		if (isascii(spec[i]) && isalpha(spec[i]))
+			has_row_mark++;
+	}
+
+	/* Multiple alphas are not a row mark */
+	if (has_row_mark != 1)
+		has_row_mark = 0;
 
 
 	/* Determine what user wants to print(or skip) and parse it to
@@ -504,43 +522,8 @@ int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
 		} else {
 			*item = num_add_i(latest_card, 1);
 		}
-	} else if (isascii(spec[0]) && isalpha(spec[0])) {
-		/* Format: CRR[number]; TODO: allow RRC[number] */
-		char column;
-		int row;
-		char number[41];
-		ret = sscanf(spec, "%c%d[%40[^]]s]", &column, &row, number);
-		column = toupper(column);
-		if (ret != 3 || (column < OPTION_ALPHABETS || column > 'J')) {
-			printf(_("Incorrect passcode specification. (%d)\n"), ret);
-			goto error;
-		}
-
-		ret = num_import(item, number, NUM_FORMAT_DEC);
-		if (ret != 0) {
-			printf(_("Incorrect passcard specification (%s).\n"), number);
-			goto error;
-		}
-
-/*
-		if (!ah_is_passcard_in_range(s, *passcard)) {
-			printf(_("Passcard number out of range. "
-			         "First passcard has number 1.\n"));
-			goto error;
-		}
-*/
-		/* ppp_get_passcode_number adds salt as needed */
-		/*
-		ret = ppp_get_passcode_number(s, *passcard, passcode, column, row);
-		if (ret != 0) {
-			printf(_("Error while parsing passcard description.\n"));
-			goto error;
-		}
-		*/
-
-		selected = PRINT_CODE;
-
-	} else if (isdigit(spec[0])) {
+	} else if (has_row_mark == 0 && isdigit(spec[0])) {
+		/* Passcode given as integer */
 		/* All characters must be a digit! */
 		int i;
 		for (i=0; spec[i]; i++) {
@@ -572,14 +555,14 @@ int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
 
 
 		selected = PRINT_CODE;
-	} else if (spec[0] == '[' && spec[strlen(spec)-1] == ']') {
+	} else if (spec[0] == '[' && spec[length-1] == ']') {
 		/* [number] -- passcard number */
 
 		/* Erase [,] characters */
 		char number[41] = {0};
 		ret = sscanf(spec, "[%40[^]s]", number);
 		if (ret != 1) {
-			printf("Strange error while parsing passcard number.\n");
+			printf(_("Strange error while parsing passcard number.\n"));
 			goto error;
 		}
 
@@ -602,6 +585,51 @@ int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
 		}
 */
 		selected = PRINT_CARD;
+
+
+		/* ALL other possibilities including [] are used up. Two are left */
+	} else if (has_passcard_mark) {
+		char column;
+		int row;
+		char number[41];
+		num_t card = num_i(0);
+
+		if (isascii(spec[0]) && isalpha(spec[0])) {
+			/* Format: CRR[number] */
+			ret = sscanf(spec, "%c%d[%40[^]]s]", &column, &row, number);
+		} else if (isdigit(spec[0])) {
+			/* Format: RRC[number] */
+			ret = sscanf(spec, "%d%c[%40[^]]s]", &row, &column, number);
+		} else {
+			printf(_("Incorrect passcode specification.\n"));
+			goto error;
+		}
+
+		column = toupper(column);
+		if (ret != 3 || (column < OPTION_ALPHABETS || column > 'J')) {
+			printf(_("Incorrect passcode specification. (%d)\n"), ret);
+			goto error;
+		}
+
+		ret = num_import(&card, number, NUM_FORMAT_DEC);
+		if (ret != 0) {
+			printf(_("Incorrect passcard specification (%s).\n"), number);
+			goto error;
+		}
+
+		if (num_cmp(num_i(1), card) > 0) {
+			ret = 1;
+			printf(_("Passcard numbering starts with 1.\n"));
+			goto error;
+		}
+
+		ret = ah_get_passcode_number(a, card, item, column, row);
+		if (ret != 0) {
+			print(PRINT_ERROR, _("Error while deciphering passcode specification\n"));
+			return ret;
+		}
+
+		selected = PRINT_CODE;
 	} else {
 		printf(_("Illegal argument passed to option.\n"));
 		goto error;
@@ -610,10 +638,62 @@ int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
 	return selected;
 
 error:
+	return -1;
+
+agent_error:
 	print(PRINT_ERROR, "Error while reading field %s: %s (%d)\n",
 	      which, agent_strerror(ret), ret);
 	return 5;
 }
+
+
+
+int ah_get_passcode_number(agent *a, const num_t passcard, num_t *passcode, char column, char row)
+{
+	int ret;
+	int codes_in_row, codes_on_card;
+	
+	const char *which = NULL;
+
+	/* This data is needed to perform all conversions */
+	if ((ret = agent_get_int(a, PPP_FIELD_CODES_ON_CARD, &codes_on_card)) != 0) {
+		which = "codes on card";
+		goto error;
+	}
+
+	if ((ret = agent_get_int(a, PPP_FIELD_CODES_IN_ROW, &codes_in_row)) != 0) {
+		which = "codes in row";
+		goto error;
+	}
+
+
+	if (column < 'A' || column >= 'A' + codes_in_row) {
+		printf(_("Column out of possible range!\n"));
+		return 1;
+	}
+
+	if (row < 1 || row > 10) {
+		printf(_("Row out of range!\n"));
+		return 1;
+	}
+
+	/* Start with calculating first passcode on card */
+	/* passcode = (passcard-1)*codes_on_card + salt */
+	*passcode = num_sub_i(passcard, 1);
+	*passcode = num_mul_i(*passcode, codes_on_card);
+
+	/* Then add location on card */
+	*passcode = num_add_i(*passcode, (row - 1) * codes_in_row);
+	*passcode = num_add_i(*passcode, column - 'A');
+
+	return 0;
+
+error:
+	print(PRINT_ERROR, "Error while reading field %s: %s (%d)\n",
+	      which, agent_strerror(ret), ret);
+	return ret;
+}
+
 
 
 
