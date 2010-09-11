@@ -336,6 +336,10 @@ int agent_get_str(agent *a, int field, char **str)
 	assert(tmp_str);
 	*str = strdup(tmp_str);
 
+	if (!*str) {
+		return AGENT_ERR_MEMORY;
+	}
+
 	return AGENT_OK;
 
 }

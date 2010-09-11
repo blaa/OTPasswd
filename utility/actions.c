@@ -426,21 +426,6 @@ int action_info(const options_t *options, agent *a)
 		if (retval != 0) {
 			print(PRINT_ERROR, _("Error while printing user key data.\n"));
 		}
-
-/*
-		if (cfg->key_print == CONFIG_ALLOW || security_is_privileged()) {
-			if (security_is_privileged())
-				printf(_("User    = %s\n"), s->username);
-			ah_show_keys(s);
-			retval = 0;
-		} else {
-			printf(_("Printing key denied by policy!\n"));
-			retval = 1;
-		}
-		save_state = 0;
-*/
-		
-
 		goto cleanup;
 
 
@@ -512,7 +497,6 @@ int action_print(const options_t *options, agent *a)
 	/*
 	 * Parsed! Now print the thing requested
 	 */
-
 	if (selected == PRINT_CARD) { /* Card */
 		char *card;
 		switch (options->action) {
@@ -539,16 +523,14 @@ int action_print(const options_t *options, agent *a)
 			break;
 */
 		case OPTION_PROMPT:
-			print(PRINT_ERROR, _("Option requires passcode as argument\n"));
+			printf(_("Option requires passcode as argument\n"));
 			break;
 		}
 	} else {
+		char *prompt;
 		char passcode[17];
-		//const char *prompt;
 		switch (options->action) {
 		case OPTION_TEXT:
-			/* ppp_get_passcode wants internal
-			 * passcodes (with salt) */
 			ret = agent_get_passcode(a, item, passcode);
 			if (ret != 0) {
 				print(PRINT_ERROR, _("Error while calculating passcode\n"));
@@ -571,7 +553,13 @@ int action_print(const options_t *options, agent *a)
 			printf("%s\n", prompt);
 			assert(save_state == 0);
 			*/
-			printf(_("Not implemented.\n"));
+			ret = agent_get_str(a, PPP_FIELD_PROMPT, &prompt);
+			if (ret != AGENT_OK || prompt == NULL) {
+				printf(_("Error while retrieving prompt: %s\n"), agent_strerror(ret));
+			} else {
+				printf("%s\n", prompt);
+				free(prompt);
+			}
 			break;
 		}
 	}
