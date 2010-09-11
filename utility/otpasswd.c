@@ -499,7 +499,6 @@ static int perform_action(int argc, char **argv, options_t *options)
 		break;
 
 	case OPTION_SKIP:
-		printf(_("Unimplemented?\n"));
 		ret = action_skip(options, a);
 		break;
 

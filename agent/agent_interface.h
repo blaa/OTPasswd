@@ -201,7 +201,7 @@ extern int agent_get_key(agent *a, unsigned char *key);
 extern int agent_set_int(agent *a, int field, int integer);
 extern int agent_set_str(agent *a, int field, const char *str);
 
-extern int agent_get_alphabet(agent *a, int id, const char **alphebet);
+extern int agent_get_alphabet(agent *a, int id, const char **alphabet);
 
 /* Config query */
 extern int agent_get_passcode(agent *a, num_t counter, char *reply); 
@@ -209,7 +209,8 @@ extern int agent_get_passcode(agent *a, num_t counter, char *reply);
 /** Try to authenticate */
 extern int agent_authenticate(agent *a, const char *passcode); 
 
-// void agent_set(agent *a);
+/** Skip to given counter */
+extern int agent_skip(agent *a, const num_t counter); 
 
 
 #endif

@@ -852,6 +852,7 @@ int ppp_key_generate(state *s, int flags)
 int ppp_increment(state *s)
 {
 	int ret;
+	assert(s);
 
 	/* Load user state */
 	ret = ppp_state_load(s, 0);
@@ -874,7 +875,7 @@ int ppp_increment(state *s)
 	num_t tmp = s->counter;
 
 	/* Increment and save state */
-	s->counter = num_add_i(s->counter, 1);
+	s->counter = num_add(s->counter, num_i(1));
 
 	/* We will return it's return value if anything failed */
 	ret = ppp_state_release(s, PPP_STORE | PPP_UNLOCK);
@@ -891,6 +892,70 @@ error:
 	return ret;
 }
 
+
+int ppp_skip(state *s, const num_t skip_to)
+{
+	int ret;
+	cfg_t *cfg = cfg_get();
+	num_t unsalted_counter;
+
+	assert(s);
+	assert(cfg);
+
+	/* Load user state */
+	ret = ppp_state_load(s, 0);
+	if (ret != 0)
+		return ret;
+
+	/* Verify state correctness before trying anything more */
+	ret = ppp_state_verify(s);
+	if (ret != 0) {
+		goto error;
+	}
+
+	/* Do not increment anything if user is disabled */
+	if (ppp_flag_check(s, FLAG_DISABLED)) {
+		ret = PPP_ERROR_DISABLED;
+		goto error;
+	}
+
+	/* Verify that we can skip to given (unsalted) counter */
+	unsalted_counter = s->counter;
+	if (s->flags & FLAG_SALTED) {
+		unsalted_counter = num_and(unsalted_counter, s->code_mask);
+	}
+
+	if (num_cmp(unsalted_counter, skip_to) > 0) {
+		/* Don't skip backwards */
+		print(PRINT_NOTICE, "User tried to skip backwards.\n");
+		ret = PPP_ERROR_SKIP_BACKWARDS;
+		goto error;
+	}
+
+
+	if (num_cmp(skip_to, s->max_code) >= 0) {
+		print(PRINT_NOTICE, "User tried to skip over the last possible passcode.\n");
+		ret = PPP_ERROR_RANGE;
+		goto error;
+	}
+
+
+	/* Skip */
+	s->counter = skip_to;
+	ppp_add_salt(s, &s->counter);
+
+	/* We will return it's return value if anything failed */
+	ret = ppp_state_release(s, PPP_STORE | PPP_UNLOCK);
+
+	num_clear(unsalted_counter);
+	return ret;
+
+error:
+	/* Unlock. And ignore unlocking errors */
+	(void) ppp_state_release(s, PPP_UNLOCK);
+	num_clear(unsalted_counter);
+	return ret;
+}
 
 int ppp_failures(const state *s, int zero)
 {

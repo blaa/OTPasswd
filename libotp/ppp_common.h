@@ -81,6 +81,9 @@ enum ppp_errors {
 	/* Action denied by policy */
 	PPP_ERROR_POLICY,
 
+	/* User tried to skip backwards */
+	PPP_ERROR_SKIP_BACKWARDS,
+
 	/* Input too long */
 	PPP_ERROR_TOO_LONG,
 

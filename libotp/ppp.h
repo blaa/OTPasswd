@@ -112,8 +112,27 @@ extern int ppp_key_generate(state *s, int flags);
  * 5. Leaves in state non-incremented counter which can be
  *    used for authentication. This counter value can be though
  *    as 'reserved' for this authentication.
+ *
+ * If increment_to is equal 0 it increments by 1. Otherwise it increments
+ * state to match given counter value if and only if skipping is allowed
+ * and users skips forward.
  */
 extern int ppp_increment(state *s);
+
+/**
+ * Similar to ppp_increment. skip_to argument is an unsalted counter
+ * 1. Lock file
+ * 2a. Open it
+ * 2b. Call ppp_calculate()
+ * 2c. Verify that by skipping to given number we won't exceed max_code
+ * 3. Change counter
+ * 4. Save it and unlock
+ * 5. Leaves in state incremented counter but it musn't be used for 
+ *    authentication without proper locking.
+ *
+ */
+extern int ppp_skip(state *s, const num_t skip_to);
+
 
 /** Lock & Read
  * If zero = 0 then increment failure and recent_failures count.

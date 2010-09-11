@@ -459,10 +459,22 @@ int agent_authenticate(agent *a, const char *passcode)
 	return ret;
 }
 
+int agent_skip(agent *a, const num_t counter)
+{
+	int ret;
+	assert(a);
 
+	agent_hdr_init(a, 0);
 
+	agent_hdr_set_num(a, &counter);
 
+	ret = agent_query(a, AGENT_REQ_SKIP);
+	if (ret != AGENT_OK)
+		return ret;
 
+	ret = agent_hdr_get_arg_int(a);
+	return ret;
+}
 
 
 

@@ -673,126 +673,35 @@ int action_skip(const options_t *options, agent *a)
 			      _("Error while generating destination passcode\n"));
 			return ret;
 		}
+		item = passcode_num;
 	} 
 
-	/* Now in 'item' there's a passcode number for sure; common skip */
-	
+	/* Now in 'item' there's a passcode number for sure; common skip: */
+	ret = agent_skip(a, item);
 
-
-#if 0
-	/*
-	 * Parsed! Now print/skip the thing requested
-	 */
-	if (selected == 2) { /* Card */
-		char *card;
-		/* Skip to passcard... */
-		
-		ret = mpz_cmp(s->counter, passcode_num);
-		if (ret > 0) {
-			/* Skipping backwards */
-			if (cfg->backward_skipping == CONFIG_ALLOW
-			    || security_is_privileged()) {
-				/* Allowed or root */
-				printf(_("**********************************\n"
-				         "* WARNING: You should never skip *\n"
-				         "* backwards to reuse your codes! *\n"
-				         "**********************************\n"));
-			} else {
-				printf(_("Skipping backwards denied by policy.\n"));
-				break;
-			}
-		} else if (ret == 0) {
-			printf(_("Ignoring skip to the current passcode.\n"));
-			break;
-		}
-		
-		printf(_("Skipped to specified passcard.\n"));
-		mpz_set(s->counter, passcode_num);
-		save_state = 1;
-		break;
-	} else {
-		char passcode[17];
-		const char *prompt;
-
-		/* Skip to passcode */
-		ret = mpz_cmp(s->counter, passcode_num);
-		if (ret > 0) {
-			/* Skipping backwards */
-			if (cfg->backward_skipping == CONFIG_ALLOW
-			    || security_is_privileged()) {
-				/* Allowed or root */
-				printf(_("**********************************\n"
-				         "* WARNING: You should never skip *\n"
-				         "* backwards to reuse your codes! *\n"
-				         "**********************************\n"));
-			} else {
-				printf(_("Skipping backwards denied by policy.\n"));
-				break;
-			}
-		} else if (ret == 0) {
-			printf(_("Ignoring skip to the current passcode.\n"));
-			break;
-		}
-		
+	switch (ret) {
+	case 0:
 		printf(_("Skipped to specified passcode.\n"));
-		mpz_set(s->counter, passcode_num);
-		save_state = 1;
+		break;
+
+	case PPP_ERROR_RANGE:
+		printf(_("Specified passcode is larger than maximal possible.\n"));
+		break;
+
+	case PPP_ERROR_SKIP_BACKWARDS:
+		printf(_("You can't skip backwards and re-use already used up passcodes.\n"));
+		break;
+
+
+	case PPP_ERROR_POLICY:
+		printf(_("Skipping denied by policy.\n"));
+		break;
+		
+	default:
+		printf("Agent error: %s\n", agent_strerror(ret));
 		break;
 	}
 
-	/* Increment latest_card printed in some circumstances:
-	 * 1) "next" argument used with option --text or --latex
-	 * Maybe:
-	 * When printing latest_card + 1 card?
-	 */
-	int do_increment = 0;
-	if (strcasecmp(options->action_arg, "next") == 0) {
-		if (options->action == OPTION_LATEX || 
-		    options->action == OPTION_TEXT)
-			do_increment = 1;
-	}
-
-	/* Increment "latest_card" in state if appropriate  */
-	if (do_increment) {
-		/* If current code is further than s->latest_card
-		 * Then ignore this setting and start printing
-		 * from current_card */
-		if (mpz_cmp(s->current_card, s->latest_card) > 0) {
-			/* Set next to current, or current + 5 for LaTeX */
-			if (options->action == OPTION_LATEX) {
-				mpz_add_ui(s->latest_card, s->current_card, 5);
-			} else {
-				mpz_set(s->latest_card, s->current_card);
-			}
-		} else {
-			/* Increment by 1 or by 6 for LaTeX */
-			mpz_add_ui(
-				s->latest_card,
-				s->latest_card,
-				options->action == OPTION_LATEX ? 6 : 1);
-		}
-		save_state = 1;
-	}
-
-	retval = 0;
-
-cleanup:
-	num_clear(passcode_num);
-	num_clear(passcard_num);
-
-	/* If anything failed save_state should be zero */
-	assert((save_state == 0) || (save_state && (retval == 0)));
-
-	ret = ah_fini_state(&s, save_state);
-	if (ret != 0) {
-		retval = ret;
-		if (save_state) {
-			printf(_("Error while saving state! Changes not written.\n"));
-		} else {
-			printf(_("Error while finalizing state. (No changes to write)\n"));
-		}
-	}
-#endif
 
 
 	return ret;

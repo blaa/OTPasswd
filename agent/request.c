@@ -526,8 +526,14 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 	case AGENT_REQ_SKIP:
 		print(PRINT_NOTICE, "Executing (%d): Skip\n", r_type);
-		/* Not implemented */
-		ret = AGENT_ERR;
+
+		/* State must exist, but doesn't need to be already read. */
+		if (!a->s) {
+			ret = AGENT_ERR_NO_STATE;
+		} else {
+			ret = ppp_skip(a->s, r_num);
+			print(PRINT_NOTICE, "Skipping returned code %d\n", ret);
+		}
 		_send_reply(a, ret);
 		break;
 
