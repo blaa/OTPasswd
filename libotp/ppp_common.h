@@ -139,8 +139,6 @@ enum ppp_warning {
 /* Multiple option dictionaries; static password errors and warnings */
 enum ppp_multi_errors {
 	/* Password too short */
-
-	
 	PPP_ERROR_SPASS_SHORT = (1<<0),
 	PPP_ERROR_SPASS_NO_DIGITS = (1<<1),
 	PPP_ERROR_SPASS_NO_UPPERCASE = (1<<2),

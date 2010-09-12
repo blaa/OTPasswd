@@ -28,6 +28,7 @@ enum request_flags {
 	_LOCK = 2,
 	_STORE = 4,
 	_REMOVE = 8,
+	_KEEP = 16, /* Keep after storing in memory */
 };
 
 /** Used to communicate how previous request was finished
@@ -103,21 +104,64 @@ static int _state_fini(agent *a, int flags)
 	else if (flags & _STORE)
 		ppp_flags = PPP_STORE;
 
+	/* If we have _KEEP flag we have to unlock manually */
+	if (flags & _KEEP) {
+		ppp_flags |= PPP_UNLOCK;
+	}
+
 	ret = ppp_state_release(a->s, ppp_flags);
 
 	if (ret != 0) {
 		print(PRINT_ERROR, 
 		      "Error while saving state data. State not changed. [%d]\n", ret);
 	}
-
-	ppp_state_fini(a->s);
-
-	a->s = NULL;
+	
+	if (!(flags & _KEEP)) {
+		ppp_state_fini(a->s);
+		a->s = NULL;
+	}
 
 	print(PRINT_NOTICE, "State finalization done (%d)\n", ret);
 	return ret;
 }
 
+/* HELPER: Initialize for atomical operation with loading and locking.
+ * Can be called for already loaded state. */
+static int _state_init_atomical(agent *a) 
+{
+	int ret;
+	if (a->s) {
+		/* Drop state if was loaded already */
+		ret = _state_fini(a, _NONE);
+		if (ret != AGENT_OK) {
+			print(PRINT_ERROR, "Error while closing state before atomical operation. (%d)\n", ret);
+			return ret;
+		}
+	}
+
+	/* Load with locking */
+	ret = _state_init(a, _LOAD | _LOCK);
+	if (ret != AGENT_OK) {
+		print(PRINT_WARN, "Error while loading state for atomical operation (%d)\n", ret);
+	}
+	return ret;
+}
+
+/* Pass it return value from previous statement and it will decide 
+ * whether it can save state */
+static int _state_fini_atomical(agent *a, int prev_ret) 
+{
+	int ret;
+	if (prev_ret == 0) {
+		return _state_fini(a, _STORE | _KEEP);
+	} else {
+		ret = _state_fini(a, _KEEP);
+		print(PRINT_ERROR, "Error while finalizing atomical state after previous error (%d, then %d)\n",
+		      prev_ret, ret);
+		print(PRINT_ERROR, "%s ;; %s\n", agent_strerror(prev_ret), agent_strerror(ret));
+		return prev_ret;
+	}
+}
 
 static int request_verify_policy(const agent *a, const cfg_t *cfg)
 {
@@ -646,31 +690,16 @@ static int request_execute(agent *a, const cfg_t *cfg)
 			
 	case AGENT_REQ_SET_SPASS:
 		print(PRINT_NOTICE, "Executing (%d): Set spass\n", r_type);
-		ret = 0;
-		if (a->s) {
-			ret = _state_fini(s, _NONE);
-			if (ret != AGENT_OK) {
-				print(PRINT_ERROR, "Error while closing state before write.\n");
-			}
-		}
-
-		if (ret) {
-			_send_reply(a, ret);
-			break;
-		}
-
-
-		if (!a->s) {
-			/* TODO: Not yet supported */
-			ret = AGENT_ERR_NO_STATE;
-		} else {
+		ret = _state_init_atomical(a);
+		if (ret == 0) {
 			/* If r_int is true we want to REMOVE the spass not set it */
-			ret = ppp_set_spass(a->s, r_int ? NULL : r_str, ppp_flags);
-			if (ret != 0) {
-				print(PRINT_NOTICE, "Error while setting static password. Probably some deficiencies\n");
-			} else {
-				ret = AGENT_OK;
-			}
+			int ret2 = ppp_set_spass(a->s, r_int ? NULL : r_str, ppp_flags);
+			if (ret2 == PPP_ERROR_SPASS_SET || PPP_ERROR_SPASS_UNSET) {
+				ret = _state_fini_atomical(a, 0);
+				if (ret == 0) /* Get back to previous error value */
+					ret = ret2;
+			} else
+				ret = _state_fini_atomical(a, ret2);
 		}
 		_send_reply(a, ret);
 		break;
