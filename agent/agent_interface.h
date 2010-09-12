@@ -203,6 +203,9 @@ extern int agent_set_str(agent *a, int field, const char *str);
 
 extern int agent_get_alphabet(agent *a, int id, const char **alphabet);
 
+/** Read prompt for given passcode */
+extern int agent_get_prompt(agent *a, const num_t counter, char **reply);
+
 /* Config query */
 extern int agent_get_passcode(agent *a, num_t counter, char *reply); 
 

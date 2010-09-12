@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "nls.h"
 #include "print.h"
@@ -87,8 +88,13 @@ char *card_ascii(agent *a, const num_t passcard)
 
 	/* Allocate memory */
 	char *whole_card = malloc(size);
-	if (!whole_card)
+	if (!whole_card) {
+		if (errno == ENOMEM) {
+			printf(_("You've run out of memory. Unable to print passcards\n"));
+		} else
+			perror("malloc");
 		return NULL;
+	}
 
 	char *card = whole_card;
 
@@ -227,11 +233,29 @@ char *card_latex(agent *a, const num_t number)
 		sizeof(intro) + sizeof(outro) +
 		sizeof(block_start)*2 + sizeof(block_stop) * 2 +
 		(60 * ROWS_PER_CARD) * 6;
-	char *whole_card = malloc(size);
-	char *card_pos = whole_card;
-	
-	if (!whole_card)
+	char *whole_card;
+	char *card_pos;
+	num_t max_card;
+	int ret;
+
+	/* Verify that we can print 6 passcards from this number.
+	 * max_card - 6 must be >= number */
+	if ((ret = agent_get_num(a, PPP_FIELD_MAX_CARD, &max_card)) != 0) {
+		printf(_("Unable to read maximal card number: %s\n"), agent_strerror(ret));
 		return NULL;
+	}
+
+	max_card = num_sub_i(max_card, 5);
+
+	if (num_cmp(number, max_card) > 0) {
+		printf(_("Given passcard out of valid range. Unable to print 6 passcards.\n"));
+		return NULL;
+	}
+
+	whole_card = malloc(size);
+	card_pos = whole_card;
+	if (!whole_card)
+		goto error;
 	memset(whole_card, 0, size);
 
 	num_t n = num_i(0);
@@ -244,6 +268,8 @@ char *card_latex(agent *a, const num_t number)
 	for (i=0; i<=2; i++) {
 		n = num_add_i(number, i);
 		char *part = card_ascii(a, n);
+		if (!part)
+			goto error;
 		memcpy(card_pos, part, strlen(part));
 		card_pos += strlen(part);
 		free(part);
@@ -265,6 +291,8 @@ char *card_latex(agent *a, const num_t number)
 		n = num_add_i(number, i);
 
 		char *part = card_ascii(a, n);
+		if (!part)
+			goto error;
 		memcpy(card_pos, part, strlen(part));
 		card_pos += strlen(part);
 		free(part);
@@ -284,4 +312,11 @@ char *card_latex(agent *a, const num_t number)
 	card_pos += sizeof(outro) - 1;
 
 	return whole_card;
+error:
+	free(whole_card);
+	if (errno == ENOMEM) {
+		printf(_("You've run out of memory. Unable to print passcards\n"));
+	} else
+		perror("malloc");
+	return NULL;
 }

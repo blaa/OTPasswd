@@ -66,6 +66,11 @@ static int _state_init(agent *a, int flags)
 	} else
 		ret = ppp_state_load(a->s, PPP_DONT_LOCK);
 
+	if (ret == STATE_NUMSPACE) {
+		/* Loaded but we have no passcodes to use. Ignore at this level */
+		ret = 0;
+	}
+
 	if (ret != 0) {
 		ppp_state_fini(a->s);
 		a->s = NULL;
@@ -195,6 +200,9 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 		if (!security_is_privileged() && cfg->passcode_print == CONFIG_DISALLOW)
 			return AGENT_ERR_POLICY;
 		else
+			return AGENT_OK;
+
+	case AGENT_REQ_GET_PROMPT:
 			return AGENT_OK;
 
 	case AGENT_REQ_SKIP:
@@ -447,7 +455,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 			ret = AGENT_ERR_NO_STATE;
 		} else {
 			num_t tmp;
-			ret = ppp_get_mpz(a->s, r_int, &tmp);
+			ret = ppp_get_num(a->s, r_int, &tmp);
 			if (ret != 0) {
 				print(PRINT_ERROR, "Illegal num request.\n");
 				ret = AGENT_ERR;
@@ -523,6 +531,26 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 		_send_reply(a, ret);
 		break;
+
+	case AGENT_REQ_GET_PROMPT:
+		print(PRINT_NOTICE, "Executing (%d): Get prompt\n", r_type);
+		if (!a->s) {
+			/* This doesn't need to work atomically */
+			ret = AGENT_ERR_NO_STATE;
+		} else {
+			agent_hdr_init(a, 0);
+			const char *prompt;
+			
+			prompt = ppp_get_prompt(a->s, 0, r_num);
+			if (prompt != NULL) {
+				ret = agent_hdr_set_str(a, prompt);
+				assert(ret == 0);
+			}
+		}
+
+		_send_reply(a, ret);
+		break;
+
 
 	case AGENT_REQ_SKIP:
 		print(PRINT_NOTICE, "Executing (%d): Skip\n", r_type);

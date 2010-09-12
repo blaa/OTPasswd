@@ -61,6 +61,7 @@ static inline num_t num_ii(uint64_t arg1, uint64_t arg2) {
 }
 
 #define num_i(x) num_ii(0L, x)
+#define num_zero() num_ii(0L, 0L)
 
 static inline void num_init_(num_t *n) {
 	n->hi = 0;

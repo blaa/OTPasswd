@@ -464,7 +464,6 @@ cleanup:
 
 int action_print(const options_t *options, agent *a)
 {
-	int retval = 1;
 	int ret;
 
 	/* Passcard/code to print */
@@ -472,7 +471,6 @@ int action_print(const options_t *options, agent *a)
 
 	/* And which to look at. */
 	int selected;
-
 
 	/* Do we have to just show any warnings? */
 	if (options->action == OPTION_WARN) {
@@ -502,26 +500,20 @@ int action_print(const options_t *options, agent *a)
 		switch (options->action) {
 		case OPTION_TEXT:
 			card = card_ascii(a, item);
-			if (!card) {
-				print(PRINT_ERROR, _("Error while printing "
-				      "card (not enough memory?)\n"));
+			if (!card)
 				goto cleanup;
-			}
 			puts(card);
 			free(card);
 			break;
-/* TODO
+
 		case OPTION_LATEX:
 			card = card_latex(a, item);
-			if (!card) {
-				print(PRINT_ERROR, _("Error while printing "
-				      "card (not enough memory?)\n"));
+			if (!card)
 				goto cleanup;
-			}
 			puts(card);
 			free(card);
 			break;
-*/
+
 		case OPTION_PROMPT:
 			printf(_("Option requires passcode as argument\n"));
 			break;
@@ -545,17 +537,11 @@ int action_print(const options_t *options, agent *a)
 			break;
 
 		case OPTION_PROMPT:
-			/* Don't save state after this operation */
-			/*
-			mpz_set(s->counter, passcode_num);
-			ppp_calculate(s);
-			ppp_get_str(s, PPP_FIELD_PROMPT, &prompt);
-			printf("%s\n", prompt);
-			assert(save_state == 0);
-			*/
-			ret = agent_get_str(a, PPP_FIELD_PROMPT, &prompt);
+			ret = agent_get_prompt(a, item, &prompt);
+//			ret = agent_get_str(a, PPP_FIELD_PROMPT, &prompt);
 			if (ret != AGENT_OK || prompt == NULL) {
 				printf(_("Error while retrieving prompt: %s\n"), agent_strerror(ret));
+				goto cleanup;
 			} else {
 				printf("%s\n", prompt);
 				free(prompt);
@@ -599,12 +585,11 @@ int action_print(const options_t *options, agent *a)
 		save_state = 1;
 	}
 #endif
-	retval = 0;
+
+	ret = 0;
 
 cleanup:
-	num_clear(item);
-
-	return retval;
+	return ret;
 }
 
 
@@ -686,7 +671,7 @@ int action_skip(const options_t *options, agent *a)
 		break;
 		
 	default:
-		printf("Agent error: %s\n", agent_strerror(ret));
+		printf("Agent error: %s (%d)\n", agent_strerror(ret), ret);
 		break;
 	}
 

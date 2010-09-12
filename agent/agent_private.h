@@ -62,6 +62,9 @@ enum AGENT_REQUEST {
 
 	/* Get passcode of specified number */
 	AGENT_REQ_GET_PASSCODE,
+
+	/* Get prompt for specified number */
+	AGENT_REQ_GET_PROMPT,
 	/* Skip to passcode */
 	AGENT_REQ_SKIP,
 

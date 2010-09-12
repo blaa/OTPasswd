@@ -148,7 +148,7 @@ num_t num_mul_i(num_t arg1, const uint64_t arg2)
 {
 	int i;
 	int can_overflow = 0;
-	num_t reply = num_i(0);
+	num_t reply = num_zero();
 	num_t r = num_i(arg2);
 	for (i=0; i<128; i++) {
 		if (arg1.lo & 0x01) {
@@ -240,7 +240,7 @@ static inline int _num_set_str(num_t *arg, const char *str, const int base)
 
 	unsigned char byte;
 	int i;
-	*arg = num_i(0);
+	*arg = num_zero();
 
 	switch (base) {
 	case 10:
@@ -259,6 +259,10 @@ static inline int _num_set_str(num_t *arg, const char *str, const int base)
 
 			if (num_test_overflow())
 				return 1;
+		}
+		if (str[i] || i>39 || i<1) {
+			/* Garbage at the end or no data at all */
+			return 1;
 		}
 
 		return 0;

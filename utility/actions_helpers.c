@@ -546,13 +546,7 @@ int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
 			goto error;
 		}
 
-/*		if (!ah_is_passcode_in_range(s, *passcode)) {
-			printf(_("Passcode number out of range.\n"));
-			goto error;
-		}
-*/
 		*item = num_sub_i(*item, 1);
-
 
 		selected = PRINT_CODE;
 	} else if (spec[0] == '[' && spec[length-1] == ']') {
@@ -578,12 +572,6 @@ int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
 			goto error;
 		}
 
-/*
-		if (!ah_is_passcard_in_range(s, *passcard)) {
-			printf(_("Passcard out of accessible range.\n"));
-			goto error;
-		}
-*/
 		selected = PRINT_CARD;
 
 

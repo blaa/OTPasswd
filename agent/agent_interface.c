@@ -209,6 +209,19 @@ const char *agent_strerror(int error)
 		return _("No error");
 	case AGENT_ERR:
 		return _("Generic agent error.");
+
+	case AGENT_ERR_REQ:
+		return _("Coding error: Illegal request to agent.");
+	case AGENT_ERR_REQ_ARG:
+		return _("Coding error: Illegal request argument sent to agent.");
+
+	case AGENT_ERR_INIT_CONFIGURATION:
+		return _("Configuration error. Run `agent_otp` to see description.");
+	case AGENT_ERR_INIT_PRIVILEGES:
+		return _("Insufficient privileges to access config files.");
+	case AGENT_ERR_INIT_USER:
+		return _("Unable to switch to selected user.");
+
 	case AGENT_ERR_MEMORY:
 		return _("Error while allocating memory.");
 	case AGENT_ERR_POLICY:
@@ -219,6 +232,7 @@ const char *agent_strerror(int error)
 		return _("Agent protocol mismatch. Reinstall software.");
 	case AGENT_ERR_DISCONNECT:
 		return _("Agent unexpectedly disconnected.");
+
 	case AGENT_ERR_MUST_CREATE_STATE:
 		return _("Coding error: Must create state before generating key.");
 	case AGENT_ERR_MUST_DROP_STATE:
@@ -426,6 +440,7 @@ int agent_get_passcode(agent *a, const num_t counter, char *reply)
 	agent_hdr_init(a, 0);
 	agent_hdr_set_num(a, &counter);
 
+
 	int ret = agent_query(a, AGENT_REQ_GET_PASSCODE);
 	if (ret != AGENT_OK)
 		return ret;
@@ -435,10 +450,31 @@ int agent_get_passcode(agent *a, const num_t counter, char *reply)
 	assert(tmp_str);
 	strncpy(reply, tmp_str, 16);
 	reply[16] = '\0';
+	return ret;
+}
 
+int agent_get_prompt(agent *a, const num_t counter, char **reply)
+{
+	assert(a);
+	assert(reply);
+
+	agent_hdr_init(a, 0);
+	agent_hdr_set_num(a, &counter);
+
+	int ret = agent_query(a, AGENT_REQ_GET_PROMPT);
+	if (ret != AGENT_OK)
+		return ret;
+
+
+	const char *tmp_str = agent_hdr_get_arg_str(a);
+	assert(tmp_str);
+	*reply = strdup(tmp_str);
+	if (!*reply)
+		return AGENT_ERR_MEMORY;
 
 	return ret;
 }
+
 
 
 int agent_authenticate(agent *a, const char *passcode)
@@ -456,10 +492,6 @@ int agent_authenticate(agent *a, const char *passcode)
 	}
 
 	ret = agent_query(a, AGENT_REQ_AUTHENTICATE);
-	if (ret != AGENT_OK)
-		return ret;
-
-	ret = agent_hdr_get_arg_int(a);
 	return ret;
 }
 
@@ -471,12 +503,9 @@ int agent_skip(agent *a, const num_t counter)
 	agent_hdr_init(a, 0);
 
 	agent_hdr_set_num(a, &counter);
-
+	printf("Skip to:"); num_print_dec(counter);
+	puts("");
 	ret = agent_query(a, AGENT_REQ_SKIP);
-	if (ret != AGENT_OK)
-		return ret;
-
-	ret = agent_hdr_get_arg_int(a);
 	return ret;
 }
 

@@ -156,6 +156,11 @@ extern int ppp_get_passcode(const state *s, const num_t counter, char *passcode)
 /** Return current passcode. Helper for ppp_get_passcode function. */
 extern int ppp_get_current(const state *s, char *passcode);
 
+/** Get passcode for a given counter (use_current = 0) or
+ * for current state counter if use_current = 0.
+ * In latter case ppp_calculate must have been called before */
+const char *ppp_get_prompt(state *s, int use_current, num_t counter);
+
 /** Try to authenticate user; returns 0 on successful authentication.
  * Does not increment counter, just compares with password which would
  * be generated for current passcode (i.e. reserved by ppp_increment call) */
@@ -237,7 +242,7 @@ extern int ppp_state_verify(const state *s);
 extern int ppp_get_int(const state *s, int field, unsigned int *arg);
 
 /** Get long number from state. */
-extern int ppp_get_mpz(const state *s, int field, num_t *arg);
+extern int ppp_get_num(const state *s, int field, num_t *arg);
 
 /** Get character string from state. This sets "arg" memory 
  * to a pointer to state data. This data musn't be altered.

@@ -635,6 +635,9 @@ const char *ppp_get_error_desc(int error)
 	case PPP_ERROR_POLICY:
 		return "Action denied by policy.";
 
+	case PPP_ERROR_SKIP_BACKWARDS:
+		return "Tried to skip passcodes backwards.";
+
 	case PPP_ERROR_RANGE:
 		return "Argument out of range.";
 
@@ -1102,7 +1105,7 @@ int ppp_set_int(state *s, int field, unsigned int arg, int options)
 }
 
 
-int ppp_get_mpz(const state *s, int field, num_t *arg)
+int ppp_get_num(const state *s, int field, num_t *arg)
 {
 	assert(s);
 	switch (field) {
@@ -1115,7 +1118,6 @@ int ppp_get_mpz(const state *s, int field, num_t *arg)
 		if (s->flags & FLAG_SALTED) {
 			*arg = num_and(*arg, s->code_mask);
 		}
-		*arg = num_add_i(*arg, 1);
 		break;
 
 	case PPP_FIELD_CURRENT_CARD:
@@ -1161,28 +1163,37 @@ static void _ppp_dispose_prompt(state *s)
  * Do not free returned value. It's stored in state
  * and freed in state_fini.
  */
-static const char *_ppp_get_prompt(state *s)
+const char *ppp_get_prompt(state *s, int use_current, num_t counter)
 {
 	/* "Passcode RRC [number]: " */
 	const char intro[] = "Passcode ";
 	int length = sizeof(intro)-1 + 3 + 5 + 1;
 	char num[50];
 
+	num_t real_counter_copy;
+
 	assert(s);
 	if (s->prompt)
 		_ppp_dispose_prompt(s);
 
-	/* Ensure ppp_calculate was called already! */
-	assert(s->codes_on_card != 0);
+	/* Call ppp_calculate on new counter. */
+	if (use_current == 0) {
+		real_counter_copy = s->counter;
+		s->counter = counter;
+		ppp_add_salt(s, &s->counter);
+		ppp_calculate(s);
+	} else {
+		/* Ensure somebody called ppp_calculate already */
+		assert(s->codes_on_card > 0);
+	}
 
 	int ret = num_export(s->current_card, num, NUM_FORMAT_DEC);
 	assert(ret == 0);
-//	num = mpz_get_str(NULL, 10, s->current_card);
 	length += strlen(num);
 
 	s->prompt = malloc(length);
 	if (!s->prompt)
-		return NULL;
+		goto cleanup;
 
 	ret = sprintf(s->prompt, "%s%2d%c [%s]: ", intro, s->current_row, s->current_column, num);
 
@@ -1194,7 +1205,14 @@ static const char *_ppp_get_prompt(state *s)
 		memset(s->prompt, 0, length);
 		free(s->prompt);
 		s->prompt = NULL;
-		return NULL;
+		goto cleanup;
+	}
+
+cleanup:
+	if (use_current == 0) {
+		s->counter = real_counter_copy;
+		num_clear(s->counter);
+		ppp_calculate(s);
 	}
 	return s->prompt;
 }
@@ -1212,7 +1230,7 @@ int ppp_get_str(const state *s, int field, const char **arg)
 	case PPP_FIELD_PROMPT:
 		/* Prompt might change state a bit, but 
 		 * this should be transparent */
-		*arg = _ppp_get_prompt((state *)s);
+		*arg = ppp_get_prompt((state *)s, 1, num_zero());
 		break;
 
 	case PPP_FIELD_CONTACT:
