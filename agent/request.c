@@ -686,7 +686,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		ret = AGENT_ERR;
 		_send_reply(a, ret);
 		break;
-
 			
 	case AGENT_REQ_SET_SPASS:
 		print(PRINT_NOTICE, "Executing (%d): Set spass\n", r_type);

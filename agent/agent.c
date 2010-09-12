@@ -131,9 +131,10 @@ int do_testcase(void)
 }
 
 /** Marks end of initialization (succeeded or not) */
-int send_init_reply(agent *a, int status) 
+int send_init_reply(agent *a, int status, int error_code) 
 {
 	agent_hdr_set_status(a, status);
+	agent_hdr_set_int(a, error_code, 0);
 	agent_hdr_set_type(a, AGENT_REQ_INIT);
 	return agent_hdr_send(a);
 }
@@ -142,7 +143,7 @@ int main_loop(agent *a, cfg_t *cfg)
 {
 	int ret;
 
-	ret = send_init_reply(a, 0);
+	ret = send_init_reply(a, 0, 0);
 	if (ret != 0) {
 		print(PRINT_ERROR, "Initial reply error; agent_hdr_send returned %d\n", ret);
 		goto end;
@@ -174,7 +175,7 @@ end:
 
 int main(int argc, char **argv)
 {
-	int ret;
+	int ret, error_desc = 0;
 	cfg_t *cfg = NULL;
 
 	/* 1) Init safe environment, store current uids, etc. */
@@ -217,7 +218,7 @@ int main(int argc, char **argv)
 	agent *a;
 	ret = agent_server(&a);
 	if (ret != AGENT_OK) {
-		print(PRINT_ERROR, "Unable to start agent server\n");
+		print(PRINT_ERROR, "Unable to start agent server: %s\n", agent_strerror(ret));
 		return 1;
 	}
 
@@ -246,7 +247,8 @@ int main(int argc, char **argv)
 		print(PRINT_ERROR, ppp_get_error_desc(ret));
 		print(PRINT_ERROR, "OTPasswd not correctly installed.\n");
 		print(PRINT_ERROR, "Consult installation manual for detailed information.\n");
-		/* TODO: Pass 'ret' (ppp error) along the INIT CONFIGURATION */
+
+		error_desc = ret;
 		ret = AGENT_ERR_INIT_CONFIGURATION;
 		goto init_error;
 	}
@@ -303,7 +305,7 @@ int main(int argc, char **argv)
 
 init_error:
 	ppp_fini();
-	send_init_reply(a, ret);
+	send_init_reply(a, ret, error_desc);
 	agent_disconnect(a);
 	return 1;
 }

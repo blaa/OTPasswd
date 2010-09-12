@@ -113,6 +113,10 @@ int _print(const char *file, const int line, int level, const char *fmt, ...)
 		intro = "CRITICAL: ";
 		syslog_level = LOG_CRIT;
 		break;
+	case PRINT_MESSAGE:
+		intro = "";
+		syslog_level = LOG_ERR;
+		break;
 	default:
 		intro = "Unknown: ";
 		syslog_level = LOG_INFO;
@@ -125,7 +129,8 @@ int _print(const char *file, const int line, int level, const char *fmt, ...)
 		if (file) {
 			char *base = strrchr(file, '/') + 1;
 			if (!base) file = base;
-			fprintf(stdout, "%s:%d ", base, line);
+			if (level != PRINT_MESSAGE)
+				fprintf(stdout, "%s:%d ", base, line);
 		}
 		fputs(intro, stdout);
 		fputs(buff, stdout);

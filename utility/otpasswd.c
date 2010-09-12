@@ -448,12 +448,13 @@ static int perform_action(int argc, char **argv, options_t *options)
 
 	/* Perform pre-action preparations (set user, check state existance) */
 	agent *a = NULL;
-	ret = action_init(options, &a);
-	if (ret != 0) {
-		retval = ret;
-		goto cleanup;
-	}
-     
+	if (options->action != 0 && options->action != OPTION_HELP) {
+		ret = action_init(options, &a);
+		if (ret != 0) {
+			retval = ret;
+			goto cleanup;
+		}
+	}     
 
 	/* Perform action */
 	switch (options->action) {

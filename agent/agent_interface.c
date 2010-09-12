@@ -18,7 +18,9 @@
  **********************************************************************/
 
 #include <stdlib.h>
-
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #define DEBUG 1
 
@@ -59,7 +61,7 @@ int agent_connect(agent **a_out, const char *agent_executable)
 
 	/* Verify that agent executable PATH exists */
 	if (agent_executable == NULL) {
-		print(PRINT_NOTICE, "NOTICE: No path for OTP Agent given, using default ./agent_otp\n");
+		print(PRINT_NOTICE, _("NOTICE: No path for OTP Agent given, using default ./agent_otp\n"));
 		agent_executable = "./agent_otp";
 	}
 
@@ -76,10 +78,29 @@ int agent_connect(agent **a_out, const char *agent_executable)
 		dup(out[0]);
 		dup(in[1]);
 
+		free(a); a = NULL;
+
 		/* Execute agent */
 		execl(agent_executable, agent_executable, NULL);
-
+		
 		/* Failure */
+		ret = agent_server(&a);
+		if (ret != AGENT_OK) {
+			/* Memory problem only possible */
+			exit(1);
+		}
+			
+		/* Sent a packet with information about death */
+		agent_hdr_init(a, 0);
+		agent_hdr_set_type(a, AGENT_REQ_INIT);
+		agent_hdr_set_status(a, AGENT_ERR_INIT_EMERGENCY);
+		agent_hdr_set_int(a, errno, 0);
+		ret = agent_hdr_send(a);
+		if (ret != AGENT_OK) {
+			free(a);
+			exit(4);
+		}
+		free(a);
 		exit(5);
 	}
 
@@ -100,25 +121,62 @@ int agent_connect(agent **a_out, const char *agent_executable)
 	 * or any initialization problems */
 	if (agent_wait(a) != 0) {
 		ret = AGENT_ERR_SERVER_INIT;
-		print(PRINT_ERROR, "Timeout while waiting for agent initialization frame.\n");
+		print(PRINT_MESSAGE, _("Timeout while waiting for agent initialization frame.\n"));
+		print(PRINT_MESSAGE, _("Possible cause of this problem involves wrong agent executable passed in configuration file.\n"));
+		print(PRINT_MESSAGE, _("Try manually running agent executable to see where's the problem.\n"));		
+		print(PRINT_MESSAGE, _("If you would want to send a bug report remember about gdb backtrace\n"));		
+		print(PRINT_MESSAGE, _("and log created with strace: strace -f -o otpasswd_log <command you've tried>\n"));
 		goto cleanup1;
 	} else {
 		ret = agent_hdr_recv(a);
 		if (ret != 0) {
-			print(PRINT_ERROR, "Error while receiving initial header.\n");
+			/* This is an error visible when agent dies without being able
+			 * to send any information back. Wrong executable etc.
+			 */
+			int status = 0;
+			print(PRINT_ERROR, _("Error while reading initial data from agent: %s\n"), agent_strerror(ret));
+
+			if (waitpid(a->pid, &status, WNOHANG) == a->pid) {
+				print(PRINT_ERROR, _("Unable to start agent executable: %s\n"), agent_executable);
+				if (WIFEXITED(status)) {
+					int stat = WEXITSTATUS(status);
+					print(PRINT_ERROR, _("Agent return value is: %d\n"), stat);
+				}
+			}
+
+			print(PRINT_MESSAGE, _("Agent started but didn't sent any valid information back..\n"));
+			print(PRINT_MESSAGE, _("Possible cause of this problem involves wrong agent executable passed in configuration file.\n"));
+			print(PRINT_MESSAGE, _("Try manually running agent executable to see where's the problem.\n"));		
+			print(PRINT_MESSAGE, _("If you would want to send a bug report remember about gdb backtrace\n"));		
+			print(PRINT_MESSAGE, _("and log created with strace: strace -f -o otpasswd_log <command you've tried>\n"));
 			goto cleanup1;
-		
 		}
 
+		
 		if (a->rhdr.type != AGENT_REQ_INIT) {
-			print(PRINT_ERROR, "Initial frame parsing error.\n");
+			print(PRINT_ERROR, _("Agent: Initial frame parsing error.\n"));
 			ret = AGENT_ERR_SERVER_INIT;
 			goto cleanup1;
 		}
 
 		ret = a->rhdr.status;
-		if (ret != 0) {
-			print(PRINT_ERROR, "Agent failed to initialize correctly.\n");
+		if (ret == AGENT_ERR_INIT_EMERGENCY) {
+			/* execl failed, we can show errno */
+			print(PRINT_MESSAGE, _("There was an error when trying to run agent executable (%s)\n"), agent_executable);
+			print(PRINT_MESSAGE, _("Check your installation and configuration.\n"));
+			print(PRINT_MESSAGE, _("Probable cause: %s\n"), strerror(a->rhdr.int_arg));
+			ret = AGENT_ERR_SERVER_INIT;
+			goto cleanup1;
+		} else if (ret == AGENT_ERR_INIT_CONFIGURATION) {
+			print(PRINT_MESSAGE, _("Agent detected configuration problem: %s\n"), agent_strerror(a->rhdr.int_arg));
+			goto cleanup1;
+		} else if (ret == AGENT_ERR_INIT_PRIVILEGES) {
+			print(PRINT_MESSAGE, _("Configuration problem was detected:\n"));
+			print(PRINT_MESSAGE, _("DB=global option is set in config file but agent executable (agent_otp)\n"));
+			print(PRINT_MESSAGE, _("doesn't have necessary SUID-root permissions.\n"));
+			goto cleanup1;
+		} else if (ret != 0) {
+			print(PRINT_ERROR, _("Agent failed to initialize correctly: %s\n"), agent_strerror(ret));
 			goto cleanup1;
 		}
 	}
@@ -216,9 +274,9 @@ const char *agent_strerror(int error)
 		return _("Coding error: Illegal request argument sent to agent.");
 
 	case AGENT_ERR_INIT_CONFIGURATION:
-		return _("Configuration error. Run `agent_otp` to see description.");
+		return _("Configuration error or unable to read configuration file.");
 	case AGENT_ERR_INIT_PRIVILEGES:
-		return _("Insufficient privileges to access config files.");
+		return _("Configuration problem: DB option set to 'global', but OTP agent is not SUID-root.");
 	case AGENT_ERR_INIT_USER:
 		return _("Unable to switch to selected user.");
 

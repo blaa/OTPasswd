@@ -31,10 +31,17 @@
 #endif
 
 enum PRINT_FLAGS {
+	/* Shown when -v passed, can be printed during normal execution */
 	PRINT_NOTICE = 1,
+	/* Can be printed during normal execution; will be visible always in utility */
 	PRINT_WARN = 2,
+	/* Will be visible always, should only be used on errors */
 	PRINT_ERROR = 3,
+	/* Like above but errors are really critical. Program will die and 
+	 * anything otpasswd related can be corrupted. */
 	PRINT_CRITICAL = 4,
+	/* Print error message but don't preceed it with ERROR: label */
+	PRINT_MESSAGE = 5,
 	PRINT_NONE = 50,
 
 	PRINT_STDOUT = 64,

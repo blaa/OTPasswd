@@ -42,9 +42,9 @@ int action_init(options_t *options, agent **a)
 	/* 1) Connect to agent */
 	ret = agent_connect(a, "./agent_otp");
 	if (ret != 0) {
-		printf("Unable to connect to agent: (%d) ", ret);
-		puts(agent_strerror(ret));
-		return 1;
+		// printf(_("Unable to connect to agent: %s\n"), agent_strerror(ret));
+		/* Message already printed */
+		return ret;
 	}
 
 	/* 2) Change username if required */	
