@@ -337,13 +337,7 @@ cleanup:
 int action_spass(const options_t *options, agent *a)
 {
 	int i;
-
-/*
-	if (cfg->spass_change != CONFIG_ALLOW && !security_is_privileged()) {
-		printf(_("Modification of a static password denied by the policy.\n"));
-		return 1;
-	}
-*/
+	int errors;
 
 	/* This must be done when the state is NOT locked */
 	const char *pass = ah_get_pass();
@@ -355,13 +349,23 @@ int action_spass(const options_t *options, agent *a)
 	i = strlen(pass);
 
 	if (i == 0) {
-		/* TODO */
-		printf(_("TODO: Turned static password off.\n"));
-		return 0;
+		errors = agent_set_spass(a, NULL, 1);
+		if (agent_is_agent_error(errors)) {
+			printf(_("Agent error while setting password: %s\n"), agent_strerror(errors));
+			return errors;
+		}
+
+		agent_print_spass_errors(errors);
+		return errors ? PPP_ERROR : 0;
 	} else {
-		/* TODO */
-		printf(_("TODO: Static password set.\n"));
-		return 0;
+		errors = agent_set_spass(a, pass, 0);
+		if (agent_is_agent_error(errors)) {
+			printf(_("Agent error while setting password: %s\n"), agent_strerror(errors));
+			return errors;
+		}
+
+		agent_print_spass_errors(errors);
+		return errors ? PPP_ERROR : 0;
 	}
 }
 

@@ -670,6 +670,9 @@ const char *ppp_get_error_desc(int error)
 	}
 }
 
+
+
+
 /****************************************
  * High-level state management functions
  ****************************************/
@@ -1338,28 +1341,24 @@ void ppp_flag_del(state *s, int flag)
 }
 
 /********** Static password **********/
-static char **_verify_spass(const char *spass, const cfg_t *cfg)
+static int _verify_spass(const char *spass, const cfg_t *cfg)
 {
-	int err_count = 0;
 	int digits = 0, uppercase = 0;
 	int special = 0, lowercase = 0;
 	int whitespace = 0;
 	int length = 0;
 	int i;
 
-	static char *err_list[6];
-	/* Initialize error list */
-	for (i=0; i<sizeof(err_list)/sizeof(*err_list); i++) {
-		err_list[i] = NULL;
-	}
+	int err_list = 0;
 
 	length = strlen(spass);
-	
+
+	/* Calculate elements of password */
 	for (i = 0; spass[i]; i++) {
 		length++;
 		if (!isascii(spass[i])) {
 			/* Non-ascii character */
-			err_list[0] = "Non-ascii character in static password.";
+			err_list |= PPP_ERROR_SPASS_NON_ASCII;
 			return err_list;
 		}
 
@@ -1374,75 +1373,57 @@ static char **_verify_spass(const char *spass, const cfg_t *cfg)
 		} else if (isgraph(spass[i])) {
 			special++;
 		} else {
-			print(PRINT_ERROR,
-			      "Ok. Add support for this strange character %c\n", spass[i]);
+			print(PRINT_ERROR, "Strange error. Add support for this strange character '%c'?\n", spass[i]);
+			err_list |= PPP_ERROR_SPASS_ILLEGAL_CHARACTER;
 			assert(0);
+			return err_list;
 		}
 	}
 
-	i = 0;
-
 	if (cfg->spass_min_length > length) {
-		err_list[err_count++] = "Static password too short.";
+		err_list |= PPP_ERROR_SPASS_SHORT;
 	}
 
 	if (digits < cfg->spass_require_digit) {
-		err_list[err_count++] = "Not enough digits in password.";
-		i++;
+		err_list |= PPP_ERROR_SPASS_NO_DIGITS;
 	}
 
 	if (uppercase < cfg->spass_require_uppercase) {
-		err_list[err_count++] = "Not enough uppercase characters in password.";
-		i++;
+		err_list |= PPP_ERROR_SPASS_NO_UPPERCASE;
 	}
 
 	if (special < cfg->spass_require_special) {
-		err_list[err_count++] = "Not enough special characters in password.";
-		i++;
+		err_list |= PPP_ERROR_SPASS_NO_SPECIAL;
 	}
 
-	if (err_list[0])
-		return err_list;
-	else
-		return NULL;
+	return err_list;
 }
 
 
-char **ppp_spass_set(state *s, const char *spass, int flag)
+int ppp_set_spass(state *s, const char *spass, int flag)
 {
-	int i;
 	int len;
 	unsigned char sha_buf[STATE_SPASS_SIZE];
-	static char *err_list[3];
-	int err_count;
-
+	int errors = 0;
 	cfg_t *cfg = cfg_get();
 	assert(cfg);
 
-	/* Initialize error list */
-	for (i=0; i<sizeof(err_list)/sizeof(*err_list); i++) {
-		err_list[i] = NULL;
-	}
-	err_count = 0;
-
-
 	if ((flag & PPP_CHECK_POLICY) && (cfg->spass_change == CONFIG_DISALLOW)) {
-		err_list[0] = "Policy denies changing of static password.";
-		return err_list;
+		return PPP_ERROR_SPASS_POLICY;
 	}
 
 	if (!spass) {
 		/* Turning off static password */
 		s->spass_set = 0;
 		memset(s->spass, 0, sizeof(s->spass));
-		return NULL;
+		return PPP_ERROR_SPASS_UNSET;
 	}
 
 	/* Ensure password length/difficulty */
-	if (flag & PPP_CHECK_POLICY) {
-		char **tmp_list = _verify_spass(spass, cfg);
-		if (tmp_list)
-			return tmp_list;
+	errors = _verify_spass(spass, cfg);
+	if (flag & PPP_CHECK_POLICY && errors) {
+		/* Not privileged - bail out */
+		return errors;
 	}
 	
 	len = strlen(spass);
@@ -1452,7 +1433,7 @@ char **ppp_spass_set(state *s, const char *spass, int flag)
 	memcpy(s->spass, sha_buf, STATE_SPASS_SIZE);
 	s->spass_set = 1;
 	s->spass_time = time(NULL);
-	return NULL;
+	return errors | PPP_ERROR_SPASS_SET;
 }
 
 int ppp_spass_validate(const state *s, const char *spass)

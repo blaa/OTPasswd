@@ -121,8 +121,6 @@ int agent_hdr_send(const agent *a)
 	ssize_t ret = 1;
 
 	/* Make sure we haven't locked state when using pipes */
-	if (a->s)
-		print(PRINT_ERROR, "We have a->s\n");
 	if (a->s && ppp_is_locked(a->s)) 
 		print(PRINT_ERROR, "It's locked!\n");
 	assert(!a->s || !ppp_is_locked(a->s));
@@ -149,8 +147,6 @@ int agent_hdr_recv(agent *a)
 	ssize_t ret = 1;
 
 	/* Make sure we haven't locked state when using pipes */
-	if (a->s)
-		print(PRINT_ERROR, "We have a->s\n");
 	if (a->s && ppp_is_locked(a->s)) 
 		print(PRINT_ERROR, "It's locked!\n");
 

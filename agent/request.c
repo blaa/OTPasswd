@@ -119,9 +119,6 @@ static int _state_fini(agent *a, int flags)
 }
 
 
-
-
-
 static int request_verify_policy(const agent *a, const cfg_t *cfg)
 {
 	/* Read request parameters */
@@ -129,13 +126,14 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 	const int r_int = agent_hdr_get_arg_int(a);
 
 /*	const int r_status = agent_hdr_get_status(a);
-
 	const num_t r_num = agent_hdr_get_arg_num(a);
 	const char *r_str = agent_hdr_get_arg_str(a);
 */
-	/* FIXME: Write this function 
-	 * Most of it's functionality will be accomplished
-	 * at PPP level.
+
+	/* Most policy checking is done at this level. 
+	 * Some, which might be more complicated can be done
+	 * at PPP level, but then requires switches to allow
+	 * root to circumvent policy at his will.
 	 */
 	const int privileged = security_is_privileged();
 
@@ -223,6 +221,10 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 		return AGENT_OK;
 
 
+	case AGENT_REQ_SET_SPASS:
+		/* This is verified in the PPP along spass parameters */
+		return AGENT_OK;
+
 		/* FLAGS */
 	case AGENT_REQ_FLAG_ADD:
 	case AGENT_REQ_FLAG_CLEAR:
@@ -248,7 +250,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 	/* Read request parameters */
 	const int r_type = agent_hdr_get_type(a);
-//	const int r_status = agent_hdr_get_status(a);
 	const int r_int = agent_hdr_get_arg_int(a);
 	const int r_int2 = agent_hdr_get_arg_int2(a);
 	const num_t r_num = agent_hdr_get_arg_num(a);
@@ -301,7 +302,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 	case AGENT_REQ_STATE_NEW:
 		print(PRINT_NOTICE, "Executing (%d): State new\n", r_type);
 		if (a->s)
-			return AGENT_ERR;
+			return AGENT_ERR_MUST_DROP_STATE;
 
 		ret = _state_init(a, _NONE);
 		if (ret != 0) {
@@ -316,7 +317,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 	case AGENT_REQ_STATE_LOAD:
 		print(PRINT_NOTICE, "Executing (%d): State load\n", r_type);
 		if (a->s)
-			return AGENT_ERR;
+			return AGENT_ERR_MUST_DROP_STATE;
 
 		/* Load without locking; we won't be able to save */
 		ret = _state_init(a, _LOAD);
@@ -627,7 +628,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		} else {
 			ret = ppp_set_str(a->s, r_int, r_str, ppp_flags);
 			if (ret != 0) {
-				print(PRINT_ERROR, "Error while setting integer in state\n");
+				print(PRINT_ERROR, "Error while setting string in state\n");
 			} else {
 				ret = AGENT_OK;
 			}
@@ -636,14 +637,44 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_SET_NUM:
-		print(PRINT_NOTICE, "Executing (%d): Set num\n", r_type);
+		print(PRINT_NOTICE, "Executing (%d): Set num; Not implemented\n", r_type);
 		/* Not yet implemented. Is it required at all? */
 		ret = AGENT_ERR;
 		_send_reply(a, ret);
 		break;
 
-		break;
 			
+	case AGENT_REQ_SET_SPASS:
+		print(PRINT_NOTICE, "Executing (%d): Set spass\n", r_type);
+		ret = 0;
+		if (a->s) {
+			ret = _state_fini(s, _NONE);
+			if (ret != AGENT_OK) {
+				print(PRINT_ERROR, "Error while closing state before write.\n");
+			}
+		}
+
+		if (ret) {
+			_send_reply(a, ret);
+			break;
+		}
+
+
+		if (!a->s) {
+			/* TODO: Not yet supported */
+			ret = AGENT_ERR_NO_STATE;
+		} else {
+			/* If r_int is true we want to REMOVE the spass not set it */
+			ret = ppp_set_spass(a->s, r_int ? NULL : r_str, ppp_flags);
+			if (ret != 0) {
+				print(PRINT_NOTICE, "Error while setting static password. Probably some deficiencies\n");
+			} else {
+				ret = AGENT_OK;
+			}
+		}
+		_send_reply(a, ret);
+		break;
+
 	default:
 		print(PRINT_ERROR, "Unrecognized request type (%d).\n", r_type);
 		return 1;

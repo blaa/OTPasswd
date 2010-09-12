@@ -16,5 +16,10 @@
  * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
  **********************************************************************/
 
+#ifndef _REQUEST_H_
+#define _REQUEST_H_
 
+/** Handle request sent to agent */
 extern int request_handle(agent *a);
+
+#endif

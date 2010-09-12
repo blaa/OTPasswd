@@ -142,14 +142,24 @@ enum AGENT_ERROR {
 	AGENT_ERR_NO_STATE,
 };
 
+static inline int agent_is_agent_error(int error) 
+{
+	if (error >= 5000 && error < 5100)
+		return 1;
+	return 0;
+}
+
 /*** Basic routines ***/
 extern int agent_connect(agent **a_out, const char *agent_executable);
 extern int agent_disconnect(agent *a);
 extern int agent_set_user(agent *a, char *username);
 
 /** Return translated description of last error */
-
 extern const char *agent_strerror(int error);
+
+/* Display all static password related errors. 
+ * TODO: Make this return one-by-one and clear bits */
+extern void agent_print_spass_errors(int errors);
 
 /*** Actions ***/
 
@@ -200,6 +210,8 @@ extern int agent_get_key(agent *a, unsigned char *key);
 /* Setters */
 extern int agent_set_int(agent *a, int field, int integer);
 extern int agent_set_str(agent *a, int field, const char *str);
+
+extern int agent_set_spass(agent *a, const char *str, int remove_spass);
 
 extern int agent_get_alphabet(agent *a, int id, const char **alphabet);
 

@@ -246,6 +246,7 @@ int main(int argc, char **argv)
 		print(PRINT_ERROR, ppp_get_error_desc(ret));
 		print(PRINT_ERROR, "OTPasswd not correctly installed.\n");
 		print(PRINT_ERROR, "Consult installation manual for detailed information.\n");
+		/* TODO: Pass 'ret' (ppp error) along the INIT CONFIGURATION */
 		ret = AGENT_ERR_INIT_CONFIGURATION;
 		goto init_error;
 	}

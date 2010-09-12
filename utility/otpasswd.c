@@ -580,23 +580,8 @@ static inline int run_cli(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-
 	print_init(PRINT_NOTICE|PRINT_STDOUT, NULL);
-
 	return run_cli(argc, argv);
-	
-
-	/*
-	int ret;
-	// superuser only: agent_set_user(a, "user");
-	ret = agent_key_generate(a);
-	printf("generate returned: (%d) %s\n", ret, agent_strerror(ret));
-
-	ret = agent_disconnect(a);
-	if (ret != 0) { 
-		printf("Error while disconnecting from agent\n");
-	}
-	*/
 
 	return 0;
 }

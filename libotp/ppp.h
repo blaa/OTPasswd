@@ -268,9 +268,8 @@ extern int ppp_flag_check(const state *s, int flag);
 extern void ppp_flag_add(state *s, int flag);
 extern void ppp_flag_del(state *s, int flag);
 
-/** Ensure policy and set current SPASS. 
- * Flag might be 0 or PPP_CHECK_POLICY. */
-extern char **ppp_spass_set(state *s, const char *spass, int flag);
+/** Ensure policy (static password errors) and set current SPASS.  */
+extern int ppp_set_spass(state *s, const char *spass, int flag);
 
 /** Check if spass given as argument matches one stored 
  * in state. Returns 0 on success */

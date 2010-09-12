@@ -97,7 +97,6 @@ enum ppp_errors {
 	 * action like authentication */
 	PPP_ERROR_DISABLED,
 
-
 	/* SPass related */
 	PPP_ERROR_SPASS_INCORRECT,
 
@@ -118,14 +117,15 @@ enum ppp_errors {
 };
 
 enum ppp_flags {
-	FLAG_SHOW = 1,
+	FLAG_SHOW = (1<<0),
 	/* User disabled by administrator */
-	FLAG_DISABLED = 2,
-	FLAG_SALTED = 4,
+	FLAG_DISABLED = (1<<1),
+	FLAG_SALTED = (1<<2),
 
 	/* FLAG_SKIP removed */
 	/* FLAG_ALPHABET_EXTENDED removed */
 };
+
 
 /* Warning conditions which may happen */
 enum ppp_warning {
@@ -134,6 +134,27 @@ enum ppp_warning {
 	PPP_WARN_NOTHING_LEFT = 2,	/* Used up all printed passcodes */
 	PPP_WARN_RECENT_FAILURES = 4,	/* There were some failures */	
 };
+
+
+/* Multiple option dictionaries; static password errors and warnings */
+enum ppp_multi_errors {
+	/* Password too short */
+
+	
+	PPP_ERROR_SPASS_SHORT = (1<<0),
+	PPP_ERROR_SPASS_NO_DIGITS = (1<<1),
+	PPP_ERROR_SPASS_NO_UPPERCASE = (1<<2),
+	PPP_ERROR_SPASS_NO_SPECIAL = (1<<3),
+	PPP_ERROR_SPASS_ILLEGAL_CHARACTER = (1<<4),
+	PPP_ERROR_SPASS_NON_ASCII = (1<<5),
+
+	PPP_ERROR_SPASS_POLICY = (1<<6),
+
+	/* Password was set (for example with errors when user is privileged */
+	PPP_ERROR_SPASS_SET = (1<<7),
+	PPP_ERROR_SPASS_UNSET = (1<<8),
+};
+
 
 
 /* Flag-like options to some ppp functions */
@@ -167,18 +188,19 @@ enum {
 	PPP_FIELD_CODES_IN_ROW,		/* unsigned int */
 
 	PPP_FIELD_KEY,			/* String, getters return hexes */
-	PPP_FIELD_COUNTER, 		/* mpz */
-	PPP_FIELD_UNSALTED_COUNTER, 	/* mpz */
-	PPP_FIELD_LATEST_CARD,		/* mpz */
-	PPP_FIELD_CURRENT_CARD,		/* mpz */
-	PPP_FIELD_MAX_CARD,		/* mpz */
-	PPP_FIELD_MAX_CODE,		/* mpz */
+	PPP_FIELD_COUNTER, 		/* num */
+	PPP_FIELD_UNSALTED_COUNTER, 	/* num */
+	PPP_FIELD_LATEST_CARD,		/* num */
+	PPP_FIELD_CURRENT_CARD,		/* num */
+	PPP_FIELD_MAX_CARD,		/* num */
+	PPP_FIELD_MAX_CODE,		/* num */
 	
 
 	PPP_FIELD_USERNAME,		/* char * */
 	PPP_FIELD_PROMPT,		/* char * */
 	PPP_FIELD_CONTACT,		/* char * */
 	PPP_FIELD_LABEL,		/* char * */
+	PPP_FIELD_SPASS,		/* char * */
 };
 
 

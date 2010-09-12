@@ -248,6 +248,49 @@ const char *agent_strerror(int error)
 	return NULL;
 }
 
+void agent_print_spass_errors(int errors) 
+{
+	if (errors & PPP_ERROR_SPASS_SHORT) {
+		printf(_("Static password too short.\n"));
+		errors &= ~PPP_ERROR_SPASS_SHORT;
+	}
+	if (errors & PPP_ERROR_SPASS_NO_DIGITS) {
+		printf(_("Not enough digits in password.\n"));
+		errors &= ~PPP_ERROR_SPASS_NO_DIGITS;
+	}
+	if (errors & PPP_ERROR_SPASS_NO_UPPERCASE) {
+		printf(_("Not enough uppercase characters in password.\n"));
+		errors &= ~PPP_ERROR_SPASS_NO_UPPERCASE;
+	}
+	if (errors & PPP_ERROR_SPASS_NO_SPECIAL) {
+		printf(_("Not enough special characters in password.\n"));
+		errors &= ~PPP_ERROR_SPASS_NO_SPECIAL;
+	}
+	if (errors & PPP_ERROR_SPASS_ILLEGAL_CHARACTER) {
+		printf(_("Strange error indeed: Unsupported ascii character.\n"));
+		errors &= ~PPP_ERROR_SPASS_ILLEGAL_CHARACTER;
+	}
+	if (errors & PPP_ERROR_SPASS_NON_ASCII) {
+		printf(_("Non-ascii character in static password.\n"));
+		errors &= ~PPP_ERROR_SPASS_NON_ASCII;
+	}
+	if (errors & PPP_ERROR_SPASS_SET) {
+		printf(_("Static password set.\n"));
+		errors &= ~PPP_ERROR_SPASS_SET;
+	}
+	if (errors & PPP_ERROR_SPASS_UNSET) {
+		printf(_("Static password unset.\n"));
+		errors &= ~PPP_ERROR_SPASS_UNSET;
+	}
+
+	if (errors) {
+		print(PRINT_ERROR, 
+		      "After printing all implemented messages bit-field still non-empty!\n"
+		      "Value which last = %d\n", errors);
+		assert(0);
+	}
+}
+
 int agent_state_new(agent *a)
 {
 	return agent_query(a, AGENT_REQ_STATE_NEW);
@@ -431,6 +474,27 @@ int agent_set_str(agent *a, int field, const char *str)
 		return AGENT_OK;
 }
 
+int agent_set_spass(agent *a, const char *str, int remove_spass)
+{
+	int ret;
+	agent_hdr_init(a, 0);
+	agent_hdr_set_int(a, remove_spass ? 1 : 0, 0);
+
+	if (remove_spass == 0) {
+		int ret = agent_hdr_set_str(a, str);
+		if (ret != AGENT_OK) {
+			print(PRINT_CRITICAL, "Label too long to send, check limits in program.\n");
+			return ret;
+		}
+	}
+
+	ret = agent_query(a, AGENT_REQ_SET_SPASS);
+	if (ret != 0)
+		return ret;
+	else
+		return AGENT_OK;
+}
+
 
 int agent_get_passcode(agent *a, const num_t counter, char *reply)
 {
@@ -503,8 +567,6 @@ int agent_skip(agent *a, const num_t counter)
 	agent_hdr_init(a, 0);
 
 	agent_hdr_set_num(a, &counter);
-	printf("Skip to:"); num_print_dec(counter);
-	puts("");
 	ret = agent_query(a, AGENT_REQ_SKIP);
 	return ret;
 }

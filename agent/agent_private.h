@@ -65,9 +65,6 @@ enum AGENT_REQUEST {
 
 	/* Get prompt for specified number */
 	AGENT_REQ_GET_PROMPT,
-	/* Skip to passcode */
-	AGENT_REQ_SKIP,
-
 
 	/* Verify that the state is consistent with policy */
 	AGENT_REQ_VERIFY,
@@ -85,8 +82,14 @@ enum AGENT_REQUEST {
 	AGENT_REQ_SET_INT,
 	AGENT_REQ_SET_STR,
 
+	AGENT_REQ_SET_SPASS,
+
 	/* Authenticate user with password */
 	AGENT_REQ_AUTHENTICATE,
+
+	/* Skip to passcode */
+	AGENT_REQ_SKIP,
+
 };
 
 
