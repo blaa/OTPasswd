@@ -60,12 +60,6 @@ enum AGENT_REQUEST {
 	AGENT_REQ_FLAG_CLEAR,
 	AGENT_REQ_FLAG_GET,
 
-	/* Get passcode of specified number */
-	AGENT_REQ_GET_PASSCODE,
-
-	/* Get prompt for specified number */
-	AGENT_REQ_GET_PROMPT,
-
 	/* Verify that the state is consistent with policy */
 	AGENT_REQ_VERIFY,
 
@@ -73,7 +67,16 @@ enum AGENT_REQUEST {
 	AGENT_REQ_GET_NUM,
 	AGENT_REQ_GET_INT,
 	AGENT_REQ_GET_STR,
+	
+	/* Precise getters */
 	AGENT_REQ_GET_ALPHABET,
+	AGENT_REQ_GET_WARNINGS,
+
+	/* Get passcode of specified number */
+	AGENT_REQ_GET_PASSCODE,
+
+	/* Get prompt for specified number */
+	AGENT_REQ_GET_PROMPT,
 
 	/* State field setters. Can work with new 
 	 * states or when no state exists (then they perform

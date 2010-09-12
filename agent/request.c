@@ -228,6 +228,7 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 	case AGENT_REQ_STATE_DROP:
 	case AGENT_REQ_GET_NUM:
 	case AGENT_REQ_GET_INT:
+	case AGENT_REQ_GET_WARNINGS:
 		return AGENT_OK;
 
 	case AGENT_REQ_GET_STR:
@@ -445,17 +446,20 @@ static int request_execute(agent *a, const cfg_t *cfg)
 	case AGENT_REQ_FLAG_ADD:
 	{
 		print(PRINT_NOTICE, "Executing (%d): Flag add\n", r_type);
-		/* TODO Ensure a->s exists, if not - read state, do duty and finish */
-		assert(a->s);
-
-		unsigned int new_flags;
-		ppp_get_int(a->s, PPP_FIELD_FLAGS, &new_flags);
-		new_flags |= r_int;
-		ret = ppp_set_int(a->s, PPP_FIELD_FLAGS, new_flags, PPP_CHECK_POLICY);
-		if (ret != 0) {
-			print(PRINT_WARN, "Error while adding flags (%d).\n", ret);
-		} else 
-			ret = AGENT_OK;
+		ret = _state_init_atomical(a);
+		if (ret == 0) {
+			unsigned int new_flags;
+			ppp_get_int(a->s, PPP_FIELD_FLAGS, &new_flags);
+			new_flags |= r_int;
+			ret = ppp_set_int(a->s, PPP_FIELD_FLAGS, new_flags, 
+					  PPP_CHECK_POLICY);
+			ret = _state_fini_atomical(a, ret);
+			if (ret != 0) {
+				print(PRINT_WARN, "Error while adding flags (%d).\n", 
+				      ret);
+			} else 
+				ret = AGENT_OK;
+		}
 		_send_reply(a, ret);
 		break;
 	}
@@ -463,16 +467,21 @@ static int request_execute(agent *a, const cfg_t *cfg)
 	case AGENT_REQ_FLAG_CLEAR:
 	{
 		print(PRINT_NOTICE, "Executing (%d): Flag clear\n", r_type);
-		assert(a->s);
-		unsigned int new_flags;
-		ppp_get_int(a->s, PPP_FIELD_FLAGS, &new_flags);
+		ret = _state_init_atomical(a);
+		if (ret == 0) {
+			unsigned int new_flags;
+			ppp_get_int(a->s, PPP_FIELD_FLAGS, &new_flags);
 
-		new_flags &= ~r_int;
-		ret = ppp_set_int(a->s, PPP_FIELD_FLAGS, new_flags, PPP_CHECK_POLICY);
-		if (ret != 0) {
-			print(PRINT_WARN, "Error while clearing flags (%d).\n", ret);
-		} else 
-			ret = AGENT_OK;
+			new_flags &= ~r_int;
+			ret = ppp_set_int(a->s, PPP_FIELD_FLAGS, new_flags, 
+					  PPP_CHECK_POLICY);
+			ret = _state_fini_atomical(a, ret);
+			if (ret != 0) {
+				print(PRINT_WARN, 
+				      "Error while clearing flags (%d).\n", ret);
+			} else 
+				ret = AGENT_OK;
+		}
 		_send_reply(a, ret);
 		break;
 	}
@@ -596,6 +605,27 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		_send_reply(a, ret);
 		break;
 
+	case AGENT_REQ_GET_WARNINGS:
+		/* Can work on already opened state */
+		if (!a->s) {
+			ret = AGENT_ERR_NO_STATE;
+		} else {
+			unsigned int failures = 0;
+			int warnings = ppp_get_warning_conditions(a->s);
+			if (warnings == PPP_ERROR) {
+				_send_reply(a, AGENT_ERR);
+				break;
+			}
+
+			ret = ppp_get_int(a->s, PPP_FIELD_RECENT_FAILURES, &failures);
+			if (ret != 0) {
+				ret = AGENT_ERR;
+			}
+			agent_hdr_set_int(a, warnings, failures);
+			ret = AGENT_OK;
+		}
+		_send_reply(a, ret);
+		break;
 
 	case AGENT_REQ_SKIP:
 		print(PRINT_NOTICE, "Executing (%d): Skip\n", r_type);
@@ -649,12 +679,11 @@ static int request_execute(agent *a, const cfg_t *cfg)
 	case AGENT_REQ_SET_INT:
 		print(PRINT_NOTICE, "Executing (%d): Set int\n", r_type);
 		/* This sets PPP field: alphabet, codelength, but not flags. */
-		if (!a->s) {
-			/* TODO: Not yet supported */
-			ret = AGENT_ERR_NO_STATE;
-		} else {
+		ret = _state_init_atomical(a);
+		if (ret == 0) {
 			ret = ppp_set_int(a->s, r_int, r_int2, ppp_flags);
 			print(PRINT_NOTICE, "SET_INT: FIELD=%d new value=%d flags=%d\n", r_int, r_int2, ppp_flags);
+			ret = _state_fini_atomical(a, ret);
 			if (ret != 0) {
 				print(PRINT_ERROR, "Error while setting integer in state\n");
 			} else {
@@ -666,11 +695,10 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 	case AGENT_REQ_SET_STR:
 		print(PRINT_NOTICE, "Executing (%d): Set str\n", r_type);
-		if (!a->s) {
-			/* TODO: Not yet supported */
-			ret = AGENT_ERR_NO_STATE;
-		} else {
+		ret = _state_init_atomical(a);
+		if (ret == 0) {
 			ret = ppp_set_str(a->s, r_int, r_str, ppp_flags);
+			ret = _state_fini_atomical(a, ret);
 			if (ret != 0) {
 				print(PRINT_ERROR, "Error while setting string in state\n");
 			} else {

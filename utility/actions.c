@@ -42,7 +42,6 @@ int action_init(options_t *options, agent **a)
 	/* 1) Connect to agent */
 	ret = agent_connect(a, "./agent_otp");
 	if (ret != 0) {
-		// printf(_("Unable to connect to agent: %s\n"), agent_strerror(ret));
 		/* Message already printed */
 		return ret;
 	}
@@ -57,7 +56,7 @@ int action_init(options_t *options, agent **a)
 		}
 	}
 
-	/* 3) Load state, as most of actions do it anyway */
+	/* 3) Load state, as most of actions do it anyway (getters etc.) */
 	ret = agent_state_load(*a);
 	switch (ret) {
 	case STATE_NON_EXISTENT:
@@ -72,9 +71,6 @@ int action_init(options_t *options, agent **a)
 		       agent_strerror(ret), ret);
 		return ret;
 	}
-
-	/* TODO: Check if this state is correct, like, 
-	 * can it still generate passcodes? */
 	return 0;
 }
 
@@ -360,7 +356,8 @@ int action_spass(const options_t *options, agent *a)
 	} else {
 		errors = agent_set_spass(a, pass, 0);
 		if (agent_is_agent_error(errors)) {
-			printf(_("Agent error while setting password: %s\n"), agent_strerror(errors));
+			printf(_("Agent error while setting password: %s\n"), 
+			       agent_strerror(errors));
 			return errors;
 		}
 
@@ -368,6 +365,24 @@ int action_spass(const options_t *options, agent *a)
 		return errors ? PPP_ERROR : 0;
 	}
 }
+
+int action_warnings(const options_t *options, agent *a)
+{
+	int ret;
+	int warnings;
+	int failures;
+
+	ret = agent_get_warnings(a, &warnings, &failures);
+	if (ret != 0) {
+		printf(_("Agent error while reading warnings: %s\n"), 
+		       agent_strerror(ret));
+		return ret;
+	}
+
+	agent_print_ppp_warnings(warnings, failures);
+	return warnings;
+}
+
 
 /* Update flags based on mask which are stored in options struct */
 int action_info(const options_t *options, agent *a)
@@ -475,20 +490,6 @@ int action_print(const options_t *options, agent *a)
 
 	/* And which to look at. */
 	int selected;
-
-	/* Do we have to just show any warnings? */
-	if (options->action == OPTION_WARN) {
-/*		int e = ppp_get_warning_conditions(s);
-		const char *warn;
-		while ((warn = ppp_get_warning_message(s, &e)) != NULL) {
-			const char *format = "*** OTPasswd Warning: %s\n";
-			printf(format, warn);
-		}
-*/
-		printf(_("Not implemented.\n"));
-		return 0;
-	}
-
 
 	/* Parse argument */
 	selected = ah_parse_code_spec(a, options->action_arg, &item);
@@ -601,23 +602,82 @@ cleanup:
 /* Update flags based on mask which are stored in options struct */
 int action_config(const options_t *options, agent *a)
 {
+	int ret; 
 
-	/* Initialize, lock, read, calculate additional card info... */
-/*      TODO 
-        ret = ah_update_flags(options, s, 0);
-        if (ret != 0) {
-                retval = ret;
-                goto cleanup;
-        }
+	if (options->label) {
+		ret = agent_set_str(a, PPP_FIELD_LABEL, options->label);
+		if (ret != AGENT_OK) {
+			printf(_("Error while setting label: %s\n"), 
+			       agent_strerror(ret));
+			return ret;
+		} else {
+			printf(_("Label set.\n"));
+		}
+	}
 
-	if (options->flag_set_mask || options->flag_clear_mask ||
-	    options->set_codelength || options->set_alphabet ||
-	    options->label || options->contact) {
-		save_state = 1;
-		} */
+	if (options->contact) {
+		ret = agent_set_str(a, PPP_FIELD_CONTACT, options->contact);
+		if (ret != AGENT_OK) {
+			printf(_("Error while setting contact: %s\n"), 
+			       agent_strerror(ret));
+			return ret;
+		} else {
+			printf(_("Contact set.\n"));
+		}
+	}
 
-	printf(_("Unimplemented!"));
-	return 1;
+	if (options->set_alphabet != -1) {
+		ret = agent_set_int(a, PPP_FIELD_ALPHABET, options->set_alphabet);
+		if (ret != AGENT_OK) {
+			printf(_("Unable to select alphabet: %s\n"), 
+			       agent_strerror(ret));
+			return ret;
+		} else {
+			printf(_("Alphabet selected.\n"));
+			printf(_("WARNING: This invalidates your previously "
+				 "printed passcards.\n"));
+		}
+
+	}
+
+	if (options->set_codelength != -1) {
+		ret = agent_set_int(a, PPP_FIELD_CODE_LENGTH, options->set_codelength);
+		if (ret != AGENT_OK) {
+			printf(_("Unable to set code length: %s\n"), 
+			       agent_strerror(ret));
+			return ret;
+		} else {
+			printf(_("Code length set.\n"));
+			printf(_("WARNING: This invalidates your previously "
+				 "printed passcards.\n"));
+		}
+
+	}
+
+	/* Two flags: FLAG_SHOW, FLAG_DISABLED */
+	if (options->flag_set_mask) {
+		ret = agent_flag_add(a, options->flag_set_mask);
+		if (ret != AGENT_OK) {
+			printf(_("Unable to enable required flags: %s\n"), 
+			       agent_strerror(ret));
+			return ret;
+		} else {
+			printf(_("Flags set.\n"));
+		}
+	}
+
+	if (options->flag_clear_mask) {
+		ret = agent_flag_clear(a, options->flag_clear_mask);
+		if (ret != AGENT_OK) {
+			printf(_("Unable to disable required flags: %s\n"), 
+			       agent_strerror(ret));
+			return ret;
+		} else {
+			printf(_("Flags cleared.\n"));
+		}
+	}
+
+	return 0;
 }
 
 

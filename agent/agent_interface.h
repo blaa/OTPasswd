@@ -162,6 +162,9 @@ extern const char *agent_strerror(int error);
  * TODO: Make this return one-by-one and clear bits */
 extern void agent_print_spass_errors(int errors);
 
+/* Display all warnings related to state */
+extern void agent_print_ppp_warnings(int warnings, int failures);
+
 /*** Actions ***/
 
 /** Creates new state - done before generating key. */
@@ -214,7 +217,11 @@ extern int agent_set_str(agent *a, int field, const char *str);
 
 extern int agent_set_spass(agent *a, const char *str, int remove_spass);
 
+/** Get alphabet of specified ID */
 extern int agent_get_alphabet(agent *a, int id, const char **alphabet);
+
+/** Get user warnings */
+extern int agent_get_warnings(agent *a, int *warnings, int *failures);
 
 /** Read prompt for given passcode */
 extern int agent_get_prompt(agent *a, const num_t counter, char **reply);

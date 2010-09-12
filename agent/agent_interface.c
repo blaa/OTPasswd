@@ -349,6 +349,30 @@ void agent_print_spass_errors(int errors)
 	}
 }
 
+void agent_print_ppp_warnings(int warnings, int failures) 
+{
+	if (warnings & PPP_WARN_LAST_CARD) {
+		printf(_("PPP WARNING: You've reached your last printed card.\n"));
+		warnings &= ~PPP_WARN_LAST_CARD;
+	}
+	if (warnings & PPP_WARN_NOTHING_LEFT) {
+		printf(_("PPP WARNING: You've ran out of printed passcards!\n"));
+		warnings &= ~PPP_WARN_NOTHING_LEFT;
+	}
+	if (warnings & PPP_WARN_RECENT_FAILURES) {
+		printf(_("PPP WARNING: There were %d recent failures.\n"), failures);
+		warnings &= ~PPP_WARN_RECENT_FAILURES;
+	}
+
+	if (warnings) {
+		print(PRINT_ERROR, 
+		      "After printing all implemented warnings the bit-field still "
+		      "is non-empty! \nValue which last = %d\n", warnings);
+		assert(0);
+	}
+}
+
+
 int agent_state_new(agent *a)
 {
 	return agent_query(a, AGENT_REQ_STATE_NEW);
@@ -547,12 +571,22 @@ int agent_set_spass(agent *a, const char *str, int remove_spass)
 	}
 
 	ret = agent_query(a, AGENT_REQ_SET_SPASS);
-	if (ret != 0)
-		return ret;
-	else
-		return AGENT_OK;
+
+	return ret;
 }
 
+int agent_get_warnings(agent *a, int *warnings, int *failures)
+{
+	int ret;
+	agent_hdr_init(a, 0);
+	agent_hdr_set_int(a, 0, 0);
+
+	ret = agent_query(a, AGENT_REQ_GET_WARNINGS);
+	*warnings = agent_hdr_get_arg_int(a);
+	*failures = agent_hdr_get_arg_int2(a);
+
+	return ret;
+}
 
 int agent_get_passcode(agent *a, const num_t counter, char *reply)
 {

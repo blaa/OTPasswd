@@ -536,6 +536,8 @@ int ppp_get_warning_conditions(const state *s)
 	int warnings = 0;
 
 	assert(s->codes_on_card > 0);
+	if (s->codes_on_card == 0)
+		return PPP_ERROR;
 
 	int tmp = num_cmp(s->current_card, s->latest_card);
 	if (tmp == 0)

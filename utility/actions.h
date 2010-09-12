@@ -101,5 +101,7 @@ extern int action_print(const options_t *options, agent *a);
 /** Skip passcode or passcard (-s) */
 extern int action_skip(const options_t *options, agent *a);
 
+/** Display any state related warnings */
+extern int action_warnings(const options_t *options, agent *a);
 
 #endif

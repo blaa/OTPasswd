@@ -504,7 +504,7 @@ static int perform_action(int argc, char **argv, options_t *options)
 		break;
 
 	case OPTION_WARN:
-		printf(_("Unimplemented.\n"));
+		ret = action_warnings(options, a);
 		break;
 
 	case OPTION_TEXT:
@@ -514,7 +514,7 @@ static int perform_action(int argc, char **argv, options_t *options)
 		break;
 
 	case OPTION_CHECK:
-		printf(_("OBSOLETE: Most of the checks were moved into AGENT.\n"));
+		printf(_("OBSOLETE: Most of the checks were moved into agent executable.\n"));
 		retval = 1;
 		goto cleanup;
 
