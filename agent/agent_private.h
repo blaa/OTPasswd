@@ -149,6 +149,9 @@ typedef struct {
 	/** Username owning state; used only if ran by privileged user */
 	char *username;
 
+	/** Is the state just being generated? It may alter execution of some functions (flags). */
+	int new_state;
+
 	/** State currently held by agent
 	 * Currently only freshly generated key can be
 	 * stored here */

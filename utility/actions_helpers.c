@@ -431,8 +431,8 @@ int ah_set_options(agent *a, const options_t *options)
 
 	return 0;
 error:
-	print(PRINT_ERROR, _("Unable to set required option (what: %s): %s (%d)\n"), 
-	      what, agent_strerror(retval), retval);
+	print(PRINT_ERROR, _("Unable to set required option (%s): %s\n"), 
+	      what, agent_strerror(retval));
 	return retval;
 
 }
@@ -629,8 +629,8 @@ error:
 	return -1;
 
 agent_error:
-	print(PRINT_ERROR, "Error while reading field %s: %s (%d)\n",
-	      which, agent_strerror(ret), ret);
+	print(PRINT_ERROR, "Error while reading field %s: %s\n",
+	      which, agent_strerror(ret));
 	return 5;
 }
 
@@ -677,8 +677,8 @@ int ah_get_passcode_number(agent *a, const num_t passcard, num_t *passcode, char
 	return 0;
 
 error:
-	print(PRINT_ERROR, "Error while reading field %s: %s (%d)\n",
-	      which, agent_strerror(ret), ret);
+	print(PRINT_ERROR, "Error while reading field %s: %s\n",
+	      which, agent_strerror(ret));
 	return ret;
 }
 

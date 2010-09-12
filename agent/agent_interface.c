@@ -51,6 +51,7 @@ int agent_connect(agent **a_out, const char *agent_executable)
 	a->error = 0;
 	a->shdr.protocol_version = AGENT_PROTOCOL_VERSION;
 	a->s = NULL;
+	a->new_state = 0;
 
 	/* Create pipes */
 	if (pipe(in) != 0)
@@ -209,8 +210,7 @@ int agent_server(agent **a_out)
 	a->username = NULL;
 	a->shdr.protocol_version = AGENT_PROTOCOL_VERSION;
 	a->s = NULL;
-
-
+	a->new_state = 0;
 
 	a->in = 0;
 	a->out = 1;

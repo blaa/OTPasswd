@@ -59,8 +59,11 @@ static int _state_init(agent *a, int flags)
 
 	if (!(flags & _LOAD)) {
 		/* Just initialize */
+		a->new_state = 1;
 		return 0;
 	}
+
+	a->new_state = 0;
 
 	if (flags & _LOCK) {
 		ret = ppp_state_load(a->s, 0);
@@ -115,6 +118,8 @@ static int _state_fini(agent *a, int flags)
 		print(PRINT_ERROR, 
 		      "Error while saving state data. State not changed. [%d]\n", ret);
 	}
+
+	a->new_state = 0;
 	
 	if (!(flags & _KEEP)) {
 		ppp_state_fini(a->s);
@@ -126,10 +131,23 @@ static int _state_fini(agent *a, int flags)
 }
 
 /* HELPER: Initialize for atomical operation with loading and locking.
- * Can be called for already loaded state. */
+ * Can be called for already loaded state. 
+ * In case we are already creating new state (a->new_state is true)
+ * this function does not toggle existing state.
+ */
 static int _state_init_atomical(agent *a) 
 {
 	int ret;
+
+	if (a->new_state) {
+		if (!a->s) {
+			print(PRINT_ERROR, "New_state is enabled but state doesn't exists.\n");
+			assert(0);
+			return AGENT_ERR;
+		}
+		return AGENT_OK;
+	}
+	
 	if (a->s) {
 		/* Drop state if was loaded already */
 		ret = _state_fini(a, _NONE);
@@ -152,6 +170,19 @@ static int _state_init_atomical(agent *a)
 static int _state_fini_atomical(agent *a, int prev_ret) 
 {
 	int ret;
+
+	if (a->new_state) {
+		/* Do not finalize if during creation of new state,
+		 * will be stored explicitly. */
+		if (!a->s) {
+			print(PRINT_ERROR, "New_state is enabled but state "
+			      "doesn't exists while finalizing atomical operation.\n");
+			assert(0);
+			return AGENT_ERR;
+		}
+		return prev_ret;
+	}
+
 	if (prev_ret == 0) {
 		return _state_fini(a, _STORE | _KEEP);
 	} else {
@@ -234,13 +265,13 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 	case AGENT_REQ_GET_STR:
 		if ((r_int == PPP_FIELD_KEY || r_int == PPP_FIELD_COUNTER)
 		    && cfg->key_print != CONFIG_ALLOW 
-		    && !security_is_privileged())
+		    && !privileged)
 			return AGENT_ERR_POLICY;
 		else
 			return AGENT_OK;
 
 	case AGENT_REQ_GET_PASSCODE:
-		if (!security_is_privileged() && cfg->passcode_print == CONFIG_DISALLOW)
+		if (!privileged && cfg->passcode_print == CONFIG_DISALLOW)
 			return AGENT_ERR_POLICY;
 		else
 			return AGENT_OK;
@@ -249,7 +280,7 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 			return AGENT_OK;
 
 	case AGENT_REQ_SKIP:
-		if (!security_is_privileged() && cfg->skipping == CONFIG_DISALLOW)
+		if (!privileged && cfg->skipping == CONFIG_DISALLOW)
 			return AGENT_ERR_POLICY;
 		else
 			return AGENT_OK;
@@ -272,7 +303,14 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 
 		/* FLAGS */
 	case AGENT_REQ_FLAG_ADD:
-	case AGENT_REQ_FLAG_CLEAR:
+
+		if (!privileged) {
+			/* Not a root */
+			if (FLAG_DISABLED & r_int)
+				return AGENT_ERR_POLICY;
+		}
+
+
 	case AGENT_REQ_FLAG_GET:
 		return AGENT_OK;
 
