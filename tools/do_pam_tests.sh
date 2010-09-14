@@ -41,9 +41,6 @@ cp tools/otpasswd-testcase /etc/pam.d/
 #yes yes | ./otpasswd -v -c salt=on -c codelength=6 -c alphabet=2 -c contact=ble -c label=lala -k
 #yes yes | ./otpasswd -v -r
 
-# Pam tests on safe defaults please.
-yes yes | ./otpasswd -v -c salt=on -c alphabet=1 -c codelength=4 -k
-
 # This should run --check atleast once
 make test 
 
