@@ -215,6 +215,7 @@ int agent_connect(agent **a_out, const char *agent_executable)
 		
 		if (a->rhdr.type != AGENT_REQ_INIT) {
 			print(PRINT_ERROR, _("Agent: Initial frame parsing error.\n"));
+			print(PRINT_NOTICE, _("Agent: Header type equals %d instead of %d.\n"), a->rhdr.type, AGENT_REQ_INIT);
 			ret = AGENT_ERR_SERVER_INIT;
 			goto cleanup1;
 		}
@@ -286,13 +287,29 @@ int agent_server(agent **a_out)
 
 int agent_set_user(agent *a, const char *username)
 {
-	/* TODO: This should fail early for non-existent user */
+	int ret;
+
 	assert(a);
 	assert(username);
 	if (a->username)
 		free(a->username);
 	a->username = strdup(username);
-	return 0;
+
+	if (a->pid == -1) {
+		/* We are server. Don't inform anybody */
+		return 0;
+	}
+
+	/* Inform agent */
+	agent_hdr_init(a, 0);
+	ret = agent_hdr_set_str(a, username);
+	if (ret != AGENT_OK) {
+		print(PRINT_CRITICAL, "Label too long to send, check limits in program.\n");
+		return ret;
+	}
+
+	ret = agent_query(a, AGENT_REQ_USER_SET);
+	return ret;
 }
 
 int agent_disconnect(agent *a)

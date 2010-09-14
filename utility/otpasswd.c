@@ -399,21 +399,21 @@ int process_cmd_line(int argc, char **argv, options_t *options)
 
 		case OPTION_USER:
 			assert(optarg);
-			/* FIXME: This check is done by agent as well */
+
 			if (getuid() != 0) {
 				printf(_("Only root can use the '--user' option\n"));
-				exit(EXIT_FAILURE);
+				goto error;
 			}
 
 			if (options->username) {
 				printf(_("Multiple '--user' options passed\n"));
-				exit(EXIT_FAILURE);
+				goto error;
 			}
 
 			options->username = strdup(optarg);
 			if (!options->username) {
 				printf(_("Error (memory) while copying username.\n"));
-				exit(EXIT_FAILURE);
+				goto error;
 			}
 			break;
 
@@ -438,8 +438,11 @@ int process_cmd_line(int argc, char **argv, options_t *options)
 	return 0;
 
 error:
-	free(options->username);
-	free(options->action_arg);
+	free(options->action_arg), options->action_arg = NULL;
+	free(options->label), options->label = NULL;
+	free(options->contact), options->contact = NULL;
+	free(options->spass), options->spass = NULL;
+	free(options->username), options->username = NULL;
 	return 1;
 }
 

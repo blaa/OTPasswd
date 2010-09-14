@@ -44,15 +44,19 @@ int action_init(options_t *options, agent **a)
 	if (ret != 0) {
 		/* Message already printed */
 		return ret;
+	} else {
+		print(PRINT_NOTICE, _("Connected to agent\n"));
 	}
 
 	/* 2) Change username if required */	
 	if (options->username) {
 		ret = agent_set_user(*a, options->username);
 		if (ret != 0) {
-			printf("Error while setting user: %s (%d)\n", 
-			       agent_strerror(ret), ret);
+			printf(_("Error while setting user: %s\n"), 
+			       agent_strerror(ret));
 			return ret;
+		} else {
+			print(PRINT_NOTICE, "Switched to user %s\n", options->username);
 		}
 	}
 
