@@ -133,10 +133,15 @@ enum AGENT_ERROR {
 
 	/*** Various errors ***/
 	AGENT_ERR_MEMORY,
-	AGENT_ERR_POLICY,
 	AGENT_ERR_SERVER_INIT,
 	AGENT_ERR_PROTOCOL_MISMATCH,
 	AGENT_ERR_DISCONNECT,
+
+	/* Policy errors, generic and with hints */
+	AGENT_ERR_POLICY,
+	AGENT_ERR_POLICY_REGENERATION,
+	AGENT_ERR_POLICY_GENERATION,
+	AGENT_ERR_POLICY_DISABLED,
 
 	/*** Coding/assumptions errors ***/
 	AGENT_ERR_MUST_CREATE_STATE,
@@ -148,6 +153,11 @@ static inline int agent_is_agent_error(int error)
 {
 	if (error >= 5000 && error < 5100)
 		return 1;
+	if (error >= 1000 && error < 1100)
+		return 2; /* State error */
+	if (error >= 3000 && error < 3100)
+		return 2; /* PPP error */
+
 	return 0;
 }
 

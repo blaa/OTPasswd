@@ -15,3 +15,7 @@ otpasswd.info
 patches
 docs/*.?.gz
 agent_otp
+libagent.a
+libcommon.a
+\#*#
+.#*

@@ -41,11 +41,11 @@
  */
 enum ppp_errors {
 	/* Warning: agent_strerror checks ranges of this values */
-	STATE_NOMEM = 100,
+	STATE_NOMEM = 1000,
 
 	/*** ALWAYS FAIL ***/
 	/* Error while locking (existing) state file */
-	STATE_LOCK_ERROR = 110,
+	STATE_LOCK_ERROR,
 
 	/* Error while parsing - state invalid */
 	STATE_PARSE_ERROR,
@@ -76,7 +76,7 @@ enum ppp_errors {
 	/*** PPP Errors ***/
 
 	/* Generic error. Should not happen usually. */
-	PPP_ERROR = 1000,
+	PPP_ERROR = 3000,
 
 	/* Action denied by policy */
 	PPP_ERROR_POLICY,

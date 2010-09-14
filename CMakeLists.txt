@@ -224,6 +224,11 @@ ADD_TEST(fail_ok14 ./otpasswd -v -c alphabet=2 illegal_arg)
 ADD_TEST(fail_ok15 ./otpasswd -a '___')
 ADD_TEST(fail_ok16 ./otpasswd --nonexisting-command a)
 
+# Remove state - everything should fail then!
+ADD_TEST(remove_key tools/test_remove_yes.sh)
+
+
+
 SET_TESTS_PROPERTIES(state_key0_fail state_spass_fail fail_ok1 fail_ok2 fail_ok3 
 	fail_ok4 fail_ok5 fail_ok6 fail_ok7 fail_ok8 fail_ok9 fail_ok10 fail_ok11
 	fail_ok12 fail_ok13 fail_ok14 fail_ok15 fail_ok16

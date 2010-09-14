@@ -91,6 +91,11 @@ int action_authenticate(const options_t *options, agent *a)
 {
 	int retval = 0;
 
+	if (options->user_has_state == 0) {
+		printf(_("Authentication failed (user has no state).\n"));
+		return 0;
+	}
+
 	retval = agent_authenticate(a, options->action_arg);
 	switch (retval) {
 	case 0:
@@ -125,6 +130,7 @@ int action_authenticate(const options_t *options, agent *a)
 		retval = 0;
 		goto cleanup;
 
+
 	default: /* Any other problem - error */
 		printf(_("Authentication failed with internal error.\n"));
 		printf(_("Agent error: %s\n"), agent_strerror(retval));
@@ -141,7 +147,7 @@ int action_key_remove(const options_t *options, agent *a)
 {
 	int ret;
 	if (options->user_has_state == 0) {
-		printf(_("Unable to load your state, nothing to remove.\n"));
+		printf(_("Your state was eaten by Grue, nothing to remove.\n"));
 		return 1;
 	}
 
@@ -182,14 +188,50 @@ int action_key_remove(const options_t *options, agent *a)
 int action_key_generate(const options_t *options, agent *a)
 {
 	int retval = 1;
+	int flags = 0; 
 
-	/* TODO: pre-verify policy (DISABLE) and die if impossible */
+	/* Pre-verify whatever you can */
+	if (options->user_has_state) {
+		retval = agent_flag_get(a, &flags);
+		if (retval != 0) {
+			print(PRINT_ERROR, _("Unable to read flags: %s\n"), 
+			      agent_strerror(retval));
+			goto cleanup;
+		}
 
-	/*
-	printf(_("Your current state is disabled. Cannot regenerate "
-	"until you remove the disabled flag.\n")); */
+		/* Drop current state */
+		retval = agent_state_drop(a);
+		if (retval != 0) {
+			printf(_("Error while dropping state: %s\n"), 
+			       agent_strerror(retval));
+			goto cleanup;
+		}
+	}
 
-	/* printf(_("Key regeneration denied by policy.\n")); */
+	/* Create new state */
+	retval = agent_state_new(a);
+	if (retval != 0) {
+		printf(_("Unable to generate new state:\n"));
+
+		switch (retval) {
+		case AGENT_ERR_POLICY_REGENERATION:
+			printf(_("Policy denies key regeneration.\n"));
+			goto cleanup;
+
+		case AGENT_ERR_POLICY_GENERATION:
+			printf(_("Policy denies key generation. Ask administrator to create you state.\n"));
+			goto cleanup;
+
+		case AGENT_ERR_POLICY_DISABLED:
+			printf(_("You currently have state but it was disabled.\n"));
+			goto cleanup;
+		default:
+			printf(_("Error: %s\n"), agent_strerror(retval));
+			goto cleanup;
+		case 0:
+			assert(0);
+		}
+	}
 
 	/* Check existance of previous key */
 	if (options->user_has_state) {
@@ -207,60 +249,13 @@ int action_key_generate(const options_t *options, agent *a)
 			retval = 1;
 			goto cleanup;
 		}
-
-		/* TODO: Read user flags, update with flags passed via command line, ask
-		 * if he likes it */
-		/* printf(_("This is your previous configuration updated with command line options:\n"));
-		   ah_show_flags(&s);
-		printf(_("\nYou can either use it, or start with default one "
-			 "(modified by any --config options).\n"));
-
-		if (ah_enforced_yes_or_no(
-			    _("Do you want to keep this configuration?")) == QUERY_NO) {
-			printf(_("Reverting to defaults.\n"));
-
-			// Use default salting from config 
-			ret = ah_update_flags(options, &s, 1);
-			if (ret != 0) {
-				retval = 1;
-				goto cleanup;
-			}
-		*/
-
-		/* Drop current state */
-		retval = agent_state_drop(a);
-		if (retval != 0) {
-			printf(_("Error while dropping state: %s (%d)"), 
-			       agent_strerror(retval), retval);
-			goto cleanup;
-		}
-	} else {
-		/* TODO: pre-verify policy (DISABLE) and die if impossible */
-		/*
-		if (!remove && 
-		    security_is_privileged() == 0 &&
-		    cfg->key_generation == CONFIG_DISALLOW) {
-			printf(_("Key generation denied by policy.\n"));
-			goto cleanup;
-		}
-		*/
-		/* Not loaded */
-
-	}
-
-	/* Create new state */
-	retval = agent_state_new(a);
-	if (retval != 0) {
-		printf(_("Error while creating new state: %s (%d)"), 
-		       agent_strerror(retval), retval);
-		goto cleanup;
 	}
 
 	/* Set flags */
 	retval = ah_set_options(a, options);
 	if (retval != 0) {
-		print(PRINT_ERROR, _("Unable to set required flags: %s (%d)\n"), 
-		      agent_strerror(retval), retval);
+		print(PRINT_ERROR, _("Unable to set required flags: %s\n"), 
+		      agent_strerror(retval));
 		goto cleanup;
 	}
 
@@ -346,6 +341,11 @@ int action_spass(const options_t *options, agent *a)
 	int i;
 	int errors;
 
+	if (options->user_has_state == 0) {
+		printf(_("You really need to create some state first (see -k option).\n"));
+		return 1;
+	}
+
 	/* This must be done when the state is NOT locked */
 	const char *pass;
 
@@ -408,6 +408,11 @@ int action_warnings(const options_t *options, agent *a)
 int action_info(const options_t *options, agent *a)
 {
 	int retval = 1;
+
+	if (options->action != OPTION_ALPHABETS && options->user_has_state == 0) {
+		printf(_("For your information: You've got no state created (see -k option).\n"));
+		return 1;
+	}
 
 	if (options->action == OPTION_ALPHABETS) {
 		/* This does not require state. */
@@ -511,6 +516,11 @@ int action_print(const options_t *options, agent *a)
 	/* And which to look at. */
 	int selected;
 
+	if (options->user_has_state == 0) {
+		printf(_("You've got no state created! Unable to print passcodes (see -k option).\n"));
+		return 1;
+	}
+
 	/* Parse argument */
 	selected = ah_parse_code_spec(a, options->action_arg, &item);
 	if ((selected != PRINT_CODE) && (selected != PRINT_CARD)) {
@@ -587,7 +597,6 @@ int action_print(const options_t *options, agent *a)
 
 		case OPTION_PROMPT:
 			ret = agent_get_prompt(a, item, &prompt);
-//			ret = agent_get_str(a, PPP_FIELD_PROMPT, &prompt);
 			if (ret != AGENT_OK || prompt == NULL) {
 				printf(_("Error while retrieving prompt: %s\n"), agent_strerror(ret));
 				goto cleanup;
@@ -724,8 +733,6 @@ int action_config(const options_t *options, agent *a)
 	return 0;
 }
 
-
-
 int action_skip(const options_t *options, agent *a)
 {
 	int ret;
@@ -736,6 +743,10 @@ int action_skip(const options_t *options, agent *a)
 	/* And which to look at: PRINT_CODE / PRINT_CARD*/
 	int selected = 0; 
 
+	if (options->user_has_state == 0) {
+		printf(_("You have skipped state creation. (see -k option).\n"));
+		return 1;
+	}
 
 	/* Parse argument */
 	selected = ah_parse_code_spec(a, options->action_arg, &item);
@@ -782,8 +793,6 @@ int action_skip(const options_t *options, agent *a)
 		printf("Agent error: %s (%d)\n", agent_strerror(ret), ret);
 		break;
 	}
-
-
 
 	return ret;
 }

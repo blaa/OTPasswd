@@ -99,6 +99,7 @@ int agent_connect(agent **a_out, const char *agent_executable)
 	a = malloc(sizeof(*a));
 	if (!a)
 		return AGENT_ERR_MEMORY;
+	memset(a, 0, sizeof(*a));
 
 	/* Initialize basic fields */
 	a->error = 0;
@@ -259,6 +260,7 @@ int agent_server(agent **a_out)
 	if (!a) {
 		return AGENT_ERR_MEMORY;
 	}
+	memset(a, 0, sizeof(*a));
 
 	a->username = NULL;
 	a->shdr.protocol_version = AGENT_PROTOCOL_VERSION;
@@ -337,14 +339,18 @@ const char *agent_strerror(int error)
 
 	case AGENT_ERR_MEMORY:
 		return _("Error while allocating memory.");
-	case AGENT_ERR_POLICY:
-		return _("Requested action denied by policy.");
 	case AGENT_ERR_SERVER_INIT:
 		return _("Error during agent initialization.");
 	case AGENT_ERR_PROTOCOL_MISMATCH:
 		return _("Agent protocol mismatch. Reinstall software.");
 	case AGENT_ERR_DISCONNECT:
 		return _("Agent unexpectedly disconnected.");
+
+	case AGENT_ERR_POLICY:
+		return _("Requested action denied by policy.");
+	case AGENT_ERR_POLICY_REGENERATION:
+		return _("Key regeneration denied by policy.");
+
 
 	case AGENT_ERR_MUST_CREATE_STATE:
 		return _("Coding error: Must create state before generating key.");

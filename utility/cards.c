@@ -108,9 +108,12 @@ char *card_ascii(agent *a, const num_t passcard)
 	}
 	
 	if (label && strlen(label) > 0) {
-		label = strdup(label);
+		/* Ok, we will use this one */
 	} else {
 		/* Read hostname */
+		if (label)
+			free(label);
+
 		label = malloc(label_max + 1);
 		gethostname(label, label_max);
 		label[label_max] = '\0'; /* Ensure string is null-terminated */

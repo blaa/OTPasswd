@@ -40,7 +40,7 @@ static int _send_reply(agent *a, int status)
 	agent_hdr_set_status(a, status);
 	agent_hdr_set_type(a, AGENT_REQ_REPLY);
 	int ret = agent_hdr_send(a);
-	print(PRINT_NOTICE, "Reply sent (%d)\n", ret);
+	print(PRINT_NOTICE, "Reply sent (status=%d)\n", status);
 	return ret;
 }
 
@@ -194,7 +194,7 @@ static int _state_fini_atomical(agent *a, int prev_ret)
 	}
 }
 
-static int request_verify_policy(const agent *a, const cfg_t *cfg)
+static int request_verify_policy(agent *a, const cfg_t *cfg)
 {
 	/* Read request parameters */
 	const int r_type = agent_hdr_get_type(a);
@@ -231,11 +231,6 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 			return AGENT_ERR_POLICY;
 		}
 
-		if (cfg->key_regeneration == CONFIG_DISALLOW) {
-			return AGENT_ERR_POLICY;
-		}
-
-		/* TODO: VERIFY REGENERATION */
 		return AGENT_OK;
 
 	case AGENT_REQ_KEY_REMOVE:
@@ -252,8 +247,51 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 		/* TODO: Add it from scratch later */
 		return AGENT_OK;
 
-		/* Those which doesn't require policy check */
+
+		/* Validate if user doesn't already have a disabled state */
 	case AGENT_REQ_STATE_NEW:
+	{
+		int ret;
+		if (a->s) {
+			/* This option is always run without reading state first */
+			return AGENT_ERR_MUST_DROP_STATE;
+		}
+
+		if (privileged)
+			return AGENT_OK;
+
+		ret = _state_init(a, _LOAD);
+		if (ret != 0) {
+			print(PRINT_NOTICE, "User has no state so it can't be disabled or regenerated.\n");
+			if (cfg->key_generation == CONFIG_DISALLOW) {
+				print(PRINT_WARN, "Policy check failed: Disallowing key generation.\n");
+				return AGENT_ERR_POLICY_GENERATION;
+			}
+			return AGENT_OK;
+		}
+
+		if (ppp_flag_check(a->s, FLAG_DISABLED) && cfg->disabling == CONFIG_DISALLOW) {
+			ret = _state_fini(a, _NONE);
+			if (ret != AGENT_OK) {
+				print(PRINT_NOTICE, "Error during finalization: %s\n", agent_strerror(ret));
+			}
+			print(PRINT_WARN, "Policy check failed: Disallowing key regeneration with disabled state.\n");
+			return AGENT_ERR_POLICY;
+		}
+
+		if (cfg->key_regeneration == CONFIG_DISALLOW) {
+			ret = _state_fini(a, _NONE);
+			if (ret != AGENT_OK) {
+				print(PRINT_NOTICE, "Error during finalization: %s\n", agent_strerror(ret));
+			}
+			print(PRINT_WARN, "Policy check failed: Disallowing key regeneration.\n");
+			return AGENT_ERR_POLICY_REGENERATION;
+		}
+
+		ret = _state_fini(a, _NONE);
+		return AGENT_OK;
+	}
+		/* Those which doesn't require policy check */
 	case AGENT_REQ_STATE_LOAD:
 	case AGENT_REQ_STATE_STORE:
 	case AGENT_REQ_STATE_DROP:
@@ -826,6 +864,8 @@ static int request_execute(agent *a, const cfg_t *cfg)
 					ret = ret2;
 			} else
 				ret = _state_fini_atomical(a, ret2);
+		} else {
+			print(PRINT_ERROR, "Unable to read state!\n");
 		}
 		_send_reply(a, ret);
 		break;
