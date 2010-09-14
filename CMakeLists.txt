@@ -173,11 +173,12 @@ INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_8} DESTINATION "share/man/man
 ##
 ENABLE_TESTING()
 
-# ADD_TEST(internal_check ./otpasswd --check) FIXME TURN THIS ON
+ADD_TEST(internal_check ./agent_otp --check)
 # This may fail if user does not have state file!
 # This tests are used mostly to have some rationale
 # coverage test results
-ADD_TEST(state_key0 "/bin/yes no | ./otpasswd -v -k")
+ADD_TEST(state_key0_fail tools/test_generate_no.sh)
+ADD_TEST(state_key1 tools/test_generate_yes.sh)
 ADD_TEST(state_flag0 ./otpasswd -v -c codelength=4)
 ADD_TEST(state_print1 ./otpasswd -v -t "D10[123]")
 ADD_TEST(state_print2 ./otpasswd -v -t "[123]")
@@ -186,8 +187,9 @@ ADD_TEST(state_print4 ./otpasswd -v -l "[124]")
 ADD_TEST(state_print5 ./otpasswd -v -t "current")
 ADD_TEST(state_print6 ./otpasswd -v -t "next")
 ADD_TEST(state_print7 ./otpasswd -v -t "[next]")
+ADD_TEST(state_print8 ./otpasswd -v -t "10D[123]")
 
-ADD_TEST(state_skip1 ./otpasswd -v -s "[3]")
+ADD_TEST(state_skip1 ./otpasswd -v -s "[300]")
 ADD_TEST(state_flag1 ./otpasswd -v -c show=off)
 ADD_TEST(state_flag2 ./otpasswd -v -c codelength=12)
 ADD_TEST(state_flag3 ./otpasswd -v -c alphabet=5)
@@ -219,7 +221,7 @@ ADD_TEST(fail_ok14 ./otpasswd -v -c alphabet=2 illegal_arg)
 ADD_TEST(fail_ok15 ./otpasswd -a '___')
 ADD_TEST(fail_ok16 ./otpasswd --nonexisting-command a)
 
-SET_TESTS_PROPERTIES(fail_ok1 fail_ok2 fail_ok3 fail_ok4
+SET_TESTS_PROPERTIES(state_key0_fail fail_ok1 fail_ok2 fail_ok3 fail_ok4
   fail_ok5 fail_ok6 fail_ok7 fail_ok8 fail_ok9 fail_ok10 fail_ok11
   fail_ok12 fail_ok13 fail_ok14 fail_ok15 fail_ok16
   PROPERTIES WILL_FAIL TRUE)

@@ -115,7 +115,7 @@ static void _show_usage(int argc, const char **argv)
 		"                   C is column (A through G), RR - row (1..10)\n"
 		"  current        - passcode used for next time authentication\n"
 		"  [current]      - passcard containing current passcode\n"
-		/* "  next or [next] - first, not yet printed, passcard\n" TODO: REENABLE! */
+		"  next or [next] - first, not yet printed, passcard\n"
 		"\n"
 		"Configuration:\n"
 	        "  -i, --info\n"
@@ -240,8 +240,8 @@ static int parse_flag(options_t *options, const char *arg)
 			if (tmp == -1)    /* Also illegal, but we use */
 				tmp = -2; /* -1 to mark it's not set */
 
-			if (tmp < 2 || tmp > 8) {
-				printf(_("Invalid code length. Valid range is from 2 to 8.\n"));
+			if (tmp < 2 || tmp > 16) {
+				printf(_("Invalid code length. Valid range is from 2 to 16.\n"));
 				return 1;
 			}
 			options->set_codelength = tmp;
@@ -592,8 +592,6 @@ static inline int run_cli(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-	print_init(PRINT_NOTICE|PRINT_STDOUT, NULL);
+	print_init(PRINT_NOTICE | PRINT_STDOUT, NULL);
 	return run_cli(argc, argv);
-
-	return 0;
 }

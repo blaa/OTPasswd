@@ -301,6 +301,17 @@ int action_key_generate(const options_t *options, agent *a)
 	puts(card);
 	free(card);
 
+	/* Update LATEST CARD */
+	retval = agent_update_latest_card(a, num_i(1));
+	if (retval != AGENT_ERR_REQ_ARG && retval != 0) {
+		/* Not updated, and not fine */
+		print(PRINT_ERROR, 
+		      _("Error while updating latest"
+			" card entry: %s\n"), 
+		      agent_strerror(retval));
+		goto cleanup;
+	}
+
 	do {
 		retval = ah_yes_or_no(_("Are you ready to start using this "
 		                        "one-time passwords?"));
@@ -380,7 +391,7 @@ int action_warnings(const options_t *options, agent *a)
 	}
 
 	agent_print_ppp_warnings(warnings, failures);
-	return warnings;
+	return 0;
 }
 
 
@@ -509,6 +520,18 @@ int action_print(const options_t *options, agent *a)
 				goto cleanup;
 			puts(card);
 			free(card);
+
+			/* Got some card; update LATEST CARD */
+			ret = agent_update_latest_card(a, item);
+			if (ret != AGENT_ERR_REQ_ARG && ret != 0) {
+				/* Not updated, and not fine */
+				print(PRINT_ERROR, 
+				      _("Error while updating latest"
+					" card entry: %s\n"), 
+				      agent_strerror(ret));
+				goto cleanup;
+			}
+
 			break;
 
 		case OPTION_LATEX:
@@ -517,6 +540,18 @@ int action_print(const options_t *options, agent *a)
 				goto cleanup;
 			puts(card);
 			free(card);
+
+			/* Got some card; update LATEST CARD */
+			item = num_add_i(item, 6);
+			ret = agent_update_latest_card(a, item);
+			if (ret != AGENT_ERR_REQ_ARG) {
+				/* Not updated, and not fine */
+				print(PRINT_ERROR, 
+				      _("Error while updating latest"
+					" card entry: %s\n"), 
+				      agent_strerror(ret));
+				goto cleanup;
+			}
 			break;
 
 		case OPTION_PROMPT:

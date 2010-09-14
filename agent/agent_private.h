@@ -93,6 +93,8 @@ enum AGENT_REQUEST {
 	/* Skip to passcode */
 	AGENT_REQ_SKIP,
 
+	/* Update latest printed card */
+	AGENT_REQ_UPDATE_LATEST,
 };
 
 

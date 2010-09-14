@@ -244,6 +244,10 @@ extern int ppp_get_int(const state *s, int field, unsigned int *arg);
 /** Get long number from state. */
 extern int ppp_get_num(const state *s, int field, num_t *arg);
 
+/** Set long number in state. This currently works for LATEST_CARD exclusively. */
+extern int ppp_set_num(state *s, int field, const num_t arg, int flags);
+
+
 /** Get character string from state. This sets "arg" memory 
  * to a pointer to state data. This data musn't be altered.
  * Returns 0 on success and 1 if field is incorrect. */

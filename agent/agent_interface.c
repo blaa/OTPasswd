@@ -718,6 +718,18 @@ int agent_skip(agent *a, const num_t counter)
 	return ret;
 }
 
+int agent_update_latest_card(agent *a, const num_t latest_card)
+{
+	int ret;
+	assert(a);
+
+	agent_hdr_init(a, 0);
+
+	agent_hdr_set_num(a, &latest_card);
+	ret = agent_query(a, AGENT_REQ_UPDATE_LATEST);
+	return ret;
+}
+
 
 
 

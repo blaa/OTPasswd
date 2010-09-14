@@ -260,6 +260,7 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 	case AGENT_REQ_GET_NUM:
 	case AGENT_REQ_GET_INT:
 	case AGENT_REQ_GET_WARNINGS:
+	case AGENT_REQ_UPDATE_LATEST:
 		return AGENT_OK;
 
 	case AGENT_REQ_GET_STR:
@@ -289,11 +290,6 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 	case AGENT_REQ_SET_NUM:
 	case AGENT_REQ_SET_INT:
 	case AGENT_REQ_SET_STR:
-		/* TODO FIXME: Only with new state! */
-		/* Well. This should work itself; if state exists
-		 * we will be able to store it only if it's new
-		 * and if it doesn't exists we must read it ourselves
-		 */
 		return AGENT_OK;
 
 
@@ -665,6 +661,70 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		_send_reply(a, ret);
 		break;
 
+	case AGENT_REQ_UPDATE_LATEST:
+	{
+		/* Current value of 'latest card'. r_num has the proposed new value */
+		num_t latest_card; 
+		num_t current_card;
+		print(PRINT_NOTICE, "Executing (%d): update latest\n", r_type);
+
+		/* If already has some state check before reloading 
+		 * We want to update latest card ONLY if is greater
+		 * than latest_card. */
+		if (a->s) {
+			ret = ppp_get_num(a->s, PPP_FIELD_LATEST_CARD, 
+					  &latest_card);
+			ret = ppp_get_num(a->s, PPP_FIELD_CURRENT_CARD, 
+					  &current_card);
+			if (num_cmp(latest_card, r_num) > 0) {
+				print(PRINT_NOTICE, "Current latest_card bigger than one which was supposed to be set.\n");
+				_send_reply(a, AGENT_ERR_REQ_ARG);
+				break;
+			}
+
+			/* Don't print also if LATEST_CARD is not NEXT to current_card 
+			 * Or to the latest_printed card. So user can print somethings at random
+			 * without mangling this variable.
+			 */
+			if (num_cmp(num_add_i(latest_card, 1), r_num) != 0 && 
+			    num_cmp(num_add_i(current_card, 1), r_num) != 0) {
+
+				print(PRINT_NOTICE, "Ignoring latest_card set; card number not adjacent to current.\n");
+				_send_reply(a, AGENT_ERR_REQ_ARG);
+				break;
+			}
+		}
+		
+		ret = _state_init_atomical(a);
+		if (ret == 0) {
+			ret = ppp_get_num(a->s, PPP_FIELD_LATEST_CARD, 
+					  &latest_card);
+			ret = ppp_get_num(a->s, PPP_FIELD_CURRENT_CARD, 
+					  &current_card);
+
+			if (num_cmp(latest_card, r_num) > 0) {
+				print(PRINT_NOTICE, "Current latest_card bigger than one which was supposed to be set.\n");
+				ret = AGENT_ERR_REQ_ARG;
+			} else if (num_cmp(num_add_i(latest_card, 1), r_num) != 0 && 
+				   num_cmp(num_add_i(current_card, 1), r_num) != 0) {
+				/* Don't print also if LATEST_CARD is not NEXT to current_card */
+				print(PRINT_NOTICE, "Ignoring latest_card set; card number not adjacent to current.\n");
+				ret = AGENT_ERR_REQ_ARG;
+			} else {
+				ret = ppp_set_num(a->s, PPP_FIELD_LATEST_CARD, 
+						  r_num, ppp_flags);
+			}
+			ret = _state_fini_atomical(a, ret);
+			if (ret != 0) {
+				print(PRINT_ERROR, "Error while updating latest card.\n");
+			} else {
+				ret = AGENT_OK;
+			}
+		}
+		_send_reply(a, ret);
+		break;
+	}
+
 	case AGENT_REQ_SKIP:
 		print(PRINT_NOTICE, "Executing (%d): Skip\n", r_type);
 
@@ -672,7 +732,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		if (!a->s) {
 			ret = AGENT_ERR_NO_STATE;
 		} else {
-			ret = ppp_skip(a->s, r_num);
+			ret = ppp_skip(a->s, r_num); /* This is done atomically */
 			print(PRINT_NOTICE, "Skipping returned code %d\n", ret);
 		}
 		_send_reply(a, ret);
@@ -687,7 +747,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		} else {
 			ret = ppp_increment(a->s);
 			if (ret == 0) {
-				ret = ppp_authenticate(a->s, r_str);
+				ret = ppp_authenticate(a->s, r_str); /* Done atomically */
 				if (ret != 0) {
 					print(PRINT_NOTICE, "CLI authentication failed.\n");
 				}

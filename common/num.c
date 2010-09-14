@@ -32,7 +32,7 @@ static char num_overflow = 0;
 #define num_set_overflow() _num_set_overflow(__FILE__, __LINE__)
 void _num_set_overflow(const char *file, int location)
 {
-	printf("(%s:%d Overflow!)", file, location);
+	print(PRINT_WARN, "(%s:%d Overflow!)\n", file, location);
 	num_overflow = 1;
 }
 

@@ -1142,7 +1142,7 @@ int ppp_get_num(const state *s, int field, num_t *arg)
 		break;
 
 	default:
-		print(PRINT_CRITICAL, "Illegal field passed to ppp_get_mpz\n");
+		print(PRINT_CRITICAL, "Illegal field passed to ppp_get_num\n");
 		*arg = num_i(0);
 		assert(0);
 		return PPP_ERROR;
@@ -1150,6 +1150,23 @@ int ppp_get_num(const state *s, int field, num_t *arg)
 
 	return 0;
 }
+
+int ppp_set_num(state *s, int field, const num_t arg, int flags)
+{
+	assert(s);
+	switch (field) {
+	case PPP_FIELD_LATEST_CARD:
+		s->latest_card = arg;
+		break;
+	default:
+		print(PRINT_CRITICAL, "Illegal field passed to ppp_set_num. Only latest card can be set.\n");
+		assert(0);
+		return PPP_ERROR;
+	}
+
+	return 0;
+}
+
 
 /* ppp_get_str helpers! */
 static void _ppp_dispose_prompt(state *s)
