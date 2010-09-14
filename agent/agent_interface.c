@@ -20,7 +20,9 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #define DEBUG 1
 
@@ -29,6 +31,57 @@
 #include "nls.h"
 #include "agent_private.h"
 #include "print.h"
+
+/* Check if given exists; if not, try two defaults, return existing path and return
+ * 0 or return AGENT_ERR_INIT_EXECUTABLE */
+static int _get_agent_executable(const char *agent, const char **agent_path)
+{
+	int ret;
+	struct stat st;
+	*agent_path = NULL;
+	const char *agents[] = { agent, "./agent_otp", "agent_otp", NULL };
+	int i;
+
+	if (agent)
+		agents[1] = NULL; /* If given path, check only the one given. */
+
+	/* First agent might be null */
+	for (i=0; i<1 || agents[i]; i++) {
+		if (agents[i] == NULL)
+			continue;
+
+		ret = stat(agents[i], &st);
+		if (ret != 0) {
+			print(PRINT_NOTICE, 
+			      "Error while trying to read agent executable at %s\n", 
+			      agents[i]);
+			continue;
+		}
+
+		if (!S_ISREG(st.st_mode)) {
+			print(PRINT_NOTICE, 
+			      "Agent executable (%s) not a regular file.\n", 
+			      agents[i]);
+			continue;
+		}
+
+		if (!(st.st_mode & S_IXOTH)) {
+			print(PRINT_NOTICE, 
+			      "Agent executable (%s) found but has no execution rights for others.\n", 
+			      agents[i]);
+			continue;
+		}
+
+		/* Everything seems fine */
+		print(PRINT_NOTICE, "Selected agent: %s\n", agents[i]);
+		*agent_path = agents[i];
+		return 0;
+	}
+
+	print(PRINT_ERROR, 
+	      "Unable to locate a valid agent executable. Check your installation.\n");
+	return AGENT_ERR_INIT_EXECUTABLE;
+}
 
 int agent_connect(agent **a_out, const char *agent_executable)
 {
@@ -61,9 +114,9 @@ int agent_connect(agent **a_out, const char *agent_executable)
 		goto cleanup1;
 
 	/* Verify that agent executable PATH exists */
-	if (agent_executable == NULL) {
-		print(PRINT_NOTICE, _("NOTICE: No path for OTP Agent given, using default ./agent_otp\n"));
-		agent_executable = "./agent_otp";
+	ret = _get_agent_executable(agent_executable, &agent_executable);
+	if (ret != 0) {
+		return ret;
 	}
 
 	a->pid = fork();
@@ -279,6 +332,8 @@ const char *agent_strerror(int error)
 		return _("Configuration problem: DB option set to 'global', but OTP agent is not SUID-root.");
 	case AGENT_ERR_INIT_USER:
 		return _("Unable to switch to selected user.");
+	case AGENT_ERR_INIT_EXECUTABLE:
+		return _("Unable to locate agent executable!");
 
 	case AGENT_ERR_MEMORY:
 		return _("Error while allocating memory.");

@@ -684,7 +684,6 @@ error:
 
 
 
-
 #if 0
 
 int ah_update_flags(options_t *options, state *s, int generation)

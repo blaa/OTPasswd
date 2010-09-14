@@ -115,7 +115,7 @@ static void _show_usage(int argc, const char **argv)
 		"                   C is column (A through G), RR - row (1..10)\n"
 		"  current        - passcode used for next time authentication\n"
 		"  [current]      - passcard containing current passcode\n"
-		"  next or [next] - first, not yet printed, passcard\n"
+		/* "  next or [next] - first, not yet printed, passcard\n" TODO: REENABLE! */
 		"\n"
 		"Configuration:\n"
 	        "  -i, --info\n"
@@ -157,12 +157,13 @@ static void _show_usage(int argc, const char **argv)
 		"           Operate on state of specified user. Administrator-only option.\n"
 		"  -v, --verbose\n"
 		"           Display more information about what is happening.\n"
+		"           Try double -v -v for even more information.\n"
 		"  --version\n"
 		"           Display license, warranty, version and author information.\n"
 		"  -h, --help\n"
 		"           Display this message\n"
 		"  OBSOLETE:\n"
-		"  --check  Run all testcases. WARNING: Requires default config file.\n"
+		"  --check  Run all testcases. (Moved to agent_otp executable)\n"
 
 		"\n"
 		"Notes:\n"
@@ -239,11 +240,20 @@ static int parse_flag(options_t *options, const char *arg)
 			if (tmp == -1)    /* Also illegal, but we use */
 				tmp = -2; /* -1 to mark it's not set */
 
+			if (tmp < 2 || tmp > 8) {
+				printf(_("Invalid code length. Valid range is from 2 to 8.\n"));
+				return 1;
+			}
 			options->set_codelength = tmp;
+			
 		} else if (sscanf(arg, "alphabet=%d", &tmp) == 1) {
 			if (tmp == -1)    /* Also illegal, but we use */
 				tmp = -2; /* -1 to mark it's not set */
 
+			if (tmp < 0 || tmp >= ppp_alphabet_count) {
+				printf(_("Invalid alphabet ID. Valid IDs are between 0 and %d.\n"), ppp_alphabet_count);
+				return 1;
+			}
 			options->set_alphabet = tmp;
 		} else {
 			/* Illegal flag */
@@ -435,6 +445,7 @@ static int perform_action(int argc, char **argv, options_t *options)
 	/* Reconfigure printing subsystem; -v might be passed */
 	switch (options->verbose) {
 	case 0: 
+		print_config(PRINT_STDOUT | PRINT_ERROR); 
 		break;
 	case 1: 
 		print_config(PRINT_STDOUT | PRINT_WARN); 

@@ -201,7 +201,8 @@ enum {
 	PPP_FIELD_SPASS,		/* char * */
 };
 
-
+/* Number of available alphabets */
+extern const int ppp_alphabet_count;
 
 #endif
 

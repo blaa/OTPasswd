@@ -306,7 +306,7 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 
 		if (!privileged) {
 			/* Not a root */
-			if (FLAG_DISABLED & r_int)
+			if (FLAG_DISABLED & r_int && cfg->disabling == CONFIG_DISALLOW)
 				return AGENT_ERR_POLICY;
 		}
 

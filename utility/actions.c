@@ -40,7 +40,7 @@ int action_init(options_t *options, agent **a)
 	assert(options);
 
 	/* 1) Connect to agent */
-	ret = agent_connect(a, "./agent_otp");
+	ret = agent_connect(a, NULL);
 	if (ret != 0) {
 		/* Message already printed */
 		return ret;

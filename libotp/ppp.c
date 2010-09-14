@@ -66,7 +66,7 @@ static const char *alphabets[] = {
 	alphabet_alpha,
 };
 
-static const int alphabet_cnt = sizeof(alphabets) / sizeof(*alphabets);
+const int ppp_alphabet_count = sizeof(alphabets) / sizeof(*alphabets);
 
 
 int ppp_init(int print_flags, const char *print_logfile)
@@ -155,7 +155,7 @@ int ppp_verify_alphabet(int id)
 	const int max = cfg->alphabet_max_length;
 
 	/* Check if it's legal */
-	if (id < 0 || id >= alphabet_cnt)
+	if (id < 0 || id >= ppp_alphabet_count)
 		return PPP_ERROR_RANGE;
 
 	/* Fail also if changing is denied and this
@@ -300,7 +300,7 @@ void ppp_alphabet_print(void)
 
 	int i;
 
-	for (i=0; i<alphabet_cnt; i++) {
+	for (i=0; i<ppp_alphabet_count; i++) {
 		int len;
 		const char *alphabet;
 		if (i == 0) {
