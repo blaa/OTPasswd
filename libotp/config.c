@@ -146,7 +146,6 @@ static void _config_defaults(cfg_t *cfg)
 		.passcode_print = CONFIG_ALLOW,
 		.key_print = CONFIG_ALLOW,
 		.skipping = CONFIG_ALLOW,
-		.backward_skipping = CONFIG_DISALLOW,
 
 		.shell_auth = CONFIG_ALLOW,
 		.verbose_output = CONFIG_ALLOW,
@@ -394,17 +393,10 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 				      " %d in config file\n", line_count);
 				goto error;
 			}
-
-/*
- Turned off for practical and security reasons. 
-		} else if (_EQ(line_buf, "db_global")) {
-			_COPY(cfg->global_db_path, equality);
-*/
 		} else if (_EQ(line_buf, "db_user")) {
 			if (strchr(equality, '/') != NULL) {
 				print(PRINT_ERROR,
-				      "DB_USER config option musn't contain slashes. "
-				      "Error at %d line in config file\n", line_count);
+				      "Config Error at %d: DB_USER config option musn't contain slashes.\n", line_count);
 				goto error;
 			}
 			_COPY(cfg->user_db_path, equality);
@@ -459,8 +451,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			pwd = getpwnam(equality);
 			if (pwd == NULL) {
 				print(PRINT_ERROR,
-				      "Config Error: Illegal OOB user specified in config "
-				      "at line %d.\n", line_count);
+				      "Config Error at %d: Illegal OOB user specified in config.\n", line_count);
 				goto error;
 			}
 			cfg->pam_oob_uid = pwd->pw_uid;
@@ -468,7 +459,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			endpwent();
 			if (cfg->pam_oob_uid == 0) {
 				print(PRINT_ERROR,
-				      "Config Error: PAM_OOB_USER variable is set to root.");
+				      "Config Error at %d: PAM_OOB_USER variable is set to root.", line_count);
 				goto error;
 			}
 
@@ -510,8 +501,9 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			REQUIRE_DAE_ARG(0);
 			cfg->skipping = arg;
 		} else if (_EQ(line_buf, "backward_skipping")) {
-			REQUIRE_DAE_ARG(0);
-			cfg->backward_skipping = arg;
+			print(PRINT_ERROR,
+			      "Config Error at %d: Backward skipping policy was removed. This is now strictly prohibited.\n", line_count);
+			goto error;
 		} else if (_EQ(line_buf, "verbose_output")) {
 			REQUIRE_DAE_ARG(0);
 			cfg->verbose_output = arg;

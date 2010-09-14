@@ -152,7 +152,7 @@ static void _show_usage(int argc, const char **argv)
 		"                         Disable user without removing his data.\n"
 		"\n"
 		"  -p, --password\n"
-		"           Set static password.\n"
+		"           Set static password. (optionally: --password=<pass>)\n"
 		"  -u, --user <username|UID>\n"
 		"           Operate on state of specified user. Administrator-only option.\n"
 		"  -v, --verbose\n"
@@ -294,7 +294,7 @@ int process_cmd_line(int argc, char **argv, options_t *options)
 		{"info",		no_argument,		0, OPTION_INFO},
 		{"info-key",		no_argument,		0, OPTION_INFO_KEY},
 		{"config",		required_argument,	0, OPTION_CONFIG},
-		{"password",		no_argument,		0, OPTION_SPASS},
+		{"password",		optional_argument,	0, OPTION_SPASS},
 		{"user",		required_argument,	0, OPTION_USER},
 		{"verbose",		no_argument,		0, OPTION_VERBOSE},
 		{"check",		no_argument,		0, OPTION_CHECK},
@@ -307,7 +307,7 @@ int process_cmd_line(int argc, char **argv, options_t *options)
 	while (1) {
 		int option_index = 0;
 
-		int c = getopt_long(argc, argv, "krs:t:l:P:a:wic:pvu:h", long_options, &option_index);
+		int c = getopt_long(argc, argv, "krs:t:l:P:a:wic:p::vu:h", long_options, &option_index);
 
 		/* Detect the end of the options. */
 		if (c == -1) {
@@ -343,7 +343,14 @@ int process_cmd_line(int argc, char **argv, options_t *options)
 			if (options->action != 0 &&
 			    !(options->action == OPTION_CONFIG && c == OPTION_KEY)) {
 				printf(_("Only one action can be specified on the command line.\n"));
-				return 1;
+				goto error;
+			}
+
+			if (optarg) {
+				options->spass = strdup(optarg);
+			} else {
+				assert(!options->spass);
+				options->spass = NULL;
 			}
 			options->action = c;
 			break;
@@ -439,7 +446,6 @@ error:
 
 static int perform_action(int argc, char **argv, options_t *options)
 {
-	int ret;
 	int retval = 1;
 
 	/* Reconfigure printing subsystem; -v might be passed */
@@ -460,9 +466,8 @@ static int perform_action(int argc, char **argv, options_t *options)
 	/* Perform pre-action preparations (set user, check state existance) */
 	agent *a = NULL;
 	if (options->action != 0 && options->action != OPTION_HELP) {
-		ret = action_init(options, &a);
-		if (ret != 0) {
-			retval = ret;
+		retval = action_init(options, &a);
+		if (retval != 0) {
 			goto cleanup;
 		}
 	}     
@@ -503,19 +508,19 @@ static int perform_action(int argc, char **argv, options_t *options)
 		break;
 
 	case OPTION_AUTH:
-		ret = action_authenticate(options, a);
-		if (ret == 0)
+		retval = action_authenticate(options, a);
+		if (retval == 0)
 			retval = 1;
 		else
 			retval = 0;
 		break;
 
 	case OPTION_SKIP:
-		ret = action_skip(options, a);
+		retval = action_skip(options, a);
 		break;
 
 	case OPTION_WARN:
-		ret = action_warnings(options, a);
+		retval = action_warnings(options, a);
 		break;
 
 	case OPTION_TEXT:
@@ -544,6 +549,7 @@ cleanup:
 	free(options->action_arg), options->action_arg = NULL;
 	free(options->label), options->label = NULL;
 	free(options->contact), options->contact = NULL;
+	free(options->spass), options->spass = NULL;
 	free(options->username), options->username = NULL;
 	return retval;
 }
@@ -560,6 +566,7 @@ static inline int run_cli(int argc, char **argv)
 		.action_arg = NULL,
 		.label = NULL,
 		.contact = NULL,
+		.spass = NULL,
 
 		.username = NULL,
 		.verbose = 0,

@@ -215,10 +215,6 @@ KEY_PRINT=ALLOW
 # Allow user to skip passcodes?
 SKIPPING=ALLOW
 
-# Allow backward skip of passcodes?
-# This option might be removed in future.
-BACKWARD_SKIPPING=DISALLOW
-
 # Can user authenticate on prompt with -a option?
 SHELL_AUTH=ALLOW
 

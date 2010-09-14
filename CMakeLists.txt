@@ -173,7 +173,7 @@ INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_8} DESTINATION "share/man/man
 ##
 ENABLE_TESTING()
 
-ADD_TEST(internal_check ./agent_otp --check)
+ADD_TEST(internal_check ./agent_otp --testcase)
 # This may fail if user does not have state file!
 # This tests are used mostly to have some rationale
 # coverage test results
@@ -190,13 +190,16 @@ ADD_TEST(state_print7 ./otpasswd -v -t "[next]")
 ADD_TEST(state_print8 ./otpasswd -v -t "10D[123]")
 
 ADD_TEST(state_skip1 ./otpasswd -v -s "[300]")
-ADD_TEST(state_flag1 ./otpasswd -v -c show=off)
+ADD_TEST(state_flag1a ./otpasswd -v -c show=off)
+ADD_TEST(state_flag1b ./otpasswd -v -c show=on)
 ADD_TEST(state_flag2 ./otpasswd -v -c codelength=12)
 ADD_TEST(state_flag3 ./otpasswd -v -c alphabet=5)
 ADD_TEST(state_flag4 ./otpasswd -v -c alphabet=2)
 ADD_TEST(state_flag5 ./otpasswd -v -c alphabet=list)
 ADD_TEST(state_flag6 ./otpasswd -v -i)
 ADD_TEST(state_flag7 ./otpasswd -v --info-key)
+ADD_TEST(state_spass ./otpasswd -v --password=asdfghjklASDDFGHJKL@@@%23)
+ADD_TEST(state_spass_fail ./otpasswd -v --password=a)
 ADD_TEST(state_label ./otpasswd -v -c "label=Set label")
 ADD_TEST(state_contact ./otpasswd -v -c "contact=123456")
 ADD_TEST(state_unset ./otpasswd -v -c contact= -c label=)
@@ -221,8 +224,8 @@ ADD_TEST(fail_ok14 ./otpasswd -v -c alphabet=2 illegal_arg)
 ADD_TEST(fail_ok15 ./otpasswd -a '___')
 ADD_TEST(fail_ok16 ./otpasswd --nonexisting-command a)
 
-SET_TESTS_PROPERTIES(state_key0_fail fail_ok1 fail_ok2 fail_ok3 fail_ok4
-  fail_ok5 fail_ok6 fail_ok7 fail_ok8 fail_ok9 fail_ok10 fail_ok11
-  fail_ok12 fail_ok13 fail_ok14 fail_ok15 fail_ok16
-  PROPERTIES WILL_FAIL TRUE)
+SET_TESTS_PROPERTIES(state_key0_fail state_spass_fail fail_ok1 fail_ok2 fail_ok3 
+	fail_ok4 fail_ok5 fail_ok6 fail_ok7 fail_ok8 fail_ok9 fail_ok10 fail_ok11
+	fail_ok12 fail_ok13 fail_ok14 fail_ok15 fail_ok16
+	PROPERTIES WILL_FAIL TRUE)
 

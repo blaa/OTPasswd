@@ -65,14 +65,19 @@ void security_init(void)
 	 * but we want to tell this user nicely. 
 	 * Allow having tty-stdout and arbitrally stdin,
 	 * but die if stdin is from tty and tty-stdout is not 
+	 *
+	 * Update: To make this work with ctest we allow mixes, but
+	 * treat them not as fully detached TTY.
 	 */
 
 	if (isatty(1) == 1) {
 		has_tty = 1;
 	} else {
 		has_tty = 0;
-		if (isatty(0) == 1) 
-			exit(EXIT_FAILURE);
+		if (isatty(0) == 1) {
+			has_tty = 1;
+			/* exit(EXIT_FAILURE); */
+		}
 	}
 
 	ret = chdir("/");

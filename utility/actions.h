@@ -58,6 +58,7 @@ typedef struct {
 	char *action_arg;
 	char *label;
 	char *contact;
+	char *spass;
 
 	char *username;
 	int verbose;

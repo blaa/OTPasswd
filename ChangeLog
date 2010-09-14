@@ -19,6 +19,11 @@ Done:
         * [+] Do not store things in mpz_t which don't need it (spass)
         * [+] Sanitize gettext environment
 	* [+] Accept 2G[2] passcode specification entries.
+	* [+] All previous functionality is now finally implemented.
+	      All implemented testcases where successfully run after
+	      The Split.
+	* [+] Backward skipping removed from configuration.
+	
 In progress:
         * [?] Cleanup PPP interface. This should look like follows.
               "State" is class implementing some basic features of

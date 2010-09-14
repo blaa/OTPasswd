@@ -299,12 +299,13 @@ static int request_verify_policy(const agent *a, const cfg_t *cfg)
 
 		/* FLAGS */
 	case AGENT_REQ_FLAG_ADD:
-
+	case AGENT_REQ_FLAG_CLEAR:
 		if (!privileged) {
 			/* Not a root */
 			if (FLAG_DISABLED & r_int && cfg->disabling == CONFIG_DISALLOW)
 				return AGENT_ERR_POLICY;
 		}
+		return AGENT_OK;
 
 
 	case AGENT_REQ_FLAG_GET:

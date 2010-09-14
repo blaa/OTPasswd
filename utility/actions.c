@@ -347,10 +347,16 @@ int action_spass(const options_t *options, agent *a)
 	int errors;
 
 	/* This must be done when the state is NOT locked */
-	const char *pass = ah_get_pass();
-	if (!pass) {
-		print(PRINT_ERROR, _("No password returned\n"));
-		return 1;
+	const char *pass;
+
+	if (options->spass == NULL) {
+		pass = ah_get_pass();
+		if (!pass) {
+			print(PRINT_ERROR, _("No password returned\n"));
+			return 1;
+		}
+	} else {
+		pass = options->spass;
 	}
 
 	i = strlen(pass);
@@ -358,12 +364,12 @@ int action_spass(const options_t *options, agent *a)
 	if (i == 0) {
 		errors = agent_set_spass(a, NULL, 1);
 		if (agent_is_agent_error(errors)) {
-			printf(_("Agent error while setting password: %s\n"), agent_strerror(errors));
+			printf(_("Agent error while unsetting password: %s\n"), agent_strerror(errors));
 			return errors;
 		}
 
 		agent_print_spass_errors(errors);
-		return errors ? PPP_ERROR : 0;
+		return errors==PPP_ERROR_SPASS_UNSET  ? 0 : PPP_ERROR;
 	} else {
 		errors = agent_set_spass(a, pass, 0);
 		if (agent_is_agent_error(errors)) {
@@ -373,7 +379,7 @@ int action_spass(const options_t *options, agent *a)
 		}
 
 		agent_print_spass_errors(errors);
-		return errors ? PPP_ERROR : 0;
+		return errors==PPP_ERROR_SPASS_SET  ? 0 : PPP_ERROR;
 	}
 }
 
@@ -390,7 +396,10 @@ int action_warnings(const options_t *options, agent *a)
 		return ret;
 	}
 
-	agent_print_ppp_warnings(warnings, failures);
+	if (warnings == 0)
+		print(PRINT_NOTICE, _("No warnings.\n"));
+	else
+		agent_print_ppp_warnings(warnings, failures);
 	return 0;
 }
 

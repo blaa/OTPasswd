@@ -86,7 +86,7 @@ const char *ah_get_pass(void)
 
 	/* Turn off echo */
 	if (tcgetattr(0, &t) != 0) {
-		print(PRINT_ERROR, _("Unable to turn off characters visibility!\n"));
+		print(PRINT_ERROR, _("Unable to turn off character visibility!\n"));
 		return NULL;
 	}
 	
@@ -94,7 +94,7 @@ const char *ah_get_pass(void)
 	t.c_lflag &= ~ECHO;
 
 	if (tcsetattr(0, 0, &t) != 0) {
-		print(PRINT_ERROR, _("Unable to turn off characters visibility!\n"));
+		print(PRINT_ERROR, _("Unable to turn off character visibility!\n"));
 		return NULL;
 	}
 	

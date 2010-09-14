@@ -34,6 +34,23 @@
 #include "security.h"
 #include "testcases.h"
 
+/* Show any config validation errors */
+int do_verify_config(void)
+{
+	cfg_t *cfg = NULL;
+	print_init(PRINT_NOTICE | PRINT_STDOUT, NULL);
+
+	printf("Loading configuration...\n");
+	cfg = cfg_get();
+	if (!cfg) {
+		printf("Errors while loading config.\n");
+		return 1;
+	} else {
+		printf("Configuration file loaded correctly.\n");
+		return 0;
+	}
+}
+
 
 /* Testcase function should be run only if we're not 
  * a SUID program or when we are run by root.
@@ -66,9 +83,6 @@ int do_testcase(void)
 		printf("FATAL: Unable to read config file.\n");
 		return 1;
 	}
-
-
-
 
 	/* Change DB info so we won't overwrite anything
 	 * important */
@@ -181,15 +195,23 @@ int main(int argc, char **argv)
 	/* 1) Init safe environment, store current uids, etc. */
 	security_init();
 
-	if (!security_is_tty_detached()) {
+	if (!security_is_tty_detached() || argc > 1) {
 		/* We have stdout */
 		/* Check if we should run testcases. */
-		if (argc == 2 && strcmp(argv[1], "--check") == 0) {
+		if (argc == 2 && strcmp(argv[1], "--testcase") == 0) {
 			if (!security_is_suid() || security_is_privileged()) {
 				/* We're not suid or we are root already */
 				return do_testcase();
 			}
 		}
+
+		if (argc == 2 && strcmp(argv[1], "--check-config") == 0) {
+			if (!security_is_suid() || security_is_privileged()) {
+				/* We're not suid or we are root already */
+				return do_verify_config();
+			}
+		}
+
 
 		printf("FATAL: This program should not be used like this.\n"
 		       "Use appropriate interface instead (like otpasswd).\n\n");
@@ -197,11 +219,17 @@ int main(int argc, char **argv)
 
 		if (!security_is_suid()) {
 			printf("Since this program is not SUID you can run\n"
-			       "a set of testcases with --check option.\n");
+			       "a set of testcases with --testcase option and check\n"
+			       "config file propriety with --check-config\n");
 		} else {
 			if (security_is_privileged()) {
 				printf("Since you're running this program as root you can\n"
-				       "run a set of testcases with --check option\n");
+				       "run a set of testcases with --check option and check\n"
+				       "config file propriety with --check-config\n");
+
+			} else {
+				printf("Since this program is SUID-root only root can run it's\n"
+				       "internal testcases or validate configuration file.\n");
 			}
 		}
 		exit(EXIT_FAILURE);
