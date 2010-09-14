@@ -1,3 +1,25 @@
+/**********************************************************************
+ * otpasswd -- One-time password manager and PAM module.
+ * Copyright (C) 2009, 2010 by Tomasz bla Fortuna <bla@thera.be>
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with otpasswd. If not, see <http://www.gnu.org/licenses/>.
+ *
+ * DESC: 
+ * Functions used internally by agent and agent interface.
+ * Private agent interface.
+ **********************************************************************/
+
 #ifndef _AGENT_PRIVATE_H_
 #define _AGENT_PRIVATE_H_
 
@@ -167,19 +189,23 @@ typedef struct {
 /** Configure agent interface to run as server */
 extern int agent_server(agent **a_out);
 
-/** Prepares header for sending */
+/** Prepares header for sending. */
 extern void agent_hdr_init(agent *a, int status);
-/* Clear all data from header */
+/** Clear all data from header */
 extern void agent_hdr_sanitize(agent *a);
+/** Sets NUM argument inside agent_interface header */
 extern void agent_hdr_set_num(agent *a, const num_t *num_arg);
+/** Sets integer argument inside agent_interface header */
 extern void agent_hdr_set_int(agent *a, int int_arg, int int_arg2);
+/** Sets string argument inside agent_interface header */
 extern int agent_hdr_set_str(agent *a, const char *str_arg);
-/* Allows \x00 bytes inside str */
+/** Like agent_hdr_set_str but allows \x00 bytes inside str */
 extern int agent_hdr_set_bin_str(agent *a, const char *str_arg, int length);
 
 
-/** Send, receive a header */
+/** Send header to the agent */
 extern int agent_hdr_send(const agent *a);
+/** Receive header from the agent */
 extern int agent_hdr_recv(agent *a);
 
 /** Send header of query type and return result */

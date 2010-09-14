@@ -55,12 +55,17 @@ typedef struct {
 /*****************************
  * Setters 
  *****************************/
+
+/** Initialize from two 64 bit integers */
 static inline num_t num_ii(uint64_t arg1, uint64_t arg2) {
 	const num_t a = {arg1, arg2};
 	return a;
 }
 
+/** Helper, initialize from one integer */
 #define num_i(x) num_ii(0L, x)
+
+/** Initialize with zero */
 #define num_zero() num_ii(0L, 0L)
 
 static inline void num_init_(num_t *n) {
@@ -71,28 +76,41 @@ static inline void num_init_(num_t *n) {
 /*****************************
  * Logical operations
  *****************************/
+/** AND two nums */
 extern num_t num_and(const num_t arg1, const num_t arg2);
+/** Left shift of a num */
 extern num_t num_lshift(const num_t arg);
+/** Right shift of a num */
 extern num_t num_rshift(const num_t arg);
 
 /*****************************
  * Comparisons
  *****************************/
+/** Compare with integer */
 extern int num_cmp_i(const num_t arg1, const uint64_t arg2);
+/** Compare two nums */
 extern int num_cmp(num_t arg1, num_t arg2);
+/** Return sign of a num. 0 or 1, never -1 currently. */
 #define num_sgn(a) num_cmp((a), num_i(0))
 
 
 /*****************************
  * Arithmetic operations
  *****************************/
+/** Add two nums */
 extern num_t num_add(const num_t arg1, const num_t arg2);
+/** Subtract two nums */
 extern num_t num_sub(const num_t arg1, const num_t arg2);
+/** Mul num by integer */
 extern num_t num_mul_i(num_t arg1, const uint64_t arg2);
+/** Divide num by integer. Whole part in result, reminder is returned */
 extern uint64_t num_div_i(num_t *result, const num_t divwhat, const uint64_t divby);
 
+/** Add to integer */
 #define num_add_i(a, b) num_add((a), num_i(b))
+/** Subtract from integer */
 #define num_sub_i(a, b) num_sub((a), num_i(b))
+/** Clear num. Compatibility macro. */
 #define num_clear(a) do { (a) = num_i(0); } while (0)
 
 
@@ -110,28 +128,30 @@ extern uint64_t num_div_i(num_t *result, const num_t divwhat, const uint64_t div
  * Implement as storing in buffer (preallocated
  ************************************************/
 
-/* Exports num_t into binary, hex string or LSB first PPP compatible HEX string 
+enum num_str_type { NUM_FORMAT_DEC, NUM_FORMAT_HEX, NUM_FORMAT_PPP_HEX, NUM_FORMAT_BIN };
+
+/** Exports num_t into binary, hex string or LSB first PPP compatible HEX string 
  * Minimal safe length of buff for all options is 39 bytes. 
  * Binary is not \0 padded and it's length is 16 bytes.
  * 0 - OK
  * 1 - Error
  */
-enum num_str_type { NUM_FORMAT_DEC, NUM_FORMAT_HEX, NUM_FORMAT_PPP_HEX, NUM_FORMAT_BIN };
 extern int num_export(const num_t num, char *buff, enum num_str_type t);
 
-/* 
- * Parse either decimal or hex into a num_t type.
+/** Parse either decimal or hex into a num_t type.
  * 0 - success
  */
 extern int num_import(num_t *num, const char *buff, enum num_str_type t);
 
 /* Helpers */
-/* Set MSB to 1 for PPPv3 compatibility */
+/** Print num as HEX. Set MSB to 1 for PPPv3 compatibility */
 extern void num_print_hex(const num_t num, int msb);
+/** Print num as dec */
 extern void num_print_dec(const num_t arg);
 
-/* This function set's GMP memory allocation routines 
- * to safer versions which cleanup deallocated memory */
+/** This function set's GMP memory allocation routines 
+ * to safer versions which cleanup deallocated memory.
+ * Current implementation does nothing. */
 extern void num_init(void);
 
 #endif

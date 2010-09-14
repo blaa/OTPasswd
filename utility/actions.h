@@ -26,7 +26,7 @@
 
 #include "agent_interface.h"
 
-/* Constants used for parsing input data.
+/** Constants used for parsing input data.
  * Shared between otpasswd.c and _actions. */
 enum {
 	OPTION_KEY      = 'k',
@@ -52,7 +52,7 @@ enum {
 	OPTION_ALPHABETS = 'A',
 };
 
-/* Struct holding "user CLI request" information and some additional fields */
+/** Struct holding "user CLI request" information and some additional fields */
 typedef struct {
 	char action;
 	char *action_arg;

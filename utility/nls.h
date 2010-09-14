@@ -27,6 +27,7 @@
 #	include <locale.h>
 #	define _(t) gettext(t)
 
+/** Locale initialization */
 static inline void locale_init(void)
 {
 	(void) setlocale(LC_ALL, "");
@@ -38,6 +39,7 @@ static inline void locale_init(void)
 
 #	define _(t) (t)
 
+/** Locale initialization in case NLS is disabled */
 static inline void locale_init(void)
 {
 	/* Empty */

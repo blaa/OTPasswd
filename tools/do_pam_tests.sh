@@ -36,10 +36,10 @@ mv /etc/otpasswd/otpasswd.conf.2 /etc/otpasswd/otpasswd.conf
 cp tools/otpasswd-testcase /etc/pam.d/
 
 # additional testcases which will create a state
-rm -rf ~/.otpasswd
-yes no | ./otpasswd -c salt=off -c codelength=5 -c alphabet=3 -v -c contact=ble -c label=blebla -k
-yes yes | ./otpasswd -v -c salt=on -c codelength=6 -c alphabet=2 -c contact=ble -c label=lala -k
-yes yes | ./otpasswd -v -r
+#rm -rf ~/.otpasswd
+#yes no | ./otpasswd -c salt=off -c codelength=5 -c alphabet=3 -v -c contact=ble -c label=blebla -k
+#yes yes | ./otpasswd -v -c salt=on -c codelength=6 -c alphabet=2 -c contact=ble -c label=lala -k
+#yes yes | ./otpasswd -v -r
 
 # Pam tests on safe defaults please.
 yes yes | ./otpasswd -v -c salt=on -c alphabet=1 -c codelength=4 -k

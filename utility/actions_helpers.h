@@ -62,25 +62,4 @@ extern int ah_get_passcode_number(agent *a,
                                   num_t *passcode, char column, char row);
 
 
-
-
-
-#if 0
-
-/* Check if passcard is in range */
-extern int ah_is_passcard_in_range(const state *s, const num_t passcard);
-
-/* Check if passcode is in range */
-extern int ah_is_passcode_in_range(const state *s, const num_t passcard);
-
-
-/* Update state flags. Checks policy. If generation is 1 we allow salt changes. */
-extern int ah_update_flags(options_t *options, state *s, int generation);
-
-
-
-
-
-#endif 
-
 #endif

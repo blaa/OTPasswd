@@ -267,9 +267,11 @@ extern int ppp_set_int(state *s, int field, unsigned int arg, int options);
 extern int ppp_set_str(state *s, int field, const char *arg, int options);
 
 /** Setter/getter/checker for flag fields. No policy checking now */
-/* Check if flag is set in state, add flag and remove flag. */
+/** Check if flag is set in state. (returns 1 if it does) */
 extern int ppp_flag_check(const state *s, int flag);
+/** Enable a flag in state */
 extern void ppp_flag_add(state *s, int flag);
+/** Remove flag from state. */
 extern void ppp_flag_del(state *s, int flag);
 
 /** Ensure policy (static password errors) and set current SPASS.  */

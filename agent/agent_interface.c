@@ -39,7 +39,12 @@ static int _get_agent_executable(const char *agent, const char **agent_path)
 	int ret;
 	struct stat st;
 	*agent_path = NULL;
-	const char *agents[] = { agent, "./agent_otp", "agent_otp", NULL };
+	const char *agents[] = { 
+		agent,
+		"./agent_otp",
+		"/usr/bin/agent_otp",
+		"/usr/local/bin/agent_otp",
+		NULL };
 	int i;
 
 	if (agent)
@@ -279,14 +284,14 @@ int agent_server(agent **a_out)
 	return AGENT_OK;
 }
 
-int agent_set_user(agent *a, char *username)
+int agent_set_user(agent *a, const char *username)
 {
-	/* TODO: This should fail for non-existent user */
+	/* TODO: This should fail early for non-existent user */
 	assert(a);
 	assert(username);
 	if (a->username)
 		free(a->username);
-	a->username = username;
+	a->username = strdup(username);
 	return 0;
 }
 

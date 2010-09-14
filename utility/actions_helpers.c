@@ -144,6 +144,7 @@ int ah_show_state(agent *a)
 	int ret;
 	num_t current_card, unsalted_counter, latest_card, 
 		max_card, max_code;
+	int failures, recent_failures;
 	const char *which = NULL;
 
 	if ((ret = agent_get_num(a, PPP_FIELD_CURRENT_CARD, &current_card)) != 0) {
@@ -171,6 +172,16 @@ int ah_show_state(agent *a)
 		goto error;
 	}
 
+	if ((ret = agent_get_int(a, PPP_FIELD_FAILURES, &failures)) != 0) {
+		which = "failures";
+		goto error;
+	}
+
+	if ((ret = agent_get_int(a, PPP_FIELD_FAILURES, &recent_failures)) != 0) {
+		which = "recent failures";
+		goto error;
+	}
+
 
 	printf(_("Current card        = "));
 	num_print_dec(current_card);
@@ -191,6 +202,9 @@ int ah_show_state(agent *a)
 	printf(_("Max code            = "));
 	num_print_dec(max_code);
 	printf("\n");
+
+	printf(_("All auth failures   = %d\n"), failures);
+	printf(_("Recent failures     = %d\n"), recent_failures);
 
 	return 0;
 error:

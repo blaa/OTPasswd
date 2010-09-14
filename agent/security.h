@@ -28,28 +28,28 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-/* Init environment for SUID program */
+/** Init environment for SUID program */
 extern void security_init(void);
 
-/* Pernamently drop rights back to the user who called us */
+/** Pernamently drop rights back to the user who called us */
 extern void security_permanent_drop(void);
 
-/* Pernamently switch user to given uid/gid */
+/** Pernamently switch user to given uid/gid */
 extern void security_permanent_switch(uid_t uid, uid_t gid);
 
-/* Are we SUID? Check ones defined in argument. */
+/** Are we SUID? Check ones defined in argument. */
 extern int security_is_suid();
 
-/* Are we run by root? */
+/** Are we run by root? */
 extern int security_is_privileged();
 
-/* Are we connected (in any way) to some tty? */
+/** Are we connected (in any way) to some tty? */
 extern int security_is_tty_detached(void);
 
-/* Parse user specification (name or UID) ensure it exists */
+/** Parse user specification (name or UID) ensure it exists */
 extern char *security_parse_user(const char *spec);
 
-/* Get username of the user who runned current process */
+/** Get username of the user who runned current process */
 extern char *security_get_calling_user(void);
 
 #endif

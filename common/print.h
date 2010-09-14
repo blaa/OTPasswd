@@ -30,37 +30,42 @@
 #define DEBUG_POSITIONS 1
 #endif
 
+/** Flags possible to print_init */
 enum PRINT_FLAGS {
-	/* Shown when -v passed, can be printed during normal execution */
+	/** Shown when -v passed, can be printed during normal execution */
 	PRINT_NOTICE = 1,
-	/* Can be printed during normal execution; will be visible always in utility */
+	/** Can be printed during normal execution; will be visible always in utility */
 	PRINT_WARN = 2,
-	/* Will be visible always, should only be used on errors */
+	/** Will be visible always, should only be used on errors */
 	PRINT_ERROR = 3,
-	/* Like above but errors are really critical. Program will die and 
+	/** Like above but errors are really critical. Program will die and 
 	 * anything otpasswd related can be corrupted. */
 	PRINT_CRITICAL = 4,
-	/* Print error message but don't preceed it with ERROR: label */
+	/** Print error message but don't preceed it with ERROR: label */
 	PRINT_MESSAGE = 5,
+	/** Don't preceed with anything */
 	PRINT_NONE = 50,
 
+	/** Print to stdout */
 	PRINT_STDOUT = 64,
+
+	/** Print to syslog */
 	PRINT_SYSLOG = 128,
 };
 
-/* Initialize logging system */
+/** Initialize logging system */
 extern int print_init(int flags, const char *log_file);
 
-/* Clean up after logging */
+/** Clean up after logging */
 extern void print_fini();
 
-/* Set log_level/syslog/stdout to another value */
+/** Set log_level/syslog/stdout to another value */
 extern void print_config(int flags);
 
-/* Log some data */
+/** Log some data */
 extern int _print(const char *file, const int line, int level, const char *fmt, ...);
 
-/* Log data and preceed it with perror message */
+/** Log data and preceed it with perror message */
 extern int _print_perror(const char *file, const int line, int level, const char *fmt, ...);
 
 #if DEBUG_POSITIONS == 1

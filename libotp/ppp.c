@@ -421,7 +421,7 @@ int ppp_authenticate(const state *s, const char *passcode)
 	if (passcode == NULL)
 		return 1;
 
-	/* Disabled user can't authenticate */
+	/* Disabled user can't authenticate ever */
 	if (ppp_flag_check(s, FLAG_DISABLED)) {
 		return PPP_ERROR_DISABLED;
 	}
