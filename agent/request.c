@@ -40,7 +40,6 @@ static int _send_reply(agent *a, int status)
 	agent_hdr_set_status(a, status);
 	agent_hdr_set_type(a, AGENT_REQ_REPLY);
 	int ret = agent_hdr_send(a);
-	print(PRINT_NOTICE, "Reply sent (status=%d)\n", status);
 	return ret;
 }
 
@@ -337,12 +336,39 @@ static int request_verify_policy(agent *a, const cfg_t *cfg)
 
 		/* FLAGS */
 	case AGENT_REQ_FLAG_ADD:
-	case AGENT_REQ_FLAG_CLEAR:
-		if (!privileged) {
-			/* Not a root */
-			if (FLAG_DISABLED & r_int && cfg->disabling == CONFIG_DISALLOW)
-				return AGENT_ERR_POLICY;
+		/* No one can change this: */
+		if ((FLAG_SALTED & r_int) && cfg->salt == CONFIG_DISALLOW)
+			return AGENT_ERR_POLICY_SALT;
+
+		if (privileged) {
+			return AGENT_OK;
 		}
+
+		/* Root can change this: */
+		if (FLAG_DISABLED & r_int && cfg->disabling == CONFIG_DISALLOW)
+			return AGENT_ERR_POLICY_DISABLED;
+
+		if (FLAG_SHOW & r_int && cfg->show == CONFIG_DISALLOW)
+			return AGENT_ERR_POLICY_SHOW;
+
+		return AGENT_OK;
+
+	case AGENT_REQ_FLAG_CLEAR:
+		/* Check things even root shouldn't try (as PAM won't allow them) */
+		if ((FLAG_SALTED & r_int) && cfg->salt == CONFIG_ENFORCE)
+			return AGENT_ERR_POLICY_SALT;
+
+		if (privileged) {
+			return AGENT_OK;
+		}
+		/* Root can change this: */
+
+		if (FLAG_DISABLED & r_int && cfg->disabling == CONFIG_DISALLOW)
+			return AGENT_ERR_POLICY_DISABLED;
+
+		if (FLAG_SHOW & r_int && cfg->show == CONFIG_ENFORCE)
+			return AGENT_ERR_POLICY_SHOW;
+
 		return AGENT_OK;
 
 
@@ -641,7 +667,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_GET_PASSCODE:
-		print(PRINT_NOTICE, "Executing (%d): Get passcode\n", r_type);
 		if (!a->s) {
 			/* This doesn't need to work atomically */
 			ret = AGENT_ERR_NO_STATE;

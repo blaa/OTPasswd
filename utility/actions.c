@@ -216,27 +216,51 @@ int action_key_generate(const options_t *options, agent *a)
 		switch (retval) {
 		case AGENT_ERR_POLICY_REGENERATION:
 			printf(_("Policy denies key regeneration.\n"));
-			goto cleanup;
+			break;
 
 		case AGENT_ERR_POLICY_GENERATION:
 			printf(_("Policy denies key generation. Ask administrator to create you state.\n"));
-			goto cleanup;
+			break;
 
 		case AGENT_ERR_POLICY_DISABLED:
 			printf(_("You currently have state but it was disabled.\n"));
-			goto cleanup;
+			break;
 		default:
 			printf(_("Error: %s\n"), agent_strerror(retval));
-			goto cleanup;
+			break;
 		case 0:
 			assert(0);
 		}
+		goto cleanup;
 	}
+
+	/* Set flags */
+	retval = ah_set_options(a, options);
+	if (retval != 0) {
+		switch (retval) {
+		case AGENT_ERR_POLICY_DISABLED:
+			printf(_("Policy denies toggling the DISABLE flag.\n"));
+			break;
+		case AGENT_ERR_POLICY_SALT:
+			printf(_("Policy denies toggling the SALT flag.\n"));
+			break;
+		case AGENT_ERR_POLICY_SHOW:
+			printf(_("Policy denies toggling the SHOW flag.\n"));
+			break;
+
+		default:
+			printf(_("Error while setting flags: %s\n"), 
+			       agent_strerror(retval));
+			break;
+		case 0:
+			assert(0);
+		}
+		goto cleanup;
+	}
+
 
 	/* Check existance of previous key */
 	if (options->user_has_state) {
-		/* TODO: pre-verify policy (REGENERATION) and die if impossible */
-
 		puts(
 			"*********************************************************\n"
 			"* This will irreversibly erase your current key, making *\n"
@@ -251,13 +275,6 @@ int action_key_generate(const options_t *options, agent *a)
 		}
 	}
 
-	/* Set flags */
-	retval = ah_set_options(a, options);
-	if (retval != 0) {
-		print(PRINT_ERROR, _("Unable to set required flags: %s\n"), 
-		      agent_strerror(retval));
-		goto cleanup;
-	}
 
 
 	/* Display user flags */
@@ -484,23 +501,6 @@ int action_info(const options_t *options, agent *a)
 
 	retval = 0;
 cleanup:
-#if 0
-	/* save_state musn't be true if retval is */
-	assert(!(retval && save_state));
-
-	/* Finish state. If retval = 0 and save_state nonzero then save it */
-	if (ah_fini_state(&s, save_state) != 0) {
-		retval = 1;
-	} else {
-		/* If we were supposed to change something print the result... */
-		if (options->action != OPTION_INFO && options->action != OPTION_INFO_KEY) {
-			if (save_state)
-				printf(_("Configuration updated.\n"));
-			else
-				printf(_("Configuration not changed.\n"));
-		}
-	}
-#endif
 	return retval;
 }
 
@@ -608,44 +608,7 @@ int action_print(const options_t *options, agent *a)
 		}
 	}
 
-	/* Increment latest_card printed in some circumstances:
-	 * 1) "next" argument used with option --text or --latex
-	 * Maybe:
-	 * When printing latest_card + 1 card?
-	 */
-#if 0
-	int do_increment = 0;
-	if (strcasecmp(options->action_arg, "next") == 0) {
-		if (options->action == OPTION_LATEX || 
-		    options->action == OPTION_TEXT)
-			do_increment = 1;
-	}
-
-	/* Increment "latest_card" in state if appropriate  */
-	if (do_increment) {
-		/* If current code is further than s->latest_card
-		 * Then ignore this setting and start printing
-		 * from current_card */
-		if (mpz_cmp(s->current_card, s->latest_card) > 0) {
-			/* Set next to current, or current + 5 for LaTeX */
-			if (options->action == OPTION_LATEX) {
-				mpz_add_ui(s->latest_card, s->current_card, 5);
-			} else {
-				mpz_set(s->latest_card, s->current_card);
-			}
-		} else {
-			/* Increment by 1 or by 6 for LaTeX */
-			mpz_add_ui(
-				s->latest_card,
-				s->latest_card,
-				options->action == OPTION_LATEX ? 6 : 1);
-		}
-		save_state = 1;
-	}
-#endif
-
 	ret = 0;
-
 cleanup:
 	return ret;
 }

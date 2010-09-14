@@ -353,6 +353,7 @@ int ah_show_keys(agent *a, const options_t *options)
 
 	/* This prints data MSB */
 	printf(_("Counter = "));
+
 	num_print_hex(counter, 1);
 	printf("\n");
 
@@ -428,10 +429,9 @@ int ah_set_options(agent *a, const options_t *options)
 		}
 	}
 
-
 	return 0;
 error:
-	print(PRINT_ERROR, _("Unable to set required option (%s): %s\n"), 
+	print(PRINT_WARN, _("Unable to set required option (%s): %s\n"), 
 	      what, agent_strerror(retval));
 	return retval;
 

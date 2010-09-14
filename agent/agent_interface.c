@@ -223,7 +223,9 @@ int agent_connect(agent **a_out, const char *agent_executable)
 			ret = AGENT_ERR_SERVER_INIT;
 			goto cleanup1;
 		} else if (ret == AGENT_ERR_INIT_CONFIGURATION) {
-			print(PRINT_MESSAGE, _("Agent detected configuration problem: %s\n"), agent_strerror(a->rhdr.int_arg));
+			print(PRINT_MESSAGE, _("Agent detected configuration problem: %s\n"), 
+			      agent_strerror(a->rhdr.int_arg));
+			print(PRINT_MESSAGE, _("Try running agent (agent_otp) with --check-config option to get more details\n"));
 			goto cleanup1;
 		} else if (ret == AGENT_ERR_INIT_PRIVILEGES) {
 			print(PRINT_MESSAGE, _("Configuration problem was detected:\n"));
@@ -350,6 +352,12 @@ const char *agent_strerror(int error)
 		return _("Requested action denied by policy.");
 	case AGENT_ERR_POLICY_REGENERATION:
 		return _("Key regeneration denied by policy.");
+	case AGENT_ERR_POLICY_GENERATION:
+		return _("Key generation denied by policy.");
+	case AGENT_ERR_POLICY_SALT:
+		return _("Salt option setting is enforced by policy.");
+	case AGENT_ERR_POLICY_SHOW:
+		return _("Show option setting is enforced by policy.");
 
 
 	case AGENT_ERR_MUST_CREATE_STATE:
@@ -360,7 +368,7 @@ const char *agent_strerror(int error)
 		return _("Coding error: Action requires created/read state.");
 
 	default:
-		if (error >= 100 && error <= 2000)
+		if (agent_is_agent_error(error))
 			return _( ppp_get_error_desc(error) );
 		return _( "Not an agent/PPP error." );
 	}
