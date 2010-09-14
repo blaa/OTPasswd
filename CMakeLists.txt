@@ -141,7 +141,7 @@ ADD_EXECUTABLE(agent_otp agent/agent.c agent/request.c agent/testcases.c agent/s
 
 
 # Linking targets
-TARGET_LINK_LIBRARIES(pam_otpasswd  common otp pam)
+TARGET_LINK_LIBRARIES(pam_otpasswd  otp common pam)
 TARGET_LINK_LIBRARIES(otpasswd      agent common otp)
 TARGET_LINK_LIBRARIES(agent_otp     agent common otp)
 

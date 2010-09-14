@@ -173,19 +173,27 @@ int main(int argc, char **argv)
 	}
 
 	ret = 0;
+	printf(	"Two authentication will be done. First should succeed,\n"
+		"second should fail. You'd better run it as root.\n\n");
 
 	/* Correct authentication */
+	printf("Should succeed:\n");
 	retval = authenticate(argv[1], argv[2]);
 	if (retval != 0) {
 		printf("*** Correct auth testcase failed (%d)\n", retval);
 		ret++;
+	} else {
+		printf("*** CORRECT AUTH SUCCEDDED\n");
 	}
 
 	/* Failed authenticate */
+	printf("\n\nShould fail:\n");
 	retval = authenticate(argv[1], "failedfailedfailed");
 	if (retval == 0) {
-		printf("*** Failed auth testcase failed (%d)\n", retval);
+		printf("*** Should-fail auth testcase failed (%d)\n", retval);
 		ret++;
+	} else {
+		printf("*** SHOULD-FAIL AUTH SUCCEDDED\n");
 	}
 
 	return ret;
