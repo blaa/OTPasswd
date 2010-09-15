@@ -105,13 +105,15 @@ IF(NOT GZIP_TOOL)
 ENDIF(NOT GZIP_TOOL)
 
 # List manual sources
-SET(man_src_1 docs/otpasswd.1 docs/agent_otp.1 )
+SET(man_src_1 docs/otpasswd.1 )
+SET(man_src_1a docs/agent_otp.1 )
 SET(man_src_5 docs/otpasswd.5    )
 SET(man_src_8 docs/pam_otpasswd.8)
-SET(man_src   "${man_src_1}" "${man_src_5}" "${man_src_8}")
+SET(man_src   "${man_src_1}" "${man_src_1a}" "${man_src_5}" "${man_src_8}")
 
 # Generate list compressed manuals
 STRING(REGEX REPLACE "(\\.[0-9]+)(;|$)" "\\1.gz\\2" man_gz_1 "${man_src_1}")
+STRING(REGEX REPLACE "(\\.[0-9]+)(;|$)" "\\1.gz\\2" man_gz_1a "${man_src_1a}")
 STRING(REGEX REPLACE "(\\.[0-9]+)(;|$)" "\\1.gz\\2" man_gz_5 "${man_src_5}")
 STRING(REGEX REPLACE "(\\.[0-9]+)(;|$)" "\\1.gz\\2" man_gz_8 "${man_src_8}")
 STRING(REGEX REPLACE "(\\.[0-9]+)(;|$)" "\\1.gz\\2" man_gz   "${man_src}"  )
@@ -176,9 +178,10 @@ INSTALL(TARGETS pam_otpasswd otpasswd agent_otp
 
 INSTALL(FILES examples/otpasswd-login DESTINATION /etc/pam.d)
 INSTALL(FILES examples/otpasswd.conf.dist DESTINATION /etc/otpasswd)
-INSTALL(FILES pl.gmo DESTINATION /usr/share/otpasswd)
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/pl.gmo DESTINATION /usr/share/otpasswd)
 
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_1} DESTINATION "share/man/man1")
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_1a} DESTINATION "share/man/man1")
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_5} DESTINATION "share/man/man5")
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_8} DESTINATION "share/man/man8")
 
