@@ -695,7 +695,8 @@ int cfg_permissions(void)
 	}
 
 	cfg_t *cfg = cfg_get();
-	assert(cfg);
+	if (!cfg)	
+		return PPP_ERROR;
 
 	switch (cfg->db) {
 	case CONFIG_DB_MYSQL:

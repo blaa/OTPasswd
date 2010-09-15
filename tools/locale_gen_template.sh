@@ -1,10 +1,14 @@
 #!/bin/bash
-xgettext -d otpasswd -s -o po/otpasswd.pot -k_ utility/*.h  utility/*.c
+# Read all strings in _() from source code
+xgettext -d otpasswd -s -o po/otpasswd.pot -k_ */*.h  */*.c
 
 # Create/update translation files
-touch po/pl.po
-touch po/de.po
+#touch po/pl.po
+#touch po/de.po
 
-# Update original texts / add new
+# Update translations/add new texts
 msgmerge -U po/pl.po po/otpasswd.pot
-msgmerge -U po/de.po po/otpasswd.pot
+#msgmerge -U po/de.po po/otpasswd.pot
+
+# Use poedit (for example) to translate. 
+# Adding new translation might require changes in CMakeLists.txt

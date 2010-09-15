@@ -76,6 +76,29 @@ static void _show_license(void)
 		  "along with this program in a LICENSE file.\n"),
 		  PROG_VERSION
 	);
+
+	printf(_("OTPasswd was build with following options enabled:\n"));
+	int cnt=0;
+#if DEBUG
+	printf(_("DEBUG "));
+	cnt++;
+#endif 
+
+#if NLS
+	printf(_("NLS "));
+	cnt++;
+#endif 
+
+#if PROFILE 
+	printf(_("PROFILE "));
+	cnt++;
+#endif 
+
+	if (!cnt) {
+		printf(_("NONE"));
+	}
+	printf("\n");
+
 }
 
 /** Show program parameters */

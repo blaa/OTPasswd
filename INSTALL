@@ -150,7 +150,7 @@ would any other package.  Otherwise, you will need to compile OTPasswd
 from source, as follows:
 
    $ cd otpasswd
-   $ cmake .            # Generate makefiles (You can add -DDEBUG=1)
+   $ cmake -DNLS=1 .    # Generate makefiles (You can add -DDEBUG=1)
    $ make               # Compile everything
 
    On Linux distributions you can install OTPasswd into the system 

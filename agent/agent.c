@@ -33,22 +33,113 @@
 /* Utility headers */
 #include "security.h"
 #include "testcases.h"
+#include "nls.h"
 
 /* Show any config validation errors */
 int do_verify_config(void)
 {
+	int ret;
 	cfg_t *cfg = NULL;
 	print_init(PRINT_NOTICE | PRINT_STDOUT, NULL);
+	locale_init(); /* Only place where agent uses NLS */
 
-	printf("Loading configuration...\n");
+
+
+
+	printf(_("Config file verification...\n"));
 	cfg = cfg_get();
 	if (!cfg) {
-		printf("Errors while loading config.\n");
+		printf(_("Error while loading config file.\n"));
 		return 1;
-	} else {
-		printf("Configuration file loaded correctly.\n");
+	}
+	printf(_("1) Config loaded correctly.\n"));
+
+        if (cfg->db == CONFIG_DB_UNCONFIGURED) {
+		printf(_("ERROR: DB option in config file is not set.\n"));
+                return 2;
+        } 
+	printf(_("2) DB option is set.\n"));
+
+	
+	/* Verify permissions according to mode */
+	ret = cfg_permissions();
+	switch (ret) {
+	default:
+	case PPP_ERROR:
+		printf(_("ERROR: Generic error while validating config file permissions. (%d)\n"), ret);
+		return 3;
+
+	case PPP_ERROR_CONFIG_OWNERSHIP:
+		printf(_("ERROR: Config file must be owned by root.\n"));
+		return 4;
+	case PPP_ERROR_CONFIG_PERMISSIONS:
+		printf(_("ERROR: In selected mode config file should not be readable by others.\n"));
+		return 5;
+	case 0:
+		printf(_("3) Config file ownership and file mode is correct.\n"));
+	}
+
+	if (cfg->db != CONFIG_DB_GLOBAL) {
+		printf(_("4) Your selected DB option doesn't require further checks. Everything is fine.\n"));
 		return 0;
 	}
+
+	if (!security_is_privileged()) {
+		printf(_("ERROR: To correctly validate GLOBAL DB configuration you have to run this option as root.\n"));
+		return 6;
+	}
+
+
+	printf(_("\n\nGlobal DB selected. Trying to initialize PPP and read state data to see if DB exists.\n"));
+
+	ret = ppp_init(PRINT_STDOUT, NULL);
+	if (ret != 0) {
+		printf(_("ERROR: ppp_init: %s\n"), ppp_get_error_desc(ret));
+		ppp_fini();
+		return 6;
+	}
+	print_config(PRINT_STDOUT | PRINT_NOTICE);
+
+	printf(_("ppp_init OK\n"));
+
+	state *s = NULL;
+	ret = ppp_state_init(&s, "root");
+	if (ret != 0) {
+		printf(_("ERROR: Unable to create state: %s\n"), ppp_get_error_desc(ret));
+		return 7;
+	}
+	printf(_("ppp_state_init OK\n"));
+
+	ret = ppp_state_load(s, PPP_DONT_LOCK);
+	switch (ret) {
+	case 0:
+		printf(_("4) State loaded\n"));
+		break;
+
+	case STATE_NON_EXISTENT:
+	case STATE_NO_USER_ENTRY:
+		printf(_("4) No state loaded, but no other errors. That's fine\n"));
+		break;
+
+	default:
+		printf(_("ERROR: Error while trying to load state: %s\n"), ppp_get_error_desc(ret));
+		printf(_("Check if you have %s\n"), cfg->global_db_path);
+		ppp_state_fini(s);
+		return 8;
+	}	
+
+	if (ret == 0) {
+		ret = ppp_state_release(s, 0);
+		if (ret != 0) {
+			printf(_("ERROR while releasing state: %s\n"), 
+				ppp_get_error_desc(ret));
+			ppp_state_fini(s);
+			return 9;
+		}
+	}
+
+	ppp_state_fini(s);
+	return 0;
 }
 
 
@@ -271,8 +362,6 @@ int main(int argc, char **argv)
 	 * Initialization
 	 * Now, try to read config file, init printing, ppp etc.
 	 ***/
-
-	/* TODO, FIXME: Remove log from here! */
 #if DEBUG
 #warning OTPasswd Agent compiled with DEBUG option. Will leave DEBUG info in /tmp/OTPAGENT_TESTLOG
 	ret = ppp_init(0, "/tmp/OTPAGENT_TESTLOG");

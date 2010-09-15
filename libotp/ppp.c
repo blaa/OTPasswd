@@ -33,7 +33,7 @@
 #include "ppp.h"
 #include "print.h"
 #include "config.h"
-
+#include "nls.h"
 
 /* Number of combinations calculated for 4 passcodes */
 /* 64 characters -> 16 777 216 */
@@ -605,64 +605,64 @@ const char *ppp_get_error_desc(int error)
 {
 	switch (error) {
 	case 0:
-		return "No error";
+		return _("No error");
 	case STATE_NOMEM:
-		return "Out of memory while reading state.";
+		return _("Out of memory while reading state.");
 
 	case STATE_LOCK_ERROR:
-		return "Unable to lock state file!";
+		return _("Unable to lock state file!");
 
 	case STATE_NON_EXISTENT:
-		return "Have you created key with --key option?";
+		return _("Have you created key with --key option?");
 
 	case STATE_IO_ERROR:
-		return "I/O error (permissions, file type, connection, ...) while reading state.";
+		return _("I/O error (permissions, file type, ...) while reading state. Try agent_otp --config-check.");
 
 	case STATE_NUMSPACE:
-		return "You've used up all available passcodes! Regenerate key.";
+		return _("You've used up all available passcodes! Regenerate key.");
 
 	case STATE_PARSE_ERROR:
-		return "State file invalid.";
+		return _("State file invalid.");
 
 	case STATE_NO_USER_ENTRY:
-		return "No user entry. Have you created key with --key option?";
+		return _("No user entry. Have you created key with --key option?");
 
 	case STATE_NO_SUCH_USER:
-		return "No such Unix user in passwd database. Unable to locate home.";
+		return _("No such Unix user in passwd database. Unable to locate home.");
 
 
 	case PPP_ERROR:
-		return "Generic PPP error. (Try -v to get details)";
+		return _("Generic PPP error. (Try -v to get details)");
 
 	case PPP_ERROR_POLICY:
-		return "Action denied by policy.";
+		return _("Action denied by policy.");
 
 	case PPP_ERROR_RANGE:
-		return "Argument out of range.";
+		return _("Argument out of range.");
 
 	case PPP_ERROR_ILL_CHAR:
-		return "Illegal character in input.";
+		return _("Illegal character in input.");
 
 	case PPP_ERROR_TOO_LONG:
-		return "Input too long.";
+		return _("Input too long.");
 
 	case PPP_ERROR_DISABLED:
-		return "User state disabled.";
+		return _("User state disabled.");
 
 	case PPP_ERROR_CONFIG:
-		return "Unable to read config file.";
+		return _("Unable to read config file.");
 
 	case PPP_ERROR_NOT_CONFIGURED:
-		return "You have to edit otpasswd.conf and select correct DB option.";
+		return _("You have to edit otpasswd.conf and select correct DB option.");
 
 	case PPP_ERROR_CONFIG_OWNERSHIP:
-		return "Configuration file should be owned by root.";
+		return _("Configuration file should be owned by root.");
 
 	case PPP_ERROR_CONFIG_PERMISSIONS:
-		return "Incorrect permissions for config file. Should be accessible only by root.";
+		return _("Incorrect permissions for config file. Should be accessible only by root.");
 
 	case PPP_ERROR_SPASS_INCORRECT:
-		return "Incorrect static password entered.";
+		return _("Incorrect static password entered.");
 
 	default:
 		print(PRINT_NOTICE, "Unable to decipher error number %d\n", error);

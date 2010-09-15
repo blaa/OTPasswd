@@ -40,6 +40,7 @@ In progress:
 TODO Major:
         * [%] Parameter -c alphabet=3,codelenght=8 is accepted but doesn't
               work. 
+        * [?] Ensure config privilege checking
         * [?] --info should print information whether static password is set.
         * [?] Parametrize PAM messages.
         * [?] OOB Channel usage time updates + DoS security
