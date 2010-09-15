@@ -6,21 +6,23 @@ msgstr ""
 "PO-Revision-Date: \n"
 "Last-Translator: Tomasz bla Fortuna <bla@thera.be>\n"
 "Language-Team: \n"
+"Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Language: \n"
 
 #: agent/agent.c:93
 #, c-format
 msgid ""
 "\n"
 "\n"
-"Global DB selected. Trying to initialize PPP and read state data to see if DB exists.\n"
+"Global DB selected. Trying to initialize PPP and read state data to see if "
+"DB exists.\n"
 msgstr ""
 "\n"
 "\n"
-"Wybrano globalną bazę. Próbuję zainicjalizować PPP i odczytać dane stanów by sprawdzić czy jest skonfigurowana poprawnie.\n"
+"Wybrano globalną bazę. Próbuję zainicjalizować PPP i odczytać dane stanów by "
+"sprawdzić czy jest skonfigurowana poprawnie.\n"
 
 #: utility/actions.c:484
 #, c-format
@@ -54,12 +56,12 @@ msgstr " (tak/nie):"
 #: utility/actions_helpers.c:277
 #, c-format
 msgid "(salt=off)\n"
-msgstr "(salt=off)\n"
+msgstr "(sól=nie)\n"
 
 #: utility/actions_helpers.c:275
 #, c-format
 msgid "(salt=on)\n"
-msgstr "(salt=on)\n"
+msgstr "(sól=tak)\n"
 
 #: utility/actions.c:470
 #, c-format
@@ -89,7 +91,8 @@ msgstr "3) Właściciel i uprawnienia pliku konfiguracyjnego są poprawne.\n"
 #: agent/agent.c:121
 #, c-format
 msgid "4) No state loaded, but no other errors. That's fine\n"
-msgstr "4) Brak stanu użytkownika root, ale brak innych błędów. Wszystko gra.\n"
+msgstr ""
+"4) Brak stanu użytkownika root, ale brak innych błędów. Wszystko gra.\n"
 
 #: agent/agent.c:116
 #, c-format
@@ -98,8 +101,11 @@ msgstr "4) Stan załadowany.\n"
 
 #: agent/agent.c:83
 #, c-format
-msgid "4) Your selected DB option doesn't require further checks. Everything is fine.\n"
-msgstr "4) Wybrana przez Ciebie opcja DB nie wymaga dalszych testów. Wszystko gra.\n"
+msgid ""
+"4) Your selected DB option doesn't require further checks. Everything is "
+"fine.\n"
+msgstr ""
+"4) Wybrana przez Ciebie opcja DB nie wymaga dalszych testów. Wszystko gra.\n"
 
 #: libotp/ppp.c:638
 msgid "Action denied by policy."
@@ -185,8 +191,7 @@ msgstr "Alfabet wybrany.\n"
 msgid "Are you ready to start using this one-time passwords?"
 msgstr "Czy jesteś gotów by zacząć używać jednorazowych haseł?"
 
-#: utility/actions.c:169
-#: utility/actions.c:276
+#: utility/actions.c:169 utility/actions.c:276
 msgid "Are you sure you want to continue?"
 msgstr "Czy na pewno chcesz kontynuować?"
 
@@ -259,7 +264,8 @@ msgstr "Długość kodu ustawiona.\n"
 
 #: agent/agent_interface.c:396
 msgid "Coding error: Action requires created/read state."
-msgstr "Błąd programu: Dana akcja wymaga wcześniej utworzonego/wczytanego stanu."
+msgstr ""
+"Błąd programu: Dana akcja wymaga wcześniej utworzonego/wczytanego stanu."
 
 #: agent/agent_interface.c:356
 msgid "Coding error: Illegal request argument sent to agent."
@@ -271,7 +277,8 @@ msgstr "Błąd programu: Nie rozpoznane żądanie wysłane do agenta."
 
 #: agent/agent_interface.c:392
 msgid "Coding error: Must create state before generating key."
-msgstr "Błąd programu: Przed generowaniem klucza niezbędne jest utworzenie stanu."
+msgstr ""
+"Błąd programu: Przed generowaniem klucza niezbędne jest utworzenie stanu."
 
 #: agent/agent_interface.c:394
 msgid "Coding error: Must drop state before removing it."
@@ -293,15 +300,21 @@ msgstr "Błąd instalacji. Nie mogę odczytać pliku konfiguracyjnego."
 
 #: libotp/ppp.c:659
 msgid "Configuration file should be owned by root."
-msgstr "Właścicielem pliku konfiguracyjnego (/etc/otpasswd/otpasswd.conf) powinien być root."
+msgstr ""
+"Właścicielem pliku konfiguracyjnego (/etc/otpasswd/otpasswd.conf) powinien "
+"być root."
 
 #: agent/agent_interface.c:240
 msgid "Configuration problem was detected:\n"
 msgstr "Wykryto problem konfiguracji:\n"
 
 #: agent/agent_interface.c:361
-msgid "Configuration problem: DB option set to 'global', but OTP agent is not SUID-root."
-msgstr "Problem konfiguracyjny: Opcja DB ustawiona na 'global', ale agent OTP nie ma flagi SUID."
+msgid ""
+"Configuration problem: DB option set to 'global', but OTP agent is not SUID-"
+"root."
+msgstr ""
+"Problem konfiguracyjny: Opcja DB ustawiona na 'global', ale agent OTP nie ma "
+"flagi SUID."
 
 #: utility/actions.c:48
 msgid "Connected to agent\n"
@@ -352,8 +365,10 @@ msgid "Current code        = "
 msgstr "Aktualny kod        = "
 
 #: agent/agent_interface.c:241
-msgid "DB=global option is set in config file but agent executable (agent_otp)\n"
-msgstr "Opcja DB=global jest ustawiona ale plik wykonywalny agenta (agent_otp)\n"
+msgid ""
+"DB=global option is set in config file but agent executable (agent_otp)\n"
+msgstr ""
+"Opcja DB=global jest ustawiona ale plik wykonywalny agenta (agent_otp)\n"
 
 #: utility/otpasswd.c:83
 #, c-format
@@ -383,17 +398,25 @@ msgstr "Błąd w trakcie ładowania stanu: %s\n"
 #: agent/agent.c:69
 #, c-format
 msgid "ERROR: Generic error while validating config file permissions. (%d)\n"
-msgstr "BŁĄD: Ogólny błąd w trakcie weryfikacji uprawnień pliku konfiguracyjnego. (%d)\n"
+msgstr ""
+"BŁĄD: Ogólny błąd w trakcie weryfikacji uprawnień pliku konfiguracyjnego. "
+"(%d)\n"
 
 #: agent/agent.c:76
 #, c-format
 msgid "ERROR: In selected mode config file should not be readable by others.\n"
-msgstr "BŁĄD: W wybranym trybie plik konfiguracyjny powinien nie być czytelny dla innych.\n"
+msgstr ""
+"BŁĄD: W wybranym trybie plik konfiguracyjny powinien nie być czytelny dla "
+"innych.\n"
 
 #: agent/agent.c:88
 #, c-format
-msgid "ERROR: To correctly validate GLOBAL DB configuration you have to run this option as root.\n"
-msgstr "BŁĄD: By poprawnie zweryfikować konfiguracje w tym trybie musisz uruchomić ten test jako root.\n"
+msgid ""
+"ERROR: To correctly validate GLOBAL DB configuration you have to run this "
+"option as root.\n"
+msgstr ""
+"BŁĄD: By poprawnie zweryfikować konfiguracje w tym trybie musisz uruchomić "
+"ten test jako root.\n"
 
 #: agent/agent.c:108
 #, c-format
@@ -508,12 +531,11 @@ msgstr "Błąd w trakcie ustawiania etykiety: %s\n"
 msgid "Error while setting user: %s\n"
 msgstr "Błąd w trakcie ustawiania użytkownika: %s\n"
 
-#: utility/actions.c:326
-#: utility/actions.c:564
-#: utility/actions.c:587
+#: utility/actions.c:326 utility/actions.c:564 utility/actions.c:587
 #, c-format
 msgid "Error while updating latest card entry: %s\n"
-msgstr "Błąd w trakcie aktualizowania zapisu o ostatniej drukowanej karty: %s\n"
+msgstr ""
+"Błąd w trakcie aktualizowania zapisu o ostatniej drukowanej karty: %s\n"
 
 #: utility/actions.c:234
 #, c-format
@@ -551,7 +573,9 @@ msgstr "Ogólny błąd agenta."
 #: utility/cards.c:266
 #, c-format
 msgid "Given passcard out of valid range. Unable to print 6 passcards.\n"
-msgstr "Podany numer karty poza dopuszczalnymi wartościami. Nie mogę wydrukować 6 kart.\n"
+msgstr ""
+"Podany numer karty poza dopuszczalnymi wartościami. Nie mogę wydrukować 6 "
+"kart.\n"
 
 #: utility/actions.c:295
 #, c-format
@@ -569,13 +593,18 @@ msgid "Have you created key with --key option?"
 msgstr "Stworzyłeś klucz za pomocą opcji --key?"
 
 #: libotp/ppp.c:619
-msgid "I/O error (permissions, file type, ...) while reading state. Try agent_otp --config-check."
-msgstr "Błąd I/O związany z plikiem konfiguracyjnym. Sprawdź uprawnienia i agent_otp --check-config."
+msgid ""
+"I/O error (permissions, file type, ...) while reading state. Try agent_otp --"
+"config-check."
+msgstr ""
+"Błąd I/O związany z plikiem konfiguracyjnym. Sprawdź uprawnienia i agent_otp "
+"--check-config."
 
-#: agent/agent_interface.c:190
-#: agent/agent_interface.c:213
+#: agent/agent_interface.c:190 agent/agent_interface.c:213
 msgid "If you would want to send a bug report remember about gdb backtrace\n"
-msgstr "Jeśli chciałbyś przesłać informacje o błędach pamiętaj o zrzucie stosu (gdb)\n"
+msgstr ""
+"Jeśli chciałbyś przesłać informacje o błędach pamiętaj o zrzucie stosu "
+"(gdb)\n"
 
 #: utility/actions_helpers.c:812
 #, c-format
@@ -617,8 +646,11 @@ msgid "Incorrect passcode specification. (%d)\n"
 msgstr "Nie poprawna specyfikacja kodu. (%d)\n"
 
 #: libotp/ppp.c:662
-msgid "Incorrect permissions for config file. Should be accessible only by root."
-msgstr "Błędne uprawnienia pliku konfiguracyjnego. Plik powinien być odczytywalny tylko przez roota."
+msgid ""
+"Incorrect permissions for config file. Should be accessible only by root."
+msgstr ""
+"Błędne uprawnienia pliku konfiguracyjnego. Plik powinien być odczytywalny "
+"tylko przez roota."
 
 #: libotp/ppp.c:665
 msgid "Incorrect static password entered."
@@ -739,8 +771,7 @@ msgstr ""
 "Brak podanej akcji. Podaj -k, -s, -t lub -l\n"
 "\n"
 
-#: agent/agent_interface.c:349
-#: libotp/ppp.c:608
+#: agent/agent_interface.c:349 libotp/ppp.c:608
 msgid "No error"
 msgstr "Brak błędu"
 
@@ -755,7 +786,8 @@ msgstr "Żadne hasło nie zostało zwrócone\n"
 
 #: libotp/ppp.c:631
 msgid "No such Unix user in passwd database. Unable to locate home."
-msgstr "Brak takiego użytkownika w bazie passwd. Nie mogę zlokalizować jego katalogu."
+msgstr ""
+"Brak takiego użytkownika w bazie passwd. Nie mogę zlokalizować jego katalogu."
 
 #: utility/otpasswd.c:283
 #, c-format
@@ -797,7 +829,9 @@ msgstr "Za mało dużych liter w haśle.\n"
 #: utility/otpasswd.c:559
 #, c-format
 msgid "OBSOLETE: Most of the checks were moved into agent executable.\n"
-msgstr "PRZESTARZAŁE: Większość testów zostało przeniesione do agenta (agent_otp --testcase).\n"
+msgstr ""
+"PRZESTARZAŁE: Większość testów zostało przeniesione do agenta (agent_otp --"
+"testcase).\n"
 
 #: utility/otpasswd.c:61
 #, c-format
@@ -850,9 +884,7 @@ msgstr ""
 "Tylko jedna akcja może zostać podana\n"
 "i nie można mieszać listowania alfabetów z innymi akcjami.\n"
 
-#: utility/otpasswd.c:368
-#: utility/otpasswd.c:388
-#: utility/otpasswd.c:404
+#: utility/otpasswd.c:368 utility/otpasswd.c:388 utility/otpasswd.c:404
 #, c-format
 msgid "Only one action can be specified on the command line.\n"
 msgstr "Tylko jedna akcja może być podana na linii poleceń.\n"
@@ -911,8 +943,7 @@ msgstr "Numeracja kart zaczyna się od 1.\n"
 msgid "Passcode length must be between 2 and 16.\n"
 msgstr "Długość kodu musi się zawierać między 2 i 16.\n"
 
-#: utility/actions_helpers.c:519
-#: utility/actions_helpers.c:545
+#: utility/actions_helpers.c:519 utility/actions_helpers.c:545
 #, c-format
 msgid "Passcode number out of range.\n"
 msgstr "Numer kodu poza dopuszczalnym zakresem.\n"
@@ -922,8 +953,7 @@ msgstr "Numer kodu poza dopuszczalnym zakresem.\n"
 msgid "Passcode printing is denied by policy.\n"
 msgstr "Wyświetlanie kodów jest zabronione przez politykę.\n"
 
-#: utility/actions.c:336
-#: utility/actions_helpers.c:72
+#: utility/actions.c:336 utility/actions_helpers.c:72
 #, c-format
 msgid "Please answer 'yes' or 'no'.\n"
 msgstr "Proszę odpowiedzieć 'tak' lub 'nie'.\n"
@@ -931,7 +961,9 @@ msgstr "Proszę odpowiedzieć 'tak' lub 'nie'.\n"
 #: utility/actions.c:227
 #, c-format
 msgid "Policy denies key generation. Ask administrator to create you state.\n"
-msgstr "Polityka zabrania generowania klucza. Poproś administratora o jego wygenerowanie.\n"
+msgstr ""
+"Polityka zabrania generowania klucza. Poproś administratora o jego "
+"wygenerowanie.\n"
 
 #: utility/actions.c:223
 #, c-format
@@ -974,12 +1006,17 @@ msgid "Policy enforces salted keys.\n"
 msgstr "Polityka wymusza używanie soli.\n"
 
 #: agent/agent_interface.c:211
-msgid "Possible cause of this problem involves use of the wrong agent executable.\n"
+msgid ""
+"Possible cause of this problem involves use of the wrong agent executable.\n"
 msgstr "Możliwa przyczyna tego błędu to błędny plik wykonywalny agenta.\n"
 
 #: agent/agent_interface.c:188
-msgid "Possible cause of this problem involves wrong agent executable passed in configuration file.\n"
-msgstr "Możliwa przyczyna tego błędu to błędny plik wykonywalny agenta ustawiony w pliku konfiguracyjnym.\n"
+msgid ""
+"Possible cause of this problem involves wrong agent executable passed in "
+"configuration file.\n"
+msgstr ""
+"Możliwa przyczyna tego błędu to błędny plik wykonywalny agenta ustawiony w "
+"pliku konfiguracyjnym.\n"
 
 #: utility/actions.c:499
 #, c-format
@@ -996,8 +1033,7 @@ msgstr "Możliwa przyczyna: %s\n"
 msgid "Program error. You should never end up here.\n"
 msgstr "Błąd programu: Nigdy nie powinniśmy się tu znaleźć.\n"
 
-#: utility/otpasswd.c:448
-#: utility/otpasswd.c:564
+#: utility/otpasswd.c:448 utility/otpasswd.c:564
 #, c-format
 msgid "Program error. You shouldn't end up here.\n"
 msgstr "Błąd programu: Nie nigdy nie powinniśmy się tu znaleźć.\n"
@@ -1024,7 +1060,8 @@ msgstr "Wiersz poza dozwolonym zakresem!\n"
 #: utility/actions_helpers.c:675
 #, c-format
 msgid "Salt configuration can be changed only during key creation.\n"
-msgstr "Konfiguracja soli może być zmieniana jedynie w trakcie generowania klucza.\n"
+msgstr ""
+"Konfiguracja soli może być zmieniana jedynie w trakcie generowania klucza.\n"
 
 #: agent/agent_interface.c:386
 msgid "Salt option setting is fixed by the policy."
@@ -1088,8 +1125,7 @@ msgstr "Statyczne hasło usunięte.\n"
 msgid "Static password: "
 msgstr "Statyczne hasło:"
 
-#: utility/actions.c:170
-#: utility/actions.c:277
+#: utility/actions.c:170 utility/actions.c:277
 #, c-format
 msgid "Stopping\n"
 msgstr "Zatrzymanie\n"
@@ -1107,7 +1143,8 @@ msgstr "Dziwny błąd w trakcie analizy kodu karty.\n"
 #: utility/otpasswd.c:457
 #, c-format
 msgid "The \"salt\" flag can only be specified during key creation!\n"
-msgstr "Flaga \"salt\" (sól) może być podana jedynie w trakcie tworzenia klucza!\n"
+msgstr ""
+"Flaga \"salt\" (sól) może być podana jedynie w trakcie tworzenia klucza!\n"
 
 #: agent/agent_interface.c:229
 #, c-format
@@ -1118,14 +1155,18 @@ msgstr "Błąd w trakcie uruchamiania pliku agenta (%s)\n"
 msgid "Timeout while waiting for agent initialization frame.\n"
 msgstr "Upłynął czas oczekiwania na inicjalizacyjną ramkę od agenta.\n"
 
-#: agent/agent_interface.c:189
-#: agent/agent_interface.c:212
+#: agent/agent_interface.c:189 agent/agent_interface.c:212
 msgid "Try manually running agent executable to see where's the problem.\n"
-msgstr "Spróbuj ręcznie uruchomić plik agenta, żeby zobaczyć w czym leży problem.\n"
+msgstr ""
+"Spróbuj ręcznie uruchomić plik agenta, żeby zobaczyć w czym leży problem.\n"
 
 #: agent/agent_interface.c:237
-msgid "Try running agent (agent_otp) with --check-config option to get more details\n"
-msgstr "Spróbuj uruchomić agenta (agent_otp) z opcją --check-config żeby zobaczyć więcej szczegółów\n"
+msgid ""
+"Try running agent (agent_otp) with --check-config option to get more "
+"details\n"
+msgstr ""
+"Spróbuj uruchomić agenta (agent_otp) z opcją --check-config żeby zobaczyć "
+"więcej szczegółów\n"
 
 #: utility/actions.c:706
 #, c-format
@@ -1160,8 +1201,7 @@ msgstr "Nie mogę zablokować pliku stanu!"
 msgid "Unable to read alphabet id: %s (%d)\n"
 msgstr "Nie mogę odczytać ID alfabetu: %s (%d)\n"
 
-#: utility/actions_helpers.c:235
-#: utility/cards.c:77
+#: utility/actions_helpers.c:235 utility/cards.c:77
 #, c-format
 msgid "Unable to read code length: %s (%d)\n"
 msgstr "Nie mogę odczytać długości kodu: %s (%d)\n"
@@ -1185,8 +1225,7 @@ msgstr "Nie mogę odczytać flag: %s\n"
 msgid "Unable to read flags: %s (%d)\n"
 msgstr "Nie mogę odczytać flag: %s (%d)\n"
 
-#: utility/actions_helpers.c:253
-#: utility/cards.c:108
+#: utility/actions_helpers.c:253 utility/cards.c:108
 #, c-format
 msgid "Unable to read label: %s (%d)\n"
 msgstr "Nie mogą odczytać etykiety: %s (%d)\n"
@@ -1230,13 +1269,11 @@ msgstr "Nie mogą zapisać nowego klucza: %s (%d)\n"
 msgid "Unable to switch to selected user."
 msgstr "Nie mogą przełączyć do żądanego użytkownika."
 
-#: utility/actions_helpers.c:89
-#: utility/actions_helpers.c:97
+#: utility/actions_helpers.c:89 utility/actions_helpers.c:97
 msgid "Unable to turn off character visibility!\n"
 msgstr "Nie mogą wyłączyć widoczności wprowadzanych znaków!\n"
 
-#: utility/actions_helpers.c:798
-#: utility/actions_helpers.c:823
+#: utility/actions_helpers.c:798 utility/actions_helpers.c:823
 #, c-format
 msgid "Unexpected error while setting code length.\n"
 msgstr "Nieoczekiwany błąd w trakcie ustawiania długości kodu.\n"
@@ -1306,7 +1343,8 @@ msgid ""
 "\n"
 "           contact=X     Set contact info (e.g. phone number) with\n"
 "                         which to receive a passcode during authentication.\n"
-"                         Details depends configuration. Use \"\" to disable.\n"
+"                         Details depends configuration. Use \"\" to "
+"disable.\n"
 "           label=X       Set a caption to use on generated passcards.\n"
 "                         Use \"\" to set default (hostname)\n"
 "\n"
@@ -1388,7 +1426,8 @@ msgstr ""
 "  -i, --info\n"
 "           Wyświetl informacje o stanie.\n"
 "      --info-key\n"
-"           Wyświetl klucz użytkownika i licznik używany do generowania kodów.\n"
+"           Wyświetl klucz użytkownika i licznik używany do generowania "
+"kodów.\n"
 "           Uwaga: To drukuje prywatne dane.\n"
 "  -c, --config <arg>\n"
 "           Może być podany wielokrotnie. Zmienia wiele różnych ustawień:\n"
@@ -1402,7 +1441,8 @@ msgstr ""
 "\n"
 "           contact=X     Ustaw informacje kontaktowe (np. numer telefonu)\n"
 "                         które mają odebrać kod w trakcje autentykacji.\n"
-"                         Szczegóły zależą od konfiguracji. Użyj \"\" by usunąć.\n"
+"                         Szczegóły zależą od konfiguracji. Użyj \"\" by "
+"usunąć.\n"
 "           label=X       Ustaw etykietę używaną przy generowaniu kart.\n"
 "                         Użyj \"\" by ustawić domyślną (nazwę hosta)\n"
 "\n"
@@ -1453,8 +1493,7 @@ msgstr ""
 msgid "User state disabled."
 msgstr "Stan użytkownika został zablokowany (disabled)."
 
-#: utility/actions.c:671
-#: utility/actions.c:685
+#: utility/actions.c:671 utility/actions.c:685
 #, c-format
 msgid "WARNING: This invalidates your previously printed passcards.\n"
 msgstr "UWAGA: Wszystkie wydrukowane wcześniej karty są nie ważne.\n"
@@ -1470,7 +1509,8 @@ msgid ""
 "         If you like, you can switch back to your previous settings.\n"
 "\n"
 msgstr ""
-"UWAGA: Zmienianie alfabetu unieważnia wszystkie wydrukowane do tego czasu karty.\n"
+"UWAGA: Zmienianie alfabetu unieważnia wszystkie wydrukowane do tego czasu "
+"karty.\n"
 "Jeśli chcesz możesz przełączyć się spowrotem do poprzedniej opcji.\n"
 "\n"
 
@@ -1481,14 +1521,16 @@ msgid ""
 "         If you like, you can switch back to your previous settings.\n"
 "\n"
 msgstr ""
-"UWAGA: Zmienianie długości kodu unieważnia wszystkie wydrukowane do tego czasu karty.\n"
+"UWAGA: Zmienianie długości kodu unieważnia wszystkie wydrukowane do tego "
+"czasu karty.\n"
 "Jeśli chcesz możesz przełączyć się spowrotem do poprzedniej opcji.\n"
 "\n"
 
 #: utility/actions.c:416
 #, c-format
 msgid "Warning: You've got no state. Create on with -k option.\n"
-msgstr "UWAGA: Nie masz stworzonego stanu. Stwórz go za pomocą przełącznika -k.\n"
+msgstr ""
+"UWAGA: Nie masz stworzonego stanu. Stwórz go za pomocą przełącznika -k.\n"
 
 #: utility/actions.c:342
 #, c-format
@@ -1498,7 +1540,8 @@ msgstr "Wyrzucam stworzony klucz. Stan użytkownika nienaruszony.\n"
 #: utility/actions.c:231
 #, c-format
 msgid "You currently have state but it was disabled.\n"
-msgstr "Obecnie masz już stworzony stan, ale został zablokowany (flaga disabled).\n"
+msgstr ""
+"Obecnie masz już stworzony stan, ale został zablokowany (flaga disabled).\n"
 
 #: utility/actions.c:728
 #, c-format
@@ -1516,11 +1559,13 @@ msgstr "Naprawdę powinieneś najpierw stworzyć swój stan (zobacz opcję -k).\
 
 #: utility/actions.c:534
 #, c-format
-msgid "You've got no state created! Unable to print passcodes (see -k option).\n"
-msgstr "Nie posiadasz stworzonego stanu! Nie mogę wyświetlać kodów (zobacz opcję -k).\n"
+msgid ""
+"You've got no state created! Unable to print passcodes (see -k option).\n"
+msgstr ""
+"Nie posiadasz stworzonego stanu! Nie mogę wyświetlać kodów (zobacz opcję -"
+"k).\n"
 
-#: utility/cards.c:94
-#: utility/cards.c:333
+#: utility/cards.c:94 utility/cards.c:333
 #, c-format
 msgid "You've run out of memory. Unable to print passcards\n"
 msgstr "Skończyła się pamięć operacyjna. Nie mogę wydrukować kart.\n"
@@ -1537,22 +1582,26 @@ msgstr "Twój obecny zestaw flag:\n"
 #: utility/actions.c:155
 #, c-format
 msgid "Your state was eaten by Grue, nothing to remove.\n"
-msgstr "Twój stan został zjedzony przez Grue, nie pozostało nic co mogę usunąć.\n"
+msgstr ""
+"Twój stan został zjedzony przez Grue, nie pozostało nic co mogę usunąć.\n"
 
 #: utility/actions_helpers.c:271
 #, c-format
 msgid "alphabet=%d "
 msgstr "alfabet=%d "
 
-#: agent/agent_interface.c:191
-#: agent/agent_interface.c:214
-msgid "and log created with strace: strace -f -o otpasswd_log <command you've tried>\n"
-msgstr "i plik loga stworzony za pomocą strace: strace -f -o otpasswd_log otpasswd <próbowane parametry>\n"
+#: agent/agent_interface.c:191 agent/agent_interface.c:214
+msgid ""
+"and log created with strace: strace -f -o otpasswd_log <command you've "
+"tried>\n"
+msgstr ""
+"i plik loga stworzony za pomocą strace: strace -f -o otpasswd_log otpasswd "
+"<próbowane parametry>\n"
 
 #: utility/actions_helpers.c:272
 #, c-format
 msgid "code_length=%d "
-msgstr "długość kodu=%d "
+msgstr "długość_kodu=%d "
 
 #: utility/actions_helpers.c:287
 #, c-format
@@ -1608,6 +1657,7 @@ msgstr "tak"
 
 #~ msgid "*** Running testcases\n"
 #~ msgstr "*** Włączam testy\n"
+
 #~ msgid ""
 #~ "**********************************\n"
 #~ "* All testcases seem successful. *\n"
@@ -1616,22 +1666,28 @@ msgstr "tak"
 #~ "**************************\n"
 #~ "* Wszystkie testy udane. *\n"
 #~ "**************************\n"
+
 #~ msgid "Configuration not changed.\n"
 #~ msgstr "Konfiguracja niezmieniona.\n"
+
 #~ msgid ""
 #~ "Database type set to global, MySQL or LDAP, yet program is not a SUID "
 #~ "root.\n"
 #~ msgstr ""
 #~ "Typ bazy ustawiony na global, MySQL lub LDAP, jednak narzędzie nie jest "
 #~ "SUID root.\n"
+
 #~ msgid "Do you want to keep this configuration?"
 #~ msgstr "Czy chcesz zachować konfigurację?"
+
 #~ msgid "ERROR: Unable to start logging subsystem\n"
 #~ msgstr "Błąd: Nie mogę wystartować podsystemu logowania.\n"
+
 #~ msgid "Error while finalizing state. (No changes to write)\n"
 #~ msgstr "Błąd w trakcie finalizowania stanu. (Brak zmian do zapisu).\n"
+
 #~ msgid "Skipped to specified passcard.\n"
 #~ msgstr "Przeskoczyłem do podanej karty.\n"
+
 #~ msgid "Static password is set.\n"
 #~ msgstr "Ustawiono statyczne hasło.\n"
-
