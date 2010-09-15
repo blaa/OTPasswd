@@ -76,6 +76,7 @@ static void _show_license(void)
 		  "along with this program in a LICENSE file.\n"),
 		  PROG_VERSION
 	);
+	printf("\n\n");
 
 	printf(_("OTPasswd was build with following options enabled:\n"));
 	int cnt=0;
@@ -84,7 +85,7 @@ static void _show_license(void)
 	cnt++;
 #endif 
 
-#if NLS
+#if USE_NLS
 	printf(_("NLS "));
 	cnt++;
 #endif 
