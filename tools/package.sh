@@ -1,37 +1,27 @@
 #!/bin/sh
-# Run us in project dir...
-if [ ! -e CMakeLists.txt ]; then
-	echo "Run from main project directory"
-	exit 1
-fi
-
-if [ ! -n "$1" ]; then
-	echo "Give version number as first parameter."
-	echo "Script will create ../otpasswd-ver then!"
-	exit 1;
-fi
-
-SOURCEDIR=$(basename $(pwd))
-DIR="otpasswd-$1"
-
-cd .. 
-
-
-echo "Removing $DIR and copying $SOURCEDIR to $DIR"
-sleep 1
-rm -rf $DIR
-
-cp $SOURCEDIR $DIR -R
-cd $DIR
-
-echo Cleaning up
+echo Rebuild to make sure
 make clean
-rm -rf CMakeCache.txt cmake_install.cmake CTestTestfile.cmake install_manifest.txt CMakeFiles otpasswd.info lcov Testing .git .gitignore tools examples/otpasswd-testcase po/
-find . -iname ".*.sw?" -exec rm -f {} \;
+rm -rf ./CMakeFiles ./CMakeCache.txt CTestTestfile.cmake Makefile cmake_install.cmake install_manifest.txt Testing
+cmake -DDEBUG=0 -DDPROFILE=0 -DNLS=1 . || exit 1
+make || exit 1
+(cd tools; make || exit 1) || exit 1
 
-echo Taring up
-cd ..
-tar -jcvf "$DIR".tar.bz2 $DIR
+echo OK
+echo "YOU MAY WANT TO REMOVE THIS:"
+find . -iname "#*"; find . -iname "*~*"   
+git count-objects
+du -sh .git
+sleep 1
 
-echo 'Remember to sign it!'
+git gc
+git count-objects
+du -sh .git
 
+echo Cleaning...
+make clean
+rm -rf ./CMakeFiles ./CMakeCache.txt CTestTestfile.cmake Makefile cmake_install.cmake install_manifest.txt Testing .emacs.desktop.lock
+(cd tools; make clean)
+
+
+echo "MIGHT COME HANDY:"
+echo "tar -jcvf otpasswd-x.x.tar.bz2 otpasswd-x.x"

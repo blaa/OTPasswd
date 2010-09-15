@@ -72,6 +72,7 @@ char *card_ascii(agent *a, const num_t passcard)
 	 ***/
 	char *label = NULL;
 	int code_length;
+	char *whole_card = NULL;
 	if ((ret = agent_get_int(a, PPP_FIELD_CODE_LENGTH, &code_length)) != 0) {
 		print(PRINT_ERROR, _("Unable to read code length: %s (%d)\n"), 
 		      agent_strerror(ret), ret);
@@ -87,7 +88,7 @@ char *card_ascii(agent *a, const num_t passcard)
 	const int label_len_max = width - num_min;
 
 	/* Allocate memory */
-	char *whole_card = malloc(size);
+	whole_card = malloc(size);
 	if (whole_card == NULL) {
 		if (errno == ENOMEM) {
 			printf(_("You've run out of memory. Unable to print passcards\n"));

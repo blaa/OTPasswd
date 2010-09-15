@@ -21,3 +21,7 @@ libcommon.a
 .#*
 docs/internal/html
 docs/internal/latex
+.emacs.desktop*
+po/*.mo
+po/*.gmo
+*.gmo
