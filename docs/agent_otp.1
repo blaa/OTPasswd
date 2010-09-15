@@ -1,0 +1,123 @@
+.\"
+.\"   otpasswd(1) - One-Time Password Authentication System
+.\"
+.\"   Copyright (c) 2010 Tomasz bla Fortuna
+.\"
+.\"   This file is part of OTPasswd.
+.\"
+.\"   OTPasswd is free software: you can redistribute it and/or modify
+.\"   it under the terms of the GNU General Public License as published
+.\"   by the Free Software Foundation, either version 3 of the License,
+.\"   or any later version.
+.\"
+.\"   OTPasswd is distributed in the hope that it will be useful, but
+.\"   WITHOUT ANY WARRANTY; without even the implied warranty of
+.\"   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\"   GNU General Public License for more details.
+.\"
+.\"   You should have received a copy of the GNU General Public License
+.\"   along with OTPasswd.  If not, see <http://www.gnu.org/licenses/>.
+.\"
+.\"   Author:  R Hannes Beinert & Tomasz bla Fortuna
+.\"   Version: otpasswd v0.7beta
+.\"   Update:  09-Jan-10
+.\"
+.TH OTPASSWD 1 2010-01-09 "OTPasswd v0.7beta" "OTPasswd User Manual"
+.\"
+.SH NAME
+agent_otp \- One-time password agent
+.\"
+.SH SYNOPSIS
+.B agent_otp
+[\fIoptions\fR]
+.\"
+.SH DESCRIPTION
+The \fIotpasswd\fR agent serves as the backend for otpasswd utility.
+To enhance security in the version 0.7, the utility was split into agent,
+and its interface - the utility.
+.PP
+In general user never directly interacts with the agent, although it should
+be noted that agent is executed each time user runs the utility.
+.PP
+That said, agent has a limited interface used solely for diagnostics. 
+You can use it when you're logged as root or then agent is not a SUID binary.
+.\"
+.SH OPTIONS
+.TP
+\fB\--testcase\fR
+Run set of internal testcases, which validates for example randomness of generated
+passcodes.
+.\"
+.TP
+\fB\--check-config\fR
+Diagnose any errors inside config file.
+.\"
+
+.SH SECURITY NOTES
+This executable is the only part of \fBOTPasswd\fR which might have SUID bit enabled.
+That said it's vital that this program was written and tested correctly.
+
+
+.SH SEE ALSO
+\fBotpasswd\fR(1),
+\fBotpasswd\fR(7),
+\fBpam_otpasswd\fR(8),
+\fBotpasswd.conf\fR(5),
+\fBotshadow\fR(5),
+\fBotpasswd\fR(5)
+.\"
+.SH DOCUMENTATION
+The documentation for \fBotpasswd\fR is also maintained as a Texinfo manual.
+If the \fBinfo\fR and \fBotpasswd\fR programs are properly installed at your
+site, the following command should give you access to the manual:
+.PP
+.ti +4m
+$ info otpasswd
+.PP
+In addition to this manual, various other documents are included with the
+source to this package.
+Depending upon the \fBOTPasswd\fR package that was installed,
+these documents may be available in the /usr/share hierarchy of your system.
+.PP
+An excellent description of PPPv3 is available on the Gibson Research Corporation
+website at <https://www.grc.com/ppp.htm>.
+.PP
+The evolving design of \fIPerfect Paper Passwords\fR was discussed extensively
+by Steve Gibson and Leo LaPorte on the TWiT \fISecurity Now!\fR netcast in
+episodes #113, #115, and #117 during the fall of 2007.
+.PP
+The GRC \fIgrc.thinktank\fR newsgroup was the site of a great deal of
+activity regarding the design and development of \fIPerfect Paper Passwords\fR
+during this same time period.
+Quite a number of developers posted articles, as did Steve Gibson, himself.
+More information regarding GRC newsgroups is available at
+<http://www.grc.com/discussions.htm>.
+To view the \fIgrc.thinktank\fR newsgroup itself, point your favorite
+NNTP newsreader at <news://news.grc.com/grc.thinktank>.
+.\"
+.\"  *AUTHORS
+.\"
+.SH LICENSE
+Copyright (c) 2009, 2010 Tomasz bla Fortuna
+.PP
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+.PP
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+.PP
+You should have received a copy of the GNU General Public License
+along with this program in a LICENSE file.
+.\"
+.SH AVAILABILITY
+The latest version of the \fBOTPasswd\fR package is available in source form
+at the project website
+.nh
+https://savannah.nongnu.org/projects/otpasswd
+.hy 1
+.\"
+.\" End of Manual: otpasswd(1)
