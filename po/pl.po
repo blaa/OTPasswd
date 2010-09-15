@@ -1,178 +1,249 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"POT-Creation-Date: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-09-15 11:57+0200\n"
 "PO-Revision-Date: \n"
 "Last-Translator: Tomasz bla Fortuna <bla@thera.be>\n"
 "Language-Team: \n"
+"Language: \n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: utility/otpasswd.c:583
+#: utility/actions.c:484
 #, c-format
 msgid ""
 "\n"
-"Unable to read config file from %s\n"
+"* Your current flags:\n"
 msgstr ""
 "\n"
-"Nie mogę otworzyć pliku konfiguracyjnego z lokacji %s\n"
+"* Twoje obecne flagi:\n"
 
-#: utility/otpasswd_actions.c:112
+#: utility/actions_helpers.c:44
 msgid " (yes/no): "
 msgstr "(tak/nie):"
 
-#: utility/otpasswd_actions.c:226
+#: utility/actions_helpers.c:277
 #, c-format
 msgid "(salt=off)\n"
 msgstr "(salt=off)\n"
 
-#: utility/otpasswd_actions.c:224
+#: utility/actions_helpers.c:275
 #, c-format
 msgid "(salt=on)\n"
 msgstr "(salt=on)\n"
 
-#: utility/otpasswd.c:476
+#: utility/actions.c:470
 #, c-format
-msgid "*** Running testcases\n"
-msgstr "*** Włączam testy\n"
+msgid "* User    = %s\n"
+msgstr "* Użytkownik = %s\n"
 
-#: utility/otpasswd.c:502
+#: utility/actions.c:476
 #, c-format
-msgid ""
-"**********************************\n"
-"* All testcases seem successful. *\n"
-"**********************************\n"
-msgstr ""
-"**************************\n"
-"* Wszystkie testy udane. *\n"
-"**************************\n"
+msgid "* Your current state:\n"
+msgstr "* Twój aktualny stan:\n"
 
-#: utility/otpasswd_actions.c:1071
-#: utility/otpasswd_actions.c:1121
+#: agent/agent_interface.c:235
 #, c-format
-msgid ""
-"**********************************\n"
-"* WARNING: You should never skip *\n"
-"* backwards to reuse your codes! *\n"
-"**********************************\n"
-msgstr ""
+msgid "Agent detected configuration problem: %s\n"
+msgstr "Agent wykrył problem z konfiguracją: %s\n"
 
-#: utility/otpasswd.c:493
+#: utility/actions.c:422
 #, c-format
-msgid ""
-"***********************************************\n"
-"*         !!! %d testcases failed !!!         *\n"
-"* Don't use this release until this is fixed! *\n"
-"* Note: Testcases should be run with default  *\n"
-"* If unsure, reinstall and rerun --check      *\n"
-"***********************************************\n"
-msgstr ""
+msgid "Agent error while reading warnings: %s\n"
+msgstr "Błąd agenta w trakcie czytania ostrzeżeń: %s\n"
 
-#: utility/otpasswd_actions.c:457
+#: utility/actions.c:398
 #, c-format
-msgid "Alphabet denied by policy. See -f alphabet-list\n"
-msgstr "Alfabet zabroniony przez politykę. Zobacz -f alphabet-list\n"
+msgid "Agent error while setting password: %s\n"
+msgstr "Błąd w trakcie ustawiania hasła: %s\n"
 
-#: utility/otpasswd_actions.c:805
+#: utility/actions.c:389
+#, c-format
+msgid "Agent error while unsetting password: %s\n"
+msgstr "Błąd w trakcie usuwania hasła: %s\n"
+
+#: utility/actions.c:141
+#, c-format
+msgid "Agent error: %s\n"
+msgstr "Ogólny błąd agenta: %s\n"
+
+#: agent/agent_interface.c:245
+#, c-format
+msgid "Agent failed to initialize correctly: %s\n"
+msgstr "Błąd w trakcie inicjalizacji agenta: %s\n"
+
+#: agent/agent_interface.c:372
+msgid "Agent protocol mismatch. Reinstall software."
+msgstr "Niezgodność z wersją agenta. Przeinstaluj OTPasswd."
+
+#: agent/agent_interface.c:206
+#, c-format
+msgid "Agent return value is: %d\n"
+msgstr "Agent zwrócił wartość: %d\n"
+
+#: agent/agent_interface.c:210
+msgid "Agent started but didn't sent any valid information back..\n"
+msgstr "Agent wystartował, lecz nie odesłał poprawnego komunikatu.\n"
+
+#: agent/agent_interface.c:374
+msgid "Agent unexpectedly disconnected."
+msgstr "Agent nieoczekiwanie się rozłączył."
+
+#: agent/agent_interface.c:221
+#, c-format
+msgid "Agent: Header type equals %d instead of %d.\n"
+msgstr "Agent: Typ nagłówka jest równy %d zamiast %d.\n"
+
+#: agent/agent_interface.c:220
+msgid "Agent: Initial frame parsing error.\n"
+msgstr "Agent: Błąd w parsowaniu ramki inicjalizacyjnej.\n"
+
+#: utility/actions_helpers.c:206
+#, c-format
+msgid "All auth failures   = %d\n"
+msgstr "Błędne hasła w ogóle= %d\n"
+
+#: utility/actions_helpers.c:816
+#, c-format
+msgid "Alphabet denied by policy. See -c alphabet=list\n"
+msgstr "Alfabet zabroniony przez politykę. Zobacz -c alphabet=list\n"
+
+#: utility/actions.c:449
+#, c-format
+msgid "Alphabet list ([-] means \"denied by the policy\"): \n"
+msgstr "Lista alfabetów ([-] oznacza \"zabronione przez politykę\"): \n"
+
+#: utility/actions.c:670
+#, c-format
+msgid "Alphabet selected.\n"
+msgstr "Alfabet wybrany.\n"
+
+#: utility/actions.c:333
 msgid "Are you ready to start using this one-time passwords?"
 msgstr "Czy jesteś gotów by zacząć używać jednorazowych haseł?"
 
-#: utility/otpasswd_actions.c:716
+#: utility/actions.c:169
+#: utility/actions.c:276
 msgid "Are you sure you want to continue?"
 msgstr "Czy na pewno chcesz kontynuować?"
 
-#: utility/otpasswd_actions.c:628
+#: utility/actions.c:118
 #, c-format
 msgid "Authentication failed (Counter overflowed, regenerate key).\n"
 msgstr "Autentykacja nieudana (Brak dostępnych kodów, wygeneruj nowy klucz).\n"
 
-#: utility/otpasswd_actions.c:610
+#: utility/actions.c:134
 #, c-format
-msgid "Authentication failed (denied by policy).\n"
-msgstr "Autentykacja nieudana (zabroniona przez politykę).\n"
+msgid "Authentication failed (policy error).\n"
+msgstr "Autentykacja nieudana (zabronione przez politykę).\n"
 
-#: utility/otpasswd_actions.c:660
-#, c-format
-msgid "Authentication failed (ppp_authenticate error).\n"
-msgstr "Autentykacja nieudana (błąd ppp_authenticate).\n"
-
-#: utility/otpasswd_actions.c:643
-#, c-format
-msgid "Authentication failed (state increment error).\n"
-msgstr "Autentykacja nieudana (błąd inkrementacji stanu).\n"
-
-#: utility/otpasswd_actions.c:633
+#: utility/actions.c:123
 #, c-format
 msgid "Authentication failed (user doesn't have a key).\n"
 msgstr "Autentykacja nieudana (użytkownik nie ma stworzonego klucza).\n"
 
-#: utility/otpasswd_actions.c:638
+#: utility/actions.c:128
 #, c-format
 msgid "Authentication failed (user doesn't have entry in db).\n"
 msgstr "Autentykacja nieudana (użytkownik nie ma wpisu w bazie).\n"
 
-#: utility/otpasswd_actions.c:656
+#: utility/actions.c:99
+#, c-format
+msgid "Authentication failed (user has no state).\n"
+msgstr "Autentykacja nieudana (użytkownik nie ma stworzonego klucza).\n"
+
+#: utility/actions.c:113
 #, c-format
 msgid "Authentication failed (wrong passcode).\n"
 msgstr "Autentykacja nieudana (złe hasło).\n"
 
-#: utility/otpasswd_actions.c:652
+#: utility/actions.c:140
+#, c-format
+msgid "Authentication failed with internal error.\n"
+msgstr "Autentykacja nieudana (błąd wewnętrzny).\n"
+
+#: utility/actions.c:107
 #, c-format
 msgid "Authentication successful.\n"
 msgstr "Autentykacja udana.\n"
 
-#: utility/otpasswd_actions.c:151
-#, c-format
-msgid "Card numbering starts at 1\n"
-msgstr "Numeracja kart zaczyna się od 1.\n"
-
-#: utility/otpasswd_actions.c:324
+#: utility/actions_helpers.c:683
 #, c-format
 msgid "Changing a \"disable\" flag disallowed by policy.\n"
 msgstr "Zmiana flagi \"disable\" zabroniona przez politykę.\n"
 
-#: utility/otpasswd.c:598
-#, c-format
-msgid "Configuration error. You have to edit otpasswd.conf and select DB option.\n"
-msgstr "Błąd konfiguracji. Musisz wyedytować otpasswd.conf i wybrać poprawną opcję DB.\n"
+#: agent/agent_interface.c:383
+msgid "Changing disabled flag is denied by the policy."
+msgstr "Zmiana flagi \"disable\" zabroniona przez politykę."
 
-#: utility/otpasswd_actions.c:965
-#, c-format
-msgid "Configuration not changed.\n"
-msgstr "Konfiguracja niezmieniona.\n"
+#: agent/agent_interface.c:230
+msgid "Check your installation and configuration.\n"
+msgstr "Zweryfikuj instalacje i konfigurację OTPasswd.\n"
 
-#: utility/otpasswd_actions.c:963
+#: utility/actions.c:684
 #, c-format
-msgid "Configuration updated.\n"
-msgstr "Konfiguracja zaaktualizowana.\n"
+msgid "Code length set.\n"
+msgstr "Długość kodu ustawiona.\n"
 
-#: utility/otpasswd_actions.c:207
+#: agent/agent_interface.c:396
+msgid "Coding error: Action requires created/read state."
+msgstr "Błąd programu: Dana akcja wymaga wcześniej utworzonego/wczytanego stanu."
+
+#: agent/agent_interface.c:356
+msgid "Coding error: Illegal request argument sent to agent."
+msgstr "Błąd programu: Błędny argument żądania wysłany do agenta."
+
+#: agent/agent_interface.c:354
+msgid "Coding error: Illegal request to agent."
+msgstr "Błąd programu: Nie rozpoznane żądanie wysłane do agenta."
+
+#: agent/agent_interface.c:392
+msgid "Coding error: Must create state before generating key."
+msgstr "Błąd programu: Przed generowaniem klucza niezbędne jest utworzenie stanu."
+
+#: agent/agent_interface.c:394
+msgid "Coding error: Must drop state before removing it."
+msgstr "Błąd programu: Przed usuwaniem klucza trzeba odrzucić stan."
+
+#: utility/actions_helpers.c:633
 #, c-format
-msgid "Configuration:\n"
-msgstr "Konfiguracja:\n"
+msgid "Column out of possible range!\n"
+msgstr "Kolumna poza możliwym zakresem wartości!\n"
 
-#: utility/otpasswd.c:585
-#, c-format
-msgid "Consult installation manual for detailed information.\n"
-msgstr "Przeczytaj instrukcję instalacji w poszukiwaniu informacji szczegółowych.\n"
+#: agent/agent_interface.c:359
+msgid "Configuration error or unable to read configuration file."
+msgstr "Błąd instalacji. Nie mogę odczytać pliku konfiguracyjnego.\n"
 
-#: utility/otpasswd.c:190
+#: agent/agent_interface.c:240
+msgid "Configuration problem was detected:\n"
+msgstr "Wykryto problem konfiguracji:\n"
+
+#: agent/agent_interface.c:361
+msgid "Configuration problem: DB option set to 'global', but OTP agent is not SUID-root."
+msgstr "Problem konfiguracyjny: Opcja DB ustawiona na 'global', ale agent OTP nie ma flagi SUID."
+
+#: utility/actions.c:48
+msgid "Connected to agent\n"
+msgstr "Połączono z agentem\n"
+
+#: utility/otpasswd.c:219
 #, c-format
 msgid "Contact already defined\n"
 msgstr "Kontact już został zdefiniowany.\n"
 
-#: utility/otpasswd_actions.c:382
+#: utility/actions_helpers.c:741
 #, c-format
 msgid "Contact can't be longer than %d characters\n"
 msgstr "Kontakt nie może być dłuższy niż %d znaków.\n"
 
-#: utility/otpasswd_actions.c:387
+#: utility/actions_helpers.c:746
 #, c-format
 msgid "Contact changing denied by policy.\n"
 msgstr "Zmiana kontaktu zabroniona przez politykę.\n"
 
-#: utility/otpasswd_actions.c:377
+#: utility/actions_helpers.c:736
 #, c-format
 msgid ""
 "Contact contains illegal characters.\n"
@@ -181,476 +252,799 @@ msgstr ""
 "Kontakt zawiera niedozwolone znaki.\n"
 "Tylko alfanumeryczne oraz \" -+.@_*\" są dozwolone.\n"
 
-#: utility/otpasswd_actions.c:300
+#: utility/actions.c:659
 #, c-format
-msgid "Counter = %032ZX\n"
-msgstr "Licznik = %032ZX\n"
+msgid "Contact set.\n"
+msgstr "Kontakt ustawiony.\n"
 
-#: utility/otpasswd_actions.c:188
+#: utility/actions_helpers.c:329
 #, c-format
-msgid "Current card        = %Zd\n"
-msgstr "Aktualna karta      = %Zd\n"
+msgid "Counter = "
+msgstr "Licznik = "
 
-#: utility/otpasswd_actions.c:192
+#: utility/actions_helpers.c:186
 #, c-format
-msgid "Current code        = %Zd\n"
-msgstr "Aktualny kod        = %Zd\n"
+msgid "Current card        = "
+msgstr "Aktualna karta      = "
 
-#: utility/otpasswd_actions.c:187
+#: utility/actions_helpers.c:190
 #, c-format
-msgid "Current state:\n"
-msgstr "Aktualny stan:\n"
+msgid "Current code        = "
+msgstr "Aktualny kod        = "
 
-#: utility/otpasswd.c:615
+#: agent/agent_interface.c:241
+msgid "DB=global option is set in config file but agent executable (agent_otp)\n"
+msgstr "Opcja DB=global jest ustawiona ale plik wykonywalny agenta (agent_otp)\n"
+
+#: utility/otpasswd.c:415
 #, c-format
-msgid "Database type set to global, MySQL or LDAP, yet program is not a SUID root.\n"
-msgstr "Typ bazy ustawiony na global, MySQL lub LDAP, jednak narzędzie nie jest SUID root.\n"
+msgid "Error (not enough memory) while copying username.\n"
+msgstr "Błąd (brak pamięci) w trakcie kopiowania nazwy użytkownika.\n"
 
-#: utility/otpasswd_actions.c:746
-msgid "Do you want to keep this configuration?"
-msgstr "Czy chcesz zachować konfigurację?"
+#: agent/agent_interface.c:370
+msgid "Error during agent initialization."
+msgstr "Błąd w trakcie inicjalizacji agenta."
 
-#: utility/otpasswd.c:569
-#, c-format
-msgid "ERROR: Unable to start logging subsystem\n"
-msgstr "Błąd: Nie mogę wystartować podsystemu logowania.\n"
+#: agent/agent_interface.c:368
+msgid "Error while allocating memory."
+msgstr "Błąd w trakcie alokowania pamięci.\n"
 
-#: utility/otpasswd_actions.c:1102
+#: utility/actions.c:605
 msgid "Error while calculating passcode\n"
 msgstr "Błąd w trakcie obliczania kodu.\n"
 
-#: utility/otpasswd_actions.c:668
-msgid "Error while finalizing state\n"
-msgstr "Błąd w trakcie finalizowania stanu.\n"
+#: utility/actions_helpers.c:590
+msgid "Error while deciphering passcode specification\n"
+msgstr "Błąd w trakcie analizowania specyfikacji kodu\n"
 
-#: utility/otpasswd_actions.c:1199
+#: utility/actions.c:176
 #, c-format
-msgid "Error while finalizing state. (No changes to write)\n"
-msgstr "Błąd w trakcie finalizowania stanu. (Brak zmian do zapisu).\n"
+msgid "Error while dropping state! %s (%d)\n"
+msgstr "Błąd w trakcie usuwania stanu! %s (%d)\n"
 
-#: utility/otpasswd_actions.c:1061
+#: utility/actions.c:210
+#, c-format
+msgid "Error while dropping state: %s\n"
+msgstr "Błąd w trakcie usuwania stanu! %s\n"
+
+#: utility/actions.c:746
 msgid "Error while generating destination passcode\n"
 msgstr "Błąd w trakcie generowania docelowego kodu.\n"
 
-#: utility/otpasswd_actions.c:541
+#: utility/actions.c:74
 #, c-format
-msgid "Error while parsing passcard description.\n"
-msgstr ""
+msgid "Error while loading user state: %s (%d)\n"
+msgstr "Błąd w trakcie wczytywania stanu: %s (%d)\n"
 
-#: utility/otpasswd_actions.c:581
+#: utility/actions_helpers.c:539
 #, c-format
-msgid "Error while parsing passcard number.\n"
-msgstr ""
+msgid "Error while parsing passcard number (%s).\n"
+msgstr "Błąd w trakcie analizowania numeru karty (%s).\n"
 
-#: utility/otpasswd_actions.c:561
+#: utility/actions_helpers.c:513
 #, c-format
 msgid "Error while parsing passcode number.\n"
-msgstr ""
+msgstr "Błąd w trakcie analizowania numeru kodu.\n"
 
-#: utility/otpasswd_actions.c:1036
-#: utility/otpasswd_actions.c:1047
-msgid "Error while printing card (not enough memory?)\n"
-msgstr ""
+#: utility/actions.c:488
+msgid "Error while printing state flags.\n"
+msgstr "Błąd w trakcie wyświetlania flag stanu.\n"
 
-#: utility/otpasswd_actions.c:728
+#: utility/actions.c:480
+msgid "Error while printing state information.\n"
+msgstr "Błąd w trakcie wyświetlania informacji o stanie.\n"
+
+#: utility/actions.c:501
 #, c-format
-msgid "Error while removing key!\n"
-msgstr ""
+msgid "Error while printing user key: %s\n"
+msgstr "Błąd w trakcie wyświetlania klucza użytkownika: %s\n"
 
-#: utility/otpasswd_actions.c:97
+#: agent/agent_interface.c:200
 #, c-format
-msgid "Error while saving state data. State not changed.\n"
-msgstr ""
+msgid "Error while reading initial data from agent: %s\n"
+msgstr "Błąd w trakcie czytania ramek inicjalizacyjnych od agenta: %s\n"
 
-#: utility/otpasswd_actions.c:1197
+#: utility/actions.c:186
 #, c-format
-msgid "Error while saving state! Changes not written.\n"
-msgstr ""
+msgid "Error while removing key: %s\n"
+msgstr "Błąd w trakcie usuwaniu klucza: %s\n"
 
-#: utility/otpasswd.c:283
+#: utility/actions.c:619
+#, c-format
+msgid "Error while retrieving prompt: %s\n"
+msgstr "Błąd w trakcie określania znaku zachęty: %s\n"
+
+#: utility/actions.c:655
+#, c-format
+msgid "Error while setting contact: %s\n"
+msgstr "Błąd w trakcie ustawiania kontaktu: %s\n"
+
+#: utility/actions.c:257
+#, c-format
+msgid "Error while setting flags: %s\n"
+msgstr "Błąd w trakcie ustawiania flag: %s\n"
+
+#: utility/actions.c:644
+#, c-format
+msgid "Error while setting label: %s\n"
+msgstr "Błąd w trakcie ustawiania etykiety: %s\n"
+
+#: utility/actions.c:55
+#, c-format
+msgid "Error while setting user: %s\n"
+msgstr "Błąd w trakcie ustawiania użytkownika: %s\n"
+
+#: utility/actions.c:326
+#: utility/actions.c:564
+#: utility/actions.c:587
+#, c-format
+msgid "Error while updating latest card entry: %s\n"
+msgstr "Błąd w trakcie aktualizowania zapisu o ostatniej drukowanej karty: %s\n"
+
+#: utility/actions.c:234
+#, c-format
+msgid "Error: %s\n"
+msgstr "Błąd: %s\n"
+
+#: utility/actions.c:710
+#, c-format
+msgid "Flags cleared.\n"
+msgstr "Flagi wyczyszczone.\n"
+
+#: utility/actions.c:699
+#, c-format
+msgid "Flags set.\n"
+msgstr "Flagi ustawione.\n"
+
+#: utility/actions.c:441
+#, c-format
+msgid "For your information: You've got no state created (see -k option).\n"
+msgstr "Dla Twojej informacji: Nie masz stworzonego stanu (zobacz opcję -k).\n"
+
+#: utility/otpasswd.c:315
 #, c-format
 msgid "Garbage on command line. (%s)\n"
-msgstr ""
+msgstr "Śmieci na linii poleceń. (%s)\n"
 
-#: utility/otpasswd_actions.c:1080
-#: utility/otpasswd_actions.c:1130
+#: agent/agent_interface.c:351
+msgid "Generic agent error."
+msgstr "Ogólny błąd agenta."
+
+#: utility/cards.c:265
 #, c-format
-msgid "Ignoring skip to the current passcode.\n"
-msgstr ""
+msgid "Given passcard out of valid range. Unable to print 6 passcards.\n"
+msgstr "Podany numer karty poza dopuszczalnymi wartościami. Nie mogę wydrukować 6 kart.\n"
 
-#: utility/otpasswd_actions.c:453
+#: utility/actions.c:295
 #, c-format
-msgid "Illegal alphabet ID specified. See -f alphabet-list\n"
+msgid ""
+"HINT: To generate key we need to gather lots of random data.\n"
+"To make this process faster you can move your mouse or cause\n"
+"some network or disc activity\n"
 msgstr ""
+"Wskazówka: By wygenerować klucz potrzebujemy dużo losowych danych.\n"
+"Żeby przyśpieszyć ten proces możesz ruszać swoją myszką, wywołać\n"
+"jakiś ruch sieciowy lub aktywność dysku.\n"
 
-#: utility/otpasswd_actions.c:592
+#: agent/agent_interface.c:190
+#: agent/agent_interface.c:213
+msgid "If you would want to send a bug report remember about gdb backtrace\n"
+msgstr "Jeśli chciałbyś przesłać informacje o błędach pamiętaj o zrzucie stosu (gdb)\n"
+
+#: utility/actions_helpers.c:812
+#, c-format
+msgid "Illegal alphabet ID specified. See -c alphabet=list\n"
+msgstr "Błędne ID alfabetu. Zobacz -c alphabet=list\n"
+
+#: utility/actions_helpers.c:596
 #, c-format
 msgid "Illegal argument passed to option.\n"
-msgstr ""
+msgstr "Błędny argument przekazany do opcji.\n"
+
+#: utility/otpasswd.c:267
+#, c-format
+msgid "Illegal configuration defined.\n"
+msgstr "Zdefiniowano niepoprawną konfigurację.\n"
+
+#: utility/actions_helpers.c:505
+#, c-format
+msgid "Illegal passcode number!\n"
+msgstr "Niepoprawny numer kodu!\n"
+
+#: utility/actions_helpers.c:578
+#, c-format
+msgid "Incorrect passcard specification (%s).\n"
+msgstr "Niepoprawna specyfikacja karty (%s).\n"
+
+#: utility/actions_helpers.c:566
+#, c-format
+msgid "Incorrect passcode specification.\n"
+msgstr "Niepoprawna specyfikacja kodu.\n"
+
+#: utility/actions_helpers.c:572
+#, c-format
+msgid "Incorrect passcode specification. (%d)\n"
+msgstr "Nie poprawna specyfikacja kodu. (%d)\n"
+
+#: utility/otpasswd.c:254
+#, c-format
+msgid "Invalid alphabet ID. Valid IDs are between 0 and %d.\n"
+msgstr "Nie poprawny ID alfabetu. ID musi zawierać się między 0 i %d.\n"
+
+#: utility/otpasswd.c:244
+#, c-format
+msgid "Invalid code length. Valid range is from 2 to 16.\n"
+msgstr "Nie poprawna długość kodu. Poprawny zakres jest od 2 do 16.\n"
+
+#: utility/actions_helpers.c:326
+#, c-format
+msgid "Key     = "
+msgstr "Klucz   = "
+
+#: utility/actions.c:306
+#, c-format
+msgid "Key generated successfully.\n"
+msgstr "Klucz wygenerowany poprawnie.\n"
+
+#: agent/agent_interface.c:381
+msgid "Key generation is denied by the policy."
+msgstr "Generacja klucza jest zabroniona przez politykę."
+
+#: agent/agent_interface.c:379
+msgid "Key regeneration is denied by the policy."
+msgstr "Regeneracja klucza jest zabroniona przez politykę."
+
+#: utility/actions.c:183
+#, c-format
+msgid "Key removed!\n"
+msgstr "Klucz usunięty!\n"
+
+#: utility/actions.c:354
+#, c-format
+msgid "Key stored! One-time passwords enabled for this account.\n"
+msgstr "Klucz zapisany! Jedno razowe hasła zostały aktywowane dla tego konta.\n"
+
+#: utility/actions.c:612
+#, c-format
+msgid "LaTeX parameter works only with passcard specification\n"
+msgstr "Parametr LaTeX działa tylko wraz ze specyfikacją karty, a nie kodu.\n"
 
 #: utility/otpasswd.c:229
 #, c-format
-msgid "Illegal configuration defined.\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:552
-#, c-format
-msgid "Illegal passcode number!\n"
-msgstr ""
-
-#: utility/otpasswd.c:372
-#, c-format
-msgid "Illegal user specified on command prompt\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:528
-#, c-format
-msgid "Incorrect passcard specification.\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:522
-#, c-format
-msgid "Incorrect passcode specification. (%d)\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:296
-#, c-format
-msgid "Key     = "
-msgstr ""
-
-#: utility/otpasswd_actions.c:769
-#, c-format
-msgid "Key generation denied by policy.\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:704
-#, c-format
-msgid "Key regeneration denied by policy.\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:685
-#, c-format
-msgid "Key removal denied by policy.\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:725
-#, c-format
-msgid "Key removed!\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:824
-#, c-format
-msgid "Key stored! One-time passwords enabled for this account.\n"
-msgstr ""
-
-#: utility/security.c:125
-#, c-format
-msgid "LANG environment variable irrationaly long. Quitting.\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:1109
-#, c-format
-msgid "LaTeX parameter works only with passcard specification\n"
-msgstr ""
-
-#: utility/otpasswd.c:200
-#, c-format
 msgid "Label already defined\n"
-msgstr ""
+msgstr "Etykieta już podana\n"
 
-#: utility/otpasswd_actions.c:408
+#: utility/actions_helpers.c:767
 #, c-format
 msgid "Label can't be longer than %d characters\n"
-msgstr ""
+msgstr "Etykieta nie może być dłuższa niż %d znaków\n"
 
-#: utility/otpasswd_actions.c:413
+#: utility/actions_helpers.c:772
 #, c-format
 msgid "Label changing denied by policy.\n"
-msgstr ""
+msgstr "Zmiany etykiety są zabronione przez politykę.\n"
 
-#: utility/otpasswd_actions.c:403
+#: utility/actions_helpers.c:762
 #, c-format
 msgid ""
 "Label contains illegal characters.\n"
 "Only alphanumeric + \" -+.@_*\" are allowed.\n"
 msgstr ""
+"Etykieta zawiera nielegalne znaki.\n"
+"Dopuszczane są alfanumeryczne + \" -+.@_*\".\n"
 
-#: utility/otpasswd_actions.c:195
+#: utility/actions.c:648
 #, c-format
-msgid "Latest printed card = %Zd\n"
-msgstr ""
+msgid "Label set.\n"
+msgstr "Etykieta ustawiona.\n"
 
-#: utility/otpasswd_actions.c:198
+#: utility/actions_helpers.c:194
 #, c-format
-msgid "Max card            = %Zd\n"
-msgstr ""
+msgid "Latest printed card = "
+msgstr "Ostatnia karta      = "
 
-#: utility/otpasswd_actions.c:201
+#: utility/actions_helpers.c:198
 #, c-format
-msgid "Max code            = %Zd\n"
-msgstr ""
+msgid "Max card            = "
+msgstr "Maksymalna karta  = "
 
-#: utility/otpasswd.c:366
+#: utility/actions_helpers.c:202
+#, c-format
+msgid "Max code            = "
+msgstr "Maksymalny kod      = "
+
+#: utility/otpasswd.c:409
 #, c-format
 msgid "Multiple '--user' options passed\n"
-msgstr ""
+msgstr "Wiele opcji '--user' podane\n"
 
-#: utility/otpasswd.c:432
+#: utility/otpasswd.c:481
 #, c-format
 msgid ""
 "No action specified. Try passing -k, -s, -t or -l\n"
 "\n"
 msgstr ""
+"Brak podanej akcji. Podaj -k, -s, -t lub -l\n"
+"\n"
 
-#: utility/otpasswd_actions.c:237
+#: agent/agent_interface.c:349
+msgid "No error"
+msgstr "Brak błędu"
+
+#: utility/actions_helpers.c:283
 #, c-format
 msgid "No label, "
 msgstr "Brak etykiety, "
 
-#: utility/otpasswd.c:222
+#: utility/actions.c:377
+msgid "No password returned\n"
+msgstr "Żadne hasło nie zostało zwrócone\n"
+
+#: utility/otpasswd.c:260
 #, c-format
 msgid "No such flag or illegal option (%s).\n"
-msgstr ""
+msgstr "Nie ma takiej flagi lub niepoprawna opcja (%s).\n"
 
-#: utility/otpasswd_actions.c:156
+#: utility/actions.c:428
+msgid "No warnings.\n"
+msgstr "Brak ostrzeżeń.\n"
+
+#: agent/agent_interface.c:429
 #, c-format
-msgid "Number of the last available passcard is %Zd\n"
-msgstr ""
+msgid "Non-ascii character in static password.\n"
+msgstr "Niepoprawny znak w haśle (spoza ASCII).\n"
 
-#: utility/otpasswd_actions.c:170
+#: agent/agent_interface.c:401
+msgid "Not an agent/PPP error."
+msgstr "Błąd spoza agenta/PPP."
+
+#: agent/agent_interface.c:413
 #, c-format
-msgid "Number of the last available passcode is %Zd\n"
-msgstr ""
+msgid "Not enough digits in password.\n"
+msgstr "Za mało cyfr w haśle.\n"
 
-#: utility/otpasswd.c:584
+#: agent/agent_interface.c:421
 #, c-format
-msgid "OTPasswd not correctly installed, consult installation manuals.\n"
-msgstr ""
+msgid "Not enough special characters in password.\n"
+msgstr "Za mało znaków specjalnych w haśle.\n"
 
-#: utility/otpasswd.c:179
+#: agent/agent_interface.c:417
+#, c-format
+msgid "Not enough uppercase characters in password.\n"
+msgstr "Za mało dużych liter w haśle.\n"
+
+#: utility/otpasswd.c:536
+#, c-format
+msgid "OBSOLETE: Most of the checks were moved into agent executable.\n"
+msgstr "PRZESTARZAŁE: Większość testów zostało przeniesione do agenta (agent_otp --testcase).\n"
+
+#: utility/otpasswd.c:61
+#, c-format
+msgid ""
+"OTPasswd - One-Time Password Authentication System.\n"
+"Version %s \n"
+"Copyright (C) 2009, 2010 Tomasz bla Fortuna <bla@thera.be>\n"
+"\n"
+"This program is free software: you can redistribute it and/or modify\n"
+"it under the terms of the GNU General Public License as published by\n"
+"the Free Software Foundation, either version 3 of the License, or\n"
+"(at your option) any later version.\n"
+"\n"
+"This program is distributed in the hope that it will be useful,\n"
+"but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+"MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+"GNU General Public License for more details.\n"
+"\n"
+"You should have received a copy of the GNU General Public License\n"
+"along with this program in a LICENSE file.\n"
+msgstr ""
+"OTPasswd - System autentykacji hasłami jednorazowymi.\n"
+"Wersja %s \n"
+"Copyright (C) 2009, 2010 Tomasz bla Fortuna <bla@thera.be>\n"
+"\n"
+"This program is free software: you can redistribute it and/or modify\n"
+"it under the terms of the GNU General Public License as published by\n"
+"the Free Software Foundation, either version 3 of the License, or\n"
+"(at your option) any later version.\n"
+"\n"
+"This program is distributed in the hope that it will be useful,\n"
+"but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+"MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+"GNU General Public License for more details.\n"
+"\n"
+"You should have received a copy of the GNU General Public License\n"
+"along with this program in a LICENSE file.\n"
+
+#: utility/otpasswd.c:208
 #, c-format
 msgid ""
 "Only one action can be specified on the command line\n"
 "and you can't mix alphabet listing with other flags.\n"
 msgstr ""
+"Tylko jedna akcja może zostać podana\n"
+"i nie można mieszać listowania alfabetów z innymi akcjami.\n"
 
-#: utility/otpasswd.c:309
-#: utility/otpasswd.c:323
-#: utility/otpasswd.c:339
+#: utility/otpasswd.c:345
+#: utility/otpasswd.c:365
+#: utility/otpasswd.c:381
 #, c-format
 msgid "Only one action can be specified on the command line.\n"
-msgstr ""
+msgstr "Tylko jedna akcja może być podana na linii poleceń.\n"
 
-#: utility/otpasswd.c:361
+#: utility/otpasswd.c:404
 #, c-format
 msgid "Only root can use the '--user' option\n"
-msgstr ""
+msgstr "Tylko root może używać opcji '--user'\n"
 
-#: utility/otpasswd.c:292
+#: utility/otpasswd.c:324
 #, c-format
 msgid "Option argument too long!\n"
-msgstr ""
+msgstr "Argument podany do opcji jest za długi!\n"
 
-#: utility/otpasswd_actions.c:1090
+#: utility/actions.c:595
+#, c-format
 msgid "Option requires passcode as argument\n"
-msgstr ""
+msgstr "Opcja wymaga argumentu (specyfikacji kodu)\n"
 
-#: utility/otpasswd_actions.c:235
+#: agent/agent_interface.c:465
+#, c-format
+msgid "PPP WARNING: There were %d recent failures.\n"
+msgstr "OSTRZEŻENIE PPP: Od poprzedniego logowania było %d nieudanych prób.\n"
+
+#: agent/agent_interface.c:461
+#, c-format
+msgid "PPP WARNING: You've ran out of printed passcards!\n"
+msgstr "OSTRZEŻENIE PPP: Nie masz już żadnych wydrukowanych kart!\n"
+
+#: agent/agent_interface.c:457
+#, c-format
+msgid "PPP WARNING: You've reached your last printed card.\n"
+msgstr "OSTRZEŻENIE PPP: Jesteś na swojej ostatniej wydrukowanej karcie!\n"
+
+#: utility/actions_helpers.c:281
 #, c-format
 msgid "Passcard label=\"%s\", "
 msgstr "Etykieta karty=\"%s\", "
 
-#: utility/otpasswd_actions.c:533
+#: utility/actions_helpers.c:584
 #, c-format
-msgid "Passcard number out of range. First passcard has number 1.\n"
-msgstr ""
+msgid "Passcard numbering starts with 1.\n"
+msgstr "Numeracja kart zaczyna się od 1.\n"
 
-#: utility/otpasswd_actions.c:586
-#, c-format
-msgid "Passcard out of accessible range.\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:430
+#: utility/actions_helpers.c:789
 #, c-format
 msgid "Passcode length must be between 2 and 16.\n"
-msgstr ""
+msgstr "Długość kodu musi się zawierać między 2 i 16.\n"
 
-#: utility/otpasswd_actions.c:566
+#: utility/actions_helpers.c:519
+#: utility/actions_helpers.c:545
 #, c-format
 msgid "Passcode number out of range.\n"
-msgstr ""
+msgstr "Numer kodu poza dopuszczalnym zakresem.\n"
 
-#: utility/otpasswd_actions.c:990
+#: utility/cards.c:187
 #, c-format
-msgid "Passcode printing denied by policy.\n"
-msgstr ""
+msgid "Passcode printing is denied by policy.\n"
+msgstr "Wyświetlanie kodów jest zabronione przez politykę.\n"
 
-#: utility/otpasswd_actions.c:996
-#, c-format
-msgid "Passcode skipping denied by policy.\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:140
-#: utility/otpasswd_actions.c:807
+#: utility/actions.c:336
+#: utility/actions_helpers.c:72
 #, c-format
 msgid "Please answer 'yes' or 'no'.\n"
-msgstr ""
+msgstr "Proszę odpowiedzieć 'tak' lub 'nie'.\n"
 
-#: utility/otpasswd_actions.c:333
+#: utility/actions.c:227
+#, c-format
+msgid "Policy denies key generation. Ask administrator to create you state.\n"
+msgstr "Polityka zabrania generowania klucza. Poproś administratora o jego wygenerowanie.\n"
+
+#: utility/actions.c:223
+#, c-format
+msgid "Policy denies key regeneration.\n"
+msgstr "Polityka zabrania regeneracji klucza.\n"
+
+#: utility/actions.c:247
+#, c-format
+msgid "Policy denies toggling the DISABLE flag.\n"
+msgstr "Polityka zabrania przekładania flagi 'DISABLE'.\n"
+
+#: utility/actions.c:250
+#, c-format
+msgid "Policy denies toggling the SALT flag.\n"
+msgstr "Polityka zabrania przekładania flagi SALT (sól).\n"
+
+#: utility/actions.c:253
+#, c-format
+msgid "Policy denies toggling the SHOW flag.\n"
+msgstr "Polityka zabrania przekładania flagi SHOW (wyświetlaj).\n"
+
+#: utility/actions_helpers.c:692
 #, c-format
 msgid "Policy disallows salted keys.\n"
-msgstr ""
+msgstr "Polityka zabrania używania soli.\n"
 
-#: utility/otpasswd_actions.c:352
+#: utility/actions_helpers.c:711
 #, c-format
 msgid "Policy disallows showing entered passcodes.\n"
-msgstr ""
+msgstr "Polityka zabrania wyświetlania wprowadzanych kodów.\n"
 
-#: utility/otpasswd_actions.c:358
+#: utility/actions_helpers.c:717
 #, c-format
 msgid "Policy enforces entered passcode visibility.\n"
-msgstr ""
+msgstr "Polityka wymusza widoczność wprowadzanych kodów.\n"
 
-#: utility/otpasswd_actions.c:339
+#: utility/actions_helpers.c:698
 #, c-format
 msgid "Policy enforces salted keys.\n"
-msgstr ""
+msgstr "Polityka wymusza używanie soli.\n"
 
-#: utility/otpasswd_actions.c:934
+#: agent/agent_interface.c:211
+msgid "Possible cause of this problem involves use of the wrong agent executable.\n"
+msgstr "Możliwa przyczyna tego błędu to błędny plik wykonywalny agenta.\n"
+
+#: agent/agent_interface.c:188
+msgid "Possible cause of this problem involves wrong agent executable passed in configuration file.\n"
+msgstr "Możliwa przyczyna tego błędu to błędny plik wykonywalny agenta ustawiony w pliku konfiguracyjnym.\n"
+
+#: utility/actions.c:499
 #, c-format
-msgid "Printing key denied by policy!\n"
-msgstr ""
+msgid "Printing the key is denied by the policy.\n"
+msgstr "Wyświetlanie klucz jest zabronione przez politykę.\n"
 
-#: utility/otpasswd_actions.c:945
+#: agent/agent_interface.c:231
+#, c-format
+msgid "Probable cause: %s\n"
+msgstr "Możliwa przyczyna: %s\n"
+
+#: utility/actions.c:510
 #, c-format
 msgid "Program error. You should never end up here.\n"
-msgstr ""
+msgstr "Błąd programu: Nigdy nie powinniśmy się tu znaleźć.\n"
 
-#: utility/otpasswd.c:387
-#: utility/otpasswd.c:511
+#: utility/otpasswd.c:425
+#: utility/otpasswd.c:541
 #, c-format
 msgid "Program error. You shouldn't end up here.\n"
-msgstr ""
+msgstr "Błąd programu: Nie nigdy nie powinniśmy się tu znaleźć.\n"
 
-#: utility/otpasswd_actions.c:747
+#: utility/actions_helpers.c:207
 #, c-format
-msgid "Reverting to defaults.\n"
-msgstr ""
+msgid "Recent failures     = %d\n"
+msgstr "Ostatnie błędy      = "
 
-#: utility/otpasswd_actions.c:316
+#: utility/actions_helpers.c:110
+#, c-format
+msgid "Repeat password: "
+msgstr "Powtórz hasło: "
+
+#: agent/agent_interface.c:377
+msgid "Requested action is denied by the policy."
+msgstr "Żądana akcja jest zabroniona przez politykę."
+
+#: utility/actions_helpers.c:638
+#, c-format
+msgid "Row out of range!\n"
+msgstr "Wiersz poza dozwolonym zakresem!\n"
+
+#: utility/actions_helpers.c:675
 #, c-format
 msgid "Salt configuration can be changed only during key creation.\n"
-msgstr ""
+msgstr "Konfiguracja soli może być zmieniana jedynie w trakcie generowania klucza.\n"
 
-#: utility/otpasswd_actions.c:434
+#: agent/agent_interface.c:386
+msgid "Salt option setting is fixed by the policy."
+msgstr "Ustawienie soli wymuszone jest przez politykę."
+
+#: utility/actions_helpers.c:793
 #, c-format
 msgid "Setting passcode length denied by policy.\n"
 msgstr "Ustawienie podanej długości kodu zabronione przez politykę.\n"
 
-#: utility/otpasswd_actions.c:1084
-#, c-format
-msgid "Skipped to specified passcard.\n"
-msgstr "Przeskoczyłem do podanej karty.\n"
+#: agent/agent_interface.c:388
+msgid "Show option setting is fixed by the policy."
+msgstr "Ustawienie wyświetlania kodów (show) jest wymuszone przez politykę."
 
-#: utility/otpasswd_actions.c:1134
+#: utility/actions.c:757
 #, c-format
 msgid "Skipped to specified passcode.\n"
 msgstr "Przeskoczyłem do podanego kodu.\n"
 
-#: utility/otpasswd_actions.c:1076
-#: utility/otpasswd_actions.c:1126
+#: utility/actions.c:766
 #, c-format
-msgid "Skipping backwards denied by policy.\n"
-msgstr ""
+msgid "Skipping denied by the policy.\n"
+msgstr "Przeskakiwanie kodów jest zabronione przez politykę.\n"
 
-#: utility/otpasswd_actions.c:249
+#: utility/actions_helpers.c:121
 #, c-format
-msgid "Static password is not set.\n"
-msgstr "Statyczne hasło nie ustawione.\n"
+msgid "Sorry passwords do not match.\n"
+msgstr "Błąd: Podane hasła różnią się.\n"
 
-#: utility/otpasswd_actions.c:247
+#: utility/actions.c:761
 #, c-format
-msgid "Static password is set.\n"
-msgstr "Ustawiono statyczne hasło.\n"
+msgid "Specified passcode is larger than maximal possible.\n"
+msgstr "Podany kod jest większy od maksymalnego dostępnego.\n"
 
-#: utility/otpasswd_actions.c:911
+#: agent/agent_interface.c:433
+#, c-format
+msgid "Static password change is denied by the policy.\n"
+msgstr "Zmiana hasła statycznego jest zabroniona przez politykę.\n"
+
+#: agent/agent_interface.c:438
 #, c-format
 msgid "Static password set.\n"
 msgstr "Statyczne hasło ustawione.\n"
 
-#: utility/otpasswd_actions.c:717
+#: agent/agent_interface.c:409
+#, c-format
+msgid "Static password too short.\n"
+msgstr "Hasło jest zbyt krótkie.\n"
+
+#: agent/agent_interface.c:442
+#, c-format
+msgid "Static password unset.\n"
+msgstr "Statyczne hasło usunięte.\n"
+
+#: utility/actions_helpers.c:102
+#, c-format
+msgid "Static password: "
+msgstr "Statyczne hasło:"
+
+#: utility/actions.c:170
+#: utility/actions.c:277
 #, c-format
 msgid "Stopping\n"
 msgstr "Zatrzymanie\n"
 
-#: utility/otpasswd.c:396
+#: agent/agent_interface.c:425
+#, c-format
+msgid "Strange error indeed: Unsupported ascii character.\n"
+msgstr "Bardzo dziwny błąd: Podany znak ascii nie jest wspierany.\n"
+
+#: utility/actions_helpers.c:533
+#, c-format
+msgid "Strange error while parsing passcard number.\n"
+msgstr "Dziwny błąd w trakcie analizy kodu karty.\n"
+
+#: utility/otpasswd.c:434
 #, c-format
 msgid "The \"salt\" flag can only be specified during key creation!\n"
-msgstr ""
+msgstr "Flaga \"salt\" (sól) może być podana jedynie w trakcie tworzenia klucza!\n"
 
-#: utility/otpasswd_actions.c:742
+#: agent/agent_interface.c:229
 #, c-format
-msgid "This is your previous configuration updated with command line options:\n"
-msgstr ""
+msgid "There was an error when trying to run agent executable (%s)\n"
+msgstr "Błąd w trakcie uruchamiania pliku agenta (%s)\n"
 
-#: utility/otpasswd_actions.c:903
+#: agent/agent_interface.c:187
+msgid "Timeout while waiting for agent initialization frame.\n"
+msgstr "Upłynął czas oczekiwania na inicjalizacyjną ramkę od agenta.\n"
+
+#: agent/agent_interface.c:189
+#: agent/agent_interface.c:212
+msgid "Try manually running agent executable to see where's the problem.\n"
+msgstr "Spróbuj ręcznie uruchomić plik agenta, żeby zobaczyć w czym leży problem.\n"
+
+#: agent/agent_interface.c:237
+msgid "Try running agent (agent_otp) with --check-config option to get more details\n"
+msgstr "Spróbuj uruchomić agenta (agent_otp) z opcją --check-config żeby zobaczyć więcej szczegółów\n"
+
+#: utility/actions.c:706
 #, c-format
-msgid "Turning off static password.\n"
-msgstr ""
+msgid "Unable to disable required flags: %s\n"
+msgstr "Nie mogę wyłączyć flag: %s\n"
 
-#: utility/security.c:86
+#: utility/actions.c:695
 #, c-format
-msgid "Unable to change directory to /\n"
-msgstr ""
+msgid "Unable to enable required flags: %s\n"
+msgstr "Nie mogę włączyć flag: %s\n"
 
-#: utility/otpasswd.c:404
+#: utility/actions.c:301
 #, c-format
-msgid "Unable to determine name of current user!\n"
-msgstr ""
+msgid "Unable to generate new key: %s (%d)\n"
+msgstr "Nie mogę wygenerować nowego klucza: %s (%d)\n"
 
-#: utility/otpasswd_actions.c:786
-msgid "Unable to generate new key\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:693
-msgid "Unable to initialize state\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:616
-msgid "Unable to initialize state.\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:762
+#: utility/actions.c:219
 #, c-format
-msgid "Unable to load your state, nothing to remove.\n"
-msgstr ""
+msgid "Unable to generate new state:\n"
+msgstr "Nie mogę wygenerować nowego stanu:\n"
 
-#: utility/otpasswd_actions.c:819
-msgid "Unable to save state.\n"
-msgstr ""
+#: agent/agent_interface.c:365
+msgid "Unable to locate agent executable!"
+msgstr "Nie mogę zlokalizować pliku wykonywalnego agenta!"
 
-#: utility/otpasswd.c:425
+#: utility/actions_helpers.c:241
 #, c-format
-msgid "Unable to start debugging\n"
-msgstr ""
+msgid "Unable to read alphabet id: %s (%d)\n"
+msgstr "Nie mogę odczytać ID alfabetu: %s (%d)\n"
 
-#: utility/otpasswd_actions.c:439
-#: utility/otpasswd_actions.c:464
+#: utility/actions_helpers.c:235
+#: utility/cards.c:76
+#, c-format
+msgid "Unable to read code length: %s (%d)\n"
+msgstr "Nie mogę odczytać długości kodu: %s (%d)\n"
+
+#: utility/actions_helpers.c:247
+#, c-format
+msgid "Unable to read contact: %s (%d)\n"
+msgstr "Nie mogę odczytać kontaktu: %s (%d)\n"
+
+#: utility/actions.c:202
+#, c-format
+msgid "Unable to read flags: %s\n"
+msgstr "Nie mogę odczytać flag: %s\n"
+
+#: utility/actions_helpers.c:229
+#, c-format
+msgid "Unable to read flags: %s (%d)\n"
+msgstr "Nie mogę odczytać flag: %s (%d)\n"
+
+#: utility/actions_helpers.c:253
+#: utility/cards.c:107
+#, c-format
+msgid "Unable to read label: %s (%d)\n"
+msgstr "Nie mogą odczytać etykiety: %s (%d)\n"
+
+#: utility/cards.c:258
+#, c-format
+msgid "Unable to read maximal card number: %s\n"
+msgstr "Nie mogę odczytać maksymalnego numeru karty: %s\n"
+
+#: utility/cards.c:190
+#, c-format
+msgid "Unable to read passcode: %s\n"
+msgstr "Nie mogą odczytać kodu: %s\n"
+
+#: utility/actions.c:666
+#, c-format
+msgid "Unable to select alphabet: %s\n"
+msgstr "Nie mogę wybrać alfabetu: %s\n"
+
+#: utility/actions.c:680
+#, c-format
+msgid "Unable to set code length: %s\n"
+msgstr "Nie mogę ustawić długości kodu: %s\n"
+
+#: utility/actions_helpers.c:408
+#, c-format
+msgid "Unable to set required option (%s): %s\n"
+msgstr "Nie mogą ustawić wybranej opcji (%s): %s\n"
+
+#: agent/agent_interface.c:203
+#, c-format
+msgid "Unable to start agent executable: %s\n"
+msgstr "Nie mogę wystartować agenta: %s\n"
+
+#: utility/actions.c:349
+#, c-format
+msgid "Unable to store new key: %s (%d)\n"
+msgstr "Nie mogą zapisać nowego klucza: %s (%d)\n"
+
+#: agent/agent_interface.c:363
+msgid "Unable to switch to selected user."
+msgstr "Nie mogą przełączyć do żądanego użytkownika."
+
+#: utility/actions_helpers.c:89
+#: utility/actions_helpers.c:97
+msgid "Unable to turn off character visibility!\n"
+msgstr "Nie mogą wyłączyć widoczności wprowadzanych znaków!\n"
+
+#: utility/actions_helpers.c:798
+#: utility/actions_helpers.c:823
 #, c-format
 msgid "Unexpected error while setting code length.\n"
-msgstr ""
+msgstr "Nieoczekiwany błąd w trakcie ustawiania długości kodu.\n"
 
-#: utility/otpasswd_actions.c:393
+#: utility/actions_helpers.c:752
 #, c-format
 msgid "Unexpected error while setting contact information.\n"
-msgstr ""
+msgstr "Nieoczekiwany błąd w trakcie ustawiania informacji kontaktowej.\n"
 
-#: utility/otpasswd_actions.c:420
+#: utility/actions_helpers.c:779
 #, c-format
 msgid "Unexpected error while setting label information.\n"
-msgstr ""
+msgstr "Nieoczekiwany błąd w trakcie ustawiania etykiety.\n"
 
-#: utility/otpasswd.c:61
+#: utility/otpasswd.c:86
 #, c-format
 msgid ""
 "Usage: %s [options]\n"
@@ -679,7 +1073,9 @@ msgid ""
 "Where <which> might be one of:\n"
 "  number         - a decimal number of a passcode\n"
 "  [number]       - a passcard number\n"
-"  CRR[number]    - a passcode in passcard of a given number.\n"
+"\n"
+"  CRR[number] or RRC[number] \n"
+"                 - a passcode in passcard of a given number.\n"
 "                   C is column (A through G), RR - row (1..10)\n"
 "  current        - passcode used for next time authentication\n"
 "  [current]      - passcard containing current passcode\n"
@@ -690,14 +1086,15 @@ msgid ""
 "           Print current configuration and state.\n"
 "      --info-key\n"
 "           Print key and counter used for generating passcodes.\n"
+"           Warning: This will print private data.\n"
 "  -c, --config <arg>\n"
-"           Manages various settings:\n"
+"           Can be passed multiple times. Manages various settings:\n"
 "           show=<on|off> configure visibility of passcode during\n"
 "                         authentication.\n"
 "           alphabet=<ID|list>\n"
 "                         select passcode alphabet. Use 'list' argument\n"
 "                         to get IDs of available alphabets.\n"
-"           codelenght=<length>\n"
+"           codelength=<length>\n"
 "                         select passcode length.\n"
 "\n"
 "           contact=X     Set contact info (e.g. phone number) with\n"
@@ -717,19 +1114,19 @@ msgid ""
 "           disable=<on|off>\n"
 "                         Disable user without removing his data.\n"
 "\n"
-"  -p=<pass>, --password=<pass>\n"
-"           Set static password. Equal sign is obligatory as the argument\n"
-"           is optional. Use without argument and equal-sign to unset password\n"
-"\n"
+"  -p, --password\n"
+"           Set static password. (optionally: --password=<pass>)\n"
 "  -u, --user <username|UID>\n"
 "           Operate on state of specified user. Administrator-only option.\n"
 "  -v, --verbose\n"
 "           Display more information about what is happening.\n"
+"           Try double -v -v for even more information.\n"
 "  --version\n"
 "           Display license, warranty, version and author information.\n"
 "  -h, --help\n"
 "           Display this message\n"
-"  --check  Run all testcases. Assumes default config file.\n"
+"  OBSOLETE:\n"
+"  --check  Run all testcases. (Moved to agent_otp executable)\n"
 "\n"
 "Notes:\n"
 "  Both --text and --latex can get \"next\" as a parameter which\n"
@@ -748,126 +1145,177 @@ msgid ""
 "pdflatex tmp.latex\n"
 msgstr ""
 
-#: utility/otpasswd_actions.c:920
-#: utility/otpasswd_actions.c:930
+#: utility/actions.c:671
+#: utility/actions.c:685
 #, c-format
-msgid "User    = %s\n"
-msgstr ""
+msgid "WARNING: This invalidates your previously printed passcards.\n"
+msgstr "UWAGA: Wszystkie wydrukowane wcześniej karty są nie ważne.\n"
 
-#: utility/otpasswd.c:379
-#, c-format
-msgid "Verbose output denied by policy.\n"
-msgstr ""
+#: utility/actions_helpers.c:135
+msgid "WARNING: Unable to turn on characters visibility!\n"
+msgstr "UWAGA: Nie mogą włączyć widoczności znaków!\n"
 
-#: utility/otpasswd_actions.c:255
-#, c-format
-msgid "WARNING: Current alphabet setting is inconsistent with the policy!\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:260
-#, c-format
-msgid "WARNING: Current passcode length setting is inconsistent with the policy!\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:283
-#, c-format
-msgid "WARNING: Key is not salted, but policy denies such configuration. Regenerate key!\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:277
-#, c-format
-msgid "WARNING: Key is salted, but policy denies such configuration. Regenerate key!\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:271
-#, c-format
-msgid "WARNING: Show flag is disabled, but policy enforces it's use!\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:266
-#, c-format
-msgid "WARNING: Show flag is enabled, but policy denies it's use!\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:73
-#, c-format
-msgid ""
-"WARNING: Your state is inconsistent with system policy.\n"
-"         Fix it or you will be unable to login.\n"
-"         For details use --info command.\n"
-msgstr ""
-
-#: utility/otpasswd_actions.c:468
+#: utility/actions_helpers.c:827
 #, c-format
 msgid ""
 "Warning: Changing alphabet invalidates already printed passcards.\n"
 "         If you like, you can switch back to your previous settings.\n"
 "\n"
 msgstr ""
+"UWAGA: Zmienianie alfabetu unieważnia wszystkie wydrukowane do tego czasu karty.\n"
+"Jeśli chcesz możesz przełączyć się spowrotem do poprzedniej opcji.\n"
+"\n"
 
-#: utility/otpasswd_actions.c:443
+#: utility/actions_helpers.c:802
 #, c-format
 msgid ""
 "Warning: Changing codelength invalidates already printed passcards.\n"
 "         If you like, you can switch back to your previous settings.\n"
 "\n"
 msgstr ""
+"UWAGA: Zmienianie długości kodu unieważnia wszystkie wydrukowane do tego czasu karty.\n"
+"Jeśli chcesz możesz przełączyć się spowrotem do poprzedniej opcji.\n"
+"\n"
 
-#: utility/otpasswd_actions.c:813
+#: utility/actions.c:416
 #, c-format
-msgid "Wiping out key. One-time passwords not enabled.\n"
-msgstr ""
+msgid "Warning: You've got no state. Create on with -k option.\n"
+msgstr "UWAGA: Nie masz stworzonego stanu. Stwórz go za pomocą przełącznika -k.\n"
 
-#: utility/otpasswd_actions.c:744
+#: utility/actions.c:342
 #, c-format
-msgid "You can either use it, or start with default one (modified by any --config options).\n"
-msgstr ""
+msgid "Wiping out key. User state left unchanged.\n"
+msgstr "Wyrzucam stworzony klucz. Stan użytkownika nienaruszony.\n"
 
-#: utility/otpasswd_actions.c:220
+#: utility/actions.c:231
+#, c-format
+msgid "You currently have state but it was disabled.\n"
+msgstr "Obecnie masz już stworzony stan, ale został zablokowany (flaga disabled).\n"
+
+#: utility/actions.c:728
+#, c-format
+msgid "You have skipped state creation. (see -k option).\n"
+msgstr "Pominąłeś stworzenie stanu. (zobacz opcję -k).\n"
+
+#: utility/actions.c:367
+#, c-format
+msgid "You really need to create some state first (see -k option).\n"
+msgstr "Naprawdę powinieneś najpierw stworzyć swój stan (zobacz opcję -k).\n"
+
+#: utility/actions.c:534
+#, c-format
+msgid "You've got no state created! Unable to print passcodes (see -k option).\n"
+msgstr "Nie posiadasz stworzonego stanu! Nie mogę wyświetlać kodów (zobacz opcję -k).\n"
+
+#: utility/cards.c:93
+#: utility/cards.c:332
+#, c-format
+msgid "You've run out of memory. Unable to print passcards\n"
+msgstr "Skończyła się pamięć operacyjna. Nie mogę wydrukować kart.\n"
+
+#: utility/actions.c:286
+#, c-format
+msgid "Your current set of flags:\n"
+msgstr "Twój obecny zestaw flag:\n"
+
+#: utility/actions.c:155
+#, c-format
+msgid "Your state was eaten by Grue, nothing to remove.\n"
+msgstr "Twój stan został zjedzony przez Grue, nie pozostało nic co mogę usunąć.\n"
+
+#: utility/actions_helpers.c:271
 #, c-format
 msgid "alphabet=%d "
 msgstr "alfabet=%d "
 
-#: utility/otpasswd_actions.c:221
-#, c-format
-msgid "codelength=%d "
+#: agent/agent_interface.c:191
+#: agent/agent_interface.c:214
+msgid "and log created with strace: strace -f -o otpasswd_log <command you've tried>\n"
+msgstr "i plik loga stworzony za pomocą strace: strace -f -o otpasswd_log otpasswd <próbowane parametry>"
+
+#: utility/actions_helpers.c:272
+#, fuzzy, c-format
+msgid "code_length=%d "
 msgstr "długość kodu=%d "
 
-#: utility/otpasswd_actions.c:241
+#: utility/actions_helpers.c:287
 #, c-format
 msgid "contact=\"%s\".\n"
 msgstr "kontakt=\"%s\".\n"
 
-#: utility/otpasswd_actions.c:218
+#: utility/actions_helpers.c:269
 #, c-format
 msgid "disabled=off "
 msgstr "wyłączony=nie "
 
-#: utility/otpasswd_actions.c:216
+#: utility/actions_helpers.c:267
 #, c-format
 msgid "disabled=on "
 msgstr "wyłączony=tak "
 
-#: utility/otpasswd_actions.c:126
+#: agent/agent_interface.c:242
+msgid "doesn't have necessary SUID-root permissions.\n"
+msgstr "nie posiada wymaganych ustawień SUID-root.\n"
+
+#: utility/actions_helpers.c:58
 msgid "no"
 msgstr "nie"
 
-#: utility/otpasswd_actions.c:243
+#: utility/actions_helpers.c:289
 #, c-format
 msgid "no contact information.\n"
 msgstr "brak informacji kontaktowych.\n"
 
-#: utility/otpasswd_actions.c:213
+#: utility/actions_helpers.c:264
 #, c-format
 msgid "show=off "
 msgstr "pokaż=nie "
 
-#: utility/otpasswd_actions.c:211
+#: utility/actions_helpers.c:262
 #, c-format
 msgid "show=on "
 msgstr "pokaż=tak "
 
-#: utility/otpasswd_actions.c:123
+#: utility/actions_helpers.c:55
 msgid "yes"
 msgstr "tak"
 
+#~ msgid "*** Running testcases\n"
+#~ msgstr "*** Włączam testy\n"
+
+#~ msgid ""
+#~ "**********************************\n"
+#~ "* All testcases seem successful. *\n"
+#~ "**********************************\n"
+#~ msgstr ""
+#~ "**************************\n"
+#~ "* Wszystkie testy udane. *\n"
+#~ "**************************\n"
+
+#~ msgid "Configuration not changed.\n"
+#~ msgstr "Konfiguracja niezmieniona.\n"
+
+#~ msgid "Configuration:\n"
+#~ msgstr "Konfiguracja:\n"
+
+#~ msgid ""
+#~ "Database type set to global, MySQL or LDAP, yet program is not a SUID "
+#~ "root.\n"
+#~ msgstr ""
+#~ "Typ bazy ustawiony na global, MySQL lub LDAP, jednak narzędzie nie jest "
+#~ "SUID root.\n"
+
+#~ msgid "Do you want to keep this configuration?"
+#~ msgstr "Czy chcesz zachować konfigurację?"
+
+#~ msgid "ERROR: Unable to start logging subsystem\n"
+#~ msgstr "Błąd: Nie mogę wystartować podsystemu logowania.\n"
+
+#~ msgid "Error while finalizing state. (No changes to write)\n"
+#~ msgstr "Błąd w trakcie finalizowania stanu. (Brak zmian do zapisu).\n"
+
+#~ msgid "Skipped to specified passcard.\n"
+#~ msgstr "Przeskoczyłem do podanej karty.\n"
+
+#~ msgid "Static password is set.\n"
+#~ msgstr "Ustawiono statyczne hasło.\n"

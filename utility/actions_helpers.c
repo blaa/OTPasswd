@@ -810,11 +810,11 @@ int ah_update_flags(options_t *options, state *s, int generation)
 		switch (ret) { 
 		case PPP_ERROR_RANGE:
 			printf(_("Illegal alphabet ID specified. See "
-			       "-f alphabet-list\n"));
+			       "-c alphabet=list\n"));
 			return ret;
 		case PPP_ERROR_POLICY:
 			printf(_("Alphabet denied by policy. See "
-			       "-f alphabet-list\n"));
+			       "-c alphabet=list\n"));
 			return ret;
 		case 0:
 			

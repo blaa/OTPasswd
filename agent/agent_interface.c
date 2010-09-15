@@ -208,7 +208,7 @@ int agent_connect(agent **a_out, const char *agent_executable)
 			}
 
 			print(PRINT_MESSAGE, _("Agent started but didn't sent any valid information back..\n"));
-			print(PRINT_MESSAGE, _("Possible cause of this problem involves wrong agent executable passed in configuration file.\n"));
+			print(PRINT_MESSAGE, _("Possible cause of this problem involves use of the wrong agent executable.\n"));
 			print(PRINT_MESSAGE, _("Try manually running agent executable to see where's the problem.\n"));		
 			print(PRINT_MESSAGE, _("If you would want to send a bug report remember about gdb backtrace\n"));		
 			print(PRINT_MESSAGE, _("and log created with strace: strace -f -o otpasswd_log <command you've tried>\n"));

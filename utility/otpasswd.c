@@ -412,7 +412,7 @@ int process_cmd_line(int argc, char **argv, options_t *options)
 
 			options->username = strdup(optarg);
 			if (!options->username) {
-				printf(_("Error (memory) while copying username.\n"));
+				printf(_("Error (not enough memory) while copying username.\n"));
 				goto error;
 			}
 			break;
