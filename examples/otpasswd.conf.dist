@@ -218,9 +218,6 @@ SKIPPING=ALLOW
 # Can user authenticate on prompt with -a option?
 SHELL_AUTH=ALLOW
 
-# Allow user to use -v option?
-VERBOSE_OUTPUT=ALLOW
-
 # NI! Allow ascii state import/export.
 STATE_EXPORT=ALLOW
 STATE_IMPORT=DISALLOW

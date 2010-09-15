@@ -39,8 +39,11 @@ static int _get_agent_executable(const char *agent, const char **agent_path)
 	*agent_path = NULL;
 	const char *agents[] = { 
 		agent,
-		"/usr/bin/agent_otp",
+#if DEBUG
 		"./agent_otp",
+#endif
+		"/usr/bin/agent_otp",
+
 		"/usr/local/bin/agent_otp",
 		NULL };
 	int i;

@@ -135,10 +135,26 @@ int spass_testcase(void)
 	} else {
 		printf("OK\n");
 	}
+
+	ret = ppp_set_spass(&s, NULL, 0);
+	printf("SPASS TESTCASE [4]: ");
+	if (ret != PPP_ERROR_SPASS_UNSET) {
+		failed++;
+		printf("FAILED\n");
+	} else {
+		printf("OK\n");
+	}
+
+	ret = ppp_spass_validate(&s, "whatever");
+	printf("SPASS TESTCASE [5]: ");
+	if (ret == 0) {
+		failed++;
+		printf("FAILED\n");
+	} else {
+		printf("OK\n");
+	}
 		
-
 	state_fini(&s);
-
 
 	return failed;
 }

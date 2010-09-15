@@ -25,6 +25,7 @@ Done:
 	* [+] Backward skipping removed from configuration.
 	
         * [+] Printing with -l when skipped to the last passcard fixed .
+        * [!] Fixed security bug in static password handling.
 In progress:
         * [?] Cleanup PPP interface. This should look like follows.
               "State" is class implementing some basic features of
