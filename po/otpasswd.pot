@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-09-15 15:59+0200\n"
+"POT-Creation-Date: 2010-09-15 17:27+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,11 +16,30 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#: agent/agent.c:93
+#, c-format
+msgid ""
+"\n"
+"\n"
+"Global DB selected. Trying to initialize PPP and read state data to see if "
+"DB exists.\n"
+msgstr ""
+
 #: utility/actions.c:484
 #, c-format
 msgid ""
 "\n"
 "* Your current flags:\n"
+msgstr ""
+
+#: utility/actions.c:309
+msgid ""
+"\n"
+"*****************************************************\n"
+"* Print following passcard or at least make a note  *\n"
+"* with a few first passcodes so you won't loose     *\n"
+"* ability to log into your system!                  *\n"
+"*****************************************************\n"
 msgstr ""
 
 #: utility/actions_helpers.c:44
@@ -45,6 +64,38 @@ msgstr ""
 #: utility/actions.c:476
 #, c-format
 msgid "* Your current state:\n"
+msgstr ""
+
+#: agent/agent.c:55
+#, c-format
+msgid "1) Config loaded correctly.\n"
+msgstr ""
+
+#: agent/agent.c:61
+#, c-format
+msgid "2) DB option is set.\n"
+msgstr ""
+
+#: agent/agent.c:79
+#, c-format
+msgid "3) Config file ownership and file mode is correct.\n"
+msgstr ""
+
+#: agent/agent.c:121
+#, c-format
+msgid "4) No state loaded, but no other errors. That's fine\n"
+msgstr ""
+
+#: agent/agent.c:116
+#, c-format
+msgid "4) State loaded\n"
+msgstr ""
+
+#: agent/agent.c:83
+#, c-format
+msgid ""
+"4) Your selected DB option doesn't require further checks. Everything is "
+"fine.\n"
 msgstr ""
 
 #: libotp/ppp.c:638
@@ -188,6 +239,11 @@ msgstr ""
 msgid "Changing disabled flag is denied by the policy."
 msgstr ""
 
+#: agent/agent.c:126
+#, c-format
+msgid "Check if you have %s\n"
+msgstr ""
+
 #: agent/agent_interface.c:230
 msgid "Check your installation and configuration.\n"
 msgstr ""
@@ -220,6 +276,11 @@ msgstr ""
 #: utility/actions_helpers.c:633
 #, c-format
 msgid "Column out of possible range!\n"
+msgstr ""
+
+#: agent/agent.c:49
+#, c-format
+msgid "Config file verification...\n"
 msgstr ""
 
 #: agent/agent_interface.c:359
@@ -296,6 +357,53 @@ msgstr ""
 msgid "DEBUG "
 msgstr ""
 
+#: agent/agent.c:134
+#, c-format
+msgid "ERROR while releasing state: %s\n"
+msgstr ""
+
+#: agent/agent.c:73
+#, c-format
+msgid "ERROR: Config file must be owned by root.\n"
+msgstr ""
+
+#: agent/agent.c:58
+#, c-format
+msgid "ERROR: DB option in config file is not set.\n"
+msgstr ""
+
+#: agent/agent.c:125
+#, c-format
+msgid "ERROR: Error while trying to load state: %s\n"
+msgstr ""
+
+#: agent/agent.c:69
+#, c-format
+msgid "ERROR: Generic error while validating config file permissions. (%d)\n"
+msgstr ""
+
+#: agent/agent.c:76
+#, c-format
+msgid "ERROR: In selected mode config file should not be readable by others.\n"
+msgstr ""
+
+#: agent/agent.c:88
+#, c-format
+msgid ""
+"ERROR: To correctly validate GLOBAL DB configuration you have to run this "
+"option as root.\n"
+msgstr ""
+
+#: agent/agent.c:108
+#, c-format
+msgid "ERROR: Unable to create state: %s\n"
+msgstr ""
+
+#: agent/agent.c:97
+#, c-format
+msgid "ERROR: ppp_init: %s\n"
+msgstr ""
+
 #: utility/otpasswd.c:438
 #, c-format
 msgid "Error (not enough memory) while copying username.\n"
@@ -329,6 +437,11 @@ msgstr ""
 
 #: utility/actions.c:746
 msgid "Error while generating destination passcode\n"
+msgstr ""
+
+#: agent/agent.c:52
+#, c-format
+msgid "Error while loading config file.\n"
 msgstr ""
 
 #: utility/actions.c:74
@@ -1332,6 +1445,16 @@ msgstr ""
 #: utility/actions_helpers.c:289
 #, c-format
 msgid "no contact information.\n"
+msgstr ""
+
+#: agent/agent.c:103
+#, c-format
+msgid "ppp_init OK\n"
+msgstr ""
+
+#: agent/agent.c:111
+#, c-format
+msgid "ppp_state_init OK\n"
 msgstr ""
 
 #: utility/actions_helpers.c:264

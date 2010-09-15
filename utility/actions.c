@@ -306,12 +306,12 @@ int action_key_generate(const options_t *options, agent *a)
 	printf(_("Key generated successfully.\n"));
 
 	puts(
-		"\n"
+		_("\n"
 		"*****************************************************\n"
 		"* Print following passcard or at least make a note  *\n"
 		"* with a few first passcodes so you won't loose     *\n"
 		"* ability to log into your system!                  *\n"
-		"*****************************************************\n"
+		"*****************************************************\n")
 	);
 
 	char *card = card_ascii(a, num_i(1));

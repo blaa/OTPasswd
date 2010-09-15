@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-09-15 15:59+0200\n"
+"POT-Creation-Date: 2010-09-15 17:27+0200\n"
 "PO-Revision-Date: \n"
 "Last-Translator: Tomasz bla Fortuna <bla@thera.be>\n"
 "Language-Team: \n"
@@ -10,6 +10,17 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Language: \n"
+
+#: agent/agent.c:93
+#, c-format
+msgid ""
+"\n"
+"\n"
+"Global DB selected. Trying to initialize PPP and read state data to see if DB exists.\n"
+msgstr ""
+"\n"
+"\n"
+"Wybrano globalną bazę. Próbuję zainicjalizować PPP i odczytać dane stanów by sprawdzić czy jest skonfigurowana poprawnie.\n"
 
 #: utility/actions.c:484
 #, c-format
@@ -20,9 +31,25 @@ msgstr ""
 "\n"
 "* Twoje obecne flagi:\n"
 
+#: utility/actions.c:309
+msgid ""
+"\n"
+"*****************************************************\n"
+"* Print following passcard or at least make a note  *\n"
+"* with a few first passcodes so you won't loose     *\n"
+"* ability to log into your system!                  *\n"
+"*****************************************************\n"
+msgstr ""
+"\n"
+"*****************************************************\n"
+"* Wydrukuj tą kartę kodów lub przynajmniej zapisz   *\n"
+"* parę pierwszych kodów byś nie stracił możliwości  *\n"
+"* logowania się do systemu!                         *\n"
+"*****************************************************\n"
+
 #: utility/actions_helpers.c:44
 msgid " (yes/no): "
-msgstr "(tak/nie):"
+msgstr " (tak/nie):"
 
 #: utility/actions_helpers.c:277
 #, c-format
@@ -43,6 +70,36 @@ msgstr "* Użytkownik = %s\n"
 #, c-format
 msgid "* Your current state:\n"
 msgstr "* Twój aktualny stan:\n"
+
+#: agent/agent.c:55
+#, c-format
+msgid "1) Config loaded correctly.\n"
+msgstr "1) Plik konfiguracyjny załadowany  poprawnie.\n"
+
+#: agent/agent.c:61
+#, c-format
+msgid "2) DB option is set.\n"
+msgstr "2) Opcja DB ustawiona w konfigu.\n"
+
+#: agent/agent.c:79
+#, c-format
+msgid "3) Config file ownership and file mode is correct.\n"
+msgstr "3) Właściciel i uprawnienia pliku konfiguracyjnego są poprawne.\n"
+
+#: agent/agent.c:121
+#, c-format
+msgid "4) No state loaded, but no other errors. That's fine\n"
+msgstr "4) Brak stanu użytkownika root, ale brak innych błędów. Wszystko gra.\n"
+
+#: agent/agent.c:116
+#, c-format
+msgid "4) State loaded\n"
+msgstr "4) Stan załadowany.\n"
+
+#: agent/agent.c:83
+#, c-format
+msgid "4) Your selected DB option doesn't require further checks. Everything is fine.\n"
+msgstr "4) Wybrana przez Ciebie opcja DB nie wymaga dalszych testów. Wszystko gra.\n"
 
 #: libotp/ppp.c:638
 msgid "Action denied by policy."
@@ -186,6 +243,11 @@ msgstr "Zmiana flagi \"disable\" zabroniona przez politykę.\n"
 msgid "Changing disabled flag is denied by the policy."
 msgstr "Zmiana flagi \"disable\" zabroniona przez politykę."
 
+#: agent/agent.c:126
+#, c-format
+msgid "Check if you have %s\n"
+msgstr "Sprawdź czy masz %s\n"
+
 #: agent/agent_interface.c:230
 msgid "Check your installation and configuration.\n"
 msgstr "Zweryfikuj instalacje i konfigurację OTPasswd.\n"
@@ -219,6 +281,11 @@ msgstr "Błąd programu: Przed usuwaniem klucza trzeba odrzucić stan."
 #, c-format
 msgid "Column out of possible range!\n"
 msgstr "Kolumna poza możliwym zakresem wartości!\n"
+
+#: agent/agent.c:49
+#, c-format
+msgid "Config file verification...\n"
+msgstr "Weryfikacja pliku konfiguracyjnego...\n"
 
 #: agent/agent_interface.c:359
 msgid "Configuration error or unable to read configuration file."
@@ -293,6 +360,51 @@ msgstr "Opcja DB=global jest ustawiona ale plik wykonywalny agenta (agent_otp)\n
 msgid "DEBUG "
 msgstr "DEBUG"
 
+#: agent/agent.c:134
+#, c-format
+msgid "ERROR while releasing state: %s\n"
+msgstr "Błąd w trakcie zwalniania stanu: %s\n"
+
+#: agent/agent.c:73
+#, c-format
+msgid "ERROR: Config file must be owned by root.\n"
+msgstr "BŁĄD: Właścicielem pliku konfiguracyjnego powinien być root.\n"
+
+#: agent/agent.c:58
+#, c-format
+msgid "ERROR: DB option in config file is not set.\n"
+msgstr "BŁĄD: Opcja DB w pliku konfiguracyjnym nie jest ustawiona.\n"
+
+#: agent/agent.c:125
+#, c-format
+msgid "ERROR: Error while trying to load state: %s\n"
+msgstr "Błąd w trakcie ładowania stanu: %s\n"
+
+#: agent/agent.c:69
+#, c-format
+msgid "ERROR: Generic error while validating config file permissions. (%d)\n"
+msgstr "BŁĄD: Ogólny błąd w trakcie weryfikacji uprawnień pliku konfiguracyjnego. (%d)\n"
+
+#: agent/agent.c:76
+#, c-format
+msgid "ERROR: In selected mode config file should not be readable by others.\n"
+msgstr "BŁĄD: W wybranym trybie plik konfiguracyjny powinien nie być czytelny dla innych.\n"
+
+#: agent/agent.c:88
+#, c-format
+msgid "ERROR: To correctly validate GLOBAL DB configuration you have to run this option as root.\n"
+msgstr "BŁĄD: By poprawnie zweryfikować konfiguracje w tym trybie musisz uruchomić ten test jako root.\n"
+
+#: agent/agent.c:108
+#, c-format
+msgid "ERROR: Unable to create state: %s\n"
+msgstr "BŁĄD: Nie mogę stworzyć stanu: %s\n"
+
+#: agent/agent.c:97
+#, c-format
+msgid "ERROR: ppp_init: %s\n"
+msgstr "BŁĄD: ppp_init: %s\n"
+
 #: utility/otpasswd.c:438
 #, c-format
 msgid "Error (not enough memory) while copying username.\n"
@@ -327,6 +439,11 @@ msgstr "Błąd w trakcie usuwania stanu! %s\n"
 #: utility/actions.c:746
 msgid "Error while generating destination passcode\n"
 msgstr "Błąd w trakcie generowania docelowego kodu.\n"
+
+#: agent/agent.c:52
+#, c-format
+msgid "Error while loading config file.\n"
+msgstr "Błąd w trakcie ładowania pliku konfiguracyjnego.\n"
 
 #: utility/actions.c:74
 #, c-format
@@ -547,7 +664,7 @@ msgstr "Klucz usunięty!\n"
 #: utility/actions.c:354
 #, c-format
 msgid "Key stored! One-time passwords enabled for this account.\n"
-msgstr "Klucz zapisany! Jedno razowe hasła zostały aktywowane dla tego konta.\n"
+msgstr "Klucz zapisany! Jednorazowe hasła zostały aktywowane dla tego konta.\n"
 
 #: utility/actions.c:612
 #, c-format
@@ -1465,6 +1582,16 @@ msgstr "nie"
 msgid "no contact information.\n"
 msgstr "brak informacji kontaktowych.\n"
 
+#: agent/agent.c:103
+#, c-format
+msgid "ppp_init OK\n"
+msgstr "ppp_init OK\n"
+
+#: agent/agent.c:111
+#, c-format
+msgid "ppp_state_init OK\n"
+msgstr "ppp_state_init OK\n"
+
 #: utility/actions_helpers.c:264
 #, c-format
 msgid "show=off "
@@ -1491,8 +1618,6 @@ msgstr "tak"
 #~ "**************************\n"
 #~ msgid "Configuration not changed.\n"
 #~ msgstr "Konfiguracja niezmieniona.\n"
-#~ msgid "Configuration:\n"
-#~ msgstr "Konfiguracja:\n"
 #~ msgid ""
 #~ "Database type set to global, MySQL or LDAP, yet program is not a SUID "
 #~ "root.\n"

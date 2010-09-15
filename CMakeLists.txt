@@ -44,7 +44,7 @@ option(NLS "Enable National Language Support (NLS)" ON)
 
 # If PROFILE option given - enable coverage tests
 IF (PROFILE)
-  ADD_DEFINITIONS("-static -fprofile-arcs -ftest-coverage")
+  ADD_DEFINITIONS("-static -DPROFILE=1 -fprofile-arcs -ftest-coverage")
   LINK_LIBRARIES(gcov)
 ENDIF (PROFILE)
 
