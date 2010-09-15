@@ -19,10 +19,10 @@
 .\"   along with OTPasswd.  If not, see <http://www.gnu.org/licenses/>.
 .\"
 .\"   Author:  R Hannes Beinert & Tomasz bla Fortuna
-.\"   Version: otpasswd v0.5beta
-.\"   Update:  09-Jan-10
+.\"   Version: otpasswd v0.7beta
+.\"   Update:  15-Sep-10
 .\"
-.TH OTPASSWD 1 2010-01-09 "OTPasswd v0.5beta" "OTPasswd User Manual"
+.TH OTPASSWD 1 2010-09-15 "OTPasswd v0.7beta" "OTPasswd User Manual"
 .\"
 .SH NAME
 otpasswd \- One-time password management utility
@@ -174,10 +174,10 @@ in which case the current hostname will be used by default.
 .RE
 .\"
 .TP
-\fB\-p=\fR\fIpassword\fR, \fB\-\-password=\fR\fIpassword\fR
-Set the static password.
-Use an empty string ("") to delete the password.
-(FIXME: This must change :-)
+\fB\-p, \fB\-\-password[=\fR\fIpassword\fR]
+Set the static password. Argument is optional,
+if not given otpasswd will ask you for password in a secure manner.
+Enter twice the empty password to delete it.
 .\"
 .TP
 \fB\-u\fR, \fB\-\-user\fR ( \fIusername\fR | \fIUID\fR )
@@ -190,7 +190,8 @@ Either a symbolic \fIusername\fR or a numeric \fIUID\fR may be specified.
 .SS General
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
-Display more information about program operation.
+Display more information about program operation. 
+Use twice for even more information.
 .\"
 .TP
 \fB\-\-version\fR
@@ -202,8 +203,7 @@ Program usage and option help information.
 .\"
 .TP
 \fB\-\-check\fR
-Run \fBotpasswd\fR internal self-tests.
-Note that this assumes a default configuration.
+Obsolete option, moved to the agent_otp executable.
 .\"
 .SS Parameter References
 When an option accepts a passcode reference (\fIcode\fR),
@@ -216,6 +216,8 @@ Passcode number.
 Each passcode has a unique decimal number,
 starting with the first passcode generated.
 .TP +10m
+RRC\fB[\fR#\fB]\fR
+.TP +10m
 CRR\fB[\fR#\fB]\fR
 Passcode address.
 Each passcode has a unique address comprised of the
@@ -223,7 +225,6 @@ column \fIC\fR (a letter) and row \fIRR\fR (one or more digits) on a
 specific passcard number (\fI#\fR).
 For example, 'F3[45]' refers to the passcode at column \fIF\fR
 and row \fI3\fR of passcard \fI45\fR.
-(FIXME: CRR or RRC?)
 .TP +10m
 \fBcurrent\fR
 The passcode which will be used for the next authentication.
@@ -405,6 +406,7 @@ $ rm tmp.latex tmp.pdf
 \fBotpasswd.conf\fR(5),
 \fBotshadow\fR(5),
 \fBotpasswd\fR(5)
+\fBagent_otp\fR(1)
 .\"
 .SH DOCUMENTATION
 The documentation for \fBotpasswd\fR is also maintained as a Texinfo manual.

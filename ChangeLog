@@ -12,7 +12,7 @@ Trying to sort tasks according to their priority.
 
 
 
-2010-03-31 v0.6-dev
+2010-03-31 v0.6-dev -> 0.7-beta
 Done:
         * [+] Dropping dependency on GMP. Cleaning up "num" interface.
           - Clean memory so there're no key/counter leaks
@@ -24,6 +24,7 @@ Done:
 	      The Split.
 	* [+] Backward skipping removed from configuration.
 	
+        * [+] Printing with -l when skipped to the last passcard fixed .
 In progress:
         * [?] Cleanup PPP interface. This should look like follows.
               "State" is class implementing some basic features of
@@ -38,7 +39,7 @@ In progress:
 TODO Major:
         * [%] Parameter -c alphabet=3,codelenght=8 is accepted but doesn't
               work. 
-        * [%] Printing with -l when skipped to the last passcard works.
+        * [?] --info should print information whether static password is set.
         * [?] Parametrize PAM messages.
         * [?] OOB Channel usage time updates + DoS security
         * [?] Static password expire warnings + enforcement. 

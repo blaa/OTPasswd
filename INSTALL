@@ -2,18 +2,10 @@
               OTPasswd - One-Time Password Authentication System
               --------------------------------------------------
                 https://savannah.nongnu.org/projects/otpasswd
-                        Updated: 08-Jan-10 (v0.5beta)
+                        Updated: 15-Sep-10 (v0.7beta)
 
                               INSTALLATION GUIDE
 
-
-
-DOCUMENT STATUS: This document is still in its infancy, and still requires
-a great deal of expansion.  As it stands, it is only in a very preliminary
-form.  As a consequence, this guide is both very rough and incomplete.  It
-is also a likely assumption that it is currently being worked on, most
-likely in the author's Fortress of Solitude.  Right now.  As we speak.
-(FIXME)
 
 
 
@@ -38,7 +30,6 @@ Contents
 A few of the more important issues related to OTPasswd installation are
 worth noting, however.
 
-** Discuss binary/source package
 OTPasswd can easily be configured to work in conjunction with any text-based
 PAM-aware application, such as sudo, su, ftp, or any standard *nix console
 login.  The typical use case for OTPasswd by far, however, is to secure
@@ -47,42 +38,46 @@ non-publickey SSH logins, which is what will be described in this section.
 Operational Mode
 ----------------
 OTPasswd is able to run in two slightly different modes, which are
-distinguished by the location of the stored user state configuration.
-This is a deliberate and essential configuration choice that must be
-made by the system administrator.  Each choice carries with it certain
-consequences with respect to system security.
+distinguished by the location of the stored user data (called `the state').
+This is a deliberate and essential configuration choice that must be made by
+the system administrator.  Each choice carries with it certain consequences
+with respect to system security.
 
-In the 'USER DB' mode, a user's configuration is stored in the user's
-home directory.  Because of this, the OTPasswd utility does not need
-escalated SUID privileges to access and modify the user's configuration.
-As a consequence, however, the user's configuration may be changed by
-the user at will.  This prevents OTPasswd from effectively enforcing
-various security policies.  Among other things, it permits a user to
-create a situation where one-time passwords (passcodes) are reused, which
-could be interpreted as effectively defeating the entire point behind
-OTP authentication.  It should be noted that if the system user-base is
-trusted, competent, and conversant in IT security issues, this may not be
-a relevant concern.  In any event, the USER DB mode effectively implies
-that OTPasswd security is optional.
+In the 'USER DB' mode, a user's state is stored in the user's home directory.
+Because of this, the OTPasswd utility does not need escalated SUID privileges
+to access and modify the user's state.  As a consequence, however, the user's
+data may be changed by the user at will.  This prevents OTPasswd from
+effectively enforcing various security policies.  Among other things, it
+permits a user to create a situation where one-time passwords (passcodes) are
+reused, which could be interpreted as effectively defeating the entire point
+behind OTP authentication.  It should be noted that if the system user-base is
+trusted, competent, and conversant in IT security issues, this may not be a
+relevant concern.  In any event, the USER DB mode effectively implies that
+OTPasswd security is optional.
 
-In the second operational mode, the 'GLOBAL DB' mode, every user's
-configuration is stored in a single database under system control.  This
-operational mode may use a number of backend database interfaces, such as a
-flat-file in the /etc filesystem hierarchy or (not yet implemented)
-LDAP/MySQL database.  The user has no read/write access to the
-configuration data, and hence the system is capable of enforcing OTPasswd
-security policies.  As an example, GLOBAL DB mode ensures that passcodes
-are never reused.  This mode of operation does require that the OTPasswd
-utility be installed as SUID root, which may be viewed by some as being
-undesirable since this may present a security exposure in its own right.
-It should be stressed, however, that the OTPasswd software was written in 
-a manner observant of secure coding practices, and while the utility is
-installed SUID root, it merely uses these privileges to read its
-configuration files and then it promptly drops the root privileges.  Or,
-put another way, the OTPasswd utility only holds root privileges for 
-a brief time during which it never processes any user input.  The benefit of
-this approach is that the GLOBAL DB mode allows the system administrator to
-choose whether OTPasswd security is optional, or mandatory.
+In the second operational mode, the 'GLOBAL DB' mode, every user's state is
+stored in a single database under system control.  This operational mode may
+use a number of backend database interfaces, such as a flat-file, usually
+/etc/otpasswd/otshadow, or (not yet implemented) LDAP/MySQL database.  The
+user has no read/write access to the configuration and state data, and hence
+the system is capable of enforcing OTPasswd security policies.  As an example,
+GLOBAL DB mode ensures that passcodes are never reused.  This mode of operation
+does require that the OTPasswd agent be installed as SUID root, which may be
+viewed by some as being undesirable since this may present a security exposure
+in its own right.  It should be stressed, however, that the OTPasswd software
+was written in a manner observant of secure coding practices, and while the
+agent is installed SUID root, it merely uses these privileges to read its
+configuration files and then it promptly drops the root privileges.  Or, put
+another way, the OTPasswd agent only holds root privileges for a brief time
+during which it never processes any user input.  The benefit of this approach
+is that the GLOBAL DB mode allows the system administrator to choose whether
+OTPasswd security is optional, or mandatory.
+
+To even increase security the OTPasswd console utility was split into two
+executables: utility (otpasswd) and agent (agent_otp). Only the latter is given
+the root privileges, but it's completely bereft of any user interface, which is
+implemented in the utility. This division ensures the user won't be able to
+suspend execution of the agent while it has locked the global database.
 
 It is important to note that this is the first critical decision that
 a system administrator must make in configuring OTPasswd.  No default
@@ -96,7 +91,7 @@ operational mode has been configured.
 To compile, install, and configure OTPasswd to work with SSH you must
 complete the following steps:
 
-   0. Have all required dependencies (with headers)
+   0. Have all required dependencies
    1. Install the package
    2. Tweak OTPasswd configuration
    3. Generate a user key (and print at least one passcard)
@@ -118,7 +113,7 @@ OTPasswd may be installed either through compilation from source, or if
 available, from a pre-compiled binary package.  OTPasswd has no external
 runtime dependencies except for PAM. Additional packages are required when
 OTPasswd is compiled from source, namely, the CMake cross-platform build
-system, as well as the corresponding -dev packages for PAM.  To generate
+system, as well as the corresponding development packages for PAM.  To generate
 documentation of internal API one is required to install Doxygen.  All of these
 packages should be available in your distribution's repositories.
 
@@ -128,6 +123,8 @@ comprehensive, but merely to serve as a point of reference.
 
    Distribution     Type     Package         Comment
    ---------------  -------  ------------    ---------------------
+   Gentoo
+   ArchLinux
    Debian
    Ubuntu 8.04
    Ubuntu 10.04     Runtime  libpam0g
@@ -179,37 +176,39 @@ then instead of using 'make install' you can copy the following files:
       Copy into /etc/pam.d one of files:        
       Linux:      example/otpasswd-login
       FreeBSD:    example/otpasswd-login_FreeBSD
-   d) OTPasswd configuration    'example/otpasswd.conf'  -> /etc/otpasswd/
+   d) OTPasswd configuration    
+      'example/otpasswd.conf.dist'  -> /etc/otpasswd/otpasswd.conf
 
 
-When using 'GLOBAL DB' mode you should create a unique system user
-exclusively for OTPasswd. /etc/otpasswd should be owned by this user
-and otpasswd agent (not utility) binary should be SUID-root.
-By default, no OTPasswd binaries are SUID.
+When using 'GLOBAL DB' mode you should create a unique system user exclusively
+for OTPasswd, 'otpasswd' is recommended. Directory /etc/otpasswd should be
+owned by this user and otpasswd agent (not utility) binary should be SUID-root.
+By default, no OTPasswd binaries are SUID. If choosing a non-standard name for user
+please remember to update config file accordingly.
 
 
 
 4. Installation (Binary Package)
 ================================
-FIXME
 
+Currently we're working on getting OTPasswd into sunrise repository of Gentoo.
+You can get .ebuild and build otpasswd for Gentoo yourself.
 
 
 5. System Configuration
 =======================
 OTPasswd is configured via the /etc/otpasswd/otpasswd.conf file.  Upon
-initial installation, otpasswd.conf.orig located in this directory will
+initial installation, otpasswd.conf.dist located in this directory will
 contain a template of all valid configuration options along with copious
 commentary.  A pristine version of this file should be available in the
 OTPasswd package documentation directory of your system's /usr/share 
 hierarchy.
 
-You should change name of the otpasswd.conf.dist to otpasswd.conf and 
-proceed with its configuration.
+You should copy the otpasswd.conf.dist to otpasswd.conf and proceed with its
+configuration.
 
 ** Configure/select user
 **    adduser --system --no-create-home otpasswd
-** Test the exact process
 
 The most important configuration setting is the "DB" option.  The DB option
 can be set as follows:
@@ -217,9 +216,9 @@ can be set as follows:
    DB=user
    -------
    In this mode, OTPasswd stores user state information in the user's
-   home directory.  As a result, the OTPasswd utility doesn't require
+   home directory.  As a result, the OTPasswd agent doesn't require
    any SUID privilege, and can be run in the user's security context.
-   Note that even if the utility is installed with the SUID flag, it
+   Note that even if the agent is installed with the SUID flag, it
    will drop privileges immediately after reading the configuration file.
    The major disadvantage of this mode is that since the user has complete
    access to his state file, it is impossible to guarantee all aspects of
@@ -233,7 +232,7 @@ can be set as follows:
    file and directory which contains it must be owned by a special user
    created for OTPasswd use, and it MUST not be readable for normal users.
    Since all critical data is under system control, system security policies
-   can be enforced.  However, the OTPasswd utility must be granted SUID
+   can be enforced.  However, the OTPasswd agent must be granted SUID
    privilege to the OTPasswd UID to enable access to this database on the
    user's behalf.
 
@@ -277,10 +276,10 @@ the --config salt=off flag during key generation as in the following example:
 
    $ otpasswd --config salt=off --key
 
-You may also combine other flags with key generation (-k), such as the
-contact (-c), label (-d) and flag (-f) options, like this:
+You may also combine other flags with key generation (-k), to set contact 
+or label like this:
 
-   $ otpasswd -f salt -d Home -f alphabet-2 -f codelength-6 -k
+   $ otpasswd -c label=Home -c contact=012689 -c alphabet=2 -c codelength=6 -k
 
 Note: As mentioned above, if OTPasswd is being configured over an SSH
 session, it is conceivable that one can lose one's ability to log back
@@ -294,9 +293,7 @@ been warned.
 
 7. PAM Configuration - General
 ==============================
-Previously, the prototype PAM configuration 'example/otpasswd-login' was
-copied to the PAM configuration directory '/etc/pam.d'.  Now, to enable
-OTPasswd use with SSH, one line must be changed in the SSH daemon's PAM
+To enable OTPasswd use with SSH, one line must be changed in the SSH daemon's PAM
 configuration '/etc/pam.d/sshd', as follows:
 
    From:
@@ -305,8 +302,8 @@ configuration '/etc/pam.d/sshd', as follows:
          auth       include        otpasswd-login
 
 Consult the section titled 'About PAM' in the <docs/security> document
-for more detailed information.
-
+for more detailed information. Keep in mind that /etc/pam.d/otpasswd-login
+file must exist.
 
 
 8. PAM Configuration - OpenSSH

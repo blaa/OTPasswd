@@ -93,7 +93,7 @@ IF(NOT GZIP_TOOL)
 ENDIF(NOT GZIP_TOOL)
 
 # List manual sources
-SET(man_src_1 docs/otpasswd.1    )
+SET(man_src_1 docs/otpasswd.1 docs/agent_otp.1 )
 SET(man_src_5 docs/otpasswd.5    )
 SET(man_src_8 docs/pam_otpasswd.8)
 SET(man_src   "${man_src_1}" "${man_src_5}" "${man_src_8}")

@@ -296,42 +296,6 @@ int ah_show_flags(agent *a)
 	}
 */
 
-	/* Verify policy and inform user what's wrong, so he can fix it. */
-#if 0
-	if (ppp_verify_alphabet(alphabet) != 0) {
-		printf(_("WARNING: Current alphabet setting is "
-		       "inconsistent with the policy!\n"));
-	}
-
-	if (ppp_verify_code_length(code_length) != 0) {
-		printf(_("WARNING: Current passcode length setting is "
-		       "inconsistent with the policy!\n"));
-	}
-
-	/* Show */
-	if (flags & FLAG_SHOW && cfg->show == CONFIG_DISALLOW) {
-		printf(_("WARNING: Show flag is enabled, but policy "
-		       "denies it's use!\n"));
-	}
-
-	if (!(flags & FLAG_SHOW) && cfg->show == CONFIG_ENFORCE) {
-		printf(_("WARNING: Show flag is disabled, but policy "
-		       "enforces it's use!\n"));
-	}
-
-	/* Salted */
-	if (flags & FLAG_SALTED && cfg->salt == CONFIG_DISALLOW) {
-		printf(_("WARNING: Key is salted, but policy "
-		       "denies such configuration. Regenerate key!\n"));
-
-	}
-
-	if (!(flags & FLAG_SALTED) && cfg->salt == CONFIG_ENFORCE) {
-		printf(_("WARNING: Key is not salted, but policy "
-		       "denies such configuration. Regenerate key!\n"));
-	}
-#endif
-
 
 	ret = 0;
 cleanup:

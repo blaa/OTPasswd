@@ -2,7 +2,7 @@
 #    OTPasswd - One-Time Password Authentication System
 #    --------------------------------------------------
 #       https://savannah.nongnu.org/projects/otpasswd
-#                Updated: 03-Jan-10 (v0.5pre1)
+#                Updated: 15-Sep-10 (v0.7beta)
 #
 # Configuration of OTPasswd PAM module and key management utility.
 #
