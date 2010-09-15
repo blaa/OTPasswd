@@ -88,13 +88,15 @@ char *card_ascii(agent *a, const num_t passcard)
 
 	/* Allocate memory */
 	char *whole_card = malloc(size);
-	if (!whole_card) {
+	if (whole_card == NULL) {
 		if (errno == ENOMEM) {
 			printf(_("You've run out of memory. Unable to print passcards\n"));
 		} else
 			perror("malloc");
 		return NULL;
 	}
+
+	memset(whole_card, 0, size);
 
 	char *card = whole_card;
 

@@ -516,7 +516,7 @@ cleanup:
 
 int action_print(const options_t *options, agent *a)
 {
-	int ret;
+	int ret = 1;
 
 	/* Passcard/code to print */
 	num_t item = num_i(0);
@@ -543,8 +543,10 @@ int action_print(const options_t *options, agent *a)
 		switch (options->action) {
 		case OPTION_TEXT:
 			card = card_ascii(a, item);
-			if (!card)
+			if (!card) {
+				ret = 1;
 				goto cleanup;
+			}
 			puts(card);
 			free(card);
 
@@ -563,8 +565,10 @@ int action_print(const options_t *options, agent *a)
 
 		case OPTION_LATEX:
 			card = card_latex(a, item);
-			if (!card)
+			if (!card) {
+				ret = 1;
 				goto cleanup;
+			}
 			puts(card);
 			free(card);
 

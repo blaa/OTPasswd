@@ -99,6 +99,50 @@ int crypto_testcase(void)
 	return failed;
 }
 
+
+int spass_testcase(void)
+{
+	int ret;
+	state s;
+	int failed = 0;
+	char *current_user = security_get_calling_user();
+	state_init(&s, current_user);
+	free(current_user), current_user = NULL;
+
+	ret = ppp_set_spass(&s, "TestSpAsSs#4$4", 0);
+	printf("SPASS TESTCASE [1]: ");
+	if (ret != PPP_ERROR_SPASS_SET) {
+		failed++;
+		printf("FAILED\n");
+	} else {
+		printf("OK\n");
+	}
+		
+	ret = ppp_spass_validate(&s, "TestSpAsSs#4$4");
+	printf("SPASS TESTCASE [2]: ");
+	if (ret != 0) {
+		failed++;
+		printf("FAILED (%d)\n", ret);
+	} else {
+		printf("OK\n");
+	}
+
+	ret = ppp_spass_validate(&s, "TestSpAsSs#4$5");
+	printf("SPASS TESTCASE [3]: ");
+	if (ret == 0) {
+		failed++;
+		printf("FAILED\n");
+	} else {
+		printf("OK\n");
+	}
+		
+
+	state_fini(&s);
+
+
+	return failed;
+}
+
 /***************************
  * Passcards testcases
  **************************/

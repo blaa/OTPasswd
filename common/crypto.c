@@ -282,8 +282,8 @@ int crypto_verify_salted_sha256(const unsigned char *salted_hash,
 	/* Copy salt from salted hash to hashing buffer */
 	memcpy(buf, salted_hash, 8);
 
-	/* and to the resulting hash */
-	memcpy(buf, salted_hash_new, 8);
+	/* and to the resulting hash too */
+	memcpy(salted_hash_new, buf, 8);
 
 	/* Copy user password to the hashing buffer just after the salt */
 	memcpy(buf+8, data, length);
@@ -294,7 +294,7 @@ int crypto_verify_salted_sha256(const unsigned char *salted_hash,
 		goto cleanup;
 	}
 
-	if (memcmp(salted_hash_new, salted_hash, sizeof(salted_hash)) == 0)
+	if (memcmp(salted_hash_new, salted_hash, 40) == 0)
 		ret = 0; /* Correct */
 	else 
 		ret = 1; /* Incorrect */

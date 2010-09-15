@@ -30,6 +30,7 @@ extern int crypto_testcase(void);
 extern int num_testcase(void);
 extern int card_testcase(void);
 extern int state_testcase(void);
+extern int spass_testcase(void);
 extern int ppp_testcase(void);
 extern int config_testcase(void);
 

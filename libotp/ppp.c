@@ -742,7 +742,7 @@ cleanup1:
 
 int ppp_state_release(state *s, int flags)
 {
-	int ret1, ret2;
+	int ret1=0, ret2=0;
 	int retval = 0;
 
 	if ((flags & PPP_STORE) && (flags & PPP_REMOVE)) {
@@ -769,6 +769,7 @@ int ppp_state_release(state *s, int flags)
 			      ret1, ppp_get_error_desc(ret1));
 			retval++;
 		}
+
 	} else if (flags & PPP_STORE) {
 		if ((ret1 = state_store(s, 0)) != 0) {
 			print(PRINT_ERROR, "Error while storing state file\n");
@@ -1181,7 +1182,7 @@ const char *ppp_get_prompt(state *s, int use_current, num_t counter)
 	int length = sizeof(intro)-1 + 3 + 5 + 1;
 	char num[50];
 
-	num_t real_counter_copy;
+	num_t real_counter_copy = s->counter;
 
 	assert(s);
 	if (s->prompt)
@@ -1189,7 +1190,6 @@ const char *ppp_get_prompt(state *s, int use_current, num_t counter)
 
 	/* Call ppp_calculate on new counter. */
 	if (use_current == 0) {
-		real_counter_copy = s->counter;
 		s->counter = counter;
 		ppp_add_salt(s, &s->counter);
 		ppp_calculate(s);
@@ -1429,7 +1429,7 @@ int ppp_set_spass(state *s, const char *spass, int flag)
 
 	/* Ensure password length/difficulty */
 	errors = _verify_spass(spass, cfg);
-	if (flag & PPP_CHECK_POLICY && errors) {
+	if ((flag & PPP_CHECK_POLICY) && errors) {
 		/* Not privileged - bail out */
 		return errors;
 	}
@@ -1451,6 +1451,7 @@ int ppp_spass_validate(const state *s, const char *spass)
 	assert(s);
 	
 	if (s->spass_set != 1) {
+		print(PRINT_WARN, "Static password validation failure because unset.\n");
 		return PPP_ERROR_SPASS_INCORRECT;
 	}
 
@@ -1458,6 +1459,7 @@ int ppp_spass_validate(const state *s, const char *spass)
 	len = strlen(spass);
 
 	if (crypto_verify_salted_sha256(s->spass, (unsigned char *)spass, len) != 0) {
+		print(PRINT_WARN, "Incorrect static password.\n");
 		return PPP_ERROR_SPASS_INCORRECT;
 	} else {
 		return 0;

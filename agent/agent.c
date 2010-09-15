@@ -100,6 +100,12 @@ int do_testcase(void)
 	if (tmp)
 		printf("******\n*** %d config testcases failed\n******\n", tmp);
 
+	tmp = spass_testcase();
+	failed += tmp;
+	if (tmp)
+		printf("******\n*** %d static pass testcases failed\n*****", tmp);
+
+
 	tmp = state_testcase();
 	failed += tmp;
 	if (tmp)

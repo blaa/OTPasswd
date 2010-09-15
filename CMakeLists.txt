@@ -33,7 +33,7 @@ endif(COMMAND cmake_policy)
 
 # FIXME: -fPIC is required for .a library on x64 only!
 # How to add it only to this target?
-ADD_DEFINITIONS("-Wall -ggdb -fPIC")
+ADD_DEFINITIONS("-Wall -fPIC")
 
 option(PROFILE "Enable coverage tests" OFF)
 option(DEBUG "Enable additional debug information" OFF)
@@ -49,8 +49,11 @@ IF (PROFILE)
 ENDIF (PROFILE)
 
 IF (DEBUG)
+  ADD_DEFINITIONS("-ggdb")
   ADD_DEFINITIONS("-DDEBUG_POSITIONS=1")
   ADD_DEFINITIONS("-DDEBUG=1")
+ELSE ()
+  ADD_DEFINITIONS("-s -O2")
 ENDIF (DEBUG)
 
 IF (NLS)

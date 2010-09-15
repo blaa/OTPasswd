@@ -133,8 +133,10 @@ int agent_connect(agent **a_out, const char *agent_executable)
 		close(1);
 		close(2);
 		/* fd 1 - stdout, fd 0 - stdin */
-		dup(out[0]);
-		dup(in[1]);
+		if (dup(out[0]) == -1)
+			exit(6);
+		if (dup(in[1]) == -1)
+			exit(7);
 
 		free(a); a = NULL;
 
