@@ -103,7 +103,7 @@ msgstr "Agent: Błąd w parsowaniu ramki inicjalizacyjnej.\n"
 #: utility/actions_helpers.c:206
 #, c-format
 msgid "All auth failures   = %d\n"
-msgstr "Błędne hasła w ogóle= %d\n"
+msgstr "Błędów w ogóle      = %d\n"
 
 #: utility/actions_helpers.c:816
 #, c-format
@@ -214,7 +214,7 @@ msgstr "Kolumna poza możliwym zakresem wartości!\n"
 
 #: agent/agent_interface.c:359
 msgid "Configuration error or unable to read configuration file."
-msgstr "Błąd instalacji. Nie mogę odczytać pliku konfiguracyjnego.\n"
+msgstr "Błąd instalacji. Nie mogę odczytać pliku konfiguracyjnego."
 
 #: agent/agent_interface.c:240
 msgid "Configuration problem was detected:\n"
@@ -287,7 +287,7 @@ msgstr "Błąd w trakcie inicjalizacji agenta."
 
 #: agent/agent_interface.c:368
 msgid "Error while allocating memory."
-msgstr "Błąd w trakcie alokowania pamięci.\n"
+msgstr "Błąd w trakcie alokowania pamięci."
 
 #: utility/actions.c:605
 msgid "Error while calculating passcode\n"
@@ -546,7 +546,7 @@ msgstr "Ostatnia karta      = "
 #: utility/actions_helpers.c:198
 #, c-format
 msgid "Max card            = "
-msgstr "Maksymalna karta  = "
+msgstr "Maksymalna karta    = "
 
 #: utility/actions_helpers.c:202
 #, c-format
@@ -810,7 +810,7 @@ msgstr "Błąd programu: Nie nigdy nie powinniśmy się tu znaleźć.\n"
 #: utility/actions_helpers.c:207
 #, c-format
 msgid "Recent failures     = %d\n"
-msgstr "Ostatnie błędy      = "
+msgstr "Ostatnie błędy      = %d\n"
 
 #: utility/actions_helpers.c:110
 #, c-format
@@ -1144,6 +1144,103 @@ msgid ""
 "%s --latex next > tmp.latex\n"
 "pdflatex tmp.latex\n"
 msgstr ""
+"Użycie: %s [opcje]\n"
+"Akcje:\n"
+"  -k, --key\n"
+"           Stwórz nowy stan i klucz. Możesz przekazać\n"
+"           dodatkowo opcje -d, -c i -f.\n"
+"  -r, --remove\n"
+"           Usuń klucz i wyłącz OTP.\n"
+"\n"
+"  -s, --skip <specyfikacja>\n"
+"           Przeskocz do podanego kodu/karty.\n"
+"  -t, --text <specyfikacja>\n"
+"           Wyświetl albo pojedynczy kod, albo kartę\n"
+"           w zależności od podanego parametru. \n"
+"  -l, --latex <specyfikacja>\n"
+"           Jak -t, ale wyświetla 6 kart w formacie LaTeX\n"
+"  -a, --authenticate <kod>\n"
+"           Spróbuj autentykacji za pomocą podanego kodu\n"
+"  -w, --warning\n"
+"           Wyświetl ostrzeżenia (np. użytkownik na ostatniej karcie)\n"
+"  -P, --prompt <specyfikacja>\n"
+"           Wyświetl autentykacyjny znak zachęty dla argumentu\n"
+"\n"
+"Gdzie <specyfikacja> może mieć jedną z form:\n"
+"  liczba         - dziesiętny numer kodu\n"
+"  [liczba]       - numer karty\n"
+"\n"
+"  CRR[liczba] or RRC[liczba] \n"
+"                 - kod znajdujący się na zadanej karcie.\n"
+"                   C to kolumna (A do G), RR - wiersz (1..10)\n"
+"  current        - kod użyty do następnej autentykacji\n"
+"  [current]      - karta zawierająca następny kod\n"
+"  next or [next] - pierwsza nie drukowana jeszcze karta\n"
+"\n"
+"Konfiguracja:\n"
+"  -i, --info\n"
+"           Wyświetl informacje o stanie.\n"
+"      --info-key\n"
+"           Wyświetl klucz użytkownika i licznik używany do generowania kodów.\n"
+"           Uwaga: To drukuje prywatne dane.\n"
+"  -c, --config <arg>\n"
+"           Może być podany wielokrotnie. Zmienia wiele różnych ustawień:\n"
+"           show=<on|off> zmień widoczność wprowadzanych w trakcie\n"
+"                         autentykacji kodów.\n"
+"           alphabet=<ID|list>\n"
+"                         wybierz alfabet kodów. Użyj 'list'\n"
+"                         żeby wyświetlić alfabety oraz ich ID.\n"
+"           codelength=<długość>\n"
+"                         ustaw długość kodów (2 do 16).\n"
+"\n"
+"           contact=X     Ustaw informacje kontaktowe (np. numer telefonu)\n"
+"                         które mają odebrać kod w trakcje autentykacji.\n"
+"                         Szczegóły zależą od konfiguracji. Użyj \"\" by usunąć.\n"
+"           label=X       Ustaw etykietę używaną przy generowaniu kart.\n"
+"                         Użyj \"\" by ustawić domyślną (nazwę hosta)\n"
+"\n"
+"           salt=<on|off>\n"
+"                         Można podawać jedynie przy generowaniu klucza.\n"
+"                         Włącza/wyłącza dodawanie soli do licznika.\n"
+"                         Wyłączenie tej opcji sprawia, że program\n"
+"                         jest kompatybilny z PPPv3.1 i zwiększy ilość\n"
+"                         dostępnych kodów i kart kosztem teoretycznie\n"
+"                         minimalnie mniejszego bezpieczeństwa.\n"
+"\n"
+"           disable=<on|off>\n"
+"                         Wyłącz stan użytkownika bez usuwania jego danych.\n"
+"                         Administrator może tak blokować stany w niektórych\n"
+"                         konfiguracjach\n"
+"\n"
+"  -p, --password\n"
+"           Ustaw hasło statyczne. (opcjonalnie: --password=<hasło>)\n"
+"  -u, --user <użytkownik|UID>\n"
+"           Wykonuj operacje na stanie danege użytkownika. Opcja roota.\n"
+"  -v, --verbose\n"
+"           Wyświetl więcej informacji o tym co się dzieje.\n"
+"           Użyj dwa razy (-v -v) dla większej ilości informacji.\n"
+"  --version\n"
+"           Wyświetl licencję, gwarancję, wersję i informacje o autorze.\n"
+"  -h, --help\n"
+"           Wyświetl tę stronę\n"
+"  PRZESTARZAŁE:\n"
+"  --check  Uruchamia testy. (Przesunięte do pliku agent_otp)\n"
+"\n"
+"Notatki\n"
+"  Zarówno --text jak i --latex przyjmują opcję \"next\", która\n"
+"  wyświetli pierwszą nie wydrukowaną kartę. Użycie tej opcji jest\n"
+"  zalecane ponieważ umożliwia OTPasswd śledzenie kiedy użytkownikowi\n"
+"  zaczynają się kończyć wydrukowane karty.\n"
+"\n"
+"Przykłady:\n"
+"%s --config salt=off --key   stwórz nowy klucz bez soli\n"
+"%s --text next               wyświetl pierwszą, nową kartę\n"
+"%s --text '[3]'              wyświetl trzecią kartę\n"
+"%s --text current            wyświetl obecny kod\n"
+"%s --config codelength=5     ustaw 5-znakowe kody\n"
+"Wydrukuj 6 kart na stronie A4 za pomocą LaTeX:\n"
+"%s --latex next > tmp.latex\n"
+"pdflatex tmp.latex\n"
 
 #: utility/actions.c:671
 #: utility/actions.c:685
@@ -1231,10 +1328,10 @@ msgstr "alfabet=%d "
 #: agent/agent_interface.c:191
 #: agent/agent_interface.c:214
 msgid "and log created with strace: strace -f -o otpasswd_log <command you've tried>\n"
-msgstr "i plik loga stworzony za pomocą strace: strace -f -o otpasswd_log otpasswd <próbowane parametry>"
+msgstr "i plik loga stworzony za pomocą strace: strace -f -o otpasswd_log otpasswd <próbowane parametry>\n"
 
 #: utility/actions_helpers.c:272
-#, fuzzy, c-format
+#, c-format
 msgid "code_length=%d "
 msgstr "długość kodu=%d "
 

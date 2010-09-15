@@ -622,6 +622,7 @@ int main(int argc, char **argv)
 
 
 	/* Pre-init debugging, and go! */
+	locale_init();
 	print_init(PRINT_NOTICE | PRINT_STDOUT, NULL);
 	return run_cli(argc, argv);
 }

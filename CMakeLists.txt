@@ -37,7 +37,7 @@ ADD_DEFINITIONS("-Wall -fPIC")
 
 option(PROFILE "Enable coverage tests" OFF)
 option(DEBUG "Enable additional debug information" OFF)
-option(NLS "Enable National Language Support (NLS)" OFF)
+option(NLS "Enable National Language Support (NLS)" ON)
 # option( MYSQL "Generate code for MySQL database" OFF )
 # option( LDAP "Generate code for LDAP" OFF )
 
@@ -79,6 +79,15 @@ INCLUDE_DIRECTORIES(${PAM_INCLUDE_DIR})
 # Module and PAM uses libotp, so add it's include to path...
 INCLUDE_DIRECTORIES(common/ libotp/ crypto/ agent/)
 
+## 
+# Translations
+##
+INCLUDE(FindGettext)
+
+
+SET(translations po/pl.po)
+GETTEXT_CREATE_TRANSLATIONS(po/otpasswd.pot ALL po/pl.po)
+
 ##
 # Manuals
 #   Rules for building compressed manuals
@@ -115,6 +124,8 @@ FOREACH(man ${man_src})
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${man}
     COMMENT "Building ${man}.gz")
 ENDFOREACH(man)
+
+
 
 ##
 # Targets
@@ -165,6 +176,7 @@ INSTALL(TARGETS pam_otpasswd otpasswd agent_otp
 
 INSTALL(FILES examples/otpasswd-login DESTINATION /etc/pam.d)
 INSTALL(FILES examples/otpasswd.conf.dist DESTINATION /etc/otpasswd)
+INSTALL(FILES pl.gmo DESTINATION /usr/share/otpasswd)
 
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_1} DESTINATION "share/man/man1")
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_5} DESTINATION "share/man/man5")
