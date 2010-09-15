@@ -201,7 +201,7 @@ int ppp_verify_range(const state *s)
 	}
 	num_clear(max_counter);
 
-	/* Check if we have runned out of available passcodes */
+	/* Check if we have ran out of available passcodes */
 
 	/* Retrieve current counter without salt */
 	num_t just_counter;
@@ -637,9 +637,6 @@ const char *ppp_get_error_desc(int error)
 	case PPP_ERROR_POLICY:
 		return "Action denied by policy.";
 
-	case PPP_ERROR_SKIP_BACKWARDS:
-		return "Tried to skip passcodes backwards.";
-
 	case PPP_ERROR_RANGE:
 		return "Argument out of range.";
 
@@ -668,7 +665,8 @@ const char *ppp_get_error_desc(int error)
 		return "Incorrect static password entered.";
 
 	default:
-		return "Error occured while reading state. Use -v to determine which.";
+		print(PRINT_NOTICE, "Unable to decipher error number %d\n", error);
+		return "Error occured while reading state. Try -v -v to determine which.";
 	}
 }
 
@@ -933,20 +931,11 @@ int ppp_skip(state *s, const num_t skip_to)
 		unsalted_counter = num_and(unsalted_counter, s->code_mask);
 	}
 
-	if (num_cmp(unsalted_counter, skip_to) > 0) {
-		/* Don't skip backwards */
-		print(PRINT_NOTICE, "User tried to skip backwards.\n");
-		ret = PPP_ERROR_SKIP_BACKWARDS;
-		goto error;
-	}
-
-
 	if (num_cmp(skip_to, s->max_code) >= 0) {
 		print(PRINT_NOTICE, "User tried to skip over the last possible passcode.\n");
 		ret = PPP_ERROR_RANGE;
 		goto error;
 	}
-
 
 	/* Skip */
 	s->counter = skip_to;

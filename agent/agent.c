@@ -266,11 +266,13 @@ int main(int argc, char **argv)
 	 * Now, try to read config file, init printing, ppp etc.
 	 ***/
 
-	/* TODO/FIXME: Reply our caller frame with error description on initial failure 
-	 */
-
 	/* TODO, FIXME: Remove log from here! */
+#if DEBUG
+#warning OTPasswd Agent compiled with DEBUG option. Will leave DEBUG info in /tmp/OTPAGENT_TESTLOG
 	ret = ppp_init(0, "/tmp/OTPAGENT_TESTLOG");
+#else
+	ret = ppp_init(PRINT_SYSLOG, NULL);
+#endif
 	if (ret != 0) {
 		print(PRINT_ERROR, ppp_get_error_desc(ret));
 		print(PRINT_ERROR, "OTPasswd not correctly installed.\n");

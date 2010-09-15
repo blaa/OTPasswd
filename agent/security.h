@@ -49,7 +49,7 @@ extern int security_is_tty_detached(void);
 /** Parse user specification (name or UID) ensure it exists */
 extern char *security_parse_user(const char *spec);
 
-/** Get username of the user who runned current process */
+/** Get username of the user who ran current process */
 extern char *security_get_calling_user(void);
 
 #endif

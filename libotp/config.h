@@ -178,8 +178,6 @@ typedef struct {
 
 	/** Allow -a option usage */
 	int shell_auth;
-	/** Allow -v option usage */
-	int verbose_output;
 
 	/** User can skip further in passcodes */
 	int skipping;

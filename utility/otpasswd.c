@@ -17,7 +17,7 @@
  **********************************************************************/
 
 #ifndef PROG_VERSION
-#define PROG_VERSION "v0.6-dev"
+#define PROG_VERSION "v0.7-beta1"
 #endif
 
 #include <stdio.h>
@@ -602,6 +602,26 @@ static inline int run_cli(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+	/* Check if somebody by accident didn't make
+	 * utility SUID-root: */
+	int real_uid = getuid();
+	int set_uid = geteuid();
+
+	int real_gid = getgid();
+	int set_gid = getegid();
+
+	if (real_uid != set_uid || real_gid != set_gid) {
+		printf(
+			"*** INSTALLATION ERROR ***\n"
+			"This executable shouldn't have SUID or SGID flag enabled!\n"
+			"Only the agent executable (agent_otp) when DB=global option\n"
+			"is selected in config file should be SUID-root\n"
+			"Dying.\n");
+		return 1;
+	}
+
+
+	/* Pre-init debugging, and go! */
 	print_init(PRINT_NOTICE | PRINT_STDOUT, NULL);
 	return run_cli(argc, argv);
 }

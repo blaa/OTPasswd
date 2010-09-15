@@ -19,3 +19,5 @@ libagent.a
 libcommon.a
 \#*#
 .#*
+docs/internal/html
+docs/internal/latex

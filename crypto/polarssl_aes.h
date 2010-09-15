@@ -4,7 +4,7 @@
  */
 
 /**
- * \file aes.h
+ * \file polarssl_aes.h
  *
  *  Copyright (C) 2006-2009, Paul Bakker <polarssl_maintainer at polarssl.org>
  *  All rights reserved.

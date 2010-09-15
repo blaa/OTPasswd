@@ -351,14 +351,10 @@ int ah_show_keys(agent *a, const options_t *options)
 	int ret;
 
 	if ((ret = agent_get_key(a, key)) != 0) {
-		print(PRINT_ERROR, _("Unable to read key: %s (%d)\n"), 
-		      agent_strerror(ret), ret);
 		goto sanitize;
 	}
 
 	if ((ret = agent_get_num(a, PPP_FIELD_COUNTER, &counter)) != 0) {
-		print(PRINT_ERROR, _("Unable to read (salted) counter: %s (%d)\n"), 
-		      agent_strerror(ret), ret);
 		goto sanitize;
 	}
 

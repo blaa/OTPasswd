@@ -33,92 +33,89 @@
 
 #define ROWS_PER_CARD 10
 
-/* We must distinguish between locking problems (critical)
+/** We must distinguish between locking problems (critical)
  * and non-existant state file (usually not critical).
  *
  * Depending on db used and enforce option sometimes we
  * should ignore OTP login and sometimes we should hard-fail.
  */
 enum ppp_errors {
-	/* Warning: agent_strerror checks ranges of this values */
+	/** Warning: agent_strerror checks ranges of this values */
 	STATE_NOMEM = 1000,
 
 	/*** ALWAYS FAIL ***/
-	/* Error while locking (existing) state file */
+	/** Error while locking (existing) state file */
 	STATE_LOCK_ERROR,
 
-	/* Error while parsing - state invalid */
+	/** Error while parsing - state invalid */
 	STATE_PARSE_ERROR,
 
-	/* Counter too big. Key should be regenerated */
+	/** Counter too big. Key should be regenerated */
 	STATE_NUMSPACE,
 
-	/* File exists, but we're unable to open/read/write
+	/** File exists, but we're unable to open/read/write
 	 * state file (not a file, permissions might be wrong).
 	 */
 	STATE_IO_ERROR,
 
-	/* User doesn't exists in Unix database
+	/** User doesn't exists in Unix database
 	 * but was required because of home directory */
 	STATE_NO_SUCH_USER,
 
 	/*** NOT ALWAYS FATAL */
-	/* State doesn't exist.
+	/** State doesn't exist.
 	 * If enforce = 0 - ignore OTP.
 	 */
 	STATE_NON_EXISTENT,
 
-	/* State exists, is readable, but doesn't have
+	/** State exists, is readable, but doesn't have
 	 * user entry. Always causes ignore if enforce=0
 	 */
 	STATE_NO_USER_ENTRY,
 
 	/*** PPP Errors ***/
 
-	/* Generic error. Should not happen usually. */
+	/** Generic error. Should not happen usually. */
 	PPP_ERROR = 3000,
 
-	/* Action denied by policy */
+	/** Action denied by policy */
 	PPP_ERROR_POLICY,
 
-	/* User tried to skip backwards */
-	PPP_ERROR_SKIP_BACKWARDS,
-
-	/* Input too long */
+	/** Input too long */
 	PPP_ERROR_TOO_LONG,
 
-	/* Input contains illegal characters */
+	/** Input contains illegal characters */
 	PPP_ERROR_ILL_CHAR,
 
-	/* Value out of range */
+	/** Value out of range */
 	PPP_ERROR_RANGE,
 
-	/* User disabled, while trying some 
+	/** User disabled, while trying some 
 	 * action like authentication */
 	PPP_ERROR_DISABLED,
 
-	/* SPass related */
+	/** SPass related */
 	PPP_ERROR_SPASS_INCORRECT,
 
 	/*** Errors which can happen only during initialization */
 
-	/* Unable to read config file */
+	/** Unable to read config file */
 	PPP_ERROR_CONFIG,
 
-	/* DB option in config not set. */
+	/** DB option in config not set. */
 	PPP_ERROR_NOT_CONFIGURED,
 
-	/* Config not owned by root */
+	/** Config not owned by root */
 	PPP_ERROR_CONFIG_OWNERSHIP,
 
-	/* Incorrect config permissions
+	/** Incorrect config permissions
 	 * Probably o+r/g+r and LDAP/MySQL selected */
 	PPP_ERROR_CONFIG_PERMISSIONS,
 };
 
 enum ppp_flags {
 	FLAG_SHOW = (1<<0),
-	/* User disabled by administrator */
+	/** User disabled by administrator */
 	FLAG_DISABLED = (1<<1),
 	FLAG_SALTED = (1<<2),
 
@@ -127,18 +124,17 @@ enum ppp_flags {
 };
 
 
-/* Warning conditions which may happen */
+/** Warning conditions which may happen */
 enum ppp_warning {
-	PPP_WARN_OK = 0,		/* No warning condition */
-	PPP_WARN_LAST_CARD = 1,		/* User on last printed card */
-	PPP_WARN_NOTHING_LEFT = 2,	/* Used up all printed passcodes */
-	PPP_WARN_RECENT_FAILURES = 4,	/* There were some failures */	
+	PPP_WARN_OK = 0,		/**< No warning condition */
+	PPP_WARN_LAST_CARD = 1,		/**< User on last printed card */
+	PPP_WARN_NOTHING_LEFT = 2,	/**< Used up all printed passcodes */
+	PPP_WARN_RECENT_FAILURES = 4,	/**< There were some failures */	
 };
 
 
-/* Multiple option dictionaries; static password errors and warnings */
+/** Multiple option dictionaries; static password errors and warnings */
 enum ppp_multi_errors {
-	/* Password too short */
 	PPP_ERROR_SPASS_SHORT = (1<<0),
 	PPP_ERROR_SPASS_NO_DIGITS = (1<<1),
 	PPP_ERROR_SPASS_NO_UPPERCASE = (1<<2),

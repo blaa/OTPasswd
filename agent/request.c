@@ -243,7 +243,8 @@ static int request_verify_policy(agent *a, const cfg_t *cfg)
 
 
 	case AGENT_REQ_AUTHENTICATE:
-		/* TODO: Add it from scratch later */
+		if (!privileged && cfg->shell_auth == CONFIG_DISALLOW)
+			return AGENT_ERR_POLICY;
 		return AGENT_OK;
 
 

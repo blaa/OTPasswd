@@ -24,8 +24,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define DEBUG 1
-
 #include "ppp.h" /* Error handling mostly */
 
 #include "nls.h"
@@ -41,8 +39,8 @@ static int _get_agent_executable(const char *agent, const char **agent_path)
 	*agent_path = NULL;
 	const char *agents[] = { 
 		agent,
-		"./agent_otp",
 		"/usr/bin/agent_otp",
+		"./agent_otp",
 		"/usr/local/bin/agent_otp",
 		NULL };
 	int i;
@@ -371,15 +369,18 @@ const char *agent_strerror(int error)
 		return _("Agent unexpectedly disconnected.");
 
 	case AGENT_ERR_POLICY:
-		return _("Requested action denied by policy.");
+		return _("Requested action is denied by the policy.");
 	case AGENT_ERR_POLICY_REGENERATION:
-		return _("Key regeneration denied by policy.");
+		return _("Key regeneration is denied by the policy.");
 	case AGENT_ERR_POLICY_GENERATION:
-		return _("Key generation denied by policy.");
+		return _("Key generation is denied by the policy.");
+	case AGENT_ERR_POLICY_DISABLED:
+		return _("Changing disabled flag is denied by the policy.");
+
 	case AGENT_ERR_POLICY_SALT:
-		return _("Salt option setting is enforced by policy.");
+		return _("Salt option setting is fixed by the policy.");
 	case AGENT_ERR_POLICY_SHOW:
-		return _("Show option setting is enforced by policy.");
+		return _("Show option setting is fixed by the policy.");
 
 
 	case AGENT_ERR_MUST_CREATE_STATE:
@@ -423,6 +424,11 @@ void agent_print_spass_errors(int errors)
 		printf(_("Non-ascii character in static password.\n"));
 		errors &= ~PPP_ERROR_SPASS_NON_ASCII;
 	}
+	if (errors & PPP_ERROR_SPASS_POLICY) {
+		printf(_("Static password change is denied by the policy.\n"));
+		errors &= ~PPP_ERROR_SPASS_POLICY;
+	}
+
 	if (errors & PPP_ERROR_SPASS_SET) {
 		printf(_("Static password set.\n"));
 		errors &= ~PPP_ERROR_SPASS_SET;

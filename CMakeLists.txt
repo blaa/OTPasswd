@@ -24,7 +24,7 @@ cmake_minimum_required(VERSION 2.4.7)
 PROJECT(otpasswd)
 
 SET(${PROJECT_NAME}_MAJOR_VERSION 0)
-SET(${PROJECT_NAME}_MINOR_VERSION 5pre1)
+SET(${PROJECT_NAME}_MINOR_VERSION 7beta1)
 
 # Cmake says this is required for locating gmp/libotp.a
 if(COMMAND cmake_policy)
@@ -50,6 +50,7 @@ ENDIF (PROFILE)
 
 IF (DEBUG)
   ADD_DEFINITIONS("-DDEBUG_POSITIONS=1")
+  ADD_DEFINITIONS("-DDEBUG=1")
 ENDIF (DEBUG)
 
 IF (NLS)

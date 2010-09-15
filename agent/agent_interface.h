@@ -85,7 +85,7 @@ static inline int agent_is_agent_error(int error)
 	if (error >= 1000 && error < 1100)
 		return 2; /* State error */
 	if (error >= 3000 && error < 3100)
-		return 2; /* PPP error */
+		return 3; /* PPP error */
 
 	return 0;
 }

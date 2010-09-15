@@ -129,6 +129,7 @@ int action_authenticate(const options_t *options, agent *a)
 		retval = 0;
 		goto cleanup;
 
+	case AGENT_ERR_POLICY:
 	case PPP_ERROR_POLICY:
 		printf(_("Authentication failed (policy error).\n"));
 		retval = 0;
@@ -182,8 +183,8 @@ int action_key_remove(const options_t *options, agent *a)
 		printf(_("Key removed!\n"));
 		return 0;
 	} else {
-		printf(_("Error while removing key! %s (%d)\n"), 
-		       agent_strerror(ret), ret);
+		printf(_("Error while removing key: %s\n"), 
+		       agent_strerror(ret));
 		return ret;
 	}
 }
@@ -439,7 +440,7 @@ int action_info(const options_t *options, agent *a)
 		/* This does not require state. */
 		int id;
 		const char *alphabet;
-		printf(_("Alphabet list ([-] means \"denied by policy\"): \n"));
+		printf(_("Alphabet list ([-] means \"denied by the policy\"): \n"));
 		for (id = 0; ; id++) {
 			alphabet = NULL;
 			retval = agent_get_alphabet(a, id, &alphabet);
@@ -488,8 +489,11 @@ int action_info(const options_t *options, agent *a)
 
 	case OPTION_INFO_KEY: /* Key info */
 		retval = ah_show_keys(a, options);
-		if (retval != 0) {
-			print(PRINT_ERROR, _("Error while printing user key data.\n"));
+		if (retval == AGENT_ERR_POLICY) {
+			printf(_("Printing the key is denied by the policy.\n"));
+		} else if (retval != 0) {
+			printf(_("Error while printing user key: %s\n"), 
+			       agent_strerror(retval));
 		}
 		goto cleanup;
 
@@ -747,13 +751,9 @@ int action_skip(const options_t *options, agent *a)
 		printf(_("Specified passcode is larger than maximal possible.\n"));
 		break;
 
-	case PPP_ERROR_SKIP_BACKWARDS:
-		printf(_("You can't skip backwards and re-use already used up passcodes.\n"));
-		break;
-
-
+	case AGENT_ERR_POLICY:
 	case PPP_ERROR_POLICY:
-		printf(_("Skipping denied by policy.\n"));
+		printf(_("Skipping denied by the policy.\n"));
 		break;
 		
 	default:

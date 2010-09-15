@@ -180,10 +180,17 @@ char *card_ascii(agent *a, const num_t passcard)
 		for (y=0; y < codes_in_row; y++) {
 			char passcode[17];
 			ret = agent_get_passcode(a, code_num, passcode);
-			if (ret != 0) {
-				print(PRINT_ERROR, _("Unable to read passcode: %s (%d)\n"), 
-				      agent_strerror(ret), ret);
+			switch (ret) {
+			case AGENT_ERR_POLICY:
+				printf(_("Passcode printing is denied by policy.\n"));
 				goto error;
+			default:
+				print(PRINT_ERROR, _("Unable to read passcode: %s\n"), 
+				      agent_strerror(ret));
+				goto error;
+
+			case 0:
+				break;
 			}
 
 			memcpy(card, passcode, code_length);
@@ -240,6 +247,8 @@ char *card_latex(agent *a, const num_t number)
 	char *card_pos;
 	num_t max_card;
 	int ret;
+
+	errno = 0;
 
 	/* Verify that we can print 6 passcards from this number.
 	 * max_card - 6 must be >= number */
@@ -319,7 +328,6 @@ error:
 	free(whole_card);
 	if (errno == ENOMEM) {
 		printf(_("You've run out of memory. Unable to print passcards\n"));
-	} else
-		perror("malloc");
+	}
 	return NULL;
 }

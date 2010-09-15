@@ -333,7 +333,7 @@ int ph_increment(pam_handle_t *pamh, const char *username, state *s)
 		/* Strange error, might happen, but, huh! */
 		ph_show_message(pamh, numspace_msg);
 		print(PRINT_WARN,
-		      "User \"%s\" runned out of passcodes.\n", username);
+		      "User \"%s\" ran out of passcodes.\n", username);
 		return PAM_AUTH_ERR;
 
 	case STATE_LOCK_ERROR:

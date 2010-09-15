@@ -148,7 +148,6 @@ static void _config_defaults(cfg_t *cfg)
 		.skipping = CONFIG_ALLOW,
 
 		.shell_auth = CONFIG_ALLOW,
-		.verbose_output = CONFIG_ALLOW,
 		.state_import = CONFIG_DISALLOW,
 		.state_export = CONFIG_ALLOW,
 		.contact_change = CONFIG_ALLOW,
@@ -505,8 +504,9 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			      "Config Error at %d: Backward skipping policy was removed. This is now strictly prohibited.\n", line_count);
 			goto error;
 		} else if (_EQ(line_buf, "verbose_output")) {
-			REQUIRE_DAE_ARG(0);
-			cfg->verbose_output = arg;
+			print(PRINT_ERROR,
+			      "Config Error at %d: VERBOSE_OUTPUT option removed. Currently is meaningless.\n", line_count);
+			goto error;
 		} else if (_EQ(line_buf, "shell_auth")) {
 			REQUIRE_DAE_ARG(0);
 			cfg->shell_auth = arg;
