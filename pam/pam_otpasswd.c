@@ -32,7 +32,7 @@
 #include <pam_modules.h>
 #include "pam_helpers.h"
 
-/* Entry point for authentication */
+/** Entry point for authentication */
 PAM_EXTERN int pam_sm_authenticate(
 	pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
@@ -86,9 +86,9 @@ PAM_EXTERN int pam_sm_authenticate(
 			loaded = 1;
 		else
 			print(PRINT_NOTICE,
-			      "Unable to read state (%d) when "
-			      "asking for static password.\n",
-			      retval);
+			      "unable to read state when "
+			      "asking for static password; user=%s error=%d\n",
+			      username, retval);
 
 		if (ph_validate_spass(pamh, loaded ? s : NULL) != 0) {
 			sleep(spass_delay);
@@ -102,6 +102,7 @@ PAM_EXTERN int pam_sm_authenticate(
 	int dont_increment = 0; /* Do not increment if previous prompt was for OOB */
 	int tries;
 	for (tries = 0; tries < (cfg->pam_retry == 0 ? 1 : cfg->pam_retries);) {
+
 		if (first_try || cfg->pam_retry == 1) {
 			/* First time or we are retrying while changing the passcode */
 			first_try = 0;
@@ -115,7 +116,8 @@ PAM_EXTERN int pam_sm_authenticate(
 				/* Generate fresh prompt */
 				retval = ppp_get_str(s, PPP_FIELD_PROMPT, &prompt);
 				if (retval != 0 || !prompt) {
-					print(PRINT_ERROR, "Error while generating prompt\n");
+					print(PRINT_ERROR, "error while generating prompt; user=%s", 
+					      username);
 					retval = PAM_AUTH_ERR;
 					goto cleanup;
 				}
@@ -139,7 +141,8 @@ PAM_EXTERN int pam_sm_authenticate(
 
 		if (!resp) {
 			/* No response? */
-			print(PRINT_NOTICE, "No response from user during auth.\n");
+			print(PRINT_NOTICE, "no response from user during auth; user=%s\n", 
+			      username);
 			goto cleanup;
 		}
 
@@ -152,7 +155,7 @@ PAM_EXTERN int pam_sm_authenticate(
 			/* Was it already sent? */
 			if (oob_sent) {
 				/* if so - ignore prompt with message */
-				ph_show_message(pamh, oob_already_msg);
+				ph_show_message(pamh, oob_already_msg, username);
 				dont_increment = 1;
 				continue;
 			}
@@ -161,7 +164,7 @@ PAM_EXTERN int pam_sm_authenticate(
 			switch (cfg->pam_oob) {
 			case OOB_REQUEST:
 				if (ph_oob_send(s) == 0) {
-					ph_show_message(pamh, oob_msg);
+					ph_show_message(pamh, oob_msg, username);
 					oob_sent = 1;
 				}
 				break;
@@ -170,7 +173,7 @@ PAM_EXTERN int pam_sm_authenticate(
 				if (ph_validate_spass(pamh, s) == 0) {
 					spass_correct = 1;
 					if (ph_oob_send(s) == 0) {
-						ph_show_message(pamh, oob_msg);
+						ph_show_message(pamh, oob_msg, username);
 						oob_sent = 1;
 					}
 				} else {
@@ -199,8 +202,7 @@ PAM_EXTERN int pam_sm_authenticate(
 			retval = PAM_SUCCESS;
 
 			print(PRINT_WARN,
-			      "Accepted otp authentication for user %s\n",
-			      username);
+			      "accepted otp authentication; user=%s\n", username);
 			goto cleanup;
 		}
 
@@ -209,7 +211,8 @@ PAM_EXTERN int pam_sm_authenticate(
 		/* Increment count of failures */
 		retval = ppp_failures(s, 0);
 		if (retval != 0) {
-			print(PRINT_WARN, "Unable to increment failure count\n");
+			print(PRINT_WARN, "unable to increment failure count; user=%s", 
+			      username);
 		}
 
 		/* Error during authentication */
@@ -234,50 +237,55 @@ PAM_EXTERN int pam_sm_open_session(
 	int release_flags = 0;
 
 	/* OTP State */
-	state *s;
+	state *s = NULL;
 
 	/* Username */
-	const char *username;
+	const char *username = NULL;
 
 	/* Initialize */
 	retval = ph_init(pamh, flags, argc, argv, &s, &username);
-	if (retval != 0)
+	if (retval != 0) {
+		print(PRINT_WARN, "error while initializing PPP; user=%s\n", username);
 		return retval;
+	}
 
-	print(PRINT_NOTICE, "(session) entrance\n");
+	print(PRINT_NOTICE, "session entrance; user=%s\n", username);
 
 	if (ppp_state_load(s, 0) != 0)
 		goto exit;
 
-	print(PRINT_NOTICE, "(session) state loaded\n");
+	print(PRINT_NOTICE, "state loaded; user=%s\n", username);
 
 	const int err = ppp_get_warning_conditions(s);
 	if (err == 0) {
 		/* No warnings! */
-		print(PRINT_NOTICE, "(session) no warning to be printed\n");
+		print(PRINT_NOTICE, "no warning to print; user=%s\n", username);
 		goto cleanup;
 	}
 
-	const char *msg;
+	const char *msg = NULL;
 	int err_copy = err;
+	char buff_msg[300] = {0};
+	int len;
+
 	while ((msg = ppp_get_warning_message(s, &err_copy)) != NULL) {
 		/* Generate message */
-		char buff_msg[300];
-		int len;
 
-		len = snprintf(buff_msg, sizeof(buff_msg), "*** OTPasswd Warning: %s", msg);
+		len = snprintf(buff_msg, sizeof(buff_msg), "*** OTP Warning: %s", msg);
 		if (len < 10) {
-			print(PRINT_ERROR, "(session) sprintf error\n");
+			print(PRINT_ERROR, "strange sprintf error; user=%s\n", username);
+			retval = 1;
 			goto cleanup;
 		}
 
-		ph_show_message(pamh, buff_msg);
+		ph_show_message(pamh, buff_msg, username);
+		print(PRINT_NOTICE, "shown user '%s' a warning: %s\n", username, buff_msg);
 	}
 
 	/* Have we printed warning about recent failures? */
 	if (err & PPP_WARN_RECENT_FAILURES) {
 		if (ppp_set_int(s, PPP_FIELD_RECENT_FAILURES, 0, PPP_CHECK_POLICY) != 0)
-			print(PRINT_WARN, "Unable to clear recent failures\n");
+			print(PRINT_WARN, "unable to clear recent failures; user=%s\n", username);
 		release_flags = PPP_STORE;
 	}
 

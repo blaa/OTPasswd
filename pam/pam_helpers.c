@@ -55,17 +55,20 @@ int ph_parse_module_options(int flags, int argc, const char **argv)
 			cfg->pam_logging = 2;
 		else if (strcmp("debug", *argv) == 0)
 			cfg->pam_logging = 3;
-		else if (strcmp("silent", *argv) == 0)
+		else if (strcmp("silent", *argv) == 0) {
 			cfg->pam_silent = 1;
-		else {
+			print(PRINT_NOTICE, "pam_otpasswd silenced by PAM config parameter\n");
+		} else {
 			print(PRINT_ERROR, 
-				"Invalid parameter %s\n", *argv);
+				"invalid PAM module parameter %s\n", *argv);
 		}
 	}
 
 	if (flags & PAM_SILENT) {
 		cfg->pam_silent = 1;
+		print(PRINT_NOTICE, "pam_otpasswd silenced by PAM flag\n");
 	}
+
 
 	return 0;
 }
@@ -271,7 +274,7 @@ cleanup:
 	return ret;
 }
 
-void ph_show_message(pam_handle_t *pamh, const char *msg)
+void ph_show_message(pam_handle_t *pamh, const char *msg, const char *username)
 {
 	/* Required for communication with user */
 	struct pam_conv *conversation;
@@ -284,8 +287,12 @@ void ph_show_message(pam_handle_t *pamh, const char *msg)
 	assert(cfg);
 
 	/* If silent enabled - don't print any messages */
-	if (cfg->pam_silent)
+	if (cfg->pam_silent) {
+		print(PRINT_NOTICE, 
+		      "message for user '%s' was silenced "
+		      "because of configuration: %s\n", username, msg);
 		return;
+	}
 
 
 	/* Initialize conversation function */
@@ -306,19 +313,19 @@ void ph_show_message(pam_handle_t *pamh, const char *msg)
 
 int ph_increment(pam_handle_t *pamh, const char *username, state *s)
 {
-	const char *enforced_msg = "OTPasswd: Key not generated, unable to login.";
-	const char *lock_msg = "OTPasswd: Unable to lock state file.";
+	const char *enforced_msg = "OTP: Key not generated, unable to login.";
+	const char *lock_msg = "OTP: Unable to lock state file.";
 	const char *numspace_msg =
-		"OTPasswd: Passcode counter overflowed or state "
+		"OTP: Passcode counter overflowed or state "
 		"file corrupted. Regenerate key.";
 	const char *invalid_msg =
-		"OTPasswd: Your state is invalid. "
+		"OTP: Your state is invalid. "
 		"Contact administrator.";
 	const char *disabled_msg = 
-		"OTPasswd: Your state is disabled. Unable to authenticate. "
+		"OTP: Your state is disabled. Unable to authenticate. "
 		"Contact administrator.";
 	const char *policy_msg = 
-		"OTPasswd: Your state is inconsistent with "
+		"OTP: Your state is inconsistent with "
 		"system policy. Contact administrator.";
 
 	const cfg_t *cfg = cfg_get();
@@ -331,14 +338,13 @@ int ph_increment(pam_handle_t *pamh, const char *username, state *s)
 
 	case STATE_NUMSPACE:
 		/* Strange error, might happen, but, huh! */
-		ph_show_message(pamh, numspace_msg);
-		print(PRINT_WARN,
-		      "User \"%s\" ran out of passcodes.\n", username);
+		ph_show_message(pamh, numspace_msg, username);
+		print(PRINT_WARN, "user ran out of passcodes; user=%s\n", username);
 		return PAM_AUTH_ERR;
 
 	case STATE_LOCK_ERROR:
-		ph_show_message(pamh, lock_msg);
-		print(PRINT_WARN, "Lock error while authenticating user");
+		ph_show_message(pamh, lock_msg, username);
+		print(PRINT_ERROR, "lock error during auth; user=%s", username);
 		return PAM_AUTH_ERR;
 
 	case STATE_NON_EXISTENT:
@@ -349,8 +355,7 @@ int ph_increment(pam_handle_t *pamh, const char *username, state *s)
 		/* Otherwise we are just not configured correctly
 		 * or we are not enforcing. */
 		print(PRINT_WARN, 
-		      "OTPasswd ignored. User \"%s\" not configured.\n",
-		      username);
+		      "ignoring OTP; user=%s\n", username);
 		return PAM_IGNORE;
 
 	case STATE_NO_USER_ENTRY:
@@ -358,39 +363,37 @@ int ph_increment(pam_handle_t *pamh, const char *username, state *s)
 			goto enforced_fail;
 
 		print(PRINT_WARN, 
-		      "OTPasswd ignored. User \"%s\" not configured.\n",
-		      username);
+		      "ignoring OTP; user=%s\n", username);
 
 		return PAM_IGNORE;
 
 	case PPP_ERROR_POLICY:
-		print(PRINT_ERROR, "State of \"%s\" contains data "
-		      "contradictory to current policy. Update state.\n",
+		print(PRINT_ERROR, "user state is inconsistent with the policy; user=%s",
 		      username);
-		ph_show_message(pamh, policy_msg);
+		ph_show_message(pamh, policy_msg, username);
 		return PAM_AUTH_ERR;
 
 	case PPP_ERROR_RANGE:
 		print(PRINT_ERROR,
-		      "State of \"%s\" contains invalid data.\n",
+		      "user state contains invalid data; user=%s\n",
 		      username);
 
-		ph_show_message(pamh, invalid_msg);
+		ph_show_message(pamh, invalid_msg, username);
 		return PAM_AUTH_ERR;
 
 	case PPP_ERROR_DISABLED:
 		if (cfg->pam_enforce == CONFIG_ENABLED) {
 			print(PRINT_WARN, 
-			      "Authentication failure; user \"%s\" state "
-			      "is disabled\n", username);
+			      "authentication failure; user is disabled; user=%s\n", 
+			      username);
 
-			ph_show_message(pamh, disabled_msg);
+			ph_show_message(pamh, disabled_msg, username);
 			return PAM_AUTH_ERR;
 		} else {
 			/* Not enforcing */
 			print(PRINT_WARN, 
-			      "Authentication ignored; user \"%s\" state "
-			      "is disabled\n", username);
+			      "ignoring OTP, user is disabled; user=%s\n", 
+			      username);
 
 			return PAM_IGNORE;
 		}
@@ -401,12 +404,10 @@ int ph_increment(pam_handle_t *pamh, const char *username, state *s)
 
 enforced_fail:
 	print(PRINT_WARN, 
-	      "Authentication failed because of enforcement;"
-	      " user \"%s\"\n", username);
-	ph_show_message(pamh, enforced_msg);
+	      "authentication failed because of enforcement;"
+	      " user=%s\n", username);
+	ph_show_message(pamh, enforced_msg, username);
 	return PAM_AUTH_ERR;
-
-
 }
 
 struct pam_response *ph_query_user(
@@ -465,13 +466,14 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
 
 	retval = ppp_init(PRINT_SYSLOG, NULL);
 	if (retval != 0) {
-		print(PRINT_ERROR, "OTPasswd not correctly installed (%s)\n", ppp_get_error_desc(retval));
+		print(PRINT_ERROR, "OTPasswd is not correctly installed (%s)\n", ppp_get_error_desc(retval));
 		ppp_fini();
 		retval = PAM_SERVICE_ERR;
 		return 1;
 	}
 
 	const cfg_t *cfg = cfg_get();
+	assert(cfg);
 
 	/* Parse additional options passed to module */
 	retval = ph_parse_module_options(flags, argc, argv);
@@ -492,7 +494,7 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
 		goto error;
 	}
 
-	print(PRINT_NOTICE, "pam_otpasswd started\n");
+	print(PRINT_NOTICE, "pam_otpasswd initialized; user=%s\n", username);
 
 	/* We must know the user of whom we must find state data */
 	retval = pam_get_user(pamh, &user, NULL);
@@ -520,8 +522,8 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
 	/* Read username back. Our local state-bound copy */
 	retval = ppp_get_str(*s, PPP_FIELD_USERNAME, username);
 	if (retval != 0 || !**username) {
-		print(PRINT_ERROR, "Internal error: Unable to"
-		      " read username data from state.\n");
+		print(PRINT_ERROR, "internal error: Unable to"
+		      " read username data from state; user=%s\n", username);
 		retval = PAM_AUTH_ERR;
 		goto error;
 	}

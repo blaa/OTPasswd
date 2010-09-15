@@ -34,7 +34,7 @@ extern int ph_oob_send(state *s);
 extern int ph_validate_spass(pam_handle_t *pamh, const state *s);
 
 /* Display user a message; disabled if in "silent mode" */
-extern void ph_show_message(pam_handle_t *pamh, const char *msg);
+extern void ph_show_message(pam_handle_t *pamh, const char *msg, const char *username);
 
 /* Load state, increment Save, handle errors if any */
 extern int ph_increment(pam_handle_t *pamh,

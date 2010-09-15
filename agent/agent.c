@@ -309,10 +309,8 @@ int main(int argc, char **argv)
 			}
 		}
 
-
 		printf("FATAL: This program should not be used like this.\n"
 		       "Use appropriate interface instead (like otpasswd).\n\n");
-
 
 		if (!security_is_suid()) {
 			printf("Since this program is not SUID you can run\n"

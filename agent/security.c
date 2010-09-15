@@ -119,29 +119,6 @@ void security_init(void)
 		}
 	}
 
-
-	/* Clear the environment. */
-#if OS_FREEBSD
-	environ = NULL;
-#else
-	ret = clearenv();
-	if (ret != 0) {
-		if (has_tty)
-			printf("FATAL: Unable to clear environment\n");
-		exit(EXIT_FAILURE);
-	}
-#endif
-	if (environ != NULL || (environ && *environ != NULL)) {
-		if (has_tty)
-			printf("FATAL: Environment not clear!\n");
-		exit(EXIT_FAILURE);
-	}
-	
-	/* Re-set some basic environment variables. 
-	 * Most probably it's completely unnecesary in this app. */
-	putenv("PATH=/bin:/usr/bin");
-	putenv("IFS= \t\n");
-
 	if (is_suid) {
 		/* Disable signals */
 		ret = 0;
@@ -174,6 +151,36 @@ void security_init(void)
 
 		/* We are suid-root. TODO: Drop capabilities. */
 	}
+
+	if (!security_is_tty_detached()) {
+		/* If we have TTY attached we WON'T be working 
+		 * as agent at all. Leave environment intact 
+		 * so we can use gettext in --config-check */
+		return;
+	}
+
+	/* Clear the environment. */
+#if OS_FREEBSD
+	environ = NULL;
+#else
+	ret = clearenv();
+	if (ret != 0) {
+		if (has_tty)
+			printf("FATAL: Unable to clear environment\n");
+		exit(EXIT_FAILURE);
+	}
+#endif
+	if (environ != NULL || (environ && *environ != NULL)) {
+		if (has_tty)
+			printf("FATAL: Environment not clear!\n");
+		exit(EXIT_FAILURE);
+	}
+	
+	/* Re-set some basic environment variables. 
+	 * Most probably it's completely unnecesary in this app. */
+	putenv("PATH=/bin:/usr/bin");
+	putenv("IFS= \t\n");
+
 }
 
 static void _ensure_no_privileges()
