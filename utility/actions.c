@@ -411,7 +411,6 @@ int action_warnings(const options_t *options, agent *a)
 	int warnings;
 	int failures;
 
-
 	if (options->user_has_state == 0) {
 		printf(_("Warning: You've got no state. Create on with -k option.\n"));
 		return 1;

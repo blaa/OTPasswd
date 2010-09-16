@@ -180,6 +180,7 @@ enum {
 	PPP_FIELD_FLAGS,		/* unsigned int */
 	PPP_FIELD_CODES_ON_CARD,	/* unsigned int */
 	PPP_FIELD_CODES_IN_ROW,		/* unsigned int */
+	PPP_FIELD_SPASS_SET,		/* unsigned int */
 
 	PPP_FIELD_KEY,			/* String, getters return hexes */
 	PPP_FIELD_COUNTER, 		/* num */

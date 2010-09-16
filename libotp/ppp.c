@@ -1060,6 +1060,10 @@ int ppp_get_int(const state *s, int field, unsigned int *arg)
 		*arg = s->flags;
 		break;
 
+	case PPP_FIELD_SPASS_SET:
+		*arg = s->spass_set;
+		break; 
+
 	case PPP_FIELD_CODES_ON_CARD:
 		/* Ask about this only when already calculated */
 		assert(s->codes_on_card != 0); 
