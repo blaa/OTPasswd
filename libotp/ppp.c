@@ -980,7 +980,39 @@ int ppp_failures(const state *s, int zero)
 	/* Store changes and unlock */
 	ret = ppp_state_release(s_tmp, PPP_UNLOCK | PPP_STORE);
 	if (ret != 0) {
-		print(PRINT_WARN, "Unable to save decremented state\n");
+		print(PRINT_WARN, "Unable to save state after failure count changes\n");
+		goto cleanup;
+	}
+
+	ret = 0; /* Everything ok */
+
+cleanup:
+	ppp_state_fini(s_tmp);
+
+	return ret;
+}
+
+int ppp_oob_time(const state *s)
+{
+	state *s_tmp; /* Second state. We don't want to clobber current one
+		       * also we must read failure count from disk. */
+	int ret = 1;
+
+	if (ppp_state_init(&s_tmp, s->username) != 0)
+		return 1;
+
+	/* Lock&Load state from disk */
+	ret = ppp_state_load(s_tmp, 0);
+	if (ret != 0)
+		goto cleanup;
+
+	/* Set time to current */
+	s_tmp->channel_time = time(NULL);
+
+	/* Store changes and unlock */
+	ret = ppp_state_release(s_tmp, PPP_UNLOCK | PPP_STORE);
+	if (ret != 0) {
+		print(PRINT_WARN, "Unable to save state after OOB channel time update\n");
 		goto cleanup;
 	}
 
@@ -1129,6 +1161,14 @@ int ppp_get_num(const state *s, int field, num_t *arg)
 
 	case PPP_FIELD_MAX_CODE:
 		*arg = s->max_code;
+		break;
+
+	case PPP_FIELD_SPASS_TIME:
+		*arg = num_i(s->spass_time);
+		break;
+
+	case PPP_FIELD_CHANNEL_TIME:
+		*arg = num_i(s->channel_time);
 		break;
 
 	default:

@@ -138,9 +138,14 @@ extern int ppp_skip(state *s, const num_t skip_to);
  * If zero = 0 then increment failure and recent_failures count.
  * If zero = 1 then clear recent_failures.
  * Store & unlock
- * Does not modify passed state structure
+ * Does not modify passed state structure.
  */
 extern int ppp_failures(const state *s, int zero);
+
+/** Lock & Read
+ * Update latest OOB usage time
+ */
+extern int ppp_oob_time(const state *s);
 
 /**************************************
  * Passcode/Counter management

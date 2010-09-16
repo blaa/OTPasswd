@@ -28,13 +28,15 @@ extern int ph_parse_module_options(int flags, int argc, const char **argv);
 /* Send out of band message by calling external script.
  * s parameter is generally const, but child will
  * clean it up */
-extern int ph_oob_send(state *s);
+extern int ph_oob_send(pam_handle_t *pamh, state *s, const char *username);
 
 /* Question user about static password. Return 0 on success */
-extern int ph_validate_spass(pam_handle_t *pamh, const state *s);
+extern int ph_validate_spass(pam_handle_t *pamh, 
+                             const state *s, const char *username);
 
 /* Display user a message; disabled if in "silent mode" */
-extern void ph_show_message(pam_handle_t *pamh, const char *msg, const char *username);
+extern void ph_show_message(pam_handle_t *pamh, 
+                            const char *msg, const char *username);
 
 /* Load state, increment Save, handle errors if any */
 extern int ph_increment(pam_handle_t *pamh,

@@ -23,6 +23,10 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <errno.h>
+
+/* OOB/SPASS time checks */
+#include <time.h>
 
 /* stat() */
 #include <sys/stat.h>
@@ -56,7 +60,7 @@ int ph_parse_module_options(int flags, int argc, const char **argv)
 		else if (strcmp("debug", *argv) == 0)
 			cfg->pam_logging = 3;
 		else if (strcmp("silent", *argv) == 0) {
-			cfg->pam_silent = 1;
+			cfg->pam_silent = CONFIG_ENABLED;
 			print(PRINT_NOTICE, "pam_otpasswd silenced by PAM config parameter\n");
 		} else {
 			print(PRINT_ERROR, 
@@ -65,7 +69,7 @@ int ph_parse_module_options(int flags, int argc, const char **argv)
 	}
 
 	if (flags & PAM_SILENT) {
-		cfg->pam_silent = 1;
+		cfg->pam_silent = CONFIG_ENABLED;
 		print(PRINT_NOTICE, "pam_otpasswd silenced by PAM flag\n");
 	}
 
@@ -73,8 +77,9 @@ int ph_parse_module_options(int flags, int argc, const char **argv)
 	return 0;
 }
 
-int ph_oob_send(state *s)
+int ph_oob_send(pam_handle_t *pamh, state *s, const char *username)
 {
+	const char *oob_delay = "Not enough delay between two OTP uses.";
 	int retval;
 	char current_passcode[17] = {0};
 	char contact[STATE_CONTACT_SIZE];
@@ -87,38 +92,46 @@ int ph_oob_send(state *s)
 	/* Check if OOB enabled */
 	if (cfg->pam_oob_path == NULL || cfg->pam_oob == 0) {
 		print(PRINT_WARN,
-			    "Trying OOB when it's not enabled\n");
+		      "trying OOB when it's not enabled; user=%s\n", username);
 		return 1;
 	}
 
 	/* TODO: Check delay! */
+	num_t time_now = num_i(time(NULL));
+	num_t time_last = num_i(0);
+	(void) ppp_get_num(s, PPP_FIELD_CHANNEL_TIME, &time_last);
+	num_t time_diff = num_sub(time_now, time_last);
+	if (num_cmp_i(time_diff, cfg->pam_oob_delay) < 0) {
+		print(PRINT_WARN, "not enough delay between two OOB uses; user=%s\n", username);
+		ph_show_message(pamh, oob_delay, username);
+		return 1;
+	}
 
 	/* Ensure cfg->oob_path is correct */
 	{
 		struct stat st;
 		if (stat(cfg->pam_oob_path, &st) != 0) {
 			print(PRINT_ERROR,
-				     "Unable to access oob sender. "
+				     "config error: unable to access oob sender. "
 				     "Check oob_path parameter\n");
 			return 2;
 		}
 		
 		if (!S_ISREG(st.st_mode)) {
-			print(PRINT_ERROR,
-				    "oob_path is not a file!\n");
+			print(PRINT_ERROR, "config error: oob_path is not a file!\n");
 			return 2;
 		}
 
 		if ( (S_ISUID & st.st_mode) || (S_ISGID & st.st_mode) ) {
 			print(PRINT_ERROR,
-				    "oob_path is SUID or SGID!\n");
+				    "config error: OOB utility is SUID or SGID!\n");
 			return 2;
 		}
 		
 		/* Check permissions */
 		if (st.st_mode & S_IXOTH) {
 			print(PRINT_WARN, 
-				    "Others can execute OOB utility\n");
+				    "config warning: others can execute OOB utility\n");
 		} else {
 			/* That's cool, but can we execute it? */
 			const int can_owner = 
@@ -132,7 +145,7 @@ int ph_oob_send(state *s)
 				 * owner mode */
 				/* TODO: testcase this check */
 				print(PRINT_ERROR,
-					    "UID %d is unable to execute "
+					    "config error: UID %d is unable to execute "
 					    "OOB utility!\n", cfg->pam_oob_uid);
 				return 2;
 			}
@@ -148,10 +161,20 @@ int ph_oob_send(state *s)
 	retval = ppp_get_str(s, PPP_FIELD_CONTACT, &c);
 	if (retval != 0 || !c || strlen(c) == 0) {
 		print(PRINT_WARN,
-			    "User without contact data "
-			    "required OOB transmission\n");
+		      "user without the contact data "
+		      "required for OOB transmission; user=%s\n", username);
 		return 2;
 	}
+
+
+	/* Before doing anything invasive: update channel time */
+	retval = ppp_oob_time(s);
+	if (retval != 0) {
+		print(PRINT_ERROR,
+		      "error while updating OOB channel usage; user=%s\n", username);
+		return 2;
+	}
+
 	/* Copy, as releasing state will remove this data from RAM */
 	strncpy(contact, c, sizeof(contact)-1);
 
@@ -159,7 +182,7 @@ int ph_oob_send(state *s)
 	new_pid = fork();
 	if (new_pid == -1) {
 		print(PRINT_ERROR, 
-			    "Unable to fork and call OOB utility\n");
+			    "unable to fork and call OOB utility\n");
 		return 1;
 	}
 
@@ -170,7 +193,7 @@ int ph_oob_send(state *s)
 		retval = ppp_state_release(s, 0);
 		// ppp_fini(s);
 		if (retval != 0) {
-			print(PRINT_ERROR, "RELEASE FAILED IN CHILD!");
+			print(PRINT_ERROR, "RELEASE FAILED IN CHILD!\n");
 			exit(10);
 		}
 
@@ -196,7 +219,8 @@ int ph_oob_send(state *s)
 		/* Whoops */
 		print_perror(PRINT_ERROR, 
 			     "OOB utility execve failed! Program error; "
-			     "this should be detected beforehand");
+		             "this should be detected beforehand (%s).\n",
+		             strerror(errno));
 		exit(13);
 	}
 
@@ -250,7 +274,7 @@ int ph_oob_send(state *s)
 	return 0;
 }
 
-int ph_validate_spass(pam_handle_t *pamh, const state *s)
+int ph_validate_spass(pam_handle_t *pamh, const state *s, const char *username)
 {
 	int ret = 1;
 	struct pam_response *pr = NULL;
@@ -259,14 +283,15 @@ int ph_validate_spass(pam_handle_t *pamh, const state *s)
 
 	if (!s) {
 		/* If we don't have state we just silently fail */
+		print(PRINT_NOTICE, "simulated static password query; user=%s\n", username);
 		goto cleanup;
 	}
 
 	ret = ppp_spass_validate(s, pr->resp);
 	if (ret != 0) {
-		print(PRINT_WARN, "Static password validation failed");
+		print(PRINT_WARN, "static password validation failed; user=%s\n", username);
 	} else {
-		print(PRINT_NOTICE, "Static password validation succeeded");
+		print(PRINT_NOTICE, "static password validation succeeded; user=%s\n", username);
 	}
 	
 cleanup:
@@ -287,7 +312,7 @@ void ph_show_message(pam_handle_t *pamh, const char *msg, const char *username)
 	assert(cfg);
 
 	/* If silent enabled - don't print any messages */
-	if (cfg->pam_silent) {
+	if (cfg->pam_silent == CONFIG_ENABLED) {
 		print(PRINT_NOTICE, 
 		      "message for user '%s' was silenced "
 		      "because of configuration: %s\n", username, msg);
@@ -305,6 +330,8 @@ void ph_show_message(pam_handle_t *pamh, const char *msg, const char *username)
 		1,
 		(const struct pam_message**)&pmessage,
 		&resp, conversation->appdata_ptr);
+
+	print(PRINT_NOTICE, "shown user '%s' a warning: %s\n", username, msg);
 
 	/* Drop any reply */
 	if (resp)
@@ -494,8 +521,6 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
 		goto error;
 	}
 
-	print(PRINT_NOTICE, "pam_otpasswd initialized; user=%s\n", username);
-
 	/* We must know the user of whom we must find state data */
 	retval = pam_get_user(pamh, &user, NULL);
 	if (retval != PAM_SUCCESS && user) {
@@ -509,6 +534,8 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
 		retval = PAM_USER_UNKNOWN;
 		goto error;
 	}
+
+	print(PRINT_NOTICE, "pam_otpasswd initialized; user=%s\n", username);
 
 	/* Initialize state with given username */
 	retval = ppp_state_init(s, user); 

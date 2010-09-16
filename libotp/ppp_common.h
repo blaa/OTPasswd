@@ -188,7 +188,9 @@ enum {
 	PPP_FIELD_CURRENT_CARD,		/* num */
 	PPP_FIELD_MAX_CARD,		/* num */
 	PPP_FIELD_MAX_CODE,		/* num */
-	
+
+	PPP_FIELD_SPASS_TIME,		/* num, state_time_t really */
+	PPP_FIELD_CHANNEL_TIME,		/* num, state_time_t really */	
 
 	PPP_FIELD_USERNAME,		/* char * */
 	PPP_FIELD_PROMPT,		/* char * */

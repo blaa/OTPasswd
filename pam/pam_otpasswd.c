@@ -90,7 +90,7 @@ PAM_EXTERN int pam_sm_authenticate(
 			      "asking for static password; user=%s error=%d\n",
 			      username, retval);
 
-		if (ph_validate_spass(pamh, loaded ? s : NULL) != 0) {
+		if (ph_validate_spass(pamh, loaded ? s : NULL, username) != 0) {
 			sleep(spass_delay);
 			return PAM_AUTH_ERR;
 		}
@@ -127,7 +127,7 @@ PAM_EXTERN int pam_sm_authenticate(
 		/* If user configurated OOB to be send
 		 * all the time - sent it */
 		if (cfg->pam_oob == OOB_ALWAYS) {
-			ph_oob_send(s);
+			ph_oob_send(pamh, s, username);
 		}
 
 		retval = PAM_AUTH_ERR;
@@ -163,16 +163,16 @@ PAM_EXTERN int pam_sm_authenticate(
 			/* Only if not already sent in this session. */
 			switch (cfg->pam_oob) {
 			case OOB_REQUEST:
-				if (ph_oob_send(s) == 0) {
+				if (ph_oob_send(pamh, s, username) == 0) {
 					ph_show_message(pamh, oob_msg, username);
 					oob_sent = 1;
 				}
 				break;
 				
 			case OOB_SECURE_REQUEST:
-				if (ph_validate_spass(pamh, s) == 0) {
+				if (ph_validate_spass(pamh, s, username) == 0) {
 					spass_correct = 1;
-					if (ph_oob_send(s) == 0) {
+					if (ph_oob_send(pamh, s, username) == 0) {
 						ph_show_message(pamh, oob_msg, username);
 						oob_sent = 1;
 					}
@@ -183,6 +183,8 @@ PAM_EXTERN int pam_sm_authenticate(
 					tries++;
 				}
 				break;
+			default:
+				assert(0);
 			}
 
 			/* Continue, so the user is restated question about passcode */
@@ -219,7 +221,7 @@ PAM_EXTERN int pam_sm_authenticate(
 		retval = PAM_AUTH_ERR;
 
 		print(PRINT_WARN, 
-		      "Authentication failure; user=%s; try=%d/%d\n",
+		      "authentication failure; user=%s; try=%d/%d\n",
 		      username, tries+1, cfg->pam_retries);
 	}
 
@@ -279,7 +281,6 @@ PAM_EXTERN int pam_sm_open_session(
 		}
 
 		ph_show_message(pamh, buff_msg, username);
-		print(PRINT_NOTICE, "shown user '%s' a warning: %s\n", username, buff_msg);
 	}
 
 	/* Have we printed warning about recent failures? */
