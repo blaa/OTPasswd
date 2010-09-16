@@ -111,7 +111,7 @@ static void _show_usage(int argc, const char **argv)
 		"Actions:\n"
 		"  -k, --key\n"
 		"           Generate a new key. You can pass\n"
-		"           -d, -c and -f options along.\n"
+		"           -c along and set length or alphabet\n"
 		"  -r, --remove\n"
 		"           Remove key, and disable OTP.\n"
 		"\n"
