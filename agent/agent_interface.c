@@ -777,52 +777,15 @@ int agent_update_latest_card(agent *a, const num_t latest_card)
 	return ret;
 }
 
-
-
-
-/* Config query:
- * ret = agent_config_query_int(agent *a, int field, int *reply);
- * ret = agent_config_query_str(agent *a, int field, char **reply); 
- */
-
-int agent_testcase(void)
+int agent_clear_recent_failures(agent *a)
 {
 	int ret;
-	int failures = 0;
-	/* Create some messages and check if they are parsed accordingly */
+	assert(a);
 
-	agent *a = NULL;
-
-	ret = agent_connect(&a, NULL);
-	if (ret != AGENT_OK) {
-		printf("Unable to connect to agent.\n");
-		puts(agent_strerror(ret));
-		failures++;
-		goto end;
-	}
-
-	// superuser only: agent_set_user(a, "user");
-
-	/* Gets all information possible about state. Should be done 
-	 * before generating key to ask user about some details. */
-	ret = agent_state_load(a);
-	/* Check ret */
-	
-	/* Interface for generating key */
-//	int flags = agent_get_int(a, AGENT_FLAGS);
-
-
-
-
-//	num_t value;
-//	ret = agent_get_num(ar, AGENT_NUM_LATEST_CARD, value);
-	/* ret might be: AGENT_OK, AGENT_ERR_POLICY, AGENT_PPP_ERROR */
-
-
-
-
-//cleanup1:
-	agent_disconnect(a);
-end:
-	return failures;
+	agent_hdr_init(a, 0);
+	ret = agent_query(a, AGENT_REQ_CLEAR_RECENT_FAILURES);
+	return ret;
 }
+
+
+

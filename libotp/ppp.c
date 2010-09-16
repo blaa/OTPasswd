@@ -536,8 +536,12 @@ int ppp_get_warning_conditions(const state *s)
 	int warnings = 0;
 
 	assert(s->codes_on_card > 0);
-	if (s->codes_on_card == 0)
+	if (s->codes_on_card == 0) {
+		print(PRINT_ERROR, 
+		      "Called ppp_get_warning_conditions "
+		      "before ppp_calculate!\n");
 		return PPP_ERROR;
+	}
 
 	int tmp = num_cmp(s->current_card, s->latest_card);
 	if (tmp == 0)
@@ -579,8 +583,10 @@ const char *ppp_get_warning_message(const state *s, int *warning)
 
 		ret = snprintf(failures_buff, sizeof(failures_buff),
 			       failures_template, s->recent_failures);
-		if (ret < 10)
+		if (ret < 10) {
+			print(PRINT_ERROR, "Strange snprintf error.\n");
 			return NULL;
+		}
 
 		failures_buff[sizeof(failures_buff) - 1] = '\0';
 		return failures_buff;

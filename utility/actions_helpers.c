@@ -177,7 +177,7 @@ int ah_show_state(agent *a)
 		goto error;
 	}
 
-	if ((ret = agent_get_int(a, PPP_FIELD_FAILURES, &recent_failures)) != 0) {
+	if ((ret = agent_get_int(a, PPP_FIELD_RECENT_FAILURES, &recent_failures)) != 0) {
 		which = "recent failures";
 		goto error;
 	}

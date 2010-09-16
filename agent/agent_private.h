@@ -77,46 +77,50 @@ enum AGENT_REQUEST {
 	/** Remove key */
 	AGENT_REQ_KEY_REMOVE,
 
-	/* Flags */
+	/** Flags */
 	AGENT_REQ_FLAG_ADD,
 	AGENT_REQ_FLAG_CLEAR,
 	AGENT_REQ_FLAG_GET,
 
-	/* Verify that the state is consistent with policy */
+	/** Verify that the state is consistent with policy */
 	AGENT_REQ_VERIFY,
 
-	/* Universal getters */
+	/** Universal getters */
 	AGENT_REQ_GET_NUM,
 	AGENT_REQ_GET_INT,
 	AGENT_REQ_GET_STR,
 	
-	/* Precise getters */
+	/** Precise getters */
 	AGENT_REQ_GET_ALPHABET,
 	AGENT_REQ_GET_WARNINGS,
 
-	/* Get passcode of specified number */
+	/** Get passcode of specified number */
 	AGENT_REQ_GET_PASSCODE,
 
-	/* Get prompt for specified number */
+	/** Get prompt for specified number */
 	AGENT_REQ_GET_PROMPT,
 
-	/* State field setters. Can work with new 
+	/* @{ State field setters. Can work with new 
 	 * states or when no state exists (then they perform
 	 * operation atomically) */
 	AGENT_REQ_SET_NUM,
 	AGENT_REQ_SET_INT,
 	AGENT_REQ_SET_STR,
-
 	AGENT_REQ_SET_SPASS,
+	/*@}*/
 
-	/* Authenticate user with password */
+	/** Authenticate user with password */
 	AGENT_REQ_AUTHENTICATE,
 
-	/* Skip to passcode */
+	/** Skip to passcode */
 	AGENT_REQ_SKIP,
 
-	/* Update latest printed card */
+	/** Update latest printed card */
 	AGENT_REQ_UPDATE_LATEST,
+
+	/** Clear recent failures */
+	AGENT_REQ_CLEAR_RECENT_FAILURES,
+
 };
 
 

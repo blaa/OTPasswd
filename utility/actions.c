@@ -426,8 +426,19 @@ int action_warnings(const options_t *options, agent *a)
 
 	if (warnings == 0)
 		print(PRINT_NOTICE, _("No warnings.\n"));
-	else
+	else {
 		agent_print_ppp_warnings(warnings, failures);
+		
+	}
+
+	if (warnings & PPP_WARN_RECENT_FAILURES) {
+		ret = agent_clear_recent_failures(a);
+		if (ret != 0) {
+			printf(_("Agent error while clearing recent failures: %s\n"), 
+			       agent_strerror(ret));
+			return ret;
+		}
+	}
 	return 0;
 }
 

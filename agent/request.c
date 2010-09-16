@@ -299,6 +299,7 @@ static int request_verify_policy(agent *a, const cfg_t *cfg)
 	case AGENT_REQ_GET_INT:
 	case AGENT_REQ_GET_WARNINGS:
 	case AGENT_REQ_UPDATE_LATEST:
+	case AGENT_REQ_CLEAR_RECENT_FAILURES:
 		return AGENT_OK;
 
 	case AGENT_REQ_GET_STR:
@@ -402,7 +403,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 	switch (r_type) {
 	case AGENT_REQ_DISCONNECT:
-		print(PRINT_NOTICE, "Executing (%d): Disconnect\n", r_type);
 		/* Correct disconnect */
 		/* Clear data */
 		if (a->s) {
@@ -418,7 +418,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 	case AGENT_REQ_USER_SET:
 	{
-		print(PRINT_NOTICE, "Executing (%d): User set\n", r_type);
 		if (!r_str) {
 			_send_reply(a, AGENT_ERR_REQ);
 			break;
@@ -445,7 +444,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 		/* STATE */
 	case AGENT_REQ_STATE_NEW:
-		print(PRINT_NOTICE, "Executing (%d): State new\n", r_type);
 		if (a->s)
 			return AGENT_ERR_MUST_DROP_STATE;
 
@@ -460,7 +458,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 
 	case AGENT_REQ_STATE_LOAD:
-		print(PRINT_NOTICE, "Executing (%d): State load\n", r_type);
 		if (a->s)
 			return AGENT_ERR_MUST_DROP_STATE;
 
@@ -474,7 +471,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_STATE_STORE:
-		print(PRINT_NOTICE, "Executing (%d): State store\n", r_type);
 		ret = _state_fini(a, _STORE);
 		if (ret != 0) {
 			print(PRINT_WARN, "Error while handling STATE_STORE: %s\n",
@@ -484,7 +480,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_STATE_DROP:
-		print(PRINT_NOTICE, "Executing (%d): State drop\n", r_type);
 		if (a->s) {
 			ret = _state_fini(a, _NONE);
 		} else {
@@ -498,7 +493,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 		/* KEY */
 	case AGENT_REQ_KEY_GENERATE:
-		print(PRINT_NOTICE, "Executing (%d): Key generate\n", r_type);
 		if (!a->s) {
 			print(PRINT_ERROR, "Must create new state first\n");
 			_send_reply(a, AGENT_ERR_MUST_CREATE_STATE);
@@ -517,7 +511,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_KEY_REMOVE:
-		print(PRINT_NOTICE, "Executing (%d): Key remove\n", r_type);
 		if (a->s) {
 			print(PRINT_ERROR, "Must drop state before removing it.\n");
 			ret = AGENT_ERR_MUST_DROP_STATE;
@@ -545,7 +538,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		/* FLAGS */
 	case AGENT_REQ_FLAG_ADD:
 	{
-		print(PRINT_NOTICE, "Executing (%d): Flag add\n", r_type);
 		ret = _state_init_atomical(a);
 		if (ret == 0) {
 			unsigned int new_flags;
@@ -566,7 +558,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 	case AGENT_REQ_FLAG_CLEAR:
 	{
-		print(PRINT_NOTICE, "Executing (%d): Flag clear\n", r_type);
 		ret = _state_init_atomical(a);
 		if (ret == 0) {
 			unsigned int new_flags;
@@ -587,8 +578,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 	}
 	
 	case AGENT_REQ_FLAG_GET:
-		print(PRINT_NOTICE, "Executing (%d): Flag get\n", r_type);
-		print(PRINT_NOTICE, "Request: FLAG_GET\n");
 		if (!a->s) {
 			ret = AGENT_ERR_NO_STATE;
 		} else {
@@ -604,7 +593,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_GET_NUM:
-		print(PRINT_NOTICE, "Executing (%d): Get num\n", r_type);
 		if (!a->s) {
 			ret = AGENT_ERR_NO_STATE;
 		} else {
@@ -624,7 +612,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_GET_INT:
-		print(PRINT_NOTICE, "Executing (%d): Get int\n", r_type);
 		if (!a->s) {
 			ret = AGENT_ERR_NO_STATE;
 		} else {
@@ -639,7 +626,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_GET_STR:
-		print(PRINT_NOTICE, "Executing (%d): Get str\n", r_type);
 		if (!a->s) {
 			ret = AGENT_ERR_NO_STATE;
 		} else {
@@ -686,7 +672,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_GET_PROMPT:
-		print(PRINT_NOTICE, "Executing (%d): Get prompt\n", r_type);
 		if (!a->s) {
 			/* This doesn't need to work atomically */
 			ret = AGENT_ERR_NO_STATE;
@@ -731,7 +716,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		/* Current value of 'latest card'. r_num has the proposed new value */
 		num_t latest_card; 
 		num_t current_card;
-		print(PRINT_NOTICE, "Executing (%d): update latest\n", r_type);
 
 		/* If already has some state check before reloading 
 		 * We want to update latest card ONLY if is greater
@@ -791,8 +775,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 	}
 
 	case AGENT_REQ_SKIP:
-		print(PRINT_NOTICE, "Executing (%d): Skip\n", r_type);
-
 		/* State must exist, but doesn't need to be already read. */
 		if (!a->s) {
 			ret = AGENT_ERR_NO_STATE;
@@ -803,9 +785,18 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		_send_reply(a, ret);
 		break;
 
-	case AGENT_REQ_AUTHENTICATE:
-		print(PRINT_NOTICE, "Executing (%d): Authenticate\n", r_type);
+	case AGENT_REQ_CLEAR_RECENT_FAILURES:
+		if (!a->s) {
+			ret = AGENT_ERR_NO_STATE;
+		} else {
+			ret = ppp_failures(a->s, 1); 
+			print(PRINT_NOTICE, "Clearing failures returned code %d\n", ret);
+		}
+		_send_reply(a, ret);
+		break;
+		
 
+	case AGENT_REQ_AUTHENTICATE:
 		/* State must exist, but doesn't need to be already read. */
 		if (!a->s) {
 			ret = AGENT_ERR_NO_STATE;
@@ -826,7 +817,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 	case AGENT_REQ_GET_ALPHABET:
 	{
-		print(PRINT_NOTICE, "Executing (%d): Get alphabet\n", r_type);
 		const char *alphabet = NULL;
 		agent_hdr_init(a, 0);
 
@@ -840,7 +830,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 	}
 
 	case AGENT_REQ_SET_INT:
-		print(PRINT_NOTICE, "Executing (%d): Set int\n", r_type);
 		/* This sets PPP field: alphabet, codelength, but not flags. */
 		ret = _state_init_atomical(a);
 		if (ret == 0) {
@@ -857,7 +846,6 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_SET_STR:
-		print(PRINT_NOTICE, "Executing (%d): Set str\n", r_type);
 		ret = _state_init_atomical(a);
 		if (ret == 0) {
 			ret = ppp_set_str(a->s, r_int, r_str, ppp_flags);
@@ -872,14 +860,12 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		break;
 
 	case AGENT_REQ_SET_NUM:
-		print(PRINT_NOTICE, "Executing (%d): Set num; Not implemented\n", r_type);
 		/* Not yet implemented. Is it required at all? */
 		ret = AGENT_ERR;
 		_send_reply(a, ret);
 		break;
 			
 	case AGENT_REQ_SET_SPASS:
-		print(PRINT_NOTICE, "Executing (%d): Set spass\n", r_type);
 		ret = _state_init_atomical(a);
 		if (ret == 0) {
 			/* If r_int is true we want to REMOVE the spass not set it */

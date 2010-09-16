@@ -196,4 +196,6 @@ extern int agent_skip(agent *a, const num_t counter);
 /** Update latest skipped password */
 extern int agent_update_latest_card(agent *a, const num_t latest_card);
 
+/** Clear recent failures from state */
+extern int agent_clear_recent_failures(agent *a);
 #endif
