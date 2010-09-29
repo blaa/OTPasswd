@@ -81,6 +81,7 @@ void aes_crypt_ecb( aes_context *ctx,
                     const unsigned char input[16],
                     unsigned char output[16] );
 
+#if 0 /* Not used by OTPasswd */
 /**
  * \brief          AES-CBC buffer encryption/decryption
  *                 Length should be a multiple of the block
@@ -118,6 +119,7 @@ void aes_crypt_cfb128( aes_context *ctx,
                        unsigned char iv[16],
                        unsigned char *input,
                        unsigned char *output );
+#endif
 
 /**
  * \brief          Checkup routine

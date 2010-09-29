@@ -88,6 +88,7 @@ int ph_oob_send(pam_handle_t *pamh, state *s, const char *username)
 	assert(cfg);
 
 	/* We musn't have lock on state when running this function */
+	assert(ppp_is_locked(s) == 0);
 
 	/* Check if OOB enabled */
 	if (cfg->pam_oob_path == NULL || cfg->pam_oob == 0) {
@@ -96,7 +97,7 @@ int ph_oob_send(pam_handle_t *pamh, state *s, const char *username)
 		return 1;
 	}
 
-	/* TODO: Check delay! */
+	/* Check delay */
 	num_t time_now = num_i(time(NULL));
 	num_t time_last = num_i(0);
 	(void) ppp_get_num(s, PPP_FIELD_CHANNEL_TIME, &time_last);
@@ -188,8 +189,6 @@ int ph_oob_send(pam_handle_t *pamh, state *s, const char *username)
 
 	if (new_pid == 0) {
 		/* We don't want to leave state in memory! */
-		/* TODO/FIXME: What with the locks? DB may unlock
-		 * data if it was locked. */
 		retval = ppp_state_release(s, 0);
 		// ppp_fini(s);
 		if (retval != 0) {
@@ -375,7 +374,6 @@ int ph_increment(pam_handle_t *pamh, const char *username, state *s)
 		return PAM_AUTH_ERR;
 
 	case STATE_NON_EXISTENT:
-		/* TODO: Fail only if db=user? This shouldn't happen on GLOBAL. */
 		if (cfg->pam_enforce == CONFIG_ENABLED && cfg->db == CONFIG_DB_USER)
 			goto enforced_fail;
 

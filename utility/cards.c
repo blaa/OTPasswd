@@ -29,30 +29,6 @@
 #include "agent_interface.h"
 
 
-/* FIXME: Same table in ppp.c; do something about it... */
-static int _len_to_card_size[] = {
-	-1, /* use up index 0, just to make it easier */
-	-1, /* minimal length is 2 */
-	11, /* which fits 11 passcodes in row */
-	8,
-	7,
-	5, /* 5 - 6 */
-	5,
-	4, /* 7 */
-	3, /* 8 - 10 */
-	3,
-	3,
-	2, /* 11 - 16 */
-	2,
-	2,
-	2,
-	2,
-	2,
-
-};
-
-
-
 char *card_ascii(agent *a, const num_t passcard)
 {
 	int ret;
@@ -80,7 +56,7 @@ char *card_ascii(agent *a, const num_t passcard)
 	}
 
 	/* Calculate what you can */
-	const int codes_in_row = _len_to_card_size[code_length];
+	const int codes_in_row = ppp_get_codes_per_row(code_length);
 	const int codes_on_card = codes_in_row * ROWS_PER_CARD;
 
 	const int width = (whitespace + code_length) * codes_in_row + 3;

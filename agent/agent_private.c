@@ -70,18 +70,10 @@ static int agent_read(const int fd, void *data, size_t len)
 	}
 	assert(ret == len);
 
-	/* print(PRINT_ERROR, "len: %zd ret: %d\n", len, ret); */
 	if (ret != len) {
 		return 1;
 	}
 
-/*	fd_set rfds;
-	FD_ZERO(&rfds);
-	FD_SET(fd, &rfds);
-	if (select(fd+1, &rfds, NULL, NULL, NULL) == -1) {
-		perror("select");
-		return 1;
-	}*/
 	return AGENT_OK;
 }
 
@@ -121,8 +113,10 @@ int agent_hdr_send(const agent *a)
 	ssize_t ret = 1;
 
 	/* Make sure we haven't locked state when using pipes */
-	if (a->s && ppp_is_locked(a->s)) 
+	if (a->s && ppp_is_locked(a->s)) {
 		print(PRINT_ERROR, "It's locked!\n");
+		return AGENT_ERR;
+	}
 	assert(!a->s || !ppp_is_locked(a->s));
 
 
@@ -147,8 +141,10 @@ int agent_hdr_recv(agent *a)
 	ssize_t ret = 1;
 
 	/* Make sure we haven't locked state when using pipes */
-	if (a->s && ppp_is_locked(a->s)) 
+	if (a->s && ppp_is_locked(a->s)) {
 		print(PRINT_ERROR, "It's locked!\n");
+		return AGENT_ERR;
+	}
 
 	assert(!a->s || !ppp_is_locked(a->s));
 
@@ -215,7 +211,6 @@ int agent_hdr_set_str(agent *a, const char *str_arg)
 	} else {
 		memset(a->shdr.str_arg, 0, sizeof(a->shdr.str_arg));
 	}
-	
 
 	return AGENT_OK;
 }

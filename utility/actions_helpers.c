@@ -299,14 +299,6 @@ int ah_show_flags(agent *a)
 	} else {
 		printf(_("no contact information.\n"));
 	}
-/* TODO 
-	if (s->spass_set) {
-		printf(_("Static password is set.\n"));
-	} else {
-		printf(_("Static password is not set.\n"));
-	}
-*/
-
 
 	ret = 0;
 cleanup:

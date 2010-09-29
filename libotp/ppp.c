@@ -447,29 +447,6 @@ int ppp_authenticate(const state *s, const char *passcode)
 /**********************
  * Passcard management
  **********************/
-
-/* Number of passcodes in row depending on passcode length */
-static int _len_to_card_size[] = {
-	-1, /* use up index 0, just to make it easier */
-	-1, /* minimal length is 2 */
-	11, /* which fits 11 passcodes in row */
-	8,
-	7,
-	5, /* 5 - 6 */
-	5,
-	4, /* 7 */
-	3, /* 8 - 10 */
-	3,
-	3,
-	2, /* 11 - 16 */
-	2,
-	2,
-	2,
-	2,
-	2,
-
-};
-
 void ppp_calculate(state *s)
 {
 	const char columns[] = "ABCDEFGHIJKL";
@@ -478,7 +455,7 @@ void ppp_calculate(state *s)
 	assert(s->code_length >= 2 && s->code_length <= 16);
 	assert(num_sgn(s->counter) >= 0);
 
-	s->codes_in_row = _len_to_card_size[s->code_length];
+	s->codes_in_row = ppp_get_codes_per_row(s->code_length);
 	s->codes_on_card = s->codes_in_row * ROWS_PER_CARD;
 
 	/* Calculate current card */
@@ -1388,13 +1365,13 @@ int ppp_flag_check(const state *s, int flag)
 
 void ppp_flag_add(state *s, int flag)
 {
-	/* TODO: Check policy */
+	/* TODO: Check policy. It's done in the agent now. */
 	s->flags |= flag;
 }
 
 void ppp_flag_del(state *s, int flag)
 {
-	/* TODO: Check policy */
+	/* TODO: Check policy. It's done in the agent now. */
 	s->flags &= ~flag;
 }
 

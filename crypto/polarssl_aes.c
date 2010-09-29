@@ -748,6 +748,7 @@ void aes_crypt_ecb( aes_context *ctx,
 /*
  * AES-CBC buffer encryption/decryption
  */
+#if 0 /* Not used by OTPasswd */
 void aes_crypt_cbc( aes_context *ctx,
                     int mode,
                     int length,
@@ -803,6 +804,7 @@ void aes_crypt_cbc( aes_context *ctx,
 /*
  * AES-CFB128 buffer encryption/decryption
  */
+
 void aes_crypt_cfb128( aes_context *ctx,
                        int mode,
                        int length,
@@ -842,6 +844,7 @@ void aes_crypt_cfb128( aes_context *ctx,
 
     *iv_off = n;
 }
+#endif
 
 #if defined(POLARSSL_SELF_TEST)
 

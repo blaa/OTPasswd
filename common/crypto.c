@@ -43,8 +43,6 @@ int crypto_ossl_rng(unsigned char *buff, const int size, int secure)
 	const int seed_size = 20;
 	int ret;
 
-	// ret = RAND_load_file("/etc/passwd", -1);
-
 	if (secure) 
 		ret = RAND_load_file("/dev/random", seed_size);
 	else 

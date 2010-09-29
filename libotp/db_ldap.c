@@ -23,6 +23,8 @@
 #include "db.h"
 #include "config.h"
 
+#if 0
+/* TODO: To be written */
 int db_ldap_lock(state *s)
 {
 	print(PRINT_ERROR, "Unimplemented\n");
@@ -46,3 +48,4 @@ int db_ldap_store(state *s, int remove)
 	print(PRINT_ERROR, "Unimplemented\n");
 	return 1;
 }
+#endif 

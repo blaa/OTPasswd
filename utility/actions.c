@@ -152,7 +152,7 @@ int action_key_remove(const options_t *options, agent *a)
 {
 	int ret;
 	if (options->user_has_state == 0) {
-		printf(_("Your state was eaten by Grue, nothing to remove.\n"));
+		printf(_("You've got no state to remove.\n"));
 		return 1;
 	}
 

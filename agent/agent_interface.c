@@ -178,7 +178,9 @@ int agent_connect(agent **a_out, const char *agent_executable)
 	a->out = out[1];
 
 
-	/* TODO: Handle some signal? SIGPIPE? */
+	/* TODO: Handle some signal? SIGPIPE? 
+	 * Generally we should be able to die on SIGPIPE safely.
+	 */
 
 	/* Read message sent by server to indicate correct initialization
 	 * or any initialization problems */
@@ -318,8 +320,11 @@ int agent_set_user(agent *a, const char *username)
 int agent_disconnect(agent *a)
 {
 	int ret = 0;
-	/* TODO: Send quit message if client */
-	/* TODO: Wait for child to close? */
+	/* TODO: Send quit message if client
+	 *       Wait for child to close? 
+	 * Wait is not necessary, closing pipe will inform client 
+	 * about disconnect.
+	 */
 	assert(a);
 
 	/* Close descriptors  */

@@ -19,6 +19,8 @@
 #ifndef _PPP_COMMON_H_
 #define _PPP_COMMON_H_
 
+#include <assert.h>
+
 /* Size of fields */
 #define STATE_LABEL_SIZE 30
 #define STATE_CONTACT_SIZE 60
@@ -32,6 +34,33 @@
 			      */
 
 #define ROWS_PER_CARD 10
+
+/* Convert codelength to card size */
+static inline int ppp_get_codes_per_row(const int codelength) {
+	const int _len_to_codes[] = {
+		-1, /* use up index 0, just to make it easier */
+		-1, /* minimal length is 2 */
+		11, /* which fits 11 passcodes in row */
+		8,
+		7,
+		5, /* 5 - 6 */
+		5,
+		4, /* 7 */
+		3, /* 8 - 10 */
+		3,
+		3,
+		2, /* 11 - 16 */
+		2,
+		2,
+		2,
+		2,
+		2,
+	};
+	assert(codelength >= 2);
+	assert(codelength <= 16);
+	return _len_to_codes[codelength];
+}
+
 
 /** We must distinguish between locking problems (critical)
  * and non-existant state file (usually not critical).

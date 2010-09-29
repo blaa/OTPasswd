@@ -23,6 +23,8 @@
 #include "db.h"
 #include "config.h"
 
+#if 0
+/* TODO: To be written */
 int db_mysql_lock(state *s)
 {
 	print(PRINT_ERROR, "Unimplemented\n");
@@ -47,3 +49,4 @@ int db_mysql_store(state *s, int remove)
 	print(PRINT_ERROR, "Unimplemented\n");
 	return 1;
 }
+#endif

@@ -196,8 +196,6 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 
 	char line_buf[CONFIG_MAX_LINE_LEN];
 
-	/* TODO/FIXME: Check if config is owned by root */
-
 	if (config_path) {
 		f = fopen(config_path, "r");
 	} else {
@@ -633,9 +631,6 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 		goto error;
 	}
 
-	/* TODO/FIXME: Check if config readable by others and 
-	 * DB=mysql/ldap */
-
 	/* All ok? */
 	if (fail)
 		retval = 1;
@@ -702,6 +697,8 @@ int cfg_permissions(void)
 	case CONFIG_DB_MYSQL:
 	case CONFIG_DB_LDAP:
 		if (st.st_mode & (S_IRWXO)) {
+			print(PRINT_NOTICE, "Config file is accessible by "
+				"others and DB is LDAP or MySQL.\n");
 			return PPP_ERROR_CONFIG_PERMISSIONS;
 		}
 	default:

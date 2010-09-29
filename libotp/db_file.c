@@ -44,7 +44,8 @@ static char *_strtok(char *input, const char *delim)
 	if (input != NULL)
 		position = input;
 
-	/* FIXME: valgrind doesn't like following line: */
+	/* FIXME: valgrind doesn't like following line: 
+	 * As of 0.7 valgrind doesn't seem to have a problem here. */
 	char *token = strsep(&position, delim); /* Non C99 function */
 
 	/* Cut token at any \n found */
@@ -156,7 +157,6 @@ static int _db_file_permissions(const char *db_path)
 			/* Not it's not */
 			if (uid == 0) {
 				/* Ok. It might be created by PAM. Then - fix */
-				print(PRINT_ERROR, "PAM FIXING! REMOVE THIS!\n");
 				if (chown(db_path, cfg->user_uid, cfg->user_gid) != 0) {
 					print(PRINT_ERROR,
 					      "Fixing perms of global DB failed while root.\n");
@@ -223,8 +223,10 @@ static int _db_file_permissions(const char *db_path)
 	return 0;
 }
 
-/* Returns a name of current state + lock + temp file */
-static int _db_path(const char *username, char **db, char **lck, char **tmp)
+/* Returns a name of current state + lock + temp file.
+ * When DB_USER is set it also returns UID and GID of given user
+ */
+static int _db_path(const char *username, char **db, char **lck, char **tmp, uid_t *uid, gid_t *gid)
 {
 	int retval = 1;
 	static struct passwd *pwdata = NULL;
@@ -234,6 +236,11 @@ static int _db_path(const char *username, char **db, char **lck, char **tmp)
 	assert(username);
 	assert(cfg);
 	assert(!*db && !*lck && !*tmp); /* Must be NULL */
+
+	if (uid)
+		*uid = (uid_t) -1;
+	if (gid)
+		*gid = (gid_t) -1;
 
 	/* Determine db location at first */
 	switch (cfg->db) {
@@ -265,6 +272,11 @@ static int _db_path(const char *username, char **db, char **lck, char **tmp)
 		int ret = snprintf(*db, length, "%s/%s", home, cfg->user_db_path);
 		assert( ret == length - 1 );
 #endif
+
+		if (uid)
+			*uid = pwdata->pw_uid;
+		if (gid)
+			*gid = pwdata->pw_gid;
 
 		break;
 	}
@@ -480,7 +492,7 @@ int db_file_load(state *s)
 
 	/* Files: database, lock and temporary */
 	char *db = NULL, *lck = NULL, *tmp = NULL;
-	ret = _db_path(s->username, &db, &lck, &tmp);
+	ret = _db_path(s->username, &db, &lck, &tmp, NULL, NULL);
 	if (ret != 0) {
 		return ret;
 	}
@@ -559,13 +571,11 @@ int db_file_load(state *s)
 		s->sequence_key[i] = tmp;
 	}
 
-//	if (mpz_set_str(s->counter, field[FIELD_COUNTER], STATE_BASE) != 0) {
 	if (num_import(&s->counter, field[FIELD_COUNTER], NUM_FORMAT_HEX) != 0) {
 		print(PRINT_ERROR, "Error while parsing counter.\n");
 		goto cleanup;
 	}
 
-//	if (mpz_set_str(s->latest_card, field[FIELD_LATEST_CARD], STATE_BASE) != 0) {
 	if (num_import(&s->latest_card, field[FIELD_LATEST_CARD], NUM_FORMAT_HEX) != 0) {
 		print(PRINT_ERROR,
 		      "Error while parsing number "
@@ -768,14 +778,16 @@ int db_file_store(state *s, int remove)
 
 	/* Files: database, lock and temporary */
 	char *db = NULL, *lck = NULL, *tmp = NULL;
-	ret = _db_path(s->username, &db, &lck, &tmp);
+	uid_t user_uid;
+	gid_t user_gid;
+	ret = _db_path(s->username, &db, &lck, &tmp, &user_uid, &user_gid);
 	if (ret != 0) {
 		return ret;
 	}
 
 	if (s->lock <= 0) {
 		print(PRINT_NOTICE,
-		      "State file not locked while writing to it\n");
+		      "State file not locked while writing to it. Locking for write.\n");
 		ret = db_file_lock(s);
 		if (ret != 0) {
 			print(PRINT_ERROR, "Unable to lock file for writing!\n");
@@ -801,10 +813,9 @@ int db_file_store(state *s, int remove)
 
 		/* Probably doesn't exists, if not... */
 		if (errno != ENOENT) {
-			/* FIXME, better rewrite to use stat */
+			/* FIXME: better rewrite to use stat */
 			print_perror(PRINT_ERROR,
-				     "Unable to open %s for reading",
-				     db);
+				     "Unable to open %s for reading", db);
 
 			ret = STATE_IO_ERROR;
 			goto cleanup;
@@ -822,11 +833,26 @@ int db_file_store(state *s, int remove)
 
 	}
 
-	/* Temporary file opened, ensure it's owner matches
-	 * owner of original file if we are root! */
+	/* Temporary file opened.
+	 * it's owner/group should match owner of original file
+	 * or if this one doesn't exist - the user we are working with.
+	 */
 	if (geteuid() == 0) {
 		struct stat st;
-		stat(db, &st);
+
+		ret = stat(db, &st);
+		if (ret != 0) {
+			/* That's fine only for DB_USER */
+			if (cfg->db != CONFIG_DB_USER) {
+				print_perror(PRINT_ERROR, "Unable to read state file parameters and DB!=USER:");
+				ret = STATE_IO_ERROR;
+				goto cleanup;
+			}
+			st.st_uid = user_uid;
+			st.st_gid = user_gid;
+		}
+
+
 		if (chown(tmp, st.st_uid, st.st_gid) != 0) {
 			print_perror(PRINT_ERROR, "Unable to ensure owner/group of temporary file\n");
 			ret = STATE_IO_ERROR;
@@ -946,7 +972,7 @@ int db_file_lock(state *s)
 
 	/* Files: database, lock and temporary */
 	char *db = NULL, *lck = NULL, *tmp = NULL;
-	ret = _db_path(s->username, &db, &lck, &tmp);
+	ret = _db_path(s->username, &db, &lck, &tmp, NULL, NULL);
 	if (ret != 0) {
 		return ret;
 	}
@@ -954,6 +980,8 @@ int db_file_lock(state *s)
 	/* TODO: This has to be called here only when DB=global
 	 * to ensure we've got enough permissions to create lock
 	 * inside /etc/otpasswd and inform user nicely 
+	 *
+	 * Actually this seems to do much more and it's ok.
 	 */
 	ret = _db_file_permissions(db);
 	if (ret == STATE_IO_ERROR) {
@@ -979,13 +1007,7 @@ int db_file_lock(state *s)
 	/*
 	 * Trying to lock the file 20 times.
 	 * Any working otpasswd session shouldn't lock it for so long.
-	 *
-	 * Therefore we have to options. Fail each login if we can't get the lock
-	 * or ignore locking (we can get a race condition then) but try to
-	 * authenticate the user nevertheless.
-	 *
-	 * I'll stick to the second option for now.
-	 *
+	 * If it does - system has some problem.
 	 */
 	for (cnt = 0; cnt < 20; cnt++) {
 		ret = fcntl(fd, F_SETLK, &fl);
@@ -1024,7 +1046,7 @@ int db_file_unlock(state *s)
 
 	/* Files: database, lock and temporary */
 	char *db = NULL, *lck = NULL, *tmp = NULL;
-	retval = _db_path(s->username, &db, &lck, &tmp);
+	retval = _db_path(s->username, &db, &lck, &tmp, NULL, NULL);
 	if (retval != 0) {
 		return retval;
 	}

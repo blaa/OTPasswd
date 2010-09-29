@@ -7,12 +7,13 @@ ChangeLog / TODO
 [*] Changes in existing functionality
 [-] Feature in TODO
 [?] New feature in TODO
+[$] Idea which was given up
 
 Trying to sort tasks according to their priority.
 
 
 
-2010-03-31 0.7_rc1
+2010-03-31 0.7_rc2
 Done:
         * [+] Dropping dependency on GMP. Cleaning up "num" interface.
           - Clean memory so there're no key/counter leaks
@@ -29,6 +30,21 @@ Done:
         * [+] OOB Channel usage time updates + DoS security
         * [+] Ensure config privilege checking
         * [+] --info should print information whether static password is set.
+        * [+] Write testcases for static password
+        * [+] Make otpasswd work with su. Tested under Gentoo and works BUT
+              without OOB (permission denied)
+        * [+] "Problem solving section" in docs, mentioning use of -v on
+              errors in the first place. This was done on the webpage.
+        * [+] policy checking regarding salt. (won't fail sometimes)
+              (Seems ok to me. Tested)
+
+        * [$] Global DB should work with users which aren't in /etc/passwd.
+              Should it?
+        * [$] Add error_t and bool_t to differentiate differently
+              used ints? (bool_t is very rarely used. It will better be left
+              to documentation)
+        * [!] On DB=user when administrator creates a key with -u option user
+              can't access that state.
 In progress:
         * [?] Cleanup PPP interface. This should look like follows.
               "State" is class implementing some basic features of
@@ -41,35 +57,31 @@ In progress:
         * [?] Security: Do we need to change something regarding ulimits?
 
 TODO Major:
-        * [%] Parameter -c alphabet=3,codelenght=8 is accepted but doesn't
-              work. 
+        * [?] Double passcode logging scheme
+        * [%] Parameter -c alphabet=3,codelenght=8 is sometimes accepted
+              but doesn't work. 
         * [?] Parametrize PAM messages.
         * [?] Static password expire warnings + enforcement. 
         * [?] Logging warnings printed to user at WARN level
         * [?] Key quality checking (duplicates)
-        * [?] "Problem solving section" in docs, mentioning use of -v on
-              errors in the first place.
-        * [?] Global DB should work with users which aren't in /etc/passwd.
-              Should it?
         * [?] Check if lock files are links. if so. fail. Or rather always unlink
               before overwritting.
-        * [?] Logging into syslog from utility if SUID; Also deny -v.
+        * [?] Logging into syslog from utility if agent is SUID.
         * [?] Admin function to scan all states for things invalidating
-              policy.
+              policy. This could be implemented in agent similar to
+              --check-config
         * [-] Scan all FIXME/TODO entries (Especially OOB related)
         * [?] SELinux compatibility.
         * [?] Import/export of ascii state lines...
-        * [?] Make otpasswd work with su (there's additional information 'who
-              is trying to get authenticated'. Just test it. setuid() required
-              probably (Maybe only on SELINUX)
+        * [?] Check if User can lock OTPasswd when working with su (stdout
+        issue). We must NOT keep locks when outputing something to user.
+        user
+        * [?] OTPasswd when used with su should probably elevate it's rights
+        with setuid() and then return back to original rights.
 
 Todo Minor:
-        * [?] Write testcases for static password
-        * [?] policy checking regarding salt. (won't fail sometimes)
         * [?] Will we be pppv3 compatible on big-endian?
         * [?] Sourced key generation (from file, string...)
-        * [?] Add error_t and bool_t to differentiate differently
-              used ints?
         * [?] Improve LaTeX output (some colors, borders?)
         * [?] Incorporate SSH key fingerprints on passcards?
               Use some file as passcard background, allow hook

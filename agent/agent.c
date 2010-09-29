@@ -66,31 +66,36 @@ int do_verify_config(void)
 	switch (ret) {
 	default:
 	case PPP_ERROR:
-		printf(_("ERROR: Generic error while validating config file permissions. (%d)\n"), ret);
+		printf(_("ERROR: Generic error while validating config file "
+		         "permissions. (%d)\n"), ret);
 		return 3;
 
 	case PPP_ERROR_CONFIG_OWNERSHIP:
 		printf(_("ERROR: Config file must be owned by root.\n"));
 		return 4;
 	case PPP_ERROR_CONFIG_PERMISSIONS:
-		printf(_("ERROR: In selected mode config file should not be readable by others.\n"));
+		printf(_("ERROR: In selected mode config file should not be readable"
+		         " by others.\n"));
 		return 5;
 	case 0:
 		printf(_("3) Config file ownership and file mode is correct.\n"));
 	}
 
 	if (cfg->db != CONFIG_DB_GLOBAL) {
-		printf(_("4) Your selected DB option doesn't require further checks. Everything is fine.\n"));
+		printf(_("4) Your selected DB option doesn't require further checks. "
+		         "Everything is fine.\n"));
 		return 0;
 	}
 
 	if (!security_is_privileged()) {
-		printf(_("ERROR: To correctly validate GLOBAL DB configuration you have to run this option as root.\n"));
+		printf(_("ERROR: To correctly validate GLOBAL DB configuration you have "
+		         "to run this option as root.\n"));
 		return 6;
 	}
 
 
-	printf(_("\n\nGlobal DB selected. Trying to initialize PPP and read state data to see if DB exists.\n"));
+	printf(_("\n\nGlobal DB selected. Trying to initialize PPP and read state data "
+	         "to see if DB exists.\n"));
 
 	ret = ppp_init(PRINT_STDOUT, NULL);
 	if (ret != 0) {
@@ -412,8 +417,6 @@ int main(int argc, char **argv)
 	case CONFIG_DB_LDAP:
 	case CONFIG_DB_USER:
 		/* Drop permanently back to the user who called us */
-		/* FIXME: User won't be able to ptrace us 
-		   rather and get passwords... */
 		if (!security_is_privileged()) {
 			/* We don't drop if we are root, so the --user
 			 * option will work. */

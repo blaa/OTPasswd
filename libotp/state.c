@@ -221,11 +221,13 @@ int state_lock(state *s)
 	case CONFIG_DB_GLOBAL:
 		return db_file_lock(s);
 
+/*
 	case CONFIG_DB_MYSQL:
 		return db_mysql_lock(s);
 
 	case CONFIG_DB_LDAP:
 		return db_ldap_lock(s);
+*/
 	default:
 		assert(0);
 		return 1;
@@ -241,11 +243,13 @@ int state_unlock(state *s)
 	case CONFIG_DB_GLOBAL:
 		return db_file_unlock(s);
 
+/*
 	case CONFIG_DB_MYSQL:
 		return db_mysql_unlock(s);
 
 	case CONFIG_DB_LDAP:
 		return db_ldap_unlock(s);
+*/
 	default:
 		assert(0);
 		return 1;
@@ -262,11 +266,13 @@ int state_load(state *s)
 	case CONFIG_DB_GLOBAL:
 		return db_file_load(s);
 
+/*
 	case CONFIG_DB_MYSQL:
 		return db_mysql_load(s);
 
 	case CONFIG_DB_LDAP:
 		return db_ldap_load(s);
+*/
 	default:
 		assert(0);
 		return 1;
@@ -313,6 +319,7 @@ int state_store(state *s, int remove)
 		ret = db_file_store(s, remove);
 		break;
 
+/*
 	case CONFIG_DB_MYSQL:
 		ret = db_mysql_store(s, remove);
 		break;
@@ -320,6 +327,7 @@ int state_store(state *s, int remove)
 	case CONFIG_DB_LDAP:
 		ret = db_ldap_store(s, remove);
 		break;
+*/
 	default:
 		assert(0);
 		ret = 1;
