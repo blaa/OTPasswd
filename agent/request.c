@@ -425,7 +425,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 		char *username = security_parse_user(r_str);
 		if (!username) {
-			_send_reply(a, AGENT_ERR_REQ_ARG);
+			_send_reply(a, AGENT_ERR_INIT_USER);
 			break;
 		}
 

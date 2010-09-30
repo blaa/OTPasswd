@@ -1,5 +1,4 @@
 #!/bin/bash
-
 if [ ! -e CMakeLists.txt ]; then
 	echo "Run this script from main project directory: ./tools/do_pam_tests.sh"
 	exit 2
@@ -9,6 +8,9 @@ if [ "$(whoami)" != "root" ]; then
 	echo "Must be root for this testcase"
 	exit 3
 fi
+
+
+export LC_ALL="en_GB" 
 
 echo "You should KNOW WHAT YOU ARE DOING WHEN RUNNING THIS!"
 sleep 2
@@ -49,6 +51,11 @@ echo "Building PAM testcase"
 
 # Regenerate state
 yes yes | ./otpasswd -v -c salt=on -c alphabet=1 -c codelength=4 -k
+
+# Do some -u tests
+./otpasswd -u root -t current
+./otpasswd -u 0 -t '[current]'
+./otpasswd -u 9000 -t '[current]'
 
 ./tools/pam_test root $(./otpasswd -t current)
 

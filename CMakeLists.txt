@@ -225,6 +225,8 @@ ADD_TEST(state_unset ./otpasswd -v -c contact= -c label=)
 ADD_TEST(state_multi ./otpasswd -v -c contact=aAaA -c label=label)
 ADD_TEST(state_warnings ./otpasswd -v -w)
 
+ADD_TEST(agent_0 ./agent_otp --check-config)
+
 # Tests which should fail
 ADD_TEST(fail_ok1 ./otpasswd -v -l "[0]")
 ADD_TEST(fail_ok2 ./otpasswd -v -l "0")
@@ -242,6 +244,7 @@ ADD_TEST(fail_ok13 ./otpasswd -v -c alphabet)
 ADD_TEST(fail_ok14 ./otpasswd -v -c alphabet=2 illegal_arg)
 ADD_TEST(fail_ok15 ./otpasswd -a '___')
 ADD_TEST(fail_ok16 ./otpasswd --nonexisting-command a)
+ADD_TEST(fail_ok17 ./otpasswd -u 32189371290 -t current) # This will fail if such user doesn't exists
 
 # Remove state - everything should fail then!
 ADD_TEST(remove_key tools/test_remove_yes.sh)
@@ -250,6 +253,6 @@ ADD_TEST(remove_key tools/test_remove_yes.sh)
 
 SET_TESTS_PROPERTIES(state_key0_fail state_spass_fail fail_ok1 fail_ok2 fail_ok3 
 	fail_ok4 fail_ok5 fail_ok6 fail_ok7 fail_ok8 fail_ok9 fail_ok10 fail_ok11
-	fail_ok12 fail_ok13 fail_ok14 fail_ok15 fail_ok16
+	fail_ok12 fail_ok13 fail_ok14 fail_ok15 fail_ok16 fail_ok17
 	PROPERTIES WILL_FAIL TRUE)
 
