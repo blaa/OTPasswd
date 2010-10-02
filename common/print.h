@@ -68,12 +68,24 @@ extern int _print(const char *file, const int line, int level, const char *fmt, 
 /** Log data and preceed it with perror message */
 extern int _print_perror(const char *file, const int line, int level, const char *fmt, ...);
 
-#if DEBUG_POSITIONS == 1
-#define print(x, y, ...) _print(__FILE__, __LINE__, (x), (y), ## __VA_ARGS__)
-#define print_perror(x, y, ...) _print_perror(__FILE__, __LINE__, (x), (y), ## __VA_ARGS__)
+#ifdef S_SPLINT_S
+	/* Splint doesn't understand variadic macros */
+	static inline void print(...) {
+		printf("Don't really care.\n");
+	}
+	#define print_perror print
+
 #else
-#define print(x, y, ...) _print(NULL, -1, (x), (y), ## __VA_ARGS__)
-#define print_perror(x, y, ...) _print_perror(NULL, -1, (x), (y), ## __VA_ARGS__)
+
+#	if DEBUG_POSITIONS == 1
+#		define print(x, y, ...) _print(__FILE__, __LINE__, (x), (y), ## __VA_ARGS__)
+#		define print_perror(x, y, ...) _print_perror(__FILE__, __LINE__, (x), (y), ## __VA_ARGS__)
+#	else
+#		define print(x, y, ...) _print(NULL, -1, (x), (y), ## __VA_ARGS__)
+#		define print_perror(x, y, ...) _print_perror(NULL, -1, (x), (y), ## __VA_ARGS__)
+#	endif
+
+
 #endif
 
 #endif

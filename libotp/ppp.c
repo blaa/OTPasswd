@@ -20,7 +20,6 @@
 
 /* is*() char checkers */
 #include <ctype.h>
-
 #include <time.h>
 
 /* for umask */
@@ -357,7 +356,6 @@ int ppp_get_passcode(const state *s, const num_t counter, char *passcode)
 	ppp_add_salt(s, &salted_counter);
 
 	/* Convert numbers to binary */
-//	num_to_bin(counter, cnt_bin, 16);
 	num_export(salted_counter, (char *)cnt_bin, NUM_FORMAT_BIN);
 
 	/* Encrypt counter with key */
@@ -367,7 +365,6 @@ int ppp_get_passcode(const state *s, const num_t counter, char *passcode)
 	}
 
 	/* Convert result back to number */
-//	num_from_bin(cipher, cipher_bin, 16);
 	num_import(&cipher, (char *)cipher_bin, NUM_FORMAT_BIN);
 
 	if (ppp_verify_alphabet(s->alphabet) != 0) {
@@ -887,7 +884,6 @@ int ppp_skip(state *s, const num_t skip_to)
 {
 	int ret;
 	cfg_t *cfg = cfg_get();
-	num_t unsalted_counter;
 
 	assert(s);
 	assert(cfg);
@@ -909,12 +905,6 @@ int ppp_skip(state *s, const num_t skip_to)
 		goto error;
 	}
 
-	/* Verify that we can skip to given (unsalted) counter */
-	unsalted_counter = s->counter;
-	if (s->flags & FLAG_SALTED) {
-		unsalted_counter = num_and(unsalted_counter, s->code_mask);
-	}
-
 	if (num_cmp(skip_to, s->max_code) >= 0) {
 		print(PRINT_NOTICE, "User tried to skip over the last possible passcode.\n");
 		ret = PPP_ERROR_RANGE;
@@ -928,13 +918,11 @@ int ppp_skip(state *s, const num_t skip_to)
 	/* We will return it's return value if anything failed */
 	ret = ppp_state_release(s, PPP_STORE | PPP_UNLOCK);
 
-	num_clear(unsalted_counter);
 	return ret;
 
 error:
 	/* Unlock. And ignore unlocking errors */
 	(void) ppp_state_release(s, PPP_UNLOCK);
-	num_clear(unsalted_counter);
 	return ret;
 }
 
@@ -1412,9 +1400,9 @@ static int _verify_spass(const char *spass, const cfg_t *cfg)
 		} else if (isgraph(spass[i])) {
 			special++;
 		} else {
-			print(PRINT_ERROR, "Strange error. Add support for this strange character '%c'?\n", spass[i]);
+			print(PRINT_ERROR, "Strange error. Add support for this strange character '%c'?\n",
+			      spass[i]);
 			err_list |= PPP_ERROR_SPASS_ILLEGAL_CHARACTER;
-			assert(0);
 			return err_list;
 		}
 	}

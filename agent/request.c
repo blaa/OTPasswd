@@ -39,8 +39,7 @@ static int _send_reply(agent *a, int status)
 {
 	agent_hdr_set_status(a, status);
 	agent_hdr_set_type(a, AGENT_REQ_REPLY);
-	int ret = agent_hdr_send(a);
-	return ret;
+	return agent_hdr_send(a);
 }
 
 /* Initialize state; possibly by loading from file  */
@@ -48,7 +47,6 @@ static int _state_init(agent *a, int flags)
 {
 	int ret;
 
-	assert(a);
 	assert(a->s == NULL);
 
 	ret = ppp_state_init(&a->s, a->username);
@@ -87,8 +85,8 @@ static int _state_init(agent *a, int flags)
 static int _state_fini(agent *a, int flags)
 {
 	int ret;
+	int ppp_flags = 0;
 	assert(!((flags & _STORE) && (flags & _REMOVE))); /* Not at once */
-	assert(a->s);
 
 	if ((flags & _STORE) && (flags & _REMOVE))
 		return AGENT_ERR;
@@ -100,7 +98,6 @@ static int _state_fini(agent *a, int flags)
 	 * We don't need to unlock just yet - ppp_fini
 	 * will unlock state if it was locked
 	 */
-	int ppp_flags = 0;
 	if (flags & _REMOVE)
 		ppp_flags = PPP_REMOVE;
 	else if (flags & _STORE)
@@ -115,7 +112,8 @@ static int _state_fini(agent *a, int flags)
 
 	if (ret != 0) {
 		print(PRINT_ERROR, 
-		      "Error while saving state data. State not changed. [%d]\n", ret);
+		      "Error while saving state data. State not changed: %s\n",
+		      agent_strerror(ret));
 	}
 
 	a->new_state = 0;
@@ -273,22 +271,30 @@ static int request_verify_policy(agent *a, const cfg_t *cfg)
 		if (ppp_flag_check(a->s, FLAG_DISABLED) && cfg->disabling == CONFIG_DISALLOW) {
 			ret = _state_fini(a, _NONE);
 			if (ret != AGENT_OK) {
-				print(PRINT_NOTICE, "Error during finalization: %s\n", agent_strerror(ret));
+				print(PRINT_NOTICE, "Error during finalization: %s\n",
+				      agent_strerror(ret));
 			}
-			print(PRINT_WARN, "Policy check failed: Disallowing key regeneration with disabled state.\n");
+			print(PRINT_WARN, "Policy check failed: Disallowing key "
+			      "regeneration with disabled state.\n");
 			return AGENT_ERR_POLICY;
 		}
 
 		if (cfg->key_regeneration == CONFIG_DISALLOW) {
 			ret = _state_fini(a, _NONE);
 			if (ret != AGENT_OK) {
-				print(PRINT_NOTICE, "Error during finalization: %s\n", agent_strerror(ret));
+				print(PRINT_NOTICE, "Error during finalization: %s\n",
+				      agent_strerror(ret));
 			}
 			print(PRINT_WARN, "Policy check failed: Disallowing key regeneration.\n");
 			return AGENT_ERR_POLICY_REGENERATION;
 		}
 
 		ret = _state_fini(a, _NONE);
+		if (ret != 0) {
+			print(PRINT_ERROR, "Error while finalizing user state after policy check: %d\n",
+			      agent_strerror(ret));
+			return AGENT_ERR;
+		}
 		return AGENT_OK;
 	}
 		/* Those which doesn't require policy check */
@@ -418,12 +424,13 @@ static int request_execute(agent *a, const cfg_t *cfg)
 
 	case AGENT_REQ_USER_SET:
 	{
+		char *username = NULL;
 		if (!r_str) {
 			_send_reply(a, AGENT_ERR_REQ);
 			break;
 		}
 
-		char *username = security_parse_user(r_str);
+		username = security_parse_user(r_str);
 		if (!username) {
 			_send_reply(a, AGENT_ERR_INIT_USER);
 			break;
@@ -657,8 +664,8 @@ static int request_execute(agent *a, const cfg_t *cfg)
 			/* This doesn't need to work atomically */
 			ret = AGENT_ERR_NO_STATE;
 		} else {
+			char passcode[20] = {0};
 			agent_hdr_init(a, 0);
-			char passcode[20];
 			
 			ret = ppp_get_passcode(a->s, r_num, passcode);
 			if (ret == 0) {
@@ -675,9 +682,9 @@ static int request_execute(agent *a, const cfg_t *cfg)
 			/* This doesn't need to work atomically */
 			ret = AGENT_ERR_NO_STATE;
 		} else {
+			const char *prompt = NULL;
 			agent_hdr_init(a, 0);
-			const char *prompt;
-			
+
 			prompt = ppp_get_prompt(a->s, 0, r_num);
 			if (prompt != NULL) {
 				ret = agent_hdr_set_str(a, prompt);
@@ -706,9 +713,10 @@ static int request_execute(agent *a, const cfg_t *cfg)
 			ret = ppp_get_int(a->s, PPP_FIELD_RECENT_FAILURES, &failures);
 			if (ret != 0) {
 				ret = AGENT_ERR;
+			} else {
+				agent_hdr_set_int(a, warnings, failures);
+				ret = AGENT_OK;
 			}
-			agent_hdr_set_int(a, warnings, failures);
-			ret = AGENT_OK;
 		}
 		_send_reply(a, ret);
 		break;
@@ -725,8 +733,10 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		if (a->s) {
 			ret = ppp_get_num(a->s, PPP_FIELD_LATEST_CARD, 
 					  &latest_card);
+			assert(ret == 0);
 			ret = ppp_get_num(a->s, PPP_FIELD_CURRENT_CARD, 
 					  &current_card);
+			assert(ret == 0);
 			if (num_cmp(latest_card, r_num) > 0) {
 				print(PRINT_NOTICE, "Current latest_card bigger than one which was supposed to be set.\n");
 				_send_reply(a, AGENT_ERR_REQ_ARG);
@@ -750,8 +760,10 @@ static int request_execute(agent *a, const cfg_t *cfg)
 		if (ret == 0) {
 			ret = ppp_get_num(a->s, PPP_FIELD_LATEST_CARD, 
 					  &latest_card);
+			assert(ret == 0);
 			ret = ppp_get_num(a->s, PPP_FIELD_CURRENT_CARD, 
 					  &current_card);
+			assert(ret == 0);
 
 			if (num_cmp(latest_card, r_num) > 0) {
 				print(PRINT_NOTICE, "Current latest_card bigger than one which was supposed to be set.\n");
@@ -820,11 +832,12 @@ static int request_execute(agent *a, const cfg_t *cfg)
 	case AGENT_REQ_GET_ALPHABET:
 	{
 		const char *alphabet = NULL;
+		int tmp;
 		agent_hdr_init(a, 0);
 
 		ret = ppp_alphabet_get(r_int, &alphabet);
 
-		int tmp = agent_hdr_set_str(a, alphabet);
+		tmp = agent_hdr_set_str(a, alphabet);
 		assert(tmp == AGENT_OK);
 
 		_send_reply(a, ret);
@@ -901,7 +914,7 @@ int request_handle(agent *a)
 	int ret;
 
 	cfg_t *cfg = cfg_get();
-	assert(cfg);
+	assert(cfg != NULL);
 
 	/* Wait for request, perform it and reply */
 	ret = agent_hdr_recv(a);

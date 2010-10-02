@@ -31,6 +31,7 @@
 int crypto_testcase(void)
 {
 	int failed = 0;
+	int i;
 
 	unsigned char plain[] = 
 		"To be encrypted.";
@@ -60,8 +61,6 @@ int crypto_testcase(void)
 		printf("PASSED\n");		
 	}
 
-
-	int i;
 	printf("crypto_aes_test (enc/dec) [ 2]: ");
 	for (i = 0; i < 10; i++) {
 		crypto_file_rng("/dev/urandom", NULL, plain, 16);
@@ -80,20 +79,22 @@ int crypto_testcase(void)
 
 
 	/* SHA256 testcase */
-	const unsigned char hash_plain[] = "To be encrypted.";
-	unsigned char hash[32];
-	const unsigned char hash_origin[32] = 
-		"\x4f\xee\xfa\x18\x7b\x71\xc8\xf1\x36\xb6\xdb\xc8\x6e"
-		"\xa6\x4f\x72\x1f\xfa\xa6\x0c\x52\x34\x96\x45\xeb\x87"
-		"\x82\x56\x8e\x72\x17\xe1";
+	{
+		const unsigned char hash_plain[] = "To be encrypted.";
+		unsigned char hash[32];
+		const unsigned char hash_origin[32] =
+			"\x4f\xee\xfa\x18\x7b\x71\xc8\xf1\x36\xb6\xdb\xc8\x6e"
+			"\xa6\x4f\x72\x1f\xfa\xa6\x0c\x52\x34\x96\x45\xeb\x87"
+			"\x82\x56\x8e\x72\x17\xe1";
 
-	crypto_sha256(hash_plain, strlen((char *) hash_plain), hash);
-	printf("sha_test [ 1]: ");
-	if (memcmp(hash, hash_origin, 32) != 0) {
-		printf("FAILED\n");
-		failed++;
-	} else {
-		printf("PASSED\n");		
+		crypto_sha256(hash_plain, strlen((char *) hash_plain), hash);
+		printf("sha_test [ 1]: ");
+		if (memcmp(hash, hash_origin, 32) != 0) {
+			printf("FAILED\n");
+			failed++;
+		} else {
+			printf("PASSED\n");
+		}
 	}
 
 	return failed;
@@ -333,6 +334,10 @@ static int _ppp_testcase_statistical(const state *s, const int alphabet_len, con
 	} else if (alphabet_len <= 128) { /* 2^x = 88 -> 6.4594bits */
 		bits_in_character = 6;
 		bits_to_test = code_length * bits_in_character;
+	} else {
+		printf("Impossible. Alphabet should never exceed 128 characters!\n");
+		printf("Nor be negative. It's value is %d\n", alphabet_len);
+		assert(0);
 	}
 
 	unsigned long zeroes[130] = {0};
@@ -836,6 +841,7 @@ int num_testcase(void)
 	i = num_import(&a, "112233445566778899AABBCCDDEEFF00", NUM_FORMAT_HEX);
 	assert(i == 0);
 	i = num_export(a, buff, NUM_FORMAT_BIN);
+	assert(i == 0);
 	if (memcmp(buff,   "\x00\xFF\xEE\xDD\xCC\xBB\xAA\x99\x88\x77\x66\x55\x44\x33\x22\x11", 16) != 0) {
 		printf("FAILED_BIN "); failed++;
 	} else printf("OK ");
@@ -1022,6 +1028,7 @@ int num_testcase(void)
 
 	/* TEST ON PARTICULAR VALUE */
 	i = num_import(&a, "00000000000000010000000000000000", NUM_FORMAT_HEX);
+	assert(i==0);
 	bi = 0x8000008000000064ULL;
 	r = num_div_i(&c, a, bi); //0x9000000000000000LLU);
 

@@ -303,11 +303,12 @@ char *security_parse_user(const char *spec)
 	uid_t uid;
 	struct passwd *pwdata;
 
-	assert(spec);
+	assert(spec != NULL);
+	assert(sizeof(uid_t) == sizeof(int));
 
 	if (isdigit(spec[0])) {
 		/* Parse UID */
-		if (sscanf(spec, "%d", &uid) != 1) {
+		if (sscanf(spec, "%d", (int*)&uid) != 1) {
 			return NULL;
 		}
 

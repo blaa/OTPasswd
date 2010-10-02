@@ -56,9 +56,6 @@ PAM_EXTERN int pam_sm_authenticate(
 	/* Username */
 	const char *username = NULL;
 
-	/* Have user entered correct spass? */
-	int spass_correct = 0;
-
 	/* Have user entered OOB in this session? */
 	int oob_sent = 0;
 	
@@ -171,7 +168,6 @@ PAM_EXTERN int pam_sm_authenticate(
 				
 			case OOB_SECURE_REQUEST:
 				if (ph_validate_spass(pamh, s, username) == 0) {
-					spass_correct = 1;
 					if (ph_oob_send(pamh, s, username) == 0) {
 						ph_show_message(pamh, oob_msg, username);
 						oob_sent = 1;
@@ -184,7 +180,11 @@ PAM_EXTERN int pam_sm_authenticate(
 				}
 				break;
 			default:
+				print(PRINT_ERROR, "Internal error: "
+				      "Invalid option read from config file.\n");
 				assert(0);
+				retval = PAM_AUTH_ERR;
+				goto cleanup;
 			}
 
 			/* Continue, so the user is restated question about passcode */
@@ -275,8 +275,7 @@ PAM_EXTERN int pam_sm_open_session(
 
 		len = snprintf(buff_msg, sizeof(buff_msg), "*** OTP Warning: %s", msg);
 		if (len < 10) {
-			print(PRINT_ERROR, "strange sprintf error; user=%s\n", username);
-			retval = 1;
+			print(PRINT_ERROR, "internal error: strange sprintf error; user=%s\n", username);
 			goto cleanup;
 		}
 

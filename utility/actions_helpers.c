@@ -518,7 +518,6 @@ int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
 		}
 
 		if (num_cmp(num_i(1), *item) > 0) {
-			ret = 1;
 			printf(_("Passcode number out of range.\n"));
 			goto error;
 		}
@@ -544,7 +543,6 @@ int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
 		}
 
 		if (num_cmp(num_i(1), *item) > 0) {
-			ret = 1;
 			printf(_("Passcode number out of range.\n"));
 			goto error;
 		}
@@ -583,7 +581,6 @@ int ah_parse_code_spec(agent *a, const char *spec, num_t *item)
 		}
 
 		if (num_cmp(num_i(1), card) > 0) {
-			ret = 1;
 			printf(_("Passcard numbering starts with 1.\n"));
 			goto error;
 		}

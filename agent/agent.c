@@ -40,11 +40,10 @@ int do_verify_config(void)
 {
 	int ret;
 	cfg_t *cfg = NULL;
-	print_init(PRINT_NOTICE | PRINT_STDOUT, NULL);
+	state *s = NULL;
+
+	(void) print_init(PRINT_NOTICE | PRINT_STDOUT, NULL);
 	locale_init(); /* Only place where agent uses NLS */
-
-
-
 
 	printf(_("Config file verification...\n"));
 	cfg = cfg_get();
@@ -59,7 +58,6 @@ int do_verify_config(void)
                 return 2;
         } 
 	printf(_("2) DB option is set.\n"));
-
 	
 	/* Verify permissions according to mode */
 	ret = cfg_permissions();
@@ -87,7 +85,7 @@ int do_verify_config(void)
 		return 0;
 	}
 
-	if (!security_is_privileged()) {
+	if (security_is_privileged() == 0) {
 		printf(_("ERROR: To correctly validate GLOBAL DB configuration you have "
 		         "to run this option as root.\n"));
 		return 6;
@@ -107,7 +105,7 @@ int do_verify_config(void)
 
 	printf(_("ppp_init OK\n"));
 
-	state *s = NULL;
+
 	ret = ppp_state_init(&s, "root");
 	if (ret != 0) {
 		printf(_("ERROR: Unable to create state: %s\n"), ppp_get_error_desc(ret));
@@ -165,7 +163,7 @@ int do_testcase(void)
 	/* Init ppp for testcases */
 	retval = ppp_init(PRINT_STDOUT, NULL);
 	if (retval != 0) {
-		puts(ppp_get_error_desc(retval));
+		(void) puts(ppp_get_error_desc(retval));
 		printf("Testcasing failed:\n");
 		printf("OTPasswd not correctly installed.\n");
 		printf("Consult installation manual for detailed information.\n");
@@ -255,13 +253,13 @@ int send_init_reply(agent *a, int status, int error_code)
 	return agent_hdr_send(a);
 }
 
-int main_loop(agent *a, cfg_t *cfg) 
+static int main_loop(agent *a)
 {
 	int ret;
 
 	ret = send_init_reply(a, 0, 0);
 	if (ret != 0) {
-		print(PRINT_ERROR, "Initial reply error; agent_hdr_send returned %d\n", ret);
+		(void) print(PRINT_ERROR, "Initial reply error; agent_hdr_send returned %d\n", ret);
 		goto end;
 	}
 
@@ -284,24 +282,30 @@ int main_loop(agent *a, cfg_t *cfg)
 	}
 
 end:
+	if (agent_disconnect(a) != 0) {
+		print(PRINT_WARN, "Errors while disconnecting agent.\n");
+	}
+
+	print(PRINT_NOTICE, "Agent closed.\n");
 	ppp_fini();
-	agent_disconnect(a);
 	return ret;
 }
 
 int main(int argc, char **argv)
 {
 	int ret, error_desc = 0;
+	char *username = NULL;
+	agent *a = NULL;
 	cfg_t *cfg = NULL;
 
 	/* 1) Init safe environment, store current uids, etc. */
 	security_init();
 
-	if (!security_is_tty_detached() || argc > 1) {
+	if (security_is_tty_detached() == 0 || argc > 1) {
 		/* We have stdout */
 		/* Check if we should run testcases. */
 		if (argc == 2 && strcmp(argv[1], "--testcase") == 0) {
-			if (!security_is_suid() || security_is_privileged()) {
+			if (security_is_suid() == 0 || security_is_privileged()) {
 				/* We're not suid or we are root already */
 				return do_testcase();
 			}
@@ -343,14 +347,15 @@ int main(int argc, char **argv)
 
 	/* Initialize agent struct so we can sent information
 	 * about initialization errors */
-	agent *a;
 	ret = agent_server(&a);
 	if (ret != AGENT_OK) {
 		print(PRINT_ERROR, "Unable to start agent server: %s\n", agent_strerror(ret));
 		return 1;
 	}
 
-	char *username = security_get_calling_user();
+
+	/* This will allocate username */
+	username = security_get_calling_user();
 	if (!username) {
 		print(PRINT_ERROR, "Unable to locate current user\n");
 		ret = AGENT_ERR_INIT_USER;
@@ -358,7 +363,14 @@ int main(int argc, char **argv)
 	}
 
 	agent_hdr_init(a, 0);
-	agent_set_user(a, username);
+
+	ret = agent_set_user(a, username);
+	if (ret != 0) {
+		print(PRINT_ERROR, "Error while setting user: %s\n", agent_strerror(ret));
+		free(username);
+		goto init_error;
+	}
+	free(username);
 	username = NULL;
 
 	/***
@@ -426,12 +438,21 @@ int main(int argc, char **argv)
 	}
 
 	/* Agent loop */
-	return main_loop(a, cfg);
+	return main_loop(a);
 
 
 init_error:
+	ret = send_init_reply(a, ret, error_desc);
+	if (ret != 0) {
+		print(PRINT_ERROR, "Additional error while sending back failure reason: %s.\n",
+		      agent_strerror(ret));
+	}
+	ret = agent_disconnect(a);
+	if (ret != 0) {
+		print(PRINT_ERROR, "Additional error while disconnecting from agent.\n",
+		      agent_strerror(ret));
+	}
+
 	ppp_fini();
-	send_init_reply(a, ret, error_desc);
-	agent_disconnect(a);
 	return 1;
 }

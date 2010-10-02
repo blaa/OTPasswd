@@ -26,7 +26,7 @@
 #define AGENT_INTERNAL 1
 
 #define AGENT_PATH "otpagent"
-#define AGENT_PROTOCOL_VERSION (0xDEAD0000 | 0x00)
+#define AGENT_PROTOCOL_VERSION (0xDEAD0000U | 0x00U)
 
 #include <unistd.h>
 #include <sys/types.h> /* pid_t etc. */
@@ -133,7 +133,7 @@ enum AGENT_REQUEST {
 struct agent_header {
 	/* Ensures both executables are having the same
 	 * version */
-	int protocol_version;
+	unsigned int protocol_version;
 
 	/* Request type + Reply type 
 	 * Example: Set int field.
@@ -204,7 +204,7 @@ extern void agent_hdr_set_int(agent *a, int int_arg, int int_arg2);
 /** Sets string argument inside agent_interface header */
 extern int agent_hdr_set_str(agent *a, const char *str_arg);
 /** Like agent_hdr_set_str but allows \x00 bytes inside str */
-extern int agent_hdr_set_bin_str(agent *a, const char *str_arg, int length);
+extern int agent_hdr_set_bin_str(agent *a, const char *str_arg, size_t length);
 
 
 /** Send header to the agent */

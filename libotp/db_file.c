@@ -358,16 +358,10 @@ static int _db_find_user_entry(
 	char *buff, size_t buff_size)
 {
 	size_t line_length;
-	size_t username_length;
 
 	assert(username);
 	assert(f);
 	assert(buff);
-
-	if (username)
-		username_length = strlen(username);
-	else
-		username_length = 0;
 
 	while (!feof(f)) {
 		/* Read all file into a buffer */
@@ -802,8 +796,9 @@ int db_file_store(state *s, int remove)
 			ret = STATE_IO_ERROR;
 			print_perror(PRINT_ERROR,
 				     "Unable to unlink state file\n");
+		} else {
+			ret = 0;
 		}
-		ret = 0;
 		goto cleanup_lock;
 	}
 

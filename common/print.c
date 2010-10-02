@@ -127,8 +127,8 @@ int _print(const char *file, const int line, int level, const char *fmt, ...)
 	/* stdout */
 	if (use_stdout) {
 		if (file) {
-			char *base = strrchr(file, '/') + 1;
-			if (!base) file = base;
+			const char *base = strrchr(file, '/') + 1;
+			if (!base) base = file;
 			if (level != PRINT_MESSAGE)
 				fprintf(stdout, "%s:%d ", base, line);
 		}

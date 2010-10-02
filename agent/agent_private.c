@@ -6,7 +6,7 @@
 int agent_wait(agent *a)
 {
 	fd_set rfds;
-	struct timeval tv;
+	struct timeval tv = {0};
 	int ret;
 
 	/* Wait for 1 second */
@@ -33,20 +33,25 @@ static int agent_read(const int fd, void *data, size_t len)
 {
 	static char buff[300];
 	static char *buff_pos = buff;
-	static int buffered = 0;
-	void *data_pos = data;
-	int ret;
 
+	/* Number of buffered bytes */
+	static ssize_t buffered = 0;
+	void *data_pos = data;
+
+	/* Each time we read data there might be some data which were
+	 * read previously and are kept in static buffer. First we utilize
+	 * this data and then read any new (possibly buffering anything more */
 	for (;;) {
 		/* Copy all buffered data */
 		if (buffered) {
-			const size_t to_go = buffered < len ? buffered : len;
+			const size_t to_go = (size_t)buffered < len ? (size_t)buffered : len;
 			memcpy(data_pos, buff_pos, to_go);
 			len -= to_go;
 			buffered -= to_go;
 			data_pos += to_go;
 			buff_pos += to_go;			
 		}
+
 		if (len == 0) {
 			return AGENT_OK;
 		}
@@ -62,33 +67,20 @@ static int agent_read(const int fd, void *data, size_t len)
 			return AGENT_ERR_DISCONNECT;
 		}
 	}
-
-	ret = read(fd, data, len);
-	if (ret == 0) {
-		/* End-of-file - second end was closed! */
-		return AGENT_ERR_DISCONNECT;
-	}
-	assert(ret == len);
-
-	if (ret != len) {
-		return 1;
-	}
-
-	return AGENT_OK;
 }
 
 /* Will either fail or complete successfully returning 0 */
 static int agent_write(const int fd, const void *buf, const size_t len)
 {
-	int ret;
+	ssize_t ret;
 	ret = write(fd, buf, len);
 	if (ret == -1) {
 		/* Probably errno == EPIPE. That is - second
 		 * end disconnected */
 		return AGENT_ERR_DISCONNECT;
 	}
-	assert(ret == len);
-	if (ret != len) 
+	assert((size_t)ret == len);
+	if ((size_t)ret != len)
 		return 1;
 	return AGENT_OK;
 }
@@ -110,7 +102,7 @@ static int agent_write(const int fd, const void *buf, const size_t len)
 int agent_hdr_send(const agent *a) 
 {
 	const int fd = a->out;
-	ssize_t ret = 1;
+	int ret = 1;
 
 	/* Make sure we haven't locked state when using pipes */
 	if (a->s && ppp_is_locked(a->s)) {
@@ -138,7 +130,7 @@ int agent_hdr_send(const agent *a)
 int agent_hdr_recv(agent *a) 
 {
 	const int fd = a->in;
-	ssize_t ret = 1;
+	int ret = 1;
 
 	/* Make sure we haven't locked state when using pipes */
 	if (a->s && ppp_is_locked(a->s)) {
@@ -170,8 +162,6 @@ int agent_hdr_recv(agent *a)
 
 void agent_hdr_init(agent *a, int status)
 {
-	assert(a);
-
 	a->shdr.protocol_version = AGENT_PROTOCOL_VERSION;
 	a->shdr.status = status;
 
@@ -200,10 +190,8 @@ void agent_hdr_set_int(agent *a, int int_arg, int int_arg2)
 
 int agent_hdr_set_str(agent *a, const char *str_arg)
 {
-	assert(a);
-	
 	if (str_arg) {
-		const int length = strlen(str_arg);
+		const size_t length = strlen(str_arg);
 		assert(length < sizeof(a->shdr.str_arg));
 		if (length >= sizeof(a->shdr.str_arg))
 			return 1;
@@ -216,10 +204,8 @@ int agent_hdr_set_str(agent *a, const char *str_arg)
 }
 
 
-int agent_hdr_set_bin_str(agent *a, const char *str_arg, int length)
+int agent_hdr_set_bin_str(agent *a, const char *str_arg, size_t length)
 {
-	assert(a);
-	
 	if (str_arg) {
 		assert(length < sizeof(a->shdr.str_arg));
 		if (length >= sizeof(a->shdr.str_arg))

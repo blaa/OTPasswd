@@ -35,18 +35,20 @@
 static int _get_agent_executable(const char *agent, const char **agent_path)
 {
 	int ret;
+	int i;
 	struct stat st;
-	*agent_path = NULL;
 	const char *agents[] = { 
 		agent,
 #if DEBUG
+#warning Utility will search for agent in its current directory!
 		"./agent_otp",
 #endif
 		"/usr/bin/agent_otp",
 
 		"/usr/local/bin/agent_otp",
 		NULL };
-	int i;
+
+	*agent_path = NULL;
 
 	if (agent)
 		agents[1] = NULL; /* If given path, check only the one given. */
@@ -294,8 +296,7 @@ int agent_set_user(agent *a, const char *username)
 {
 	int ret;
 
-	assert(a);
-	assert(username);
+	assert(username != NULL);
 	if (a->username)
 		free(a->username);
 	a->username = strdup(username);
@@ -319,19 +320,30 @@ int agent_set_user(agent *a, const char *username)
 
 int agent_disconnect(agent *a)
 {
+	int tmp;
 	int ret = 0;
 	/* TODO: Send quit message if client
 	 *       Wait for child to close? 
 	 * Wait is not necessary, closing pipe will inform client 
 	 * about disconnect.
 	 */
-	assert(a);
 
 	/* Close descriptors  */
-	if (a->in != -1)
-		ret += close(a->in);
-	if (a->out != -1)
-		ret += close(a->out);
+	if (a->in != -1) {
+		tmp = close(a->in);
+		if (tmp != 0) {
+			print_perror(PRINT_WARN, "Error while closing incoming descriptor:");
+			ret = 1;
+		}
+	}
+
+	if (a->out != -1) {
+		tmp = close(a->out);
+		if (tmp != 0) {
+			print_perror(PRINT_WARN, "Error while closing outgoing descriptor:");
+			ret += 1;
+		}
+	}
 
 	if (a->username)
 		free(a->username);
@@ -530,7 +542,7 @@ int agent_flag_clear(agent *a, int flag)
 int agent_flag_get(agent *a, int *flags)
 {
 	int ret;
-	assert(flags);
+	assert(flags != NULL);
 
 	agent_hdr_init(a, 0);
 	ret = agent_query(a, AGENT_REQ_FLAG_GET);
@@ -543,10 +555,11 @@ int agent_flag_get(agent *a, int *flags)
 
 int agent_get_num(agent *a, int field, num_t *num)
 {
+	int ret;
 	agent_hdr_init(a, 0);
 	agent_hdr_set_int(a, field, 0);
 
-	int ret = agent_query(a, AGENT_REQ_GET_NUM);
+	ret = agent_query(a, AGENT_REQ_GET_NUM);
 	if (ret != 0)
 		return ret;
 	*num = agent_hdr_get_arg_num(a);
@@ -555,10 +568,11 @@ int agent_get_num(agent *a, int field, num_t *num)
 
 int agent_get_int(agent *a, int field, int *integer)
 {
+	int ret;
 	agent_hdr_init(a, 0);
 	agent_hdr_set_int(a, field, 0);
 
-	int ret = agent_query(a, AGENT_REQ_GET_INT);
+	ret = agent_query(a, AGENT_REQ_GET_INT);
 	if (ret != 0)
 		return ret;
 	*integer = agent_hdr_get_arg_int(a);
@@ -567,19 +581,22 @@ int agent_get_int(agent *a, int field, int *integer)
 
 int agent_get_str(agent *a, int field, char **str)
 {
-	assert(str);
+	int ret;
+	const char *tmp_str = NULL;
+	assert(str != NULL);
 
 	agent_hdr_init(a, 0);
 	agent_hdr_set_int(a, field, 0);
 
-	int ret = agent_query(a, AGENT_REQ_GET_STR);
+	ret = agent_query(a, AGENT_REQ_GET_STR);
 	if (ret != 0) {
 		*str = NULL;
 		return ret;
 	}
 
-	const char *tmp_str = agent_hdr_get_arg_str(a);
-	assert(tmp_str);
+	tmp_str = agent_hdr_get_arg_str(a);
+	assert(tmp_str != NULL);
+
 	*str = strdup(tmp_str);
 
 	if (!*str) {
@@ -592,19 +609,20 @@ int agent_get_str(agent *a, int field, char **str)
 
 int agent_get_key(agent *a, unsigned char *key)
 {
-	assert(a);
-	assert(key);
+	int ret;
+	const char *tmp_str = NULL;
+	assert(key != NULL);
 
 	agent_hdr_init(a, 0);
 	agent_hdr_set_int(a, PPP_FIELD_KEY, 0);
 
-	int ret = agent_query(a, AGENT_REQ_GET_STR);
+	ret = agent_query(a, AGENT_REQ_GET_STR);
 	if (ret != 0) {
 		return ret;
 	}
 
-	const unsigned char *tmp_str = (unsigned char *)agent_hdr_get_arg_str(a);
-	assert(tmp_str);
+	tmp_str = agent_hdr_get_arg_str(a);
+	assert(tmp_str != NULL);
 
 	memcpy(key, tmp_str, 32);
 
@@ -614,13 +632,13 @@ int agent_get_key(agent *a, unsigned char *key)
 
 int agent_get_alphabet(agent *a, int id, const char **alphabet)
 {
-	assert(a);
-	assert(alphabet);
+	int ret;
+	assert(alphabet != NULL);
 
 	agent_hdr_init(a, 0);
 	agent_hdr_set_int(a, id, 0);
 
-	int ret = agent_query(a, AGENT_REQ_GET_ALPHABET);
+	ret = agent_query(a, AGENT_REQ_GET_ALPHABET);
 	if (ret != 0 && ret != PPP_ERROR_POLICY) {
 		*alphabet = NULL;
 		return ret;
@@ -636,10 +654,11 @@ int agent_get_alphabet(agent *a, int id, const char **alphabet)
 /* Setters */
 int agent_set_int(agent *a, int field, int integer)
 {
+	int ret;
 	agent_hdr_init(a, 0);
 	agent_hdr_set_int(a, field, integer);
 
-	int ret = agent_query(a, AGENT_REQ_SET_INT);
+	ret = agent_query(a, AGENT_REQ_SET_INT);
 	if (ret != 0)
 		return ret;
 	else
@@ -648,9 +667,10 @@ int agent_set_int(agent *a, int field, int integer)
 
 int agent_set_str(agent *a, int field, const char *str)
 {
+	int ret;
 	agent_hdr_init(a, 0);
 	agent_hdr_set_int(a, field, 0);
-	int ret = agent_hdr_set_str(a, str);
+	ret = agent_hdr_set_str(a, str);
 	if (ret != AGENT_OK) {
 		print(PRINT_CRITICAL, "Label too long to send, check limits in program.\n");
 		return ret;
@@ -697,20 +717,19 @@ int agent_get_warnings(agent *a, int *warnings, int *failures)
 
 int agent_get_passcode(agent *a, const num_t counter, char *reply)
 {
-	assert(a);
-	assert(reply);
+	int ret;
+	const char *tmp_str = NULL;
+	assert(reply != NULL);
 
 	agent_hdr_init(a, 0);
 	agent_hdr_set_num(a, &counter);
 
-
-	int ret = agent_query(a, AGENT_REQ_GET_PASSCODE);
+	ret = agent_query(a, AGENT_REQ_GET_PASSCODE);
 	if (ret != AGENT_OK)
 		return ret;
 
-
-	const char *tmp_str = agent_hdr_get_arg_str(a);
-	assert(tmp_str);
+	tmp_str = agent_hdr_get_arg_str(a);
+	assert(tmp_str != NULL);
 	strncpy(reply, tmp_str, 16);
 	reply[16] = '\0';
 	return ret;
@@ -718,19 +737,20 @@ int agent_get_passcode(agent *a, const num_t counter, char *reply)
 
 int agent_get_prompt(agent *a, const num_t counter, char **reply)
 {
-	assert(a);
-	assert(reply);
+	int ret;
+	const char *tmp_str = NULL;
+	assert(reply != NULL);
 
 	agent_hdr_init(a, 0);
 	agent_hdr_set_num(a, &counter);
 
-	int ret = agent_query(a, AGENT_REQ_GET_PROMPT);
+	ret = agent_query(a, AGENT_REQ_GET_PROMPT);
 	if (ret != AGENT_OK)
 		return ret;
 
 
-	const char *tmp_str = agent_hdr_get_arg_str(a);
-	assert(tmp_str);
+	tmp_str = agent_hdr_get_arg_str(a);
+	assert(tmp_str != NULL);
 	*reply = strdup(tmp_str);
 	if (!*reply)
 		return AGENT_ERR_MEMORY;
@@ -743,8 +763,7 @@ int agent_get_prompt(agent *a, const num_t counter, char **reply)
 int agent_authenticate(agent *a, const char *passcode)
 {
 	int ret;
-	assert(a);
-	assert(passcode);
+	assert(passcode != NULL);
 
 	agent_hdr_init(a, 0);
 
@@ -761,7 +780,6 @@ int agent_authenticate(agent *a, const char *passcode)
 int agent_skip(agent *a, const num_t counter)
 {
 	int ret;
-	assert(a);
 
 	agent_hdr_init(a, 0);
 
@@ -773,7 +791,6 @@ int agent_skip(agent *a, const num_t counter)
 int agent_update_latest_card(agent *a, const num_t latest_card)
 {
 	int ret;
-	assert(a);
 
 	agent_hdr_init(a, 0);
 
@@ -785,7 +802,6 @@ int agent_update_latest_card(agent *a, const num_t latest_card)
 int agent_clear_recent_failures(agent *a)
 {
 	int ret;
-	assert(a);
 
 	agent_hdr_init(a, 0);
 	ret = agent_query(a, AGENT_REQ_CLEAR_RECENT_FAILURES);

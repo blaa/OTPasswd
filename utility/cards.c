@@ -249,15 +249,16 @@ char *card_latex(agent *a, const num_t number)
 		goto error;
 	memset(whole_card, 0, size);
 
-	num_t n = num_i(0);
+
 
 	memcpy(card_pos, intro, sizeof(intro) - 1);
 	card_pos += sizeof(intro) - 1;
 
 	memcpy(card_pos, block_start, sizeof(block_start) - 1);
 	card_pos += sizeof(block_start) - 1;
+
 	for (i=0; i<=2; i++) {
-		n = num_add_i(number, i);
+		const num_t n = num_add_i(number, i);
 		char *part = card_ascii(a, n);
 		if (!part)
 			goto error;
@@ -279,7 +280,7 @@ char *card_latex(agent *a, const num_t number)
 	memcpy(card_pos, block_start, sizeof(block_start) - 1);
 	card_pos += sizeof(block_start) - 1;
 	for (i=3; i<=5; i++) {
-		n = num_add_i(number, i);
+		const num_t n = num_add_i(number, i);
 
 		char *part = card_ascii(a, n);
 		if (!part)
@@ -294,13 +295,11 @@ char *card_latex(agent *a, const num_t number)
 		}
 	}
 
-	num_clear(n);
-
 	memcpy(card_pos, block_stop, sizeof(block_stop) - 1);
 	card_pos += sizeof(block_stop) - 1;
 
 	memcpy(card_pos, outro, sizeof(outro) - 1);
-	card_pos += sizeof(outro) - 1;
+	/* card_pos += sizeof(outro) - 1; */
 
 	return whole_card;
 error:
