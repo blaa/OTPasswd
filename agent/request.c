@@ -513,8 +513,7 @@ static int request_execute(agent *a, const cfg_t *cfg)
 	case AGENT_REQ_KEY_REMOVE:
 		if (a->s) {
 			print(PRINT_ERROR, "Must drop state before removing it.\n");
-			ret = AGENT_ERR_MUST_DROP_STATE;
-			_send_reply(a, ret);	
+			_send_reply(a, AGENT_ERR_MUST_DROP_STATE);	
 			break;
 		}
 
@@ -683,6 +682,9 @@ static int request_execute(agent *a, const cfg_t *cfg)
 			if (prompt != NULL) {
 				ret = agent_hdr_set_str(a, prompt);
 				assert(ret == 0);
+			} else {
+				agent_hdr_set_str(a, NULL);
+				ret = AGENT_ERR;
 			}
 		}
 

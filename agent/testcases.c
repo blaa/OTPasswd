@@ -458,6 +458,7 @@ static int _ppp_testcase_stat_2(const state *s,
 
 	int i;
 	unsigned int cnt;
+	int failed = 0;
 
 	int ret;
 
@@ -489,7 +490,6 @@ static int _ppp_testcase_stat_2(const state *s,
 	}
 
 
-	int failed = 0;
 	/* Perfect distribution */
 	const double perfect = tests * code_length / alphabet_len;
 

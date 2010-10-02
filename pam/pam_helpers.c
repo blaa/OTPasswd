@@ -320,6 +320,7 @@ void ph_show_message(pam_handle_t *pamh, const char *msg, const char *username)
 
 
 	/* Initialize conversation function */
+	/* This will generate 'dereferencing type-punned pointer' warning in GCC */
 	pam_get_item(pamh, PAM_CONV, (const void **)&conversation);
 
 	/* Set message config, and show it. */
@@ -445,6 +446,7 @@ struct pam_response *ph_query_user(
 	struct pam_response *resp = NULL;
 
 	/* Initialize conversation function */
+	/* This will generate 'dereferencing type-punned pointer' warning in GCC */
 	if (pam_get_item(pamh, PAM_CONV, (const void **)&conversation) != PAM_SUCCESS)
 		return NULL;
 

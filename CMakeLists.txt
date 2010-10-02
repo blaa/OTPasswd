@@ -16,7 +16,7 @@
 ##
 
 ##
-# Global thingies
+# Intro
 ##
 
 cmake_minimum_required(VERSION 2.4.7)
@@ -31,9 +31,28 @@ if(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
 endif(COMMAND cmake_policy)
 
+# Detect system
+IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+  ADD_DEFINITIONS("-DOS_LINUX")
+ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+
+IF(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+  ADD_DEFINITIONS("-DOS_FREEBSD")
+ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+
+
+##
+# Basic parameters
+##
+
 # FIXME: -fPIC is required for .a library on x64 only!
 # How to add it only to this target?
 ADD_DEFINITIONS("-Wall -fPIC")
+
+
+##
+# Configurable options
+##
 
 option(PROFILE "Enable coverage tests" OFF)
 option(DEBUG "Enable additional debug information" OFF)
@@ -58,22 +77,30 @@ ENDIF (DEBUG)
 
 IF (NLS)
   ADD_DEFINITIONS("-DUSE_NLS=1")
+  IF (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+    LINK_LIBRARIES(intl)
+  ENDIF (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+
 ENDIF (NLS)
 
+##
+# Detect include dirs and lib dirs
+##
 
-# Detect system
-IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-  ADD_DEFINITIONS("-DOS_LINUX")
-ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-
-IF(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
-  ADD_DEFINITIONS("-DOS_FREEBSD")
-ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
-
-# Detect include dirs
+# PAM
 FIND_PATH(PAM_INCLUDE_DIR pam_modules.h /usr/include/security /usr/include/pam)
-
 INCLUDE_DIRECTORIES(${PAM_INCLUDE_DIR})
+FIND_PATH(PAM_MODULE_DIR pam_unix.so /lib/security /usr/lib/security /lib /usr/lib)
+
+# Intl: On FreeBSD gettext is in another library
+# Also we install PAM modules in /usr/lib.
+IF (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+  FIND_PATH(INTL_INCLUDE_DIR libintl.h /usr/include /usr/local/include)
+  FIND_PATH(INTL_LIB_DIR libintl.so /usr/lib /usr/local/lib)
+  INCLUDE_DIRECTORIES(${INTL_INCLUDE_DIR})
+  LINK_DIRECTORIES(${INTL_LIB_DIR})
+ENDIF (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+
 
 
 # Module and PAM uses libotp, so add it's include to path...
@@ -171,7 +198,7 @@ ADD_CUSTOM_TARGET(man ALL DEPENDS ${man_gz})
 SET(CMAKE_INSTALL_PREFIX /usr)
 INSTALL(TARGETS pam_otpasswd otpasswd agent_otp
   RUNTIME DESTINATION bin
-  LIBRARY DESTINATION /lib/security)
+  LIBRARY DESTINATION ${PAM_MODULE_DIR})
 
 #INSTALL(TARGETS libotp
 #  LIBRARY DESTINATION /lib)

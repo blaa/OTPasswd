@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Read all strings in _() from source code
 xgettext -d otpasswd -s -o po/otpasswd.pot -k_ */*.h  */*.c
 
