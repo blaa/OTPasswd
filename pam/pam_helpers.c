@@ -52,7 +52,7 @@
 int ph_parse_module_options(int flags, int argc, const char **argv)
 {
 	cfg_t *cfg = cfg_get();
-	assert(cfg);
+	assert(cfg != NULL);
 	
 	for (; argc-- > 0; argv++) {
 		if (strcmp("audit", *argv) == 0)
@@ -84,8 +84,13 @@ int ph_oob_send(pam_handle_t *pamh, state *s, const char *username)
 	char current_passcode[17] = {0};
 	char contact[STATE_CONTACT_SIZE];
 	const cfg_t *cfg = cfg_get();
+	num_t time_now, time_last, time_diff;
+	pid_t new_pid;
+	const char *c;
+	int times;
+	int status = 0;
 
-	assert(cfg);
+	assert(cfg != NULL);
 
 	/* We musn't have lock on state when running this function */
 	assert(ppp_is_locked(s) == 0);
@@ -98,10 +103,10 @@ int ph_oob_send(pam_handle_t *pamh, state *s, const char *username)
 	}
 
 	/* Check delay */
-	num_t time_now = num_i(time(NULL));
-	num_t time_last = num_i(0);
+	time_now = num_i(time(NULL));
+	time_last = num_i(0);
 	(void) ppp_get_num(s, PPP_FIELD_CHANNEL_TIME, &time_last);
-	num_t time_diff = num_sub(time_now, time_last);
+	time_diff = num_sub(time_now, time_last);
 	if (num_cmp_i(time_diff, cfg->pam_oob_delay) < 0) {
 		print(PRINT_WARN, "not enough delay between two OOB uses; user=%s\n", username);
 		ph_show_message(pamh, oob_delay, username);
@@ -158,7 +163,7 @@ int ph_oob_send(pam_handle_t *pamh, state *s, const char *username)
 	if (retval != 0)
 		return retval;
 
-	const char *c;
+
 	retval = ppp_get_str(s, PPP_FIELD_CONTACT, &c);
 	if (retval != 0 || !c || strlen(c) == 0) {
 		print(PRINT_WARN,
@@ -179,7 +184,6 @@ int ph_oob_send(pam_handle_t *pamh, state *s, const char *username)
 	/* Copy, as releasing state will remove this data from RAM */
 	strncpy(contact, c, sizeof(contact)-1);
 
-	pid_t new_pid;
 	new_pid = fork();
 	if (new_pid == -1) {
 		print(PRINT_ERROR, 
@@ -225,11 +229,9 @@ int ph_oob_send(pam_handle_t *pamh, state *s, const char *username)
 
 	/*** Parent ***/
 	/* Wait a bit for your child to finish.
-	 * If it decides to hang up cheerfully kill it.
+	 * If it decides to hang up cheerfully, kill it.
 	 * Then clean up the bod^C^C garbage.
 	 */
-	int times;
-	int status = 0;
 	for (times = 200; times > 0; times--) {
 		usleep(7000);
 		retval = waitpid(new_pid, &status, WNOHANG);
@@ -249,13 +251,17 @@ int ph_oob_send(pam_handle_t *pamh, state *s, const char *username)
 
 	if (times == 0) {
 		/* Timed out while waiting for it's merry death */
-		kill(new_pid, 9);
+		if (kill(new_pid, 9) != 0) {
+			print_perror(PRINT_ERROR, "Unable to kill OOB gate.\n");
+		}
 
 		/* waitpid should return immediately now, but just wait to be sure */
 		usleep(100);
-		waitpid(new_pid, NULL, WNOHANG);
+		if (waitpid(new_pid, NULL, WNOHANG) != new_pid) {
+			print(PRINT_ERROR, "OOB gate still running.\n");
+		}
 		print(PRINT_ERROR, 
-			     "Timed out while waiting for OOB utility "
+			     "Timed out while waiting for OOB gate "
 			     "to die. Fix it!\n");
 		return 2;
 	}
@@ -308,7 +314,7 @@ void ph_show_message(pam_handle_t *pamh, const char *msg, const char *username)
 
 	const cfg_t *cfg = cfg_get();
 
-	assert(cfg);
+	assert(cfg != NULL);
 
 	/* If silent enabled - don't print any messages */
 	if (cfg->pam_silent == CONFIG_ENABLED) {
@@ -356,7 +362,7 @@ int ph_increment(pam_handle_t *pamh, const char *username, state *s)
 		"system policy. Contact administrator.";
 
 	const cfg_t *cfg = cfg_get();
-	assert(cfg);
+	assert(cfg != NULL);
 
 	switch (ppp_increment(s)) {
 	case 0:
@@ -488,18 +494,19 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
 {
 	/* User info from PAM */
 	const char *user = NULL;
+	const cfg_t *cfg = cfg_get();
 
 	int retval;
 
+	assert(cfg != NULL);
+
 	retval = ppp_init(PRINT_SYSLOG, NULL);
 	if (retval != 0) {
-		print(PRINT_ERROR, "OTPasswd is not correctly installed (%s)\n", ppp_get_error_desc(retval));
+		print(PRINT_ERROR, "OTPasswd is not correctly installed (%s)\n",
+		      ppp_get_error_desc(retval));
 		ppp_fini();
 		return PAM_SERVICE_ERR;
 	}
-
-	const cfg_t *cfg = cfg_get();
-	assert(cfg);
 
 	/* Parse additional options passed to module */
 	retval = ph_parse_module_options(flags, argc, argv);

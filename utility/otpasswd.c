@@ -57,6 +57,8 @@ static const char *_program_name(const char *argv0)
 /** Print author, license and quit. */
 static void _show_license(void)
 {
+	int cnt=0;
+
 	printf(
 		_("OTPasswd - One-Time Password Authentication System.\n"
 		  "Version %s \n"
@@ -79,7 +81,6 @@ static void _show_license(void)
 	printf("\n\n");
 
 	printf(_("OTPasswd was build with following options enabled:\n"));
-	int cnt=0;
 #if DEBUG
 	printf(_("DEBUG "));
 	cnt++;
@@ -211,8 +212,8 @@ static void _show_usage(int argc, const char **argv)
 /* Parsing of a flag argument is done here */
 static int parse_flag(options_t *options, const char *arg)
 {
-	assert(arg);
-	assert(options);
+	assert(arg != NULL);
+	assert(options != NULL);
 
 	/*** Booleans/specials support ***/
 	if (strcmp(arg, "show=on") == 0)
@@ -300,9 +301,6 @@ static int parse_flag(options_t *options, const char *arg)
  * that is - longer than expected or containing any illegal characters */
 int process_cmd_line(int argc, char **argv, options_t *options)
 {
-	assert(argv);
-	assert(options);
-
 	static struct option long_options[] = {
 		/* Action selection */
 		{"key",			no_argument,		0, OPTION_KEY},
@@ -327,6 +325,9 @@ int process_cmd_line(int argc, char **argv, options_t *options)
 
 		{0, 0, 0, 0}
 	};
+
+	assert(argv != NULL);
+	assert(options != NULL);
 
 	while (1) {
 		int option_index = 0;
@@ -422,7 +423,7 @@ int process_cmd_line(int argc, char **argv, options_t *options)
 			goto error;
 
 		case OPTION_USER:
-			assert(optarg);
+			assert(optarg != NULL);
 
 			if (getuid() != 0) {
 				printf(_("Only root can use the '--user' option\n"));
@@ -473,6 +474,7 @@ error:
 
 static int perform_action(int argc, char **argv, options_t *options)
 {
+	agent *a = NULL;
 	int retval = 1;
 
 	/* Reconfigure printing subsystem; -v might be passed */
@@ -491,7 +493,6 @@ static int perform_action(int argc, char **argv, options_t *options)
 	}
 
 	/* Perform pre-action preparations (set user, check state existance) */
-	agent *a = NULL;
 	if (options->action != 0 && options->action != OPTION_HELP) {
 		retval = action_init(options, &a);
 		if (retval != 0) {

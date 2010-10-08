@@ -170,9 +170,10 @@ uint64_t num_div_i(num_t *result, const num_t divwhat, const uint64_t divby)
 {
 	int i;
 	uint64_t remainder = 0;
+	char overflow = 0;
 
 	*result = divwhat;
-	char overflow = 0;
+
 	for (i = 0; i < 128; i++) {
 		if (remainder & 0x8000000000000000ULL)
 			overflow = 1;
@@ -203,14 +204,14 @@ uint64_t num_div_i(num_t *result, const num_t divwhat, const uint64_t divby)
 static inline int _num_get_str(const num_t arg, char *buff, const int base)
 {
 	/* To string (Decimal) */
-	assert(base == 16 || base == 10);
-	assert(buff);
-
 	num_t value = arg;
 	uint64_t rest;
 
 	char buf_tmp[55] = {0};
 	char *bufpos = buf_tmp + 53;
+
+	assert(base == 16 || base == 10);
+	assert(buff != NULL);
 
 	if (num_cmp_i(value, 0) == 0) {
 		strcpy(buff, "0");
@@ -236,10 +237,11 @@ static inline int _num_get_str(const num_t arg, char *buff, const int base)
 
 static inline int _num_set_str(num_t *arg, const char *str, const int base)
 {
-	assert(base == 16 || base == 10);
-
 	unsigned char byte;
 	int i;
+
+	assert(base == 16 || base == 10);
+
 	*arg = num_zero();
 
 	switch (base) {
@@ -303,7 +305,7 @@ int num_export(const num_t num, char *buff, enum num_str_type t)
 	int ret;
 /* static inline int _num_get_str(const num_t arg, char *buff, const int base)
  */
-	assert(buff);
+	assert(buff != NULL);
 
 	switch (t) {
 	case NUM_FORMAT_DEC:

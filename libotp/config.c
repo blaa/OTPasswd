@@ -35,7 +35,7 @@
 
 static int _alphabet_check(const char *alphabet) {
 	/* Check duplicates and character range. */
-	char count[128] = {0};
+	char count[128] = {'\0'};
 	const char *ptr;
 
 	for (ptr = alphabet; *ptr; ptr++) {
@@ -208,6 +208,13 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 
 	do {
 		int line_length;
+		char *ptr, *equality;
+
+		/* For parsing arguments */
+		int arg;
+		/* 1 - int, 2 - (DIS)ALLOW/ENFORCE, 3 - ENABLED/DISABLED */
+		int arg_state;
+
 
 		/* Read line */
 		if (fgets(line_buf, sizeof(line_buf), f) == NULL)
@@ -232,7 +239,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 			continue;
 
 		/* Omit all-whitespace */
-		char *ptr = line_buf;
+		ptr = line_buf;
 		for (; *ptr == ' ' || *ptr == '\t'; ptr++);
 
 		if (*ptr == '\0') {
@@ -242,7 +249,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 		}
 
 		/* Find = */
-		char *equality = strchr(line_buf, '=');
+		equality = strchr(line_buf, '=');
 
 		if (!equality) {
 			print(PRINT_ERROR, "Syntax error on line %d in config file.",
@@ -258,9 +265,6 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 		equality++;
 
 		/* Parse standard argument values */
-		int arg;
-		/* 1 - int, 2 - (DIS)ALLOW/ENFORCE, 3 - ENABLED/DISABLED */
-		int arg_state; 
 
 		/* Try to parse argument as int */
 		arg_state = sscanf(equality, "%d", &arg);
@@ -680,6 +684,10 @@ cfg_t *cfg_get(void)
 int cfg_permissions(void)
 {
 	struct stat st;
+	cfg_t *cfg = cfg_get();
+	if (!cfg)
+		return PPP_ERROR;
+
 	if (stat(CONFIG_PATH, &st) != 0) {
 		print(PRINT_ERROR, "Unable to check config file permissions\n");
 		return PPP_ERROR;
@@ -689,9 +697,6 @@ int cfg_permissions(void)
 		return PPP_ERROR_CONFIG_OWNERSHIP;
 	}
 
-	cfg_t *cfg = cfg_get();
-	if (!cfg)	
-		return PPP_ERROR;
 
 	switch (cfg->db) {
 	case CONFIG_DB_MYSQL:

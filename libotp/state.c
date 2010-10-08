@@ -68,8 +68,7 @@ int state_init(state *s, const char *username)
 
 	assert(sizeof(salt_mask) == 33);
 
-	assert(s);
-	assert(username);
+	assert(username != NULL);
 
 	/* Initialize logging subsystem */
 	/** This will ensure that all further state_ calls requiring
@@ -123,9 +122,10 @@ int state_init(state *s, const char *username)
 	s->max_card = num_i(0);
 	s->max_code = num_i(0);
 
-	int ret;
-	ret = num_import(&s->salt_mask, "FFFFFFFFFFFFFFFFFFFFFFFF00000000", NUM_FORMAT_HEX);
-	assert(ret == 0);
+	{
+		int ret = num_import(&s->salt_mask, "FFFFFFFFFFFFFFFFFFFFFFFF00000000", NUM_FORMAT_HEX);
+		assert(ret == 0);
+	}
 	s->code_mask = num_i(4294967295ULL);
 
 	return 0;
@@ -190,11 +190,12 @@ int state_key_generate(state *s)
 
 		s->flags &= ~(FLAG_SALTED); 
 	} else {
+		unsigned char cnt_bin[32] = {'\0'};
+
 		/* Use half of entropy to generate key */
 		crypto_sha256(entropy_pool, sizeof(entropy_pool)/2, s->sequence_key);
 
 		/* And half to initialize counter */
-		unsigned char cnt_bin[32];
 		crypto_sha256(entropy_pool + sizeof(entropy_pool)/2, sizeof(entropy_pool)/2, cnt_bin);
 		num_import(&s->counter, (char *)cnt_bin, NUM_FORMAT_BIN);
 		s->counter = num_and(s->counter, s->salt_mask);
@@ -214,7 +215,6 @@ int state_key_generate(state *s)
 int state_lock(state *s)
 {
 	cfg_t *cfg = cfg_get();
-	assert(cfg);
 
 	switch (cfg->db) {
 	case CONFIG_DB_USER:
@@ -237,7 +237,6 @@ int state_lock(state *s)
 int state_unlock(state *s)
 {
 	cfg_t *cfg = cfg_get();
-	assert(cfg);
 	switch (cfg->db) {
 	case CONFIG_DB_USER:
 	case CONFIG_DB_GLOBAL:
@@ -259,7 +258,6 @@ int state_unlock(state *s)
 int state_load(state *s)
 {
 	cfg_t *cfg = cfg_get();
-	assert(cfg);
 
 	switch (cfg->db) {
 	case CONFIG_DB_USER:
@@ -285,8 +283,6 @@ int state_store(state *s, int remove)
 	cfg_t *cfg = cfg_get();
 	int locked = 0;
 	int ret = 1;
-	assert(cfg);
-	assert(s);
 	assert(!(s->new_key && remove));
 
 	if (s->new_key == 1) {

@@ -63,6 +63,12 @@ PAM_EXTERN int pam_sm_authenticate(
 	const char *oob_msg = "Out-of-band message sent.";
 	const char *oob_already_msg = "Out-of-band message already sent.";
 
+	/* Counters required for login algorithm */
+	int first_try = 1;
+	int dont_increment = 0; /* Do not increment if previous prompt was for OOB */
+	int tries;
+
+
 	/* Perform initialization:
 	 * parse options, start logging, initialize state,
 	 */
@@ -94,12 +100,9 @@ PAM_EXTERN int pam_sm_authenticate(
 	}
 
 
-	/* Retry = 0 - do not retry, 1 - with changing passcodes */
-	int first_try = 1;
-	int dont_increment = 0; /* Do not increment if previous prompt was for OOB */
-	int tries;
+	first_try = 1;
+	dont_increment = 0;
 	for (tries = 0; tries < (cfg->pam_retry == 0 ? 1 : cfg->pam_retries);) {
-
 		if (first_try || cfg->pam_retry == 1) {
 			/* First time or we are retrying while changing the passcode */
 			first_try = 0;
@@ -244,6 +247,9 @@ PAM_EXTERN int pam_sm_open_session(
 	/* Username */
 	const char *username = NULL;
 
+	/* User warning conditions */
+	int err;
+
 	/* Initialize */
 	retval = ph_init(pamh, flags, argc, argv, &s, &username);
 	if (retval != 0) {
@@ -258,28 +264,31 @@ PAM_EXTERN int pam_sm_open_session(
 
 	print(PRINT_NOTICE, "state loaded; user=%s\n", username);
 
-	const int err = ppp_get_warning_conditions(s);
+	err = ppp_get_warning_conditions(s);
 	if (err == 0) {
 		/* No warnings! */
 		print(PRINT_NOTICE, "no warning to print; user=%s\n", username);
 		goto cleanup;
 	}
 
-	const char *msg = NULL;
-	int err_copy = err;
-	char buff_msg[300] = {0};
-	int len;
 
-	while ((msg = ppp_get_warning_message(s, &err_copy)) != NULL) {
-		/* Generate message */
+	{
+		const char *msg = NULL;
+		int err_copy = err;
+		char buff_msg[300] = {0};
+		int len;
 
-		len = snprintf(buff_msg, sizeof(buff_msg), "*** OTP Warning: %s", msg);
-		if (len < 10) {
-			print(PRINT_ERROR, "internal error: strange sprintf error; user=%s\n", username);
-			goto cleanup;
+		while ((msg = ppp_get_warning_message(s, &err_copy)) != NULL) {
+			/* Generate message */
+
+			len = snprintf(buff_msg, sizeof(buff_msg), "*** OTP Warning: %s", msg);
+			if (len < 10) {
+				print(PRINT_ERROR, "internal error: strange sprintf error; user=%s\n", username);
+				goto cleanup;
+			}
+
+			ph_show_message(pamh, buff_msg, username);
 		}
-
-		ph_show_message(pamh, buff_msg, username);
 	}
 
 	/* Have we printed warning about recent failures? */
@@ -288,7 +297,6 @@ PAM_EXTERN int pam_sm_open_session(
 			print(PRINT_WARN, "unable to clear recent failures; user=%s\n", username);
 		release_flags = PPP_STORE;
 	}
-
 
 cleanup:
 	ppp_state_release(s, PPP_UNLOCK | release_flags);

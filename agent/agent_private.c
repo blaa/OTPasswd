@@ -6,12 +6,12 @@
 int agent_wait(agent *a)
 {
 	fd_set rfds;
-	struct timeval tv = {0};
-	int ret;
-
 	/* Wait for 1 second */
-	tv.tv_sec = 1;
-	tv.tv_usec = 0;
+	struct timeval tv = {
+		.tv_sec = 1,
+		.tv_usec = 0
+	};
+	int ret;
 
 	FD_ZERO(&rfds);
 	FD_SET(a->in, &rfds);

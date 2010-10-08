@@ -268,11 +268,14 @@ int crypto_verify_salted_sha256(const unsigned char *salted_hash,
 {
 	int ret = 1;
 	unsigned char salted_hash_new[40];
+	unsigned char *buf;
 
+	assert(salted_hash != NULL);
+	assert(data != NULL);
 	if (!salted_hash || !data || length == 0)
 		return 1;
 
-	unsigned char *buf = malloc(length + 8);
+	buf = malloc(length + 8);
 
 	if (!buf)
 		return 1;
@@ -342,11 +345,12 @@ int crypto_binary_to_hex(
 	const unsigned int length,
 	char *hex)
 {
+	int i;
+
 	assert(hex && binary);
 	if (!hex || !binary)
 		return 1;
 
-	int i;
 	for (i = 0; i < length; i++) {
 		const int tmp = binary[i];
 		if (snprintf(hex + i*2, 3, "%02X", tmp) != 2) {
@@ -361,13 +365,13 @@ int crypto_hex_to_binary(const char *hex,
 	const unsigned int length,
 	unsigned char *binary)
 {
+	int i;
+	char byte = 0;
+
 	assert(hex && binary);
 	assert(length % 2 == 0);
 	if (!hex || !binary || length % 2 != 0)
 		return 1;
-
-	int i;
-	char byte = 0;
 
 	/* i:      action:
 	 * 0       Read digit and shift << 4

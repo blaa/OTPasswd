@@ -34,19 +34,23 @@
 #include "config.h"
 #include "crypto.h"
 
+#if S_SPLINT_S
+#define PRIuMAX "llu"
+#endif
+
 /******************
  * Static helpers
  ******************/
 static char *_strtok(char *input, const char *delim)
 {
 	static char *position = NULL;
-
+	char *token;
 	if (input != NULL)
 		position = input;
 
 	/* FIXME: valgrind doesn't like following line: 
 	 * As of 0.7 valgrind doesn't seem to have a problem here. */
-	char *token = strsep(&position, delim); /* Non C99 function */
+	token = strsep(&position, delim); /* Non C99 function */
 
 	/* Cut token at any \n found */
 	if (token) {
@@ -233,9 +237,9 @@ static int _db_path(const char *username, char **db, char **lck, char **tmp, uid
 	cfg_t *cfg = cfg_get();
 
 
-	assert(username);
-	assert(cfg);
-	assert(!*db && !*lck && !*tmp); /* Must be NULL */
+	assert(username != NULL);
+	assert(cfg != NULL);
+	assert(*db == NULL && *lck == NULL && *tmp == NULL); /* Must be NULL */
 
 	if (uid)
 		*uid = (uid_t) -1;
@@ -269,8 +273,10 @@ static int _db_path(const char *username, char **db, char **lck, char **tmp, uid
 #if NDEBUG
 		snprintf(*db, length, "%s/%s", home, cfg->user_db_path);
 #else
-		int ret = snprintf(*db, length, "%s/%s", home, cfg->user_db_path);
-		assert( ret == length - 1 );
+		{
+			int ret = snprintf(*db, length, "%s/%s", home, cfg->user_db_path);
+			assert( ret == length - 1 );
+		}
 #endif
 
 		if (uid)
@@ -296,23 +302,23 @@ static int _db_path(const char *username, char **db, char **lck, char **tmp, uid
 		goto error;
 	}
 
-	const int db_len = strlen(*db);
-	/* Create lock filename; normal file + .lck */
+	{
+		const int db_len = strlen(*db);
+		/* Create lock filename; normal file + .lck */
 
-	retval = STATE_NOMEM;
-	*lck = malloc(db_len + 5 + 1);
-	*tmp = malloc(db_len + 5 + 1);
+		retval = STATE_NOMEM;
+		*lck = malloc(db_len + 5 + 1);
+		*tmp = malloc(db_len + 5 + 1);
 
-	if (!*lck || !*tmp) {
-		goto error;
+		if (!*lck || !*tmp) {
+			goto error;
+		}
+
+		strncpy(*lck, *db, db_len);
+		strncpy(*tmp, *db, db_len);
+		strcpy(*lck + db_len, ".lck");
+		strcpy(*tmp + db_len, ".tmp");
 	}
-
-	retval = sprintf(*lck, "%s.lck", *db);
-	assert(retval > 0);
-	
-	retval = sprintf(*tmp, "%s.tmp", *db);
-	assert(retval > 0);
-
 	/* All ok */
 	return 0;
 
@@ -358,10 +364,11 @@ static int _db_find_user_entry(
 	char *buff, size_t buff_size)
 {
 	size_t line_length;
+	char *first_sep;
 
-	assert(username);
-	assert(f);
-	assert(buff);
+	assert(username != NULL);
+	assert(f != NULL);
+	assert(buff != NULL);
 
 	while (!feof(f)) {
 		/* Read all file into a buffer */
@@ -390,7 +397,7 @@ static int _db_find_user_entry(
 		}
 
 		/* Temporary change first separator into \0 */
-		char *first_sep = strchr(buff, _delim[0]);
+		first_sep = strchr(buff, _delim[0]);
 		if (first_sep) {
 			*first_sep = '\0';
 
@@ -484,6 +491,9 @@ int db_file_load(state *s)
 	/* Value returned. */
 	int retval;
 
+	/* Iterator */
+	int i;
+
 	/* Files: database, lock and temporary */
 	char *db = NULL, *lck = NULL, *tmp = NULL;
 	ret = _db_path(s->username, &db, &lck, &tmp, NULL, NULL);
@@ -550,7 +560,6 @@ int db_file_load(state *s)
 	retval = STATE_PARSE_ERROR;
 
 	/* Parse sequence key */
-	int i;
 	for (i = 0; i < 32; i++) {
 		char *pos = &field[FIELD_KEY][i*2];
 		int tmp;
@@ -588,7 +597,7 @@ int db_file_load(state *s)
 		goto cleanup;
 	}
 
-	if (sscanf(field[FIELD_CHANNEL_TIME], "%ju", &s->channel_time) != 1) {
+	if (sscanf(field[FIELD_CHANNEL_TIME], "%" PRIuMAX, &s->channel_time) != 1) {
 		print(PRINT_ERROR, "Error while parsing channel use time.\n");
 		goto cleanup;
 	}
@@ -616,7 +625,7 @@ int db_file_load(state *s)
 			goto cleanup;
 		}
 
-		if (sscanf(field[FIELD_SPASS_TIME], "%ju", &s->spass_time) != 1) {
+		if (sscanf(field[FIELD_SPASS_TIME], "%" PRIuMAX, &s->spass_time) != 1) {
 			print(PRINT_ERROR, "Error while parsing static password change time.\n");
 			goto cleanup;
 		}
@@ -731,12 +740,12 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 	}
 
 	tmp = snprintf(buffer, buff_length,
-		       "%s:%d:"	       /* User, version */
-		       "%s:%s:%s:"     /* Key, counter, latest_card */
-		       "%u:%u:%ju:"    /* Failures, recent fails, channel time */
-		       "%u:%u:%x:%s:"  /* Codelength, alphabet, flags, spass */
-		       "%ju:"	       /* Time of spass change */
-		       "%s:%s\n",      /* label, contact */
+		       "%s:%d:"	             /* User, version */
+		       "%s:%s:%s:"           /* Key, counter, latest_card */
+		       "%u:%u:%" PRIuMAX ":" /* Failures, recent fails, channel time */
+		       "%u:%u:%x:%s:"        /* Codelength, alphabet, flags, spass */
+		       "%" PRIuMAX ":"	     /* Time of spass change */
+		       "%s:%s\n",            /* label, contact */
 		       s->username, _version,
 		       sequence_key, counter, latest_card,
 		       s->failures, s->recent_failures, s->channel_time, 
@@ -766,7 +775,6 @@ int db_file_store(state *s, int remove)
 	int locked = 0;
 
 	cfg_t *cfg = cfg_get();
-	assert(cfg);
 
 	char user_entry_buff[STATE_ENTRY_SIZE];
 
@@ -963,10 +971,12 @@ int db_file_lock(state *s)
 	int cnt;
 	int fd;
 
-	assert(s->lock == -1);
-
 	/* Files: database, lock and temporary */
 	char *db = NULL, *lck = NULL, *tmp = NULL;
+
+	/* Check that the lock already is not set */
+	assert(s->lock == -1);
+
 	ret = _db_path(s->username, &db, &lck, &tmp, NULL, NULL);
 	if (ret != 0) {
 		return ret;
@@ -1059,12 +1069,12 @@ int db_file_unlock(state *s)
 	/* First unlink, then unlock to solve race condition */
 	unlink(lck);
 
-	int ret = fcntl(s->lock, F_SETLK, &fl);
+	retval = fcntl(s->lock, F_SETLK, &fl);
 
 	close(s->lock);
 	s->lock = -1;
 
-	if (ret != 0) {
+	if (retval != 0) {
 		print(PRINT_NOTICE, "Strange error while releasing lock\n");
 		/* Strange error while releasing the lock */
 		retval = STATE_LOCK_ERROR;

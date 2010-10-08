@@ -132,7 +132,6 @@ void ppp_fini(void)
 int ppp_verify_code_length(int length)
 {
 	cfg_t *cfg = cfg_get();
-	assert(cfg);
 
 	if (length < 2 || length > 16)
 		return PPP_ERROR_RANGE;
@@ -148,10 +147,9 @@ int ppp_verify_code_length(int length)
 int ppp_verify_alphabet(int id)
 {
 	const cfg_t *cfg = cfg_get();
-	assert(cfg);
-
 	const int min = cfg->alphabet_min_length;
 	const int max = cfg->alphabet_max_length;
+	const char *alphabet = NULL;
 
 	/* Check if it's legal */
 	if (id < 0 || id >= ppp_alphabet_count)
@@ -164,7 +162,6 @@ int ppp_verify_alphabet(int id)
 		return PPP_ERROR_POLICY;
 
 
-	const char *alphabet;
 	if (id == 0) {
 		/* 0 - custom */
 		alphabet = cfg->alphabet_custom;
@@ -172,10 +169,12 @@ int ppp_verify_alphabet(int id)
 		alphabet = alphabets[id];
 	}
 
-	const int len = strlen(alphabet);
 
-	if (len<min || len>max)
-		return PPP_ERROR_POLICY;
+	{
+		const int len = strlen(alphabet);
+		if (len<min || len>max)
+			return PPP_ERROR_POLICY;
+	}
 
 	/* OK */
 	return 0;
@@ -183,14 +182,16 @@ int ppp_verify_alphabet(int id)
 
 int ppp_verify_range(const state *s)
 {
-	/* First verify two conditions that should never happen
-	 * then check something theoretically possible */
+	num_t max_counter = num_i(0);
+	num_t just_counter = num_i(0);
 
 	/* ppp_calculate must've been called before */
 	assert(s->codes_on_card > 0);
 
+	/* First verify two conditions that should never happen
+	 * then check something theoretically possible */
+
 	/* Verify counter size */
-	num_t max_counter;
 	max_counter = num_ii(0xFFFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFULL);
 
 	if (num_cmp(s->counter, max_counter) > 0) {
@@ -203,7 +204,6 @@ int ppp_verify_range(const state *s)
 	/* Check if we have ran out of available passcodes */
 
 	/* Retrieve current counter without salt */
-	num_t just_counter;
 	if (s->flags & FLAG_SALTED) {
 		just_counter = num_and(s->counter, s->code_mask);
 	} else {
@@ -225,7 +225,6 @@ int ppp_verify_range(const state *s)
 int ppp_verify_flags(int flags)
 {
 	const cfg_t *cfg = cfg_get();
-	assert(cfg);
 
 	/* Show */
 	if (flags & FLAG_SHOW && cfg->show == CONFIG_DISALLOW) {
@@ -270,8 +269,7 @@ int ppp_alphabet_get(int id, const char **alphabet)
 {
 	const cfg_t *cfg = cfg_get();
 	const int verify = ppp_verify_alphabet(id);
-	assert(cfg);
-	assert(alphabet);
+	assert(alphabet != NULL);
 
 	if (verify == PPP_ERROR_RANGE) {
 		*alphabet = NULL;
@@ -292,7 +290,6 @@ int ppp_alphabet_get(int id, const char **alphabet)
 void ppp_alphabet_print(void)
 {
 	const cfg_t *cfg = cfg_get();
-	assert(cfg);
 
 	const int min = cfg->alphabet_min_length;
 	const int max = cfg->alphabet_max_length;
@@ -332,27 +329,26 @@ void ppp_add_salt(const state *s, num_t *passcode)
 
 int ppp_get_passcode(const state *s, const num_t counter, char *passcode)
 {
-	unsigned char cnt_bin[16];
-	unsigned char cipher_bin[16];
+	unsigned char cnt_bin[16] = {'\0'};
+	unsigned char cipher_bin[16] = {'\0'};
 	num_t cipher = num_i(0);
 	num_t quotient = num_i(0);
+	num_t salted_counter = num_i(0);
+	const char *alphabet = NULL;
+	int ret;
 	int i;
 
-	int ret;
-
 	const cfg_t *cfg = cfg_get();
-	assert(cfg);
 
 	/* Check for illegal data */
 	assert(s->code_length >= 2 && s->code_length <= 16);
-
 
 	if (!passcode)
 		return 2;
 
 	/* Counter might be salted or unsalted, so make sure
 	 * we work with salted version */
-	num_t salted_counter = counter;
+	salted_counter = counter;
 	ppp_add_salt(s, &salted_counter);
 
 	/* Convert numbers to binary */
@@ -372,15 +368,15 @@ int ppp_get_passcode(const state *s, const num_t counter, char *passcode)
 		goto clear;
 	}
 
-	const char *alphabet;
 	if (s->alphabet == 0) {
 		alphabet = cfg->alphabet_custom;
 	} else {
 		alphabet = alphabets[s->alphabet];
 	}
-	const int alphabet_len = strlen(alphabet);
+
 
 	for (i=0; i<s->code_length; i++) {
+		const int alphabet_len = strlen(alphabet);
 		unsigned long int r = num_div_i(&quotient, cipher, alphabet_len);
 		cipher = quotient;
 
@@ -447,6 +443,9 @@ int ppp_authenticate(const state *s, const char *passcode)
 void ppp_calculate(state *s)
 {
 	const char columns[] = "ABCDEFGHIJKL";
+	num_t unsalted_counter = num_i(0);
+	unsigned long int r;
+	int current_column;
 
 	/* Do some checks */
 	assert(s->code_length >= 2 && s->code_length <= 16);
@@ -456,18 +455,18 @@ void ppp_calculate(state *s)
 	s->codes_on_card = s->codes_in_row * ROWS_PER_CARD;
 
 	/* Calculate current card */
-	num_t unsalted_counter = s->counter;
+	unsalted_counter = s->counter;
 	if (s->flags & FLAG_SALTED) {
 		unsalted_counter = num_and(unsalted_counter, s->code_mask);
 	}
 
-	unsigned long int r = num_div_i(&s->current_card, unsalted_counter, s->codes_on_card);
+	r = num_div_i(&s->current_card, unsalted_counter, s->codes_on_card);
 	s->current_card = num_add_i(s->current_card, 1);
 
 	num_clear(unsalted_counter);
 
 	/* Calculate column/row using rest from division */
-	int current_column = r % s->codes_in_row;
+	current_column = r % s->codes_in_row;
 	r -= current_column;
 	s->current_row = 1 + r / s->codes_in_row;
 	s->current_column = columns[current_column];
@@ -482,7 +481,7 @@ void ppp_calculate(state *s)
 		s->max_card = num_ii(0xFFFFFFFFFFFFFFULL, 0xFFFFFFFFFFFFFFFFULL);
 	}
 
-	num_div_i(&s->max_card, s->max_card, s->codes_on_card);
+	(void) num_div_i(&s->max_card, s->max_card, s->codes_on_card);
 
 	/* s->max_card is now technically correct, but
 	 * we must be sure, that the last passcode is not
@@ -508,6 +507,7 @@ void ppp_calculate(state *s)
 int ppp_get_warning_conditions(const state *s)
 {
 	int warnings = 0;
+	int tmp;
 
 	assert(s->codes_on_card > 0);
 	if (s->codes_on_card == 0) {
@@ -517,7 +517,7 @@ int ppp_get_warning_conditions(const state *s)
 		return PPP_ERROR;
 	}
 
-	int tmp = num_cmp(s->current_card, s->latest_card);
+	tmp = num_cmp(s->current_card, s->latest_card);
 	if (tmp == 0)
 		warnings |= PPP_WARN_LAST_CARD;
 	else if (tmp > 0)
@@ -733,7 +733,6 @@ int ppp_state_release(state *s, int flags)
 
 	if (flags & PPP_CHECK_POLICY) {
 		const cfg_t *cfg = cfg_get();
-		assert(cfg);
 		if (cfg->key_removal == CONFIG_DISALLOW) {
 			return PPP_ERROR_POLICY;
 		}
@@ -781,7 +780,7 @@ int ppp_state_release(state *s, int flags)
 
 int ppp_is_locked(const state *s) 
 {
-	assert(s);
+	assert(s != NULL);
 	if (s->lock <= 0)
 		return 0;
 	else
@@ -793,8 +792,7 @@ int ppp_key_generate(state *s, int flags)
 	int ret;
 	const int policy = flags & PPP_CHECK_POLICY;
 	const cfg_t *cfg = cfg_get();
-	assert(s);
-	assert(cfg);
+	assert(s != NULL);
 
 	/* State musn't be locked currently */
 	if (s->lock != -1) {
@@ -839,7 +837,7 @@ int ppp_key_generate(state *s, int flags)
 int ppp_increment(state *s)
 {
 	int ret;
-	assert(s);
+	assert(s != NULL);
 
 	/* Load user state */
 	ret = ppp_state_load(s, 0);
@@ -858,19 +856,22 @@ int ppp_increment(state *s)
 		goto error;
 	}
 
-	/* Hold temporarily current counter */
-	num_t tmp = s->counter;
 
-	/* Increment and save state */
-	s->counter = num_add(s->counter, num_i(1));
+	{
+		/* Hold temporarily current counter */
+		num_t tmp = s->counter;
 
-	/* We will return it's return value if anything failed */
-	ret = ppp_state_release(s, PPP_STORE | PPP_UNLOCK);
+		/* Increment and save state */
+		s->counter = num_add(s->counter, num_i(1));
 
-	/* Restore current counter */
-	s->counter = tmp;
+		/* We will return it's return value if anything failed */
+		ret = ppp_state_release(s, PPP_STORE | PPP_UNLOCK);
 
-	num_clear(tmp);
+		/* Restore current counter */
+		s->counter = tmp;
+		num_clear(tmp);
+	}
+
 	return ret;
 
 error:
@@ -883,10 +884,8 @@ error:
 int ppp_skip(state *s, const num_t skip_to)
 {
 	int ret;
-	cfg_t *cfg = cfg_get();
 
-	assert(s);
-	assert(cfg);
+	assert(s != NULL);
 
 	/* Load user state */
 	ret = ppp_state_load(s, 0);
@@ -1001,8 +1000,8 @@ cleanup:
 
 int ppp_get_int(const state *s, int field, unsigned int *arg)
 {
-	assert(arg);
-	assert(s);
+	assert(arg != NULL);
+	assert(s != NULL);
 
 	switch (field) {
 	case PPP_FIELD_FAILURES:        
@@ -1053,7 +1052,6 @@ int ppp_get_int(const state *s, int field, unsigned int *arg)
 int ppp_set_int(state *s, int field, unsigned int arg, int options)
 {
 	int ret;
-	assert(s);
 	switch (field) {
 	case PPP_FIELD_FAILURES:
 		s->failures = arg;
@@ -1109,7 +1107,6 @@ int ppp_set_int(state *s, int field, unsigned int arg, int options)
 
 int ppp_get_num(const state *s, int field, num_t *arg)
 {
-	assert(s);
 	switch (field) {
 	case PPP_FIELD_COUNTER:
 		*arg = s->counter;
@@ -1158,7 +1155,6 @@ int ppp_get_num(const state *s, int field, num_t *arg)
 
 int ppp_set_num(state *s, int field, const num_t arg, int flags)
 {
-	assert(s);
 	switch (field) {
 	case PPP_FIELD_LATEST_CARD:
 		s->latest_card = arg;
@@ -1176,12 +1172,10 @@ int ppp_set_num(state *s, int field, const num_t arg, int flags)
 /* ppp_get_str helpers! */
 static void _ppp_dispose_prompt(state *s)
 {
-	assert(s);
 	if (!s->prompt)
 		return;
 
-	const int length = strlen(s->prompt);
-	memset(s->prompt, 0, length);
+	memset(s->prompt, 0, strlen(s->prompt) );
 	free(s->prompt);
 	s->prompt = NULL;
 }
@@ -1196,10 +1190,10 @@ const char *ppp_get_prompt(state *s, int use_current, num_t counter)
 	const char intro[] = "Passcode ";
 	int length = sizeof(intro)-1 + 3 + 5 + 1;
 	char num[50];
+	int ret;
 
 	num_t real_counter_copy = s->counter;
 
-	assert(s);
 	if (s->prompt)
 		_ppp_dispose_prompt(s);
 
@@ -1217,7 +1211,7 @@ const char *ppp_get_prompt(state *s, int use_current, num_t counter)
 		return NULL;
 	}
 
-	int ret = num_export(s->current_card, num, NUM_FORMAT_DEC);
+	ret = num_export(s->current_card, num, NUM_FORMAT_DEC);
 	assert(ret == 0);
 	length += strlen(num);
 
@@ -1225,7 +1219,8 @@ const char *ppp_get_prompt(state *s, int use_current, num_t counter)
 	if (!s->prompt)
 		goto cleanup;
 
-	ret = sprintf(s->prompt, "%s%2d%c [%s]: ", intro, s->current_row, s->current_column, num);
+	ret = snprintf(s->prompt, length,
+		      "%s%2d%c [%s]: ", intro, s->current_row, s->current_column, num);
 
 	memset(num, 0, strlen(num));
 
@@ -1290,11 +1285,9 @@ int ppp_set_str(state *s, int field, const char *arg, int options)
 {
 	const int check_policy = options & PPP_CHECK_POLICY;
 	cfg_t *cfg = cfg_get();
-
-	assert(cfg);
-	assert(s);
-
 	int length;
+
+	assert(s != NULL);
 
 	if (arg)
 		length = strlen(arg);
@@ -1433,7 +1426,6 @@ int ppp_set_spass(state *s, const char *spass, int flag)
 	unsigned char sha_buf[STATE_SPASS_SIZE];
 	int errors = 0;
 	cfg_t *cfg = cfg_get();
-	assert(cfg);
 
 	if ((flag & PPP_CHECK_POLICY) && (cfg->spass_change == CONFIG_DISALLOW)) {
 		return PPP_ERROR_SPASS_POLICY;
@@ -1466,15 +1458,13 @@ int ppp_set_spass(state *s, const char *spass, int flag)
 int ppp_spass_validate(const state *s, const char *spass)
 {
 	int len;
-
-	assert(s);
 	
 	if (s->spass_set != 1) {
 		print(PRINT_WARN, "Static password validation failure because unset.\n");
 		return PPP_ERROR_SPASS_INCORRECT;
 	}
 
-	assert(spass);
+	assert(spass != NULL);
 	len = strlen(spass);
 
 	if (crypto_verify_salted_sha256(s->spass, (unsigned char *)spass, len) != 0) {

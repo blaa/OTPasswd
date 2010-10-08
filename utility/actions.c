@@ -37,7 +37,7 @@ int action_init(options_t *options, agent **a)
 	int ret;
 
 	assert(a && *a == NULL);
-	assert(options);
+	assert(options != NULL);
 
 	/* 1) Connect to agent */
 	ret = agent_connect(a, NULL);
@@ -81,7 +81,7 @@ int action_init(options_t *options, agent **a)
 int action_fini(agent *a)
 {
 	int ret;
-	assert(a);
+	assert(a != NULL);
 	ret = agent_disconnect(a);
 	if (ret != 0) { 
 		print(PRINT_WARN, "Error while disconnecting from agent\n");
@@ -194,6 +194,7 @@ int action_key_generate(const options_t *options, agent *a)
 {
 	int retval = 1;
 	int flags = 0; 
+	char *card;
 
 	/* Pre-verify whatever you can */
 	if (options->user_has_state) {
@@ -314,7 +315,7 @@ int action_key_generate(const options_t *options, agent *a)
 		"*****************************************************\n")
 	);
 
-	char *card = card_ascii(a, num_i(1));
+	card = card_ascii(a, num_i(1));
 	puts(card);
 	free(card);
 
@@ -362,14 +363,14 @@ int action_spass(const options_t *options, agent *a)
 {
 	int i;
 	int errors;
-
+	const char *pass = NULL;
 	if (options->user_has_state == 0) {
 		printf(_("You really need to create some state first (see -k option).\n"));
 		return 1;
 	}
 
 	/* This must be done when the state is NOT locked */
-	const char *pass;
+
 
 	if (options->spass == NULL) {
 		pass = ah_get_pass();

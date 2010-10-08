@@ -34,7 +34,7 @@ struct log_state {
 	int initialized;
 	int flags;
 	FILE *log_file;	/* Log to file if not null */
-} log_state = {0};
+} log_state = {0, 0, NULL};
 
 struct log_state log_state;
 
@@ -72,17 +72,17 @@ int _print(const char *file, const int line, int level, const char *fmt, ...)
 	char buff[512]; 
 	char *intro;
 	int syslog_level = LOG_INFO;
-
-	assert(log_state.initialized == 1);
+	va_list ap;
 
 	const int print_level = log_state.flags & PRINT_LEVEL_MASK;
 	const int use_stdout = log_state.flags & PRINT_STDOUT;
 	const int use_syslog = log_state.flags & PRINT_SYSLOG;
 
+	assert(log_state.initialized == 1);
+
 	if (level < print_level)
 		return 1;
 
-	va_list ap;
 	va_start(ap, fmt);
 	ret = vsnprintf(buff, sizeof(buff), fmt, ap);
 	va_end(ap);

@@ -38,17 +38,24 @@ char *card_ascii(agent *a, const num_t passcard)
 	const int label_max = STATE_LABEL_SIZE;	/* Maximal length of label */
 	const int num_min = 8;			/* Minimal size for number on card */
 
+	char *card = NULL;
 	char whole_card_num[50];
+	int card_num_len;
+	int label_len;
 	char *printed_card_num = NULL;
 	int i;
-
 
 	/***
 	 * Read require state data
 	 ***/
 	char *label = NULL;
 	int code_length;
+
+	num_t tmp = num_i(0);
 	char *whole_card = NULL;
+	num_t code_num;
+
+	/* Get code length */
 	if ((ret = agent_get_int(a, PPP_FIELD_CODE_LENGTH, &code_length)) != 0) {
 		print(PRINT_ERROR, _("Unable to read code length: %s (%d)\n"), 
 		      agent_strerror(ret), ret);
@@ -75,7 +82,7 @@ char *card_ascii(agent *a, const num_t passcard)
 
 	memset(whole_card, 0, size);
 
-	char *card = whole_card;
+	card = whole_card;
 
 	memset(card, ' ', size);
 
@@ -99,16 +106,16 @@ char *card_ascii(agent *a, const num_t passcard)
 
 	}
 
-	int label_len = strlen(label);
+	label_len = strlen(label);
 
 	/* Get card number */
-	num_t tmp = passcard;
+	tmp = passcard;
 	
 	num_export(tmp, whole_card_num, NUM_FORMAT_DEC);
 	num_clear(tmp);
 	printed_card_num = whole_card_num;
 
-	int card_num_len = strlen(whole_card_num);
+	card_num_len = strlen(whole_card_num);
 
 	/* We limit label only if there's no place for num */
 	if (label_len > label_len_max) {
@@ -148,14 +155,13 @@ char *card_ascii(agent *a, const num_t passcard)
 	*(card-1) = '\n';
 
 	/* Passcodes */
-	num_t code_num;
 	code_num = num_sub_i(passcard, 1);
 	code_num = num_mul_i(code_num, codes_on_card);
 
 	for (i = 1; i < 1 + ROWS_PER_CARD; i++) {
+		int y;
 		sprintf(card, "%2d: ", i);
 		card += 4;
-		int y;
 		for (y=0; y < codes_in_row; y++) {
 			char passcode[17];
 			ret = agent_get_passcode(a, code_num, passcode);
