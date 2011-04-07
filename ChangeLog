@@ -15,6 +15,9 @@ Trying to sort tasks according to their priority.
 
 2010-03-31 0.7_rc2
 Done:
+        * [!] On DB=user when administrator creates a key with -u option user
+              can't access that state.
+        * [!] Fixed security bug in static password handling.
         * [+] Dropping dependency on GMP. Cleaning up "num" interface.
           - Clean memory so there're no key/counter leaks
         * [+] Do not store things in mpz_t which don't need it (spass)
@@ -26,7 +29,6 @@ Done:
 	* [+] Backward skipping removed from configuration.
 	
         * [+] Printing with -l when skipped to the last passcard fixed .
-        * [!] Fixed security bug in static password handling.
         * [+] OOB Channel usage time updates + DoS security
         * [+] Ensure config privilege checking
         * [+] --info should print information whether static password is set.
@@ -43,8 +45,6 @@ Done:
         * [$] Add error_t and bool_t to differentiate differently
               used ints? (bool_t is very rarely used. It will better be left
               to documentation)
-        * [!] On DB=user when administrator creates a key with -u option user
-              can't access that state.
 In progress:
         * [?] Cleanup PPP interface. This should look like follows.
               "State" is class implementing some basic features of
@@ -78,6 +78,9 @@ TODO Major:
         user
         * [?] OTPasswd when used with su should probably elevate it's rights
         with setuid() and then return back to original rights.
+        * [?] I don't remember how I've done it and therefore I need to review
+              security aspects of DB=user mode when user can mangle state file
+              which is then accessed by uid0 PAM process.
 
 Todo Minor:
         * [?] Will we be pppv3 compatible on big-endian?
