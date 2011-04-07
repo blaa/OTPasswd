@@ -151,7 +151,7 @@ int do_verify_config(void)
  * Also we should be connected to the terminal and
  * not to a pipe
  */
-int do_testcase(void)
+int do_testcase(int fast)
 {
 	cfg_t *cfg;
 	int retval;
@@ -184,7 +184,7 @@ int do_testcase(void)
 	strcpy(cfg->global_db_path, "/tmp/otshadow_testcase");
 	cfg->db = CONFIG_DB_USER;
 
-	tmp = num_testcase();
+	tmp = num_testcase(fast);
 	failed += tmp;
 	if (tmp)
 		printf("******\n*** %d num testcases failed\n******\n", tmp);
@@ -215,9 +215,9 @@ int do_testcase(void)
 	if (tmp)
 		printf("******\n*** %d card testcases failed\n******\n", tmp);
 	*/
-	printf("******\n*** TODO: card testcases \n******\n");
+	printf("******\n*** TODO: move card testcases to utility?\n******\n");
 
-	tmp = ppp_testcase();
+	tmp = ppp_testcase(fast);
 	failed += tmp;
 	if (tmp)
 		printf("******\n*** %d ppp testcases failed\n******\n", tmp);
@@ -263,7 +263,7 @@ static int main_loop(agent *a)
 		goto end;
 	}
 
-	print(PRINT_NOTICE, "\n\n*** Agent correctly initialized. Looping.\n");
+	print(PRINT_NOTICE, "\n*** Agent correctly initialized. Looping.\n");
 	for (;;) {
 		ret = request_handle(a);
 
@@ -304,10 +304,18 @@ int main(int argc, char **argv)
 	if (security_is_tty_detached() == 0 || argc > 1) {
 		/* We have stdout */
 		/* Check if we should run testcases. */
-		if (argc == 2 && strcmp(argv[1], "--testcase") == 0) {
+		if (argc >= 2 && strcmp(argv[1], "--testcase") == 0) {
 			if (security_is_suid() == 0 || security_is_privileged()) {
+				int fast = 0;
+				/* Support --fast for valgrind.
+				 * Statistical tests will fail then, but will get run
+				 */
+				if (argc == 3 && strcmp(argv[2], "--fast") == 0) {
+					fast = 1;
+				}
+
 				/* We're not suid or we are root already */
-				return do_testcase();
+				return do_testcase(fast);
 			}
 		}
 

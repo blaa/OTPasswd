@@ -8,7 +8,7 @@ int agent_wait(agent *a)
 	fd_set rfds;
 	/* Wait for 1 second */
 	struct timeval tv = {
-		.tv_sec = 1,
+		.tv_sec = 2,
 		.tv_usec = 0
 	};
 	int ret;

@@ -132,16 +132,44 @@ int agent_connect(agent **a_out, const char *agent_executable)
 
 	if (a->pid == 0) {
 		/* Prepare pipes */
-		close(in[0]);
-		close(out[1]);
-		close(0);
-		close(1);
-		close(2);
+		ret = close(in[0]);
+		if (ret != 0) {
+			print_perror(PRINT_ERROR, "Error while closing in[0]: ");
+			exit(2);
+		}
+
+		ret = close(out[1]);
+		if (ret != 0) {
+			print_perror(PRINT_ERROR, "Error while closing out[1]: ");
+			exit(2);
+		}
+
+		ret = close(0);
+		if (ret != 0) {
+			print_perror(PRINT_ERROR, "Error while closing stdin: ");
+			exit(2);
+		}
+
+		ret = close(1);
+		if (ret != 0) {
+			print_perror(PRINT_ERROR, "Error while closing stdout: ");
+			exit(2);
+		}
+
+		ret = close(2);
+		if (ret != 0) {
+			print_perror(PRINT_ERROR, "Error while closing stderr: ");
+			exit(2);
+		}
+
 		/* fd 1 - stdout, fd 0 - stdin */
-		if (dup(out[0]) == -1)
+		if (dup(out[0]) == -1) {
 			exit(6);
-		if (dup(in[1]) == -1)
+		}
+
+		if (dup(in[1]) == -1) {
 			exit(7);
+		}
 
 		free(a); a = NULL;
 
@@ -186,7 +214,12 @@ int agent_connect(agent **a_out, const char *agent_executable)
 
 	/* Read message sent by server to indicate correct initialization
 	 * or any initialization problems */
-	if (agent_wait(a) != 0) {
+	ret = agent_wait(a);
+	if (ret == 2) {
+		ret = AGENT_ERR_SERVER_INIT;
+		print(PRINT_MESSAGE, _("Error while waiting for agent intitial frame.\n"));
+		goto cleanup1;
+	} else if (ret != 0) {
 		ret = AGENT_ERR_SERVER_INIT;
 		print(PRINT_MESSAGE, _("Timeout while waiting for agent initialization frame.\n"));
 		print(PRINT_MESSAGE, _("Possible cause of this problem involves wrong agent executable passed in configuration file.\n"));

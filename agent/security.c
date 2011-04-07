@@ -180,7 +180,6 @@ void security_init(void)
 	 * Most probably it's completely unnecesary in this app. */
 	putenv("PATH=/bin:/usr/bin");
 	putenv("IFS= \t\n");
-
 }
 
 static void _ensure_no_privileges()

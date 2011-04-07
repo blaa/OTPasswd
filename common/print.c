@@ -145,6 +145,13 @@ int _print(const char *file, const int line, int level, const char *fmt, ...)
 
 	/* log file */
 	if (log_state.log_file) {
+		if (file) {
+			const char *base = strrchr(file, '/') + 1;
+			if (!base) base = file;
+			if (level != PRINT_MESSAGE)
+				fprintf(log_state.log_file, "%s:%d ", base, line);
+		}
+
 		fputs(intro, log_state.log_file);
 		fputs(buff, log_state.log_file);
 		fflush(log_state.log_file);

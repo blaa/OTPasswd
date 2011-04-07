@@ -643,7 +643,7 @@ if (s.current_row == (row) && s.current_column == (col)		\
 		printf(" FAILED\n\n");				\
 		failed++; }
 
-int ppp_testcase(void)
+int ppp_testcase(int fast)
 {
 	int failed = 0;
 	char buf1[50], buf2[50];
@@ -651,6 +651,7 @@ int ppp_testcase(void)
 	char passcode[17] = {0};
 	char *current_user = security_get_calling_user();
 	int tmp;
+	int stat_tests = (fast == 1) ? 500 : 120000;
 	
 	const unsigned char ex_bin[32] = {
 		0x00, 0x00, 0x00, 0x00,
@@ -677,12 +678,12 @@ int ppp_testcase(void)
 
 	/* Statistical tests using following key */
 	memcpy(s.sequence_key, ex_bin, sizeof(s.sequence_key));
-	failed += _ppp_testcase_statistical(&s, 64, 16, 120000);
+	failed += _ppp_testcase_statistical(&s, 64, 16, stat_tests);
 	/* Following test should fail using norms from first test */
 	// failed += _ppp_testcase_statistical(&s, 88, 16, 500000);
 
 	printf("Character count stats:\n");
-	failed += _ppp_testcase_stat_2(&s, 88, 16, 120000);
+	failed += _ppp_testcase_stat_2(&s, 88, 16, stat_tests);
 
 	printf("*** PPPv3 compatibility tests\n");
 	printf("* Sequence key = 0.\n");
@@ -784,11 +785,10 @@ int config_testcase(void)
 }
 
 
-
-
-int num_testcase(void)
+int num_testcase(int fast)
 {
 	int failed = 0;
+	int passes = (fast == 0) ? 100000 : 20;
 
 #if !USE_GMP
 	const uint64_t max64 = 18446744073709551615LLU;
@@ -995,6 +995,8 @@ int num_testcase(void)
 	printf("\n");
 
 	printf("* Multiplication/Division: ");
+	fflush(stdout);
+
 	/* A / B = C, r
 	 * B * C + r = A
 	 */
@@ -1052,8 +1054,8 @@ int num_testcase(void)
 	/* DIVISION / MULTIPLICATION LOOP */
 	i = num_import(&a, "EFABBBCCCDDEDEDED543543542385FFA", NUM_FORMAT_HEX);
 	assert(i==0);
-
-	for (i = 1; i < 100000; i+=3) {
+	fflush(stdout);
+	for (i = 1; i < passes; i+=3) {
 		bi = 0xFAEFBB * i + i;
 		r = num_div_i(&c, a, bi);
 
