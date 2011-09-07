@@ -1205,10 +1205,12 @@ const char *ppp_get_prompt(state *s, int use_current, num_t counter)
 	} else {
 		/* Ensure somebody called ppp_calculate already */
 		assert(s->codes_on_card > 0);
-		print(PRINT_ERROR, 
-		      "Trying to get current prompt from PPP "
-		      "without calling ppp_calculate first.\n");
-		return NULL;
+		if (s->codes_on_card <= 0) {
+			print(PRINT_ERROR, 
+			      "Trying to get current prompt from PPP "
+			      "without calling ppp_calculate first.\n");
+			return NULL;
+		}
 	}
 
 	ret = num_export(s->current_card, num, NUM_FORMAT_DEC);
