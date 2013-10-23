@@ -1,6 +1,6 @@
 /**********************************************************************
  * otpasswd -- One-time password manager and PAM module.
- * Copyright (C) 2009, 2010 by Tomasz bla Fortuna <bla@thera.be>
+ * Copyright (C) 2009-2013 by Tomasz bla Fortuna <bla@thera.be>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -201,6 +201,14 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 	} else {
 		f = fopen(CONFIG_PATH, "r");
 	}
+
+#if DEBUG
+#warning DEBUG ON - libotp will search for config in ./examples/otpasswd.conf.dist!
+	if (!f) {
+		f = fopen(TESTCONFIG, "r");
+	}
+#endif
+
 
 	if (!f) {
 		return 1;
@@ -684,19 +692,32 @@ cfg_t *cfg_get(void)
 int cfg_permissions(void)
 {
 	struct stat st;
+	int ret;
+	int test_config = 0;
 	cfg_t *cfg = cfg_get();
 	if (!cfg)
 		return PPP_ERROR;
 
-	if (stat(CONFIG_PATH, &st) != 0) {
+	ret = stat(CONFIG_PATH, &st);
+
+	if (DEBUG && ret != 0) {
+		/* Try opening test config when in DEBUG mode */
+		ret = stat(TESTCONFIG, &st);
+		test_config = 1;
+	}
+
+	if (ret != 0) {
 		print(PRINT_ERROR, "Unable to check config file permissions\n");
 		return PPP_ERROR;
 	}
 
 	if (st.st_uid != 0 || st.st_gid != 0) {
-		return PPP_ERROR_CONFIG_OWNERSHIP;
+		if (!DEBUG || test_config == 0) {
+			return PPP_ERROR_CONFIG_OWNERSHIP;
+		} else {
+			print(PRINT_WARN, "WRONG CONFIG PERMISSIONS IGNORED FOR TEST CONFIG FILE\n");
+		}
 	}
-
 
 	switch (cfg->db) {
 	case CONFIG_DB_MYSQL:

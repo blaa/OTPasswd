@@ -1,6 +1,6 @@
 /**********************************************************************
  * otpasswd -- One-time password manager and PAM module.
- * Copyright (C) 2009, 2010 by Tomasz bla Fortuna <bla@thera.be>
+ * Copyright (C) 2009-2013 by Tomasz bla Fortuna <bla@thera.be>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -87,7 +87,11 @@ static int _get_agent_executable(const char *agent, const char **agent_path)
 	}
 
 	print(PRINT_ERROR, 
-	      "Unable to locate a valid agent executable. Check your installation.\n");
+	      "Unable to locate a valid agent executable. Check your installation.\n"
+	      "\n"
+	      "To search in current directory (test execution in source directory) you need\n"
+	      "to compile in DEBUG mode\n");
+
 	return AGENT_ERR_INIT_EXECUTABLE;
 }
 

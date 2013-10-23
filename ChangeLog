@@ -12,6 +12,15 @@ ChangeLog / TODO
 Trying to sort tasks according to their priority.
 
 
+2013-10-23 0.8_rc1
+	Preparing distributable, convoyable, usable and likable version.
+	Big version jump because of quite a long time from previous changes.
+
+	* [*] By default running in DB=user. Trying to get it work out-of-the-box.
+	* [!] Fixing default options to let otpasswd be more easily tested.
+	* [%] In not mandatory mode will fail if user HOME is not found.
+	* [%] PAM module maybe should mmap memory not to let key be additionaly swapped to disc.
+	   It's is on the disc in plaintext but the less copies the better.
 
 2010-03-31 0.7_rc2
 Done:
@@ -27,7 +36,7 @@ Done:
 	      All implemented testcases where successfully run after
 	      The Split.
 	* [+] Backward skipping removed from configuration.
-	
+
         * [+] Printing with -l when skipped to the last passcard fixed .
         * [+] OOB Channel usage time updates + DoS security
         * [+] Ensure config privilege checking
@@ -59,9 +68,9 @@ In progress:
 TODO Major:
         * [?] Double passcode logging scheme
         * [%] Parameter -c alphabet=3,codelenght=8 is sometimes accepted
-              but doesn't work. 
+              but doesn't work.
         * [?] Parametrize PAM messages.
-        * [?] Static password expire warnings + enforcement. 
+        * [?] Static password expire warnings + enforcement.
         * [?] Logging warnings printed to user at WARN level
         * [?] Key quality checking (duplicates)
         * [?] Check if lock files are links. if so. fail. Or rather always unlink
@@ -141,7 +150,7 @@ Done:
         * [+] Keeping track of failures.
               Implemented, but not tested.
         * [+] Any possibility to change directory from /etc/otpasswd?
-              This is going to be compile time option. Also otshadow 
+              This is going to be compile time option. Also otshadow
               will be required to reside inside.
         * [+] right trim values from config?
         * [+] Check custom alphabet correction (whitespaces or multiple
@@ -150,18 +159,18 @@ Done:
               so attacker who breaks otpasswd can't modify the executable?
               Probably yes. Two modes of operation.
         * [+] Skip policy; deny skipping backwards. Add some semantic for
-              skipping count of passcards? 
+              skipping count of passcards?
               WARNING: Might be removed and 'skipping backwards' will be
               totally locked.
         * [+] Implement static passwords;
               They might be required always or just to perform some commands
               like second-channel usage.
         * [+] Use locales for user messages [_("")? ]. Now do translations...
-        * [+] Locale might mess up isalpha and isprint. 
+        * [+] Locale might mess up isalpha and isprint.
               Fixed by adding isascii() before.
         * [!] User can always remove DISABLED flag if he can regenerate state.
               Should he be allowed to do this? More important question:
-              What are we trying to disable? Disabling accounts is done with 
+              What are we trying to disable? Disabling accounts is done with
               other utilities.
         * [!] Can user lock program on some printf with some control of
               stdout? Probably yes. stdout buffering, not printing while locked
@@ -178,7 +187,7 @@ TODO Major:
 	* [?] Accept 2G[2] passcode specification entries.
         * [?] Parametrize PAM messages.
         * [?] OOB Channel usage time updates + DoS security
-        * [?] Static password expire warnings + enforcement. 
+        * [?] Static password expire warnings + enforcement.
         * [?] Do not store things in mpz_t which don't need it (spass)
         * [?] Sanitize gettext environment
         * [?] Logging warnings printed to user at WARN level

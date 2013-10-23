@@ -1,6 +1,6 @@
 #**********************************************************************
 # otpasswd -- One-time password manager and PAM module.
-# Copyright (C) 2009 by Tomasz bla Fortuna <bla@thera.be>
+# Copyright (C) 2009-2013 by Tomasz bla Fortuna <bla@thera.be>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@ SET(${PROJECT_NAME}_MINOR_VERSION 7)
 # Cmake says this is required for locating gmp/libotp.a
 if(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
+  cmake_policy(SET CMP0005 NEW)
 endif(COMMAND cmake_policy)
 
 # Detect system
@@ -49,6 +50,7 @@ ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
 # How to add it only to this target?
 ADD_DEFINITIONS("-Wall -fPIC")
 
+ADD_DEFINITIONS("-DTESTCONFIG=\"$(PWD)/examples/otpasswd.conf.dist\"")
 
 ##
 # Configurable options
@@ -73,6 +75,7 @@ IF (DEBUG)
   ADD_DEFINITIONS("-DDEBUG=1")
 ELSE ()
   ADD_DEFINITIONS("-s -O2")
+  ADD_DEFINITIONS("-DDEBUG=0")
 ENDIF (DEBUG)
 
 IF (NLS)

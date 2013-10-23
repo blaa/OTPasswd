@@ -1,6 +1,6 @@
 /**********************************************************************
  * otpasswd -- One-time password manager and PAM module.
- * Copyright (C) 2009, 2010 by Tomasz bla Fortuna <bla@thera.be>
+ * Copyright (C) 2009-2013 by Tomasz bla Fortuna <bla@thera.be>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,7 @@
  **********************************************************************/
 
 #ifndef PROG_VERSION
-#define PROG_VERSION "v0.7-rc2"
+#define PROG_VERSION "v0.8_rc1"
 #endif
 
 #include <stdio.h>

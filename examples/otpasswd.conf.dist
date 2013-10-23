@@ -25,12 +25,11 @@
 # General configuration
 ## 
 
-# Select DB (state database) to use. This is the only option
-# that MUST be select before OTPasswd will work.
+# Select DB (state database) to use. 
 # global:
-#   If enabled we store data in global database.
+#   If enabled we store data in global database in /etc/otpasswd/
 #   This is required for policies to work, yet this option requires 
-#   OTPasswd utility to be SUID. 
+#   OTPasswd utility (agent_otp) to be SUID. 
 # user:
 #   Keys located in user home directory. Most of policies are not 
 #   enforced, no SUID required. Even if utility is SUID it will drop it's
@@ -40,7 +39,7 @@
 # ldap:
 #   Not implemented
 #
-# DB=user
+DB=user
 
 # Name of the file used to keep user keys in their homes. Lock file
 # will be created by appending .lck, temporary file by .tmp

@@ -186,7 +186,10 @@ owned by this user and otpasswd agent (not utility) binary should be SUID-root.
 By default, no OTPasswd binaries are SUID. If choosing a non-standard name for user
 please remember to update config file accordingly.
 
-
+To run test suite you'd best install the otpasswd in the system
+(before updating PAM configuration) and then run tests. To run them in
+the source directory you need to compile otpasswd with -DDEBUG and
+place default config in /etc directory.
 
 4. Installation (Binary Package)
 ================================
