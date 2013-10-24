@@ -347,7 +347,6 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-
 	/* After this point we:
 	 * a) Have no controlling terminal. 
 	 * b) Can be SUID root (run by root or normal user)
@@ -360,7 +359,6 @@ int main(int argc, char **argv)
 		print(PRINT_ERROR, "Unable to start agent server: %s\n", agent_strerror(ret));
 		return 1;
 	}
-
 
 	/* This will allocate username */
 	username = security_get_calling_user();

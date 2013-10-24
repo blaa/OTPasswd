@@ -222,6 +222,12 @@ INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_8} DESTINATION "share/man/man
 ##
 ENABLE_TESTING()
 
+# This doesn't work yet:
+#SET(MemoryCheckCommand /usr/bin/valgrind)
+#SET(CTEST_MEMORYCHECK_COMMAND "usr/bin/valgrind")
+#SET(CTEST_MEMORYCHECK_COMMAND_OPTIONS "--trace-children=yes --leak-check=full --show-reachable=yes --log-file=valgrindlog")
+
+
 ADD_TEST(internal_check ./agent_otp --testcase)
 # This may fail if user does not have state file!
 # This tests are used mostly to have some rationale
