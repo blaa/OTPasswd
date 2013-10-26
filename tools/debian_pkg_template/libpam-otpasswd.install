@@ -1,0 +1,2 @@
+etc/pam.d/otpasswd-login
+lib/security/pam_otpasswd.so

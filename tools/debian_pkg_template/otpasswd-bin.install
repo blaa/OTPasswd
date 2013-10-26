@@ -1,0 +1,3 @@
+usr/bin/otpasswd
+usr/bin/agent_otp
+etc/otpasswd/otpasswd.conf

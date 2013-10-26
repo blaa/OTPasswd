@@ -1,0 +1,42 @@
+Source: otpasswd
+Section: admin
+Priority: extra
+Maintainer: Tomasz bla Fortuna <bla@thera.be>
+Build-Depends: cdbs, debhelper (>= 7), cmake, libpam0g-dev
+Standards-Version: 3.8.3
+Homepage: http://otpasswd.thera.be
+
+Package: otpasswd-bin
+Section: admin
+Architecture: any
+Suggests: libpam-otpasswd
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: one-time passwords implementation for PAM
+ otpasswd consists of a pam module and an user utility. With the
+ utility user manages his "state" file: creates his KEY, manages flags
+ and prints passcards with one-time passwords.
+ .
+ PAM module enables (for example) OpenSSH to do an authentication
+ using one-time password with the information from user state file. By
+ using an external script, an out-of-band channel can be used for
+ one-time-pad transmission. OTPasswd by default works in a local mode,
+ as optional security layer without a need for a SUID binary. One can
+ alternatively configure a mode with enforced system policy which
+ requires SUID bit.
+ .
+ The program is written in C (C99) and implements OTP as described in
+ "Perfect Paper Passwords" description of which can be found here
+ https://www.grc.com/ppp.htm
+ This program also kind of extends this idea with "salt".
+
+Package: libpam-otpasswd
+Section: libs
+Architecture: any
+Recommends: otpasswd
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: one-time passwords implementation for PAM
+ otpasswd consists of a pam module and an user utility. With the
+ utility user manages his "state" file: creates his key, manages flags
+ and prints passcards with one-time passwords.
+ .
+ This package contains the otpasswd shared library.

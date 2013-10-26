@@ -1,0 +1,14 @@
+otpasswd for Debian
+-------------------
+
+This package is in rapid flux, and should not be used on mission critical
+systems.
+
+ -- Luke Faraone <luke@faraone.cc>  Fri, 18 Dec 2009 20:46:18 -0500
+
+
+Getting back to maintain the upstream, stabilize it and test it.
+Development got stopped almost before getting a stable release due
+to lack of time and valgrind problems.
+
+ -- Tomasz Fortuna <bla@thera.be  Sat 26 Oct 13:50:20 CEST 2013

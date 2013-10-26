@@ -1,0 +1,34 @@
+#!/usr/bin/make -f
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/cmake.mk
+include /usr/share/cdbs/1/rules/simple-patchsys.mk
+
+
+# Add here any variable or target overrides you need.
+.PHONY: get-orig-source 
+
+
+# Rules for fetching the upstream tarball
+CURRENT_TREEISH =$(shell dpkg-parsechangelog | sed -rne 's,^Version: .*git([^-]+).*,\1,p')
+CURVER=$(shell dpkg-parsechangelog | sed -rne 's,^Version: ([^-]+).*,\1,p')
+
+SOURCE_DIR=otpasswd-$(CURVER)
+TARBALL=otpasswd_$(CURVER).orig.tar.gz
+
+
+$(SOURCE_DIR): https://github.com/blaa/OTPasswd.git
+	git clone https://github.com/blaa/OTPasswd.git $(SOURCE_DIR)
+	if [ x$(CURRENT_TREEISH) = x ]; then \
+	 cd $(SOURCE_DIR) && git checkout v$(CURVER); \
+	else \
+	 cd $(SOURCE_DIR) && git checkout $(CURRENT_TREEISH); \
+	fi
+
+
+$(TARBALL): $(SOURCE_DIR)
+	tar czvf $(TARBALL) $(SOURCE_DIR)
+
+get-orig-source: $(TARBALL)
+	rm -rf $(SOURCE_DIR) $(SOURCE_DIR).temp
+
