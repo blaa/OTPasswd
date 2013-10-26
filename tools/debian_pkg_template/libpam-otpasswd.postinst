@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Register PAM module (off by default)
+# As instructed in: https://wiki.ubuntu.com/PAMConfigFrameworkSpec
+pam-auth-update --package
+

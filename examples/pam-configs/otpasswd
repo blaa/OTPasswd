@@ -1,0 +1,9 @@
+Name: OTPasswd two-factor authentication
+Default: no
+Priority: 128
+Auth-Type: Additional
+Auth:
+	[success=ok ignore=ignore default=die]	pam_otpasswd.so 
+Session-Type: Additional
+Session:
+	optional	pam_otpasswd.so

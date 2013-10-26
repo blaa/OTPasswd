@@ -1,2 +1,2 @@
-etc/pam.d/otpasswd-login
 lib/security/pam_otpasswd.so
+examples/pam-configs/otpasswd usr/share/pam-configs

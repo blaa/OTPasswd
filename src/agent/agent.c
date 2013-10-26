@@ -80,8 +80,10 @@ int do_verify_config(void)
 	}
 
 	printf("4) SSHD, if used, should have ChallengeResponseAuthentication\n"
-	       "   and UsePAM configured to 'yes' in sshd_config. Currently:\n");
-	system("egrep 'UsePAM|ChallengeResponseAuthentication[ \t]+(yes|no)' /etc/ssh/sshd_config");
+	       "   and UsePAM configured to 'yes' in sshd_config.:\n"
+	       "   let me grep your current settings for you:\n\n");
+	system("egrep -i 'UsePAM|ChallengeResponseAuthentication[ \t]+(yes|no)' /etc/ssh/sshd_config");
+	printf("\n");
 
 	if (cfg->db != CONFIG_DB_GLOBAL) {
 		printf(_("5) Your selected DB option doesn't require further checks. "
