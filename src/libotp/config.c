@@ -203,7 +203,7 @@ static int _config_parse(cfg_t *cfg, const char *config_path)
 	}
 
 #if DEBUG
-#warning DEBUG ON - libotp will search for config in ./examples/otpasswd.conf.dist!
+#warning DEBUG ON - libotp will search for a testing config when system config not found
 	if (!f) {
 		f = fopen(TESTCONFIG, "r");
 	}

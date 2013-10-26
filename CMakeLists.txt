@@ -49,7 +49,7 @@ ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
 # How to add it only to this target?
 ADD_DEFINITIONS("-Wall -fPIC")
 
-ADD_DEFINITIONS("-DTESTCONFIG=\"$(PWD)/examples/otpasswd.conf.dist\"")
+ADD_DEFINITIONS("-DTESTCONFIG=\"$(PWD)/examples/otpasswd.conf\"")
 
 ##
 # Configurable options
@@ -106,85 +106,44 @@ ENDIF (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
 
 
 # Module and PAM uses libotp, so add it's include to path...
-INCLUDE_DIRECTORIES(common/ libotp/ crypto/ agent/)
+INCLUDE_DIRECTORIES(src/common/ src/libotp/ src/crypto/ src/agent/)
 
 ## 
 # Translations
 ##
 INCLUDE(FindGettext)
 
-
 SET(translations po/pl.po)
 GETTEXT_CREATE_TRANSLATIONS(po/otpasswd.pot ALL po/pl.po)
-
-##
-# Manuals
-#   Rules for building compressed manuals
-##
-
-# See if gzip is available to compress manuals
-FIND_PROGRAM(GZIP_TOOL
-             NAMES gzip
-             PATHS /bin
-                   /usr/bin
-                   /usr/local/bin)
-
-IF(NOT GZIP_TOOL)
-   MESSAGE(SEND_ERROR "Unable to find 'gzip' program")
-ENDIF(NOT GZIP_TOOL)
-
-# List manual sources
-SET(man_src_1 docs/otpasswd.1 )
-SET(man_src_1a docs/agent_otp.1 )
-SET(man_src_5 docs/otpasswd.5    )
-SET(man_src_8 docs/pam_otpasswd.8)
-SET(man_src   "${man_src_1}" "${man_src_1a}" "${man_src_5}" "${man_src_8}")
-
-# Generate list compressed manuals
-STRING(REGEX REPLACE "(\\.[0-9]+)(;|$)" "\\1.gz\\2" man_gz_1 "${man_src_1}")
-STRING(REGEX REPLACE "(\\.[0-9]+)(;|$)" "\\1.gz\\2" man_gz_1a "${man_src_1a}")
-STRING(REGEX REPLACE "(\\.[0-9]+)(;|$)" "\\1.gz\\2" man_gz_5 "${man_src_5}")
-STRING(REGEX REPLACE "(\\.[0-9]+)(;|$)" "\\1.gz\\2" man_gz_8 "${man_src_8}")
-STRING(REGEX REPLACE "(\\.[0-9]+)(;|$)" "\\1.gz\\2" man_gz   "${man_src}"  )
-
-# Generate build rules for building compressed manuals
-FOREACH(man ${man_src})
-  ADD_CUSTOM_COMMAND(OUTPUT ${man}.gz
-    COMMAND mkdir -p ${CMAKE_CURRENT_BINARY_DIR}/docs
-    COMMAND ${GZIP_TOOL} -c ${CMAKE_CURRENT_SOURCE_DIR}/${man} > ${CMAKE_CURRENT_BINARY_DIR}/${man}.gz
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${man}
-    COMMENT "Building ${man}.gz")
-ENDFOREACH(man)
-
-
 
 ##
 # Targets
 ##
 
 # Common functions library (64 bit numbers and logging)
-ADD_LIBRARY(common STATIC common/print.c common/num.c 
-            common/crypto.c crypto/polarssl_aes.c 
-            crypto/coreutils_sha256.c)
+ADD_LIBRARY(common STATIC src/common/print.c src/common/num.c 
+  src/common/crypto.c src/crypto/polarssl_aes.c 
+  src/crypto/coreutils_sha256.c)
 
 # Library containing common functions
-ADD_LIBRARY(otp STATIC libotp/ppp.c libotp/state.c 
-        libotp/db_file.c libotp/db_mysql.c libotp/db_ldap.c
-	libotp/config.c)
+ADD_LIBRARY(otp STATIC src/libotp/ppp.c src/libotp/state.c 
+  src/libotp/db_file.c src/libotp/db_mysql.c src/libotp/db_ldap.c
+  src/libotp/config.c)
 
 # Library containing agent functions (for both agent and its clients)
-ADD_LIBRARY(agent STATIC agent/agent_interface.c agent/agent_private.c)
+ADD_LIBRARY(agent STATIC src/agent/agent_interface.c src/agent/agent_private.c)
 
 # Pam module target
-ADD_LIBRARY(pam_otpasswd SHARED pam/pam_helpers.c pam/pam_otpasswd.c) 
+ADD_LIBRARY(pam_otpasswd SHARED src/pam/pam_helpers.c src/pam/pam_otpasswd.c) 
 SET_TARGET_PROPERTIES(pam_otpasswd PROPERTIES PREFIX "")
 
 # Password management target
-ADD_EXECUTABLE(otpasswd utility/otpasswd.c utility/actions.c utility/actions_helpers.c utility/cards.c)
+ADD_EXECUTABLE(otpasswd src/utility/otpasswd.c src/utility/actions.c 
+  src/utility/actions_helpers.c src/utility/cards.c)
 
 # Agent server
-ADD_EXECUTABLE(agent_otp agent/agent.c agent/request.c agent/testcases.c agent/security.c)
-
+ADD_EXECUTABLE(agent_otp src/agent/agent.c src/agent/request.c 
+  src/agent/testcases.c src/agent/security.c)
 
 # Linking targets
 TARGET_LINK_LIBRARIES(pam_otpasswd  otp common pam)
@@ -195,6 +154,15 @@ TARGET_LINK_LIBRARIES(agent_otp     agent common otp)
 ADD_CUSTOM_TARGET(man ALL DEPENDS ${man_gz})
 
 ##
+# Manuals
+##
+SET(man_src_1 docs/otpasswd.1)
+SET(man_src_1a docs/agent_otp.1)
+SET(man_src_5 docs/otpasswd.5)
+SET(man_src_8 docs/pam_otpasswd.8)
+SET(man_src "${man_src_1}" "${man_src_1a}" "${man_src_5}" "${man_src_8}")
+
+##
 # Install target
 ##
 SET(CMAKE_INSTALL_PREFIX /usr)
@@ -202,17 +170,14 @@ INSTALL(TARGETS pam_otpasswd otpasswd agent_otp
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION ${PAM_MODULE_DIR})
 
-#INSTALL(TARGETS libotp
-#  LIBRARY DESTINATION /lib)
-
 INSTALL(FILES examples/otpasswd-login DESTINATION /etc/pam.d)
-INSTALL(FILES examples/otpasswd.conf.dist DESTINATION /etc/otpasswd)
+INSTALL(FILES examples/otpasswd.conf DESTINATION /etc/otpasswd)
 INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/pl.gmo DESTINATION /usr/share/otpasswd)
 
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_1} DESTINATION "share/man/man1")
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_1a} DESTINATION "share/man/man1")
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_5} DESTINATION "share/man/man5")
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_gz_8} DESTINATION "share/man/man8")
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_src_1} DESTINATION "share/man/man1")
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_src_1a} DESTINATION "share/man/man1")
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_src_5} DESTINATION "share/man/man5")
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_src_8} DESTINATION "share/man/man8")
 
 
 ##

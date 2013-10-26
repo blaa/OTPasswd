@@ -17,17 +17,20 @@ Trying to sort tasks according to their priority.
 	0.8 can be thought as a release candidate for 0.9 - I'm trying to keep
 	versioning simple to ease packaging.
 
-	* [*] By default running in DB=user. Trying to get it work out-of-the-box.
-	* [*] Fixing default options to let otpasswd be more easily tested.
-	* [*] Updated package name convention, new package script
 	* [%] In not mandatory mode will fail if user HOME is not found.
 	* [%] PAM module maybe should mmap memory not to let key be additionaly swapped to disc.
 	   It's is on the disc in plaintext but the less copies the better.
+
+	* [*] By default running in DB=user. Trying to get it work out-of-the-box.
+	* [*] Fixing default options to let otpasswd be more easily tested.
+	* [*] Updated package name convention, new package script
+	* [*] Move sources to src/ subdirectory.
+
 	* [-] Approach to agent data passing is overcomplicated. stdin/stdout substitution
 	      causes problems with communication and as it turns out - valgrind. Would better
 	      keep stdin/stdout, but maybe not use them(?) Best to review.
         * [-] Review documentation and ensure it's up to date.
-        * [-] Move sources to src/ subdirectory.
+	* [-] Update Polish translation
 	* [-] Relicense so it can be used more universally - will require changing of sha256
               implementation, but it would be best to use system openssl lib probably.
 

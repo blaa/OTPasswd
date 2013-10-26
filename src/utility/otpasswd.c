@@ -645,6 +645,9 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+#if DEBUG
+	printf("WARNING: This is a DEBUG build. Unsuitable for production use.\n\n");
+#endif
 
 	/* Pre-init debugging, and go! */
 	locale_init();

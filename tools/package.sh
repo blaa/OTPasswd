@@ -18,7 +18,7 @@ test_build () {
     echo
     echo '* IDIOT-TEST CURRENT SOURCE BEFORE PACKAGING'
 
-    ./tools/clean.sh
+    ./tools/clean.sh || exit 1
 
     echo
     echo '* CMAKE'
@@ -41,7 +41,7 @@ test_build () {
         ctest . || (echo "BASIC TESTS FAILED"; exit 1)
     fi
 
-    ./tools/clean.sh
+    ./tools/clean.sh || exit 1
 }
 
 check_versions () {
@@ -69,7 +69,7 @@ create_tree () {
     rm -rf .git .gitignore tools/.gitignore
     rm -rf .emacs*
 
-    echo "CHECK THIS:"
+    echo "YOU MIGHT WANT TO MANUALLY REMOVE THOSE:"
     find . -type f -iname '.*'
     find . -iname '*~*'
     find . -iname '*#*'
@@ -97,4 +97,6 @@ ls -l $TBZ2
 sha256sum $TBZ2
 
 echo
+echo "Remember to TAG in git and sign the tarball."
 echo "DONE"
+
