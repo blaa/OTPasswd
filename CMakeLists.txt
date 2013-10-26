@@ -24,12 +24,12 @@ cmake_minimum_required(VERSION 2.4.7)
 PROJECT(otpasswd)
 
 SET(${PROJECT_NAME}_MAJOR_VERSION 0)
-SET(${PROJECT_NAME}_MINOR_VERSION 7)
+SET(${PROJECT_NAME}_MINOR_VERSION 8)
 
-# Cmake says this is required for locating gmp/libotp.a
+# Cmake says this is required for locating libotp.a
 if(COMMAND cmake_policy)
   cmake_policy(SET CMP0003 NEW)
-  cmake_policy(SET CMP0005 NEW)
+  cmake_policy(SET CMP0005 NEW) # Silences an error.
 endif(COMMAND cmake_policy)
 
 # Detect system
@@ -40,7 +40,6 @@ ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 IF(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
   ADD_DEFINITIONS("-DOS_FREEBSD")
 ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
-
 
 ##
 # Basic parameters

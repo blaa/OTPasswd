@@ -17,7 +17,7 @@
  **********************************************************************/
 
 #ifndef PROG_VERSION
-#define PROG_VERSION "v0.8_rc1"
+#define PROG_VERSION "0.8"
 #endif
 
 #include <stdio.h>

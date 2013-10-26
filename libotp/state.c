@@ -63,11 +63,12 @@ int state_init(state *s, const char *username)
 {
 	const char salt_mask[] =
 		"FFFFFFFFFFFFFFFFFFFFFFFF00000000";
+	const char code_mask[] =
+		"000000000000000000000000FFFFFFFF";
 
 	cfg_t *cfg = NULL;
 
 	assert(sizeof(salt_mask) == 33);
-
 	assert(username != NULL);
 
 	/* Initialize logging subsystem */
@@ -123,11 +124,12 @@ int state_init(state *s, const char *username)
 	s->max_code = num_i(0);
 
 	{
-		int ret = num_import(&s->salt_mask, "FFFFFFFFFFFFFFFFFFFFFFFF00000000", NUM_FORMAT_HEX);
+		int ret = num_import(&s->salt_mask, salt_mask, NUM_FORMAT_HEX);
+		assert(ret == 0);
+
+		ret = num_import(&s->code_mask, code_mask, NUM_FORMAT_HEX);
 		assert(ret == 0);
 	}
-	s->code_mask = num_i(4294967295ULL);
-
 	return 0;
 }
 
@@ -150,7 +152,6 @@ void state_fini(state *s)
 		free(s->prompt);
 		s->prompt = NULL;
 	}
-
 	free(s->username);
 
 	/* Clear the rest of memory, this includes sequence_key */

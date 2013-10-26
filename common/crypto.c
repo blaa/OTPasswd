@@ -148,7 +148,6 @@ int crypto_sha256(const unsigned char *data, const unsigned int length, unsigned
 
 int crypto_sha256(const unsigned char *data, const unsigned int length, unsigned char *hash)
 {
-	/* In openssl implementation it seems to always succeed */
 	if (sha256_buffer (data, length, hash) == NULL) {
 		return 1;
 	}

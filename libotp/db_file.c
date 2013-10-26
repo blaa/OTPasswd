@@ -236,7 +236,6 @@ static int _db_path(const char *username, char **db, char **lck, char **tmp, uid
 	static struct passwd *pwdata = NULL;
 	cfg_t *cfg = cfg_get();
 
-
 	assert(username != NULL);
 	assert(cfg != NULL);
 	assert(*db == NULL && *lck == NULL && *tmp == NULL); /* Must be NULL */
@@ -255,9 +254,9 @@ static int _db_path(const char *username, char **db, char **lck, char **tmp, uid
 		
 		/* Get home */
 		pwdata = getpwnam(username);
-		if (pwdata && pwdata->pw_dir)
+		if (pwdata && pwdata->pw_dir) {
 			home = pwdata->pw_dir;
-		else {
+		} else {
 			return STATE_NO_SUCH_USER;
 		}
 
@@ -270,14 +269,10 @@ static int _db_path(const char *username, char **db, char **lck, char **tmp, uid
 		if (!*db) 
 			return STATE_NOMEM;
 		
-#if NDEBUG
-		snprintf(*db, length, "%s/%s", home, cfg->user_db_path);
-#else
 		{
 			int ret = snprintf(*db, length, "%s/%s", home, cfg->user_db_path);
-			assert( ret == length - 1 );
+			assert(ret == length - 1);
 		}
-#endif
 
 		if (uid)
 			*uid = pwdata->pw_uid;
