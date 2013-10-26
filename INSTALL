@@ -346,19 +346,9 @@ by modifying its PAM configuration, as is described in this section.  (FIXME)
 
 10. Copyright
 =============
-Copyright (c) 2010 Tomasz bla Fortuna
+Copyright (c) 2010-2013 Tomasz bla Fortuna
 
-This file is part of OTPasswd.
-
-OTPasswd is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free
-Software Foundation, either version 3 of the License, or any later version.
-
-OTPasswd is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
-A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along
-with OTPasswd.  If not, see <http://www.gnu.org/licenses/>.
+This file is part of OTPasswd. See README file for licensing
+information.
 
                                      ###

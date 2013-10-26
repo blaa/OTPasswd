@@ -79,8 +79,12 @@ int do_verify_config(void)
 		printf(_("3) Config file ownership and file mode is correct.\n"));
 	}
 
+	printf("4) SSHD, if used, should have ChallengeResponseAuthentication\n"
+	       "   and UsePAM configured to 'yes' in sshd_config. Currently:\n");
+	system("egrep 'UsePAM|ChallengeResponseAuthentication[ \t]+(yes|no)' /etc/ssh/sshd_config");
+
 	if (cfg->db != CONFIG_DB_GLOBAL) {
-		printf(_("4) Your selected DB option doesn't require further checks. "
+		printf(_("5) Your selected DB option doesn't require further checks. "
 		         "Everything is fine.\n"));
 		return 0;
 	}
@@ -116,12 +120,12 @@ int do_verify_config(void)
 	ret = ppp_state_load(s, PPP_DONT_LOCK);
 	switch (ret) {
 	case 0:
-		printf(_("4) State loaded\n"));
+		printf(_("5) State loaded\n"));
 		break;
 
 	case STATE_NON_EXISTENT:
 	case STATE_NO_USER_ENTRY:
-		printf(_("4) No state loaded, but no other errors. That's fine\n"));
+		printf(_("5) No state loaded, but no other errors. That's fine\n"));
 		break;
 
 	default:

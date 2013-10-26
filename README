@@ -1,8 +1,8 @@
 
               OTPasswd - One-Time Password Authentication System
               --------------------------------------------------
-                https://savannah.nongnu.org/projects/otpasswd
-                        Updated: 15-Sep-10 (v0.7)
+                         http://otpasswd.thera.be
+                        Updated: 26-Oct-2013 (v0.8)
 
                                     README
 
@@ -10,8 +10,7 @@
 
 Contents
 ========
-  0. Package Status
-  1. Motivation
+  1. Package Status
   2. Introduction
   3. Package Features
   4. Security Advisory
@@ -24,11 +23,11 @@ Contents
 
 
 
-0. Package Status
+1. Package Status
 =================
 OTPasswd is under development.  In the ChangeLog there's a list of things
 I'd like to implement before publishing the package as version 1.0.  Most
-features currently work (as of v0.7) but, of course, testing is still
+features currently work (as of v0.8) but, of course, testing is still
 required.  Think of this as a beta software.
 
 It is a goal of OTPasswd development to create a source package which can
@@ -40,13 +39,7 @@ Gentoo ebuild.
 View the most recent version of this document on the web at:
 
    http://git.savannah.gnu.org/cgit/otpasswd.git/plain/README
-
-
-
-1. Motivation
-=============
-FIXME: To be written.
-
+   https://github.com/blaa/OTPasswd/blob/master/README
 
 
 2. Introduction
@@ -334,7 +327,7 @@ program are all licensed under GNU General Public License version 3.
 The license should be included with the project inside LICENSE file.
 Copyright notice follows:
 
-Copyright (C) 2009, 2010 by Tomasz bla Fortuna <bla@thera.be>
+Copyright (C) 2009-2013 by Tomasz bla Fortuna <bla@thera.be>
 
 This program is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free
@@ -348,5 +341,11 @@ more details.
 
 You should have received a copy of the GNU General Public License along
 with OTPasswd.  If not, see <http://www.gnu.org/licenses/>.
+
+
+It was always planned to relicense this software under BSD-like
+license one day. Most changes required for relicensing are already
+complete. To contribute to the project you have to agree to relicense
+your contribution as well.
 
                                      ###
