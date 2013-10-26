@@ -1,6 +1,6 @@
 Source: otpasswd
 Section: admin
-Priority: extra
+Priority: optional
 Maintainer: Tomasz bla Fortuna <bla@thera.be>
 Build-Depends: cdbs, debhelper (>= 7), cmake, libpam0g-dev
 Standards-Version: 3.8.3

@@ -92,7 +92,8 @@ ENDIF (NLS)
 # PAM
 FIND_PATH(PAM_INCLUDE_DIR pam_modules.h /usr/include/security /usr/include/pam)
 INCLUDE_DIRECTORIES(${PAM_INCLUDE_DIR})
-FIND_PATH(PAM_MODULE_DIR pam_unix.so /lib/security /usr/lib/security /lib /usr/lib)
+#FIND_PATH(PAM_MODULE_DIR pam_unix.so /lib/security /usr/lib/security /lib /usr/lib)
+SET(PAM_MODULE_DIR /lib/security)
 
 # Intl: On FreeBSD gettext is in another library
 # Also we install PAM modules in /usr/lib.
@@ -166,18 +167,19 @@ SET(man_src "${man_src_1}" "${man_src_1a}" "${man_src_5}" "${man_src_8}")
 # Install target
 ##
 SET(CMAKE_INSTALL_PREFIX /usr)
+#SET(CMAKE_INSTALL_PREFIX /home/bla/_projects/_otp/otpasswd/prefix/usr)
 INSTALL(TARGETS pam_otpasswd otpasswd agent_otp
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION ${PAM_MODULE_DIR})
 
 INSTALL(FILES examples/otpasswd-login DESTINATION /etc/pam.d)
 INSTALL(FILES examples/otpasswd.conf DESTINATION /etc/otpasswd)
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/pl.gmo DESTINATION /usr/share/otpasswd)
+INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/pl.gmo DESTINATION usr/share/otpasswd)
 
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_src_1} DESTINATION "share/man/man1")
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_src_1a} DESTINATION "share/man/man1")
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_src_5} DESTINATION "share/man/man5")
-INSTALL(FILES ${CMAKE_CURRENT_BINARY_DIR}/${man_src_8} DESTINATION "share/man/man8")
+INSTALL(FILES ${man_src_1} DESTINATION "share/man/man1")
+INSTALL(FILES ${man_src_1a} DESTINATION "share/man/man1")
+INSTALL(FILES ${man_src_5} DESTINATION "share/man/man5")
+INSTALL(FILES ${man_src_8} DESTINATION "share/man/man8")
 
 
 ##

@@ -11,7 +11,8 @@ if [ -z "$1" ]; then
 fi
 
 VERSION=$1
-PACKAGE="otpasswd_$VERSION"
+PACKAGE="otpasswd-$VERSION"
+TARBALL="otpasswd_$VERSION".tar.xz
 
 # FUNCTIONS
 test_build () {
@@ -68,12 +69,13 @@ create_tree () {
     pushd $PACKAGE
     rm -rf .git .gitignore tools/.gitignore
     rm -rf .emacs*
+    rm -rf tools/debian_pkg_template
 
     echo "YOU MIGHT WANT TO MANUALLY REMOVE THOSE:"
     find . -type f -iname '.*'
     find . -iname '*~*'
     find . -iname '*#*'
-
+    echo "END OF LIST"
     popd
 }
 
@@ -83,18 +85,20 @@ sleep 1
 pushd $DEVDIR
 
 check_versions;
-test_build;
+if [ "$SKIPBUILD" != "1" ]; then
+    test_build;
+fi
+
 
 popd 
 
 create_tree;
 
-TBZ2="$PACKAGE".tar.bz2
-tar -jcf $TBZ2 $PACKAGE || exit 1
+tar -Jcf $TARBALL $PACKAGE || exit 1
 
 echo
-ls -l $TBZ2
-sha256sum $TBZ2
+ls -l $TARBALL
+sha256sum $TARBALL
 
 echo
 echo "Remember to TAG in git and sign the tarball."

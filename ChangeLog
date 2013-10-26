@@ -33,6 +33,8 @@ Trying to sort tasks according to their priority.
 	* [-] Update Polish translation
 	* [-] Relicense so it can be used more universally - will require changing of sha256
               implementation, but it would be best to use system openssl lib probably.
+	* [-] Check how SUID version works. It should su to root, read config drop to nobody.
+	      No dedicated user! As the binary can then be modified and affect root more easily.
 
 2010-03-31 0.7_rc2
 Done:
