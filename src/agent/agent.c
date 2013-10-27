@@ -80,8 +80,8 @@ int do_verify_config(void)
 	}
 
 	printf("4) SSHD, if used, should have ChallengeResponseAuthentication\n"
-	       "   and UsePAM configured to 'yes' in sshd_config.:\n"
-	       "   let me grep your current settings for you:\n\n");
+	       "   and UsePAM configured to 'yes' in sshd_config.\n"
+	       "   Let me grep your current settings for you:\n\n");
 	system("egrep -i 'UsePAM|ChallengeResponseAuthentication[ \t]+(yes|no)' /etc/ssh/sshd_config");
 	printf("\n");
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # $1 - contact
 # $2 - passcode
@@ -20,7 +20,7 @@ SENDMAIL=/usr/sbin/sendmail # Update to match your system.
 
 # Sanitize contact data
 echo "$1" | egrep '^[0-9]+$' > /dev/null 
-if [ $? != 0 ] then
+if [ $? != 0 ]; then
 	echo "Contact data is not a valid phone number"
 	exit 1
 fi
@@ -32,3 +32,5 @@ echo -en "To:$TO\nFrom: OTP <Ted@SETME.be>\nSubject: OTP password\n\nPasscode = 
 # Tests.
 # whoami >> /tmp/OOB_TEST
 # echo "CONTACT '$1' CODE '$2'" >> /tmp/OOB_TEST
+
+exit 0
