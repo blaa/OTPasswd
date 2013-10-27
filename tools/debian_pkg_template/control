@@ -2,16 +2,15 @@ Source: otpasswd
 Section: admin
 Priority: optional
 Maintainer: Tomasz bla Fortuna <bla@thera.be>
-Build-Depends: cdbs, debhelper (>= 7), cmake, libpam0g-dev
+Build-Depends: cdbs, debhelper (>= 9), cmake, libpam0g-dev
 Standards-Version: 3.9.4
 Homepage: http://otpasswd.thera.be
 
 Package: otpasswd-bin
-Section: admin
 Architecture: any
 Suggests: libpam-otpasswd
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: one-time passwords implementation for PAM
+Description: one-time passwords implementation, system utility
  otpasswd consists of a pam module and an user utility. With the
  utility user manages his "state" file: creates his KEY, manages flags
  and prints passcards with one-time passwords.
@@ -34,7 +33,7 @@ Section: libs
 Architecture: any
 Recommends: otpasswd
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: one-time passwords implementation for PAM
+Description: one-time passwords implementation, PAM module
  otpasswd consists of a pam module and an user utility. With the
  utility user manages his "state" file: creates his key, manages flags
  and prints passcards with one-time passwords.

@@ -436,7 +436,7 @@ static int _db_find_user_entry(
 		if (out) {
 			if (fputs(buff, out) < 0) {
 				print(PRINT_NOTICE,
-				      "Error while writting data to file!\n");
+				      "Error while writing data to file!\n");
 				return STATE_IO_ERROR;
 			}
 		}

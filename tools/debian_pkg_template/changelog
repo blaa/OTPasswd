@@ -1,11 +1,11 @@
-otpasswd (0.8) experimental; urgency=low
+otpasswd (0.8-1) experimental; urgency=low
   * Major update since 0.4 release, see the upstream Changelog
   * Upstream maintenance and development reinstated
   * Divided into utility, agent and PAM module for security reasons
   * Changed to work as out-of-the-box as possible.
   * OOB (sms/email) one-time-pad transmission using external scripts
   * This is a package suitable for tests on non-critical systems.
-  * Updated package (Closes: #562968)
+  * Redone package (Closes: #562968)
 
  -- Tomasz bla Fortuna <bla@thera.be>  Sat, 26 Oct 2013 14:20:55 +0200
 

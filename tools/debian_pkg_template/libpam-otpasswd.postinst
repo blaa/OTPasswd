@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/bin/bash 
+
+set -e 
+
 #DEBHELPER#
 
 # Register PAM module (off by default)

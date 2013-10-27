@@ -88,7 +88,7 @@ TODO Major:
         * [?] Logging warnings printed to user at WARN level
         * [?] Key quality checking (duplicates)
         * [?] Check if lock files are links. if so. fail. Or rather always unlink
-              before overwritting.
+              before overwriting.
         * [?] Logging into syslog from utility if agent is SUID.
         * [?] Admin function to scan all states for things invalidating
               policy. This could be implemented in agent similar to
@@ -211,7 +211,7 @@ TODO Major:
         * [?] Global DB should work with users which aren't in passwd.
               Should it?
         * [?] Check if lock files are links. if so. fail. Or rather always unlink
-              before overwritting.
+              before overwriting.
         * [?] Logging into syslog from utility if SUID; Also deny -v.
         * [?] Security: Do we need to change something regarding ulimits?
         * [?] Admin function to scan all states for things invalidating
