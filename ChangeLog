@@ -17,7 +17,7 @@ Trying to sort tasks according to their priority.
 	0.8 can be thought as a release candidate for 0.9 - I'm trying to keep
 	versioning simple to ease packaging.
 
-	* [%] In not mandatory mode will fail if user HOME is not found.
+	* [!] In not mandatory mode will fail if user HOME is not found.
 	* [%] PAM module maybe should mmap memory not to let key be additionaly swapped to disc.
 	   It's is on the disc in plaintext but the less copies the better.
 

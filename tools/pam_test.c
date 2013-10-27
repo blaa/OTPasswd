@@ -120,7 +120,7 @@ int authenticate(const char *user, char *answer)
 
 	case PAM_SUCCESS:
 		printf("success\n");
-		retval = 6;
+		retval = 0;
 		break;
 
 	case PAM_USER_UNKNOWN:
@@ -190,10 +190,10 @@ int main(int argc, char **argv)
 	printf("\n\nShould fail:\n");
 	retval = authenticate(argv[1], "failedfailedfailed");
 	if (retval == 0) {
-		printf("*** Should-fail auth testcase failed (%d)\n", retval);
+		printf("*** Should-fail auth testcase failed (because we got authenticated) (%d)\n", retval);
 		ret++;
 	} else {
-		printf("*** SHOULD-FAIL AUTH SUCCEDDED\n");
+		printf("*** SHOULD-FAIL AUTH SUCCEDDED (that is - we got rejected)\n");
 	}
 
 	return ret;

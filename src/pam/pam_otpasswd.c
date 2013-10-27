@@ -68,7 +68,6 @@ PAM_EXTERN int pam_sm_authenticate(
 	int dont_increment = 0; /* Do not increment if previous prompt was for OOB */
 	int tries;
 
-
 	/* Perform initialization:
 	 * parse options, start logging, initialize state,
 	 */

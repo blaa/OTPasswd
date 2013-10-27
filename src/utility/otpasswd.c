@@ -646,7 +646,7 @@ int main(int argc, char **argv)
 	}
 
 #if DEBUG
-	printf("WARNING: This is a DEBUG build. Unsuitable for production use.\n\n");
+	fprintf(stderr, "WARNING: This is a DEBUG build. Unsuitable for production use.\n\n");
 #endif
 
 	/* Pre-init debugging, and go! */

@@ -6,7 +6,7 @@ echo
 echo '* DISTCLEAN tree'
 
 make clean
-rm -rf ./CMakeFiles ./CMakeCache.txt CTestTestfile.cmake Makefile cmake_install.cmake install_manifest.txt Testing .emacs.desktop.lock
+rm -rf ./CMakeFiles ./CMakeCache.txt CTestTestfile.cmake Makefile cmake_install.cmake install_manifest.txt Testing .emacs.desktop.lock lcov gcov
 find . -iname "#*"; find . -iname "*~*"   
 
 pushd tools
