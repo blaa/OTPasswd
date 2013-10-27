@@ -5,6 +5,7 @@
 # Call AFTER calling package.sh
 
 DEVDIR=otpasswd
+KEY=D59B22FE
 
 if [ -z "$1" ]; then
     echo "Pass version as a first argument"
@@ -42,6 +43,11 @@ cp otpasswd/tools/debian_pkg_template debian_packaging/$PACKAGE/debian -Rv
 echo
 echo '* BUILD PACKAGE'
 pushd debian_packaging/$PACKAGE
-dpkg-buildpackage -kD59B22FE
+
+if [ "$NO_SIGN" == "1" ]; then
+    dpkg-buildpackage -uc -us
+else
+    dpkg-buildpackage -k$KEY
+fi
 popd
 

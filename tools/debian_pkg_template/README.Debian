@@ -1,14 +1,33 @@
-otpasswd for Debian
+OTPasswd for Debian
 -------------------
+
+Treat 0.8 as a testing release-candidate before 1.0 version.  Using in
+default DB=user mode as an additional layer of the authentication
+*SHOULD* be secure. No warranty is given as usual.
+
+To use with SSH:
+
+1. Make sure /etc/ssh/sshd_config contains:
+      ChallengeResponseAuthentication yes
+      UsePAM yes
+2. Enable PAM module with pam-auth-update
+3. Create otpasswd state file using otpasswd -k
+
+For more information see homepage and upstream README/INSTALL files.
+
+To use DB=global agent_otp needs to be SETUID root. Also additional
+system user will be required. You can set SUID-bit on agent-otp like
+this:
+# dpkg-statoverride --add root root 4755 /usr/bin/agent_otp 
+So that SUID will stick even when package gets updated.
+
+Release plan: Version 0.9 and 1.0 will be published after 0.8 is
+  tested and reviewed (see upstream Changelog) No major new
+  functionality is planned for 1.0 version.
+
+ -- Tomasz Fortuna <bla@thera.be  Sat 26 Oct 13:50:20 CEST 2013
 
 This package is in rapid flux, and should not be used on mission critical
 systems.
 
  -- Luke Faraone <luke@faraone.cc>  Fri, 18 Dec 2009 20:46:18 -0500
-
-
-Getting back to maintain the upstream, stabilize it and test it.
-Development got stopped almost before getting a stable release due
-to lack of time and valgrind problems.
-
- -- Tomasz Fortuna <bla@thera.be  Sat 26 Oct 13:50:20 CEST 2013

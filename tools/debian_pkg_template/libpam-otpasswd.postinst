@@ -1,6 +1,11 @@
 #!/bin/bash
+#DEBHELPER#
 
 # Register PAM module (off by default)
 # As instructed in: https://wiki.ubuntu.com/PAMConfigFrameworkSpec
 pam-auth-update --package
 
+cat <<EOF
+See README.Debian to configure for use with SSH.
+
+EOF

@@ -1,7 +1,8 @@
 #!/bin/bash
+#DEBHELPER#
 
 # Deregister PAM module
-# As instructed in: https://wiki.ubuntu.com/PAMConfigFrameworkSpec
+# As in: https://wiki.ubuntu.com/PAMConfigFrameworkSpec
 if [ "$1" == remove ]; then
    pam-auth-update --package --remove otpasswd
 fi

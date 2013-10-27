@@ -1,4 +1,0 @@
-# See uscan(1) for format
-
-version=3
-http://download.savannah.gnu.org/releases-noredirect/otpasswd/otpasswd-([\d\.]+)\.tar\.gz
