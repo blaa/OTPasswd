@@ -1,4 +1,4 @@
-./otpasswd
+otpasswd
 pam_otpasswd.so
 libotp.a
 libotp.so

@@ -595,6 +595,9 @@ const char *ppp_get_error_desc(int error)
 	case STATE_NON_EXISTENT:
 		return _("Have you created key with --key option?");
 
+	case STATE_NO_USER_HOME:
+		return _("User doesn't have a HOME directory.");
+
 	case STATE_IO_ERROR:
 		return _("I/O error (permissions, file type, ...) while reading state. Try agent_otp --config-check.");
 
@@ -797,7 +800,7 @@ int ppp_key_generate(state *s, int flags)
 	/* State musn't be locked currently */
 	if (s->lock != -1) {
 		print(PRINT_ERROR, "Unable to generate key while holding a lock on state db\n");
-		assert(0); /* This is programing error */
+		assert(0); /* This is a programing error */
 		return PPP_ERROR;
 	}
 

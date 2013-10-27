@@ -48,7 +48,7 @@ static char *_strtok(char *input, const char *delim)
 	if (input != NULL)
 		position = input;
 
-	/* FIXME: valgrind doesn't like following line: 
+	/* FIXME: valgrind doesn't like following line:
 	 * As of 0.7 valgrind doesn't seem to have a problem here. */
 	token = strsep(&position, delim); /* Non C99 function */
 
@@ -67,10 +67,10 @@ static char *_strtok(char *input, const char *delim)
  * 2) Check if it has correct permissions.
  * print warning if anything is wrong, but don't fix permissions.
  * If we will be unable to continue in general sense (directory
- * not owned by us - fail. 
+ * not owned by us - fail.
  *
- * Mode 1. DB=user. 
- * Check ownership and see if others can read it.
+ * Mode 1. DB=user.
+ * Check ownership and see if others can read it. Check if db_user_home exists.
  *
  * Mode 2. DB=global or other
  * We're run as root then we drop rights to match cfg->user_uid.
@@ -78,7 +78,7 @@ static char *_strtok(char *input, const char *delim)
  * State files are created with PAM also. Because of this
  * we must ensure correct owner of file.
  */
-static int _db_file_permissions(const char *db_path)
+static int _db_file_permissions(const char *db_path, const char *user_home)
 {
 	/* Limit number of warnings printed */
 	static int printed = 0;
@@ -115,8 +115,8 @@ static int _db_file_permissions(const char *db_path)
 		/* 2) Owned by user defined in config */
 		if (st.st_uid != cfg->user_uid) {
 			/* Not ok. */
-			print(PRINT_ERROR, 
-			      "Owner of \"%s\" file must match USER field defined in config.\n", 
+			print(PRINT_ERROR,
+			      "Owner of \"%s\" file must match USER field defined in config.\n",
 			      CONFIG_DIR);
 			return STATE_IO_ERROR;
 		}
@@ -124,7 +124,7 @@ static int _db_file_permissions(const char *db_path)
 		/* 3) No "write" rights for group or others too */
 		if (st.st_mode & (S_IWGRP | S_IWOTH)) {
 			/* If were wrong show it. */
-			print(PRINT_ERROR, 
+			print(PRINT_ERROR,
 			      "Directory \"%s\" has write permissions "
 			      "for others or group. Fix it and try again.\n",
 			      CONFIG_DIR);
@@ -149,7 +149,7 @@ static int _db_file_permissions(const char *db_path)
 		/* Is it at most 700? */
 		if (st.st_mode & (S_IWGRP | S_IWOTH)) {
 
-			print(PRINT_ERROR, 
+			print(PRINT_ERROR,
 			      "Database \"%s\" has write permissions "
 			      "for others or group. Fix it and try again.\n",
 			      CONFIG_DIR);
@@ -185,24 +185,41 @@ static int _db_file_permissions(const char *db_path)
 		 *
 		 * We can be run as either from PAM as uid=0,
 		 * or from the utility with credentials of either
-		 * the user or special SUID otpasswd user. 
+		 * the user or special SUID otpasswd user.
 		 */
 
-		/* 1) Check if state file exists and read it's parameters */
+		/* 1) If the user doesn't have a HOME directory - return appropriate error */
+		if (user_home != NULL) {
+			if (stat(user_home, &st) != 0) {
+				/* User doesn't have HOME */
+				print(PRINT_WARN, "User without a HOME (%s) tried to login.\n", user_home);
+				return STATE_NO_USER_HOME;
+			}
+
+			if (!S_ISDIR(st.st_mode)) {
+				/* Error, not a directory. */
+				print(PRINT_ERROR, "User home directory is not a directory\n");
+				return STATE_NO_USER_HOME;
+			}
+		}
+
+		/* 2) Check if state file exists and read it's parameters */
 		if (stat(db_path, &st) != 0) {
-			/* Does not exists */
+			/* Does not exists - not fatal if not enforcing.
+			 * Can happen when locking for state creation.
+			 */
 			print(PRINT_NOTICE, "User state doesn't exists.\n");
 			return STATE_NON_EXISTENT;
 		}
 
-		/* 2) Is file */
+		/* 3) Is file */
 		if (!S_ISREG(st.st_mode)) {
 			/* Error, not a file */
 			print(PRINT_ERROR, "User state is not a regular file\n");
 			return STATE_IO_ERROR;
 		}
 
-		/* 3) Others/Group */
+		/* 4) Others/Group */
 		if (st.st_mode & (S_IRWXG | S_IRWXO)) {
 			if (!printed)
 				print(PRINT_WARN,
@@ -214,7 +231,7 @@ static int _db_file_permissions(const char *db_path)
 			if (!printed)
 				print(PRINT_WARN, "User state not owned by user "
 				      "running the utility.\n");
-		}  
+		}
 		break;
 
 	default:
@@ -228,9 +245,10 @@ static int _db_file_permissions(const char *db_path)
 }
 
 /* Returns a name of current state + lock + temp file.
- * When DB_USER is set it also returns UID and GID of given user
+ * When DB=USER is set it also returns UID, GID and HOME of a given user
  */
-static int _db_path(const char *username, char **db, char **lck, char **tmp, uid_t *uid, gid_t *gid)
+static int _db_path(const char *username, char **db, char **lck, char **tmp,
+                    uid_t *uid, gid_t *gid, char **home)
 {
 	int retval = 1;
 	static struct passwd *pwdata = NULL;
@@ -249,29 +267,37 @@ static int _db_path(const char *username, char **db, char **lck, char **tmp, uid
 	switch (cfg->db) {
 	case CONFIG_DB_USER:
 	{
-		char *home = NULL;
+		char *userhome = NULL;
 		int length;
-		
+
 		/* Get home */
 		pwdata = getpwnam(username);
 		if (pwdata && pwdata->pw_dir) {
-			home = pwdata->pw_dir;
+			userhome = pwdata->pw_dir;
 		} else {
 			return STATE_NO_SUCH_USER;
 		}
 
 		/* Append a filename */
-		length = strlen(home);
+		length = strlen(userhome);
 		length += strlen(cfg->user_db_path);
 		length += 2;
-		
+
 		*db = malloc(length);
-		if (!*db) 
+		if (!*db)
 			return STATE_NOMEM;
-		
+
 		{
-			int ret = snprintf(*db, length, "%s/%s", home, cfg->user_db_path);
+			int ret = snprintf(*db, length, "%s/%s", userhome, cfg->user_db_path);
 			assert(ret == length - 1);
+		}
+
+		if (home) {
+			*home = strdup(userhome);
+			if (!*home) {
+				retval = STATE_NOMEM;
+				goto error;
+			}
 		}
 
 		if (uid)
@@ -321,6 +347,7 @@ error:
 	free(*db), *db = NULL;
 	free(*tmp), *tmp = NULL;
 	free(*lck), *lck = NULL;
+	free(*home), *home = NULL;
 	return retval;
 }
 
@@ -490,15 +517,15 @@ int db_file_load(state *s)
 	int i;
 
 	/* Files: database, lock and temporary */
-	char *db = NULL, *lck = NULL, *tmp = NULL;
-	ret = _db_path(s->username, &db, &lck, &tmp, NULL, NULL);
+	char *db = NULL, *lck = NULL, *tmp = NULL, *home = NULL;
+	ret = _db_path(s->username, &db, &lck, &tmp, NULL, NULL, &home);
 	if (ret != 0) {
 		return ret;
 	}
 
 	/* Permissions will be checked during locking
 	 * now, or was already checked */
-	retval = _db_file_permissions(db);
+	retval = _db_file_permissions(db, home);
 	if (retval != 0) {
 		goto cleanup1;
 	}
@@ -528,7 +555,7 @@ int db_file_load(state *s)
 	if (!f) {
 		if (errno == ENOENT)
 			retval = STATE_NON_EXISTENT;
-		else 
+		else
 			retval = STATE_IO_ERROR;
 		print_perror(PRINT_ERROR,
 			     "Unable to open %s for reading.",
@@ -684,7 +711,6 @@ int db_file_load(state *s)
 cleanup:
 	/* Clear memory */
 	memset(buff, 0, sizeof(buff));
-
 	/* Unlocked if locally locked */
 	if ((locked == 1) && (db_file_unlock(s) != 0)) {
 		print(PRINT_ERROR, "Error while unlocking state file!\n");
@@ -698,6 +724,7 @@ cleanup1:
 	free(db);
 	free(tmp);
 	free(lck);
+	free(home);
 	return retval;
 }
 
@@ -743,9 +770,9 @@ static int _db_generate_user_entry(const state *s, char *buffer, int buff_length
 		       "%s:%s\n",            /* label, contact */
 		       s->username, _version,
 		       sequence_key, counter, latest_card,
-		       s->failures, s->recent_failures, s->channel_time, 
-		       s->code_length, s->alphabet, s->flags, spass, 
-		       s->spass_time,  
+		       s->failures, s->recent_failures, s->channel_time,
+		       s->code_length, s->alphabet, s->flags, spass,
+		       s->spass_time,
 		       s->label, s->contact);
 	if (tmp < 10 || tmp == buff_length) {
 		print(PRINT_ERROR, "Error while writing data to state file.");
@@ -777,7 +804,7 @@ int db_file_store(state *s, int remove)
 	char *db = NULL, *lck = NULL, *tmp = NULL;
 	uid_t user_uid;
 	gid_t user_gid;
-	ret = _db_path(s->username, &db, &lck, &tmp, &user_uid, &user_gid);
+	ret = _db_path(s->username, &db, &lck, &tmp, &user_uid, &user_gid, NULL);
 	if (ret != 0) {
 		return ret;
 	}
@@ -870,7 +897,7 @@ int db_file_store(state *s, int remove)
 
 	/* 2) Generate our new entry and store it into file */
 	if (remove == 0) {
-		ret = _db_generate_user_entry(s, user_entry_buff, 
+		ret = _db_generate_user_entry(s, user_entry_buff,
 					      sizeof(user_entry_buff));
 		if (ret != 0) {
 			print(PRINT_ERROR,
@@ -878,7 +905,7 @@ int db_file_store(state *s, int remove)
 			      "entry line\n");
 			goto cleanup;
 		}
-		
+
 		if (fputs(user_entry_buff, out) < 0) {
 			print(PRINT_ERROR, "Error while writing user "
 			      "entry to database\n");
@@ -932,9 +959,9 @@ cleanup:
 				     "file and save state.");
 			ret = STATE_IO_ERROR;
 		} else {
-			/* When state updated via PAM (root) 
+			/* When state updated via PAM (root)
 			 * we must set correct file owner. */
-			if (_db_file_permissions(db) != 0) {
+			if (_db_file_permissions(db, NULL) != 0) {
 				print(PRINT_WARN,
 				      "Unable to set state file permissions. "
 				      "Key might be world-readable!\n");
@@ -967,27 +994,36 @@ int db_file_lock(state *s)
 	int fd;
 
 	/* Files: database, lock and temporary */
-	char *db = NULL, *lck = NULL, *tmp = NULL;
+	char *db = NULL, *lck = NULL, *tmp = NULL, *home=NULL;
 
 	/* Check that the lock already is not set */
 	assert(s->lock == -1);
 
-	ret = _db_path(s->username, &db, &lck, &tmp, NULL, NULL);
+	ret = _db_path(s->username, &db, &lck, &tmp, NULL, NULL, &home);
 	if (ret != 0) {
 		return ret;
 	}
 
-	/* TODO: This has to be called here only when DB=global
-	 * to ensure we've got enough permissions to create lock
-	 * inside /etc/otpasswd and inform user nicely 
+	/*
+	 * Verifies permissions for global DB or for user DB.
+	 * OTPasswd should refuse to work with unsafe file permissions.
 	 *
-	 * Actually this seems to do much more and it's ok.
+	 * Will also fail if the user doesn't have a home directory.
 	 */
-	ret = _db_file_permissions(db);
-	if (ret == STATE_IO_ERROR) {
+	ret = _db_file_permissions(db, home);
+	switch (ret) {
+	case STATE_IO_ERROR:
 		print(PRINT_NOTICE, "File permission check failed\n");
 		ret = STATE_LOCK_ERROR;
 		goto cleanup;
+	case STATE_NO_USER_HOME:
+		/* We won't be able to lock. But that might not be
+		 * fatal - propagate error */
+		goto cleanup;
+	case STATE_NON_EXISTENT:
+		/* That's fine, we might be locking for state
+		 * creation, try to lock. */
+		break;
 	}
 
 	fl.l_type = F_WRLCK;
@@ -1033,6 +1069,7 @@ cleanup:
 	free(db);
 	free(lck);
 	free(tmp);
+	free(home);
 
 	return ret;
 }
@@ -1046,7 +1083,7 @@ int db_file_unlock(state *s)
 
 	/* Files: database, lock and temporary */
 	char *db = NULL, *lck = NULL, *tmp = NULL;
-	retval = _db_path(s->username, &db, &lck, &tmp, NULL, NULL);
+	retval = _db_path(s->username, &db, &lck, &tmp, NULL, NULL, NULL);
 	if (retval != 0) {
 		return retval;
 	}
@@ -1083,6 +1120,3 @@ error:
 	free(tmp);
 	return retval;
 }
-
-
-

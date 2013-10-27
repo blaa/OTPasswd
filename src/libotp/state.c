@@ -167,6 +167,10 @@ int state_key_generate(state *s)
 
 	const int salt = s->flags & FLAG_SALTED;
 
+	/* TODO: It's almost certain that it's better To read whole
+	 * key from dev/random instead of this weird splitting.
+	 */
+
 	/* Gather entropy from random + urandom to speed things up... */
 	if (crypto_file_rng("/dev/random", NULL,
 		    entropy_pool, real_random) != 0)

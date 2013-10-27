@@ -380,6 +380,7 @@ int ph_increment(pam_handle_t *pamh, const char *username, state *s)
 		print(PRINT_ERROR, "lock error during auth; user=%s", username);
 		return PAM_AUTH_ERR;
 
+	case STATE_NO_USER_HOME:
 	case STATE_NON_EXISTENT:
 		if (cfg->pam_enforce == CONFIG_ENABLED && cfg->db == CONFIG_DB_USER)
 			goto enforced_fail;
@@ -541,13 +542,11 @@ int ph_init(pam_handle_t *pamh, int flags, int argc, const char **argv,
 		goto error;
 	}
 
-	print(PRINT_NOTICE, "pam_otpasswd initialized; user=%s\n", username);
+	print(PRINT_NOTICE, "pam_otpasswd initialized; user=%s\n", user);
 
 	/* Initialize state with given username */
 	retval = ppp_state_init(s, user); 
 	if (retval != 0) {
-		/* This will fail if, for example, we're 
-		 * unable to locate home directory */
 		retval = PAM_USER_UNKNOWN;
 		goto error;
 	}

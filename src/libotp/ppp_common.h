@@ -97,6 +97,10 @@ enum ppp_errors {
 	 */
 	STATE_NON_EXISTENT,
 
+	/** User home doesn't exist - not fail either
+	 * but different as we are always unable to lock it */
+	STATE_NO_USER_HOME,
+
 	/** State exists, is readable, but doesn't have
 	 * user entry. Always causes ignore if enforce=0
 	 */
