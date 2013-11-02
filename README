@@ -7,20 +7,18 @@
                                     README
 
 
-
 Contents
 ========
   1. Package Status
-  2. Introduction
-  3. Package Features
-  4. Security Advisory
-  5. Installation
-  6. Demo (Screenshot!)
-  7. Documentation
+  2. Documentation
+  3. Introduction
+  4. Package Features
+  5. Security Advisory
+  6. Installation
+  7. Demo (Screenshot!)
   8. Contact Information
   9. History
  10. Licensing
-
 
 
 1. Package Status
@@ -42,153 +40,143 @@ View the most recent version of this document on the web at:
    https://github.com/blaa/OTPasswd/blob/master/README
 
 
-2. Introduction
-===============
-A one-time password (OTP) is a password that is only valid for a single login
-session or transaction (normally used along with a normal static password).
-Using an OTP reduces the risks associated with logging into your system
-from insecure (eg, key logged) workstations.
+2. Documentation
+================
+In addition to this README, various other documents are included with the
+source distribution of this package.  Depending upon the OTPasswd package
+that was installed, these documents may be available in the /usr/share
+hierarchy of your system.
 
-The OTPasswd package consists of three primary components, a user utility,
-agent which performs operation on behalf of the utility, and a PAM module
-(Pluggable Authentication Module).  The utility allows the management of a
-user's interaction with the OTPasswd system.  Its primary functions are to
-generate the user's cryptographic key, manage options affecting OTPasswd
-behavior, and to print passcards with one-time passwords.  The user's OTPasswd
-configuration is known as the user's "state", and can either be stored in the
-user's home directory or in a system-wide database. User never interacts 
-directly with the agent. Instead utility calls agent functions each time 
-user runs utility. It's existance is solely due to security.
+Documentation Index:
+  README            - Generic system information
+  INSTALL           - Source installation hints 
+  Project Webpage   - http://otpasswd.thera.be
+  README.Debian     - Things you need to know after Debian installation.
+
+OTPasswd is documented by a following man pages:
+  otpasswd(1)       - OTP Management Utility
+  pam_otpasswd(8)   - PAM Module
+  otpasswd(5)       - User State Information File
+
+An excellent description of PPPv3 is available on the Gibson Research
+Corporation website at <https://www.grc.com/ppp.htm>.
+
+The evolving design of Perfect Paper Passwords was discussed extensively by
+Steve Gibson and Leo LaPorte on the TWiT Security Now! netcast in episodes
+#113, #115, and #117 during the fall of 2007.
+
+The GRC grc.thinktank newsgroup was the site of a great deal of activity
+regarding the design and development of Perfect Paper Passwords during
+this same time period.  Quite a number of developers posted articles,
+as did Steve Gibson, himself.  More information regarding GRC newsgroups
+is available at <http://www.grc.com/discussions.htm>.  To view the
+grc.thinktank newsgroup itself, point your favorite NNTP newsreader at
+<news://news.grc.com/grc.thinktank>.
+
+Most of the documentation we owe to Hannes Beinert who has devoted plenty
+of his time to make it look good.
+
+
+3. Introduction 
+=============== 
+
+A one-time password (OTP) is a password that is only valid for a
+single login session or transaction. It is normally used along with a
+normal password to create a two-factor authentication using something
+you have (mobile or passcard) and something you know (a password).
+
+Using an OTP reduces the risks associated with logging into your
+system from insecure (eg, key logged) workstations.
+
+The OTPasswd package consists of two primary components, a user
+utility (otpasswd + agent_otp) and a PAM module (Pluggable
+Authentication Module).  The utility allows the management of a user's
+interaction with the OTPasswd system.  Its primary functions are to
+generate the user's cryptographic key, manage options affecting
+OTPasswd behavior, and to print passcards with one-time passwords.
+The user's OTPasswd configuration is known as the user's "state", and
+can either be stored in the user's home directory or in a system-wide
+database. User never interacts directly with the agent_otp. Instead
+utility calls agent functions each time user runs utility. It's
+existance is solely due to security.
 
 The third primary component of the OTPasswd system, the PAM module, enables
 "PAM aware" applications, such as OpenSSH, to do OTP authentications using
 the user's OTPasswd "state" information.
 
-OTPasswd is written in C (C99) and implements an OTP system as described
-by Steve Gibson's "Perfect Paper Passwords" specification.  An excellent
-description may be found at: <https://www.grc.com/ppp.htm>.  While OTPasswd
-is designed to be completely compliant with the PPPv3.1 specification,
-it does optionally extend the specification by allowing the use of a
-cryptographic "salt" to the passcode counter.  OTPasswd does not support
-earlier versions of the PPP specification.
+When SSH uses certificates for authentication it bypasses the whole
+PAM stack. That gives user a great opportunity - one can configure key
+authentication from all trusted workstations and get asked one-time
+passwords only when logging in from external, untrusted machines.
+
+OTPasswd is written in C (C99) and implements an OTP system as
+described by Steve Gibson's "Perfect Paper Passwords" specification
+<https://www.grc.com/ppp.htm> version 3.1. In a nutshell one-time
+passwords are generated using AES cipher in a counter mode.
 
 
-
-3. Package Features
-===================
-Current:
+4. Main package features
+========================
+Main features:
    * Use of Pluggable Authentication Module (PAM) allows great flexibility
-   * Rijndael (AES) cipher is modern, robust, and efficient
-   * User state information may be maintained in global DB, or in user home
-   * Compatible with the well-documented PPP (Perfect Paper Passwords) standard
-   * Interoperable with other PPP-compliant applications
-   * Capable of enforcing system OTP security policy decisions
-   * User-selectable passcode entry alphabet to suit language, or keyboard
-   * High entropy passcodes for rapid entry, reducing Over-The-Shoulder attacks
-   * Passcards may be generated in either plain ASCII or LaTeX
-   * Secure locking of state files to resolve race conditions
-   * Many user options: display entered passcodes, passcode length, etc.
-   * Many sysadmin options: enforcement or overriding user options, etc.
+   * Modern set of crypto algorithms: Rijndael (AES) and SHA-2.
+   * Compatible with the well-documented PPP (Perfect Paper Passwords)
+   * Highly customizable:
+    - user-selectable alphabets,
+    - passcode lengths
+    - passcard labels, OOB contact
+    - key salting on/off
    * Warnings issued when user passcard supply is running low
+   * Passcards may be generated in either plain ASCII or LaTeX
+   * Out-of-band transmission of codes using external script (Email, SMS)
    * Support for cryptographic salt to increase attack resistance (optional)
    * Designed and written with emphasis on secure code
-   * Out-of-band passcode transmission with customizable scripts (SMS, IM, etc)
+     - Plenty of testcases
+     - Tested with valgrind for memory problems
+     - Locking of state files to resolve race conditions
+     - Implemented correct-configuration checkers
 
-Planned:
-   * Wide variety of supported platforms (Linux, Unix, BSD, Solaris)
-   * Comprehensive documentation
-   * Pre-compiled binary packages for major distributions; Also, Gentoo ebuild
-   * Flexible layout of printed passcards through customizable scripts
-   * Flexible choice of DB backend, including flat file, MySQL & LDAP
+User mode:
+   * Does not require additional SUID binaries in USER mode.
+   * Works almost out-of-the-box.
+
+Global mode:
+   * Capable of enforcing system OTP security policy decisions:
+   * Users can be forced to use OTP
+   * Users can't directly access their state and can't easily break security.
 
 
-
-4. Security Advisory
+5. Security Advisory
 ====================
-It is very important that the user has a good understanding of the following
-issues related to any system security software:
+It is very important that the user has a good understanding of the
+OTPasswd intent, purpose and limitations.
 
-   A.  The intent and purpose of the design
-   B.  The limitations of the implementation
-   C.  The points of vulnerability
-   D.  The general principles of operation
+The user is encouraged to read the documentation provided in the
+<docs/SECURITY> (or /usr/share/doc/otpasswd/SECURITY if installed).
 
-The user is encouraged to read the documentation provided in the <docs>
-directory of this package.  In particular, the <docs/security> document
-covers a number of security concerns related to this package.  The user
-is also encouraged to read the information on the GRC website (above)
-regarding PPP.
-
-The user is also advised to take the following two warnings to heart:
+The user is advised to take the following basic warnings to heart:
 
    CAUTION #1.  OTPasswd is NOT designed to replace standard system
-   passwords, rather, it is intended to provide a "second factor" to
-   a "first factor" authentication system.  Do not use it as your only
-   authentication system.  Really.
+   passwords, rather, it is intended to provide a "second factor" to a
+   "first factor" authentication system.  If you are willing to use it
+   as a first or single authentication factor - make sure you know
+   what you are doing.
 
-   CAUTION #2.  No OTP authentication system can protect you if you have not
-   first authenticated the endpoint of your communication channel.  Prior
-   to providing your password, it is essential to authenticate the host.
-   Failure to do so exposes you to the risk of a Man-In-The-Middle attack.
-   In other words: use SSH and validate the host key fingerprint!
+   CAUTION #2.  No OTP authentication system can protect you if you
+   have not first authenticated the endpoint of your communication
+   channel.  Prior to providing your password, it is essential to
+   authenticate the host.  Failure to do so exposes you to the risk of
+   a Man-In-The-Middle attack.  In other words: use SSH and validate
+   the host key fingerprint!
 
 
-
-5. Installation
+6. Installation
 ===============
-OTPasswd installation is covered in the INSTALLATION GUIDE, included with
-this distribution in the INSTALL file.
-
-A few of the more important issues related to OTPasswd installation are
-worth noting, however.
-
-Operational Mode
-----------------
-OTPasswd is able to run in two slightly different modes, which are
-distinguished by the location of the stored user state configuration.
-This is a deliberate and essential configuration choice that must be
-made by the system administrator.  Each choice carries with it certain
-consequences with respect to system security.
-
-In the 'USER DB' mode, a user's configuration is stored in the user's
-home directory.  Because of this, the OTPasswd agent does not need
-escalated SUID privileges to access and modify the user's configuration.
-As a consequence, however, the user's configuration may be changed by
-the user at will.  This prevents OTPasswd from effectively enforcing
-various security policies.  Among other things, it permits a user to
-create a situation where one-time passwords (passcodes) are reused, which
-could be interpreted as effectively defeating the entire point behind
-OTP authentication.  It should be noted that if the system user-base is
-trusted, competent, and conversant in IT security issues, this may not be
-a relevant concern.  In any event, the USER DB mode effectively implies
-that OTPasswd security is optional.
-
-In the second operational mode, the 'GLOBAL DB' mode, every user's
-configuration is stored in a single database under system control.
-This operational mode may use a number of backend database interfaces,
-such as a flat-file in the /etc filesystem hierarchy, an LDAP database, or a
-MySQL database.  The user has no read/write access to the configuration data,
-and hence the system is capable of enforcing OTPasswd security policies.
-As an example, GLOBAL DB mode ensures that passcodes are never reused.
-This mode of operation does require that the OTPasswd agent be installed
-as SUID root, which may be viewed by some as being undesirable since this
-may present a security exposure in its own right.  It should be stressed,
-however, that the OTPasswd software was written in a manner observant of
-secure coding practices, and while the agent is installed SUID root,
-it merely uses these privileges to read its configuration files and then
-it promptly drops the root privileges.  Or, put another way, the OTPasswd
-agent only holds root privileges for a brief time during which it never
-processes any user input.  The benefit of this approach is that the GLOBAL
-DB mode allows the system administrator to choose whether OTPasswd security
-is optional, or mandatory.
-
-It is important to note that this is the first critical decision that
-a system administrator must make in configuring OTPasswd.  No default
-is provided for this choice, and OTPasswd will not operate until the
-operational mode has been configured.
+OTPasswd installation instructions and description of operational
+modes is covered in the INSTALL file. 
 
 
-6. Demo (Screenshot!)
+7. Demo (Screenshot!)
 =====================
 Everybody loves it, so here is an example of key generation, run by a user
 who has previously generated a key, and has also set some optional flags
@@ -252,7 +240,7 @@ To display the current user configuration:
    show=on disabled=off alphabet=1 code_length=3 (salt=on)
    Passcard label="Home", no contact information.
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+ 
 Example usage:
 
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -264,48 +252,13 @@ Example usage:
    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-
-7. Documentation
-================
-In addition to this README, various other documents are included with the
-source distribution of this package.  Depending upon the OTPasswd package
-that was installed, these documents may be available in the /usr/share
-hierarchy of your system.
-
-OTPasswd also is documented by a series of on-line man pages:
-
-   otpasswd(7)      - OTPasswd Principles of Operation
-   otpasswd(1)      - OTP Management Utility
-   pam_otpasswd(8)  - PAM Module
-   otpasswd.conf(5) - System Configuration File
-   otpasswd(5)      - User State Information File
-   otshadow(5)      - System User State Information File
-
-An excellent description of PPPv3 is available on the Gibson Research
-Corporation website at <https://www.grc.com/ppp.htm>.
-
-The evolving design of Perfect Paper Passwords was discussed extensively by
-Steve Gibson and Leo LaPorte on the TWiT Security Now! netcast in episodes
-#113, #115, and #117 during the fall of 2007.
-
-The GRC grc.thinktank newsgroup was the site of a great deal of activity
-regarding the design and development of Perfect Paper Passwords during
-this same time period.  Quite a number of developers posted articles,
-as did Steve Gibson, himself.  More information regarding GRC newsgroups
-is available at <http://www.grc.com/discussions.htm>.  To view the
-grc.thinktank newsgroup itself, point your favorite NNTP newsreader at
-<news://news.grc.com/grc.thinktank>.
-
-Most of the documentation we owe to Hannes Beinert who has devoted plenty
-of his time to make it look good.
-
 8. Contact Information
 ======================
-You may contact the author with questions, support, praise or curses at
-<mailto:bla@thera.be>.  Any feedback will be welcomed (even faint praise).
-And no, I don't get a lot of feedback, so don't think "nah, I won't write
-anything since he's probably pissed at us anyway".
-
+You may contact the author with questions, support, praise or curses
+at <mailto:bla@thera.be>.  Any feedback will be welcomed and keeps us
+going (even a faint praise).  And no, I don't get a lot of feedback,
+so don't think "nah, I won't write anything since he's probably pissed
+at us anyway".
 
 
 9. History
@@ -317,7 +270,6 @@ things to fix, and when the author didn't respond (during first month) I
 just decided I'd be better off rewriting everything from scratch.  The two
 projects share some of my code, like locking functions, but nothing more.
 It would be reasonable to think of OTPasswd as a remote fork of ppp-pam.
-
 
 
 10. Licensing
@@ -342,7 +294,7 @@ more details.
 You should have received a copy of the GNU General Public License along
 with OTPasswd.  If not, see <http://www.gnu.org/licenses/>.
 
-
+IMPORTANT:
 It was always planned to relicense this software under BSD-like
 license one day. Most changes required for relicensing are already
 complete. To contribute to the project you have to agree to relicense

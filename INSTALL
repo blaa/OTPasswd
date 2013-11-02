@@ -2,11 +2,9 @@
               OTPasswd - One-Time Password Authentication System
               --------------------------------------------------
                 https://savannah.nongnu.org/projects/otpasswd
-                        Updated: 15-Sep-10 (v0.7)
+                        Updated: 02-Oct-13 (v0.8)
 
                               INSTALLATION GUIDE
-
-
 
 
 Contents
@@ -15,36 +13,40 @@ Contents
   1. Installation Overview
   2. Package Dependencies
   3. Installation - Source Package
-  4. Installation - Binary Package
-  5. System Configuration
-  6. User Configuration
-  7. PAM Configuration - General
-  8. PAM Configuration - OpenSSH
-  9. PAM Configuration - su
- 10. Copyright
-
+  4. System Configuration
+  5. User Configuration
+  6. PAM Configuration - General
+  7. PAM Configuration - OpenSSH
+  8. PAM Configuration - su
+  9. Copyright
 
 
 0. Introduction
 ===============
-A few of the more important issues related to OTPasswd installation are
-worth noting, however.
-
 OTPasswd can easily be configured to work in conjunction with any text-based
 PAM-aware application, such as sudo, su, ftp, or any standard *nix console
 login.  The typical use case for OTPasswd by far, however, is to secure
 non-publickey SSH logins, which is what will be described in this section.
 
+Short installation steps:
+$ cmake . -DNLS=1
+$ make
+# make install
+# Set ChallengeResponseAuthentication and UsePAM to yes in sshd_config
+# Enable otpasswd in PAM (see examples).
+You need cmake and libpam-dev.
+
 Operational Mode
 ----------------
+
 OTPasswd is able to run in two slightly different modes, which are
-distinguished by the location of the stored user data (called `the state').
-This is a deliberate and essential configuration choice that must be made by
-the system administrator.  Each choice carries with it certain consequences
-with respect to system security.
+distinguished by the location of the stored user data (called `the
+state').  By default OTPasswd works in a less intrusive mode called
+`USER DB'.  Changing mode is an essential configuration choice that
+must be understood well by the system administrator.  
 
 In the 'USER DB' mode, a user's state is stored in the user's home directory.
-Because of this, the OTPasswd utility does not need escalated SUID privileges
+Because of this, the OTPasswd agent does not need escalated SUID privileges
 to access and modify the user's state.  As a consequence, however, the user's
 data may be changed by the user at will.  This prevents OTPasswd from
 effectively enforcing various security policies.  Among other things, it
@@ -79,12 +81,6 @@ the root privileges, but it's completely bereft of any user interface, which is
 implemented in the utility. This division ensures the user won't be able to
 suspend execution of the agent while it has locked the global database.
 
-It is important to note that this is the first critical decision that
-a system administrator must make in configuring OTPasswd.  No default
-is provided for this choice, and OTPasswd will not operate until the
-operational mode has been configured.
-
-
 
 1. Installation Overview
 ========================
@@ -106,40 +102,24 @@ procedure outlined above is intended to minimize the likelihood that this
 will happen.
 
 
-
 2. Package Dependencies
 =======================
-OTPasswd may be installed either through compilation from source, or if
-available, from a pre-compiled binary package.  OTPasswd has no external
-runtime dependencies except for PAM. Additional packages are required when
-OTPasswd is compiled from source, namely, the CMake cross-platform build
-system, as well as the corresponding development packages for PAM.  To generate
-documentation of internal API one is required to install Doxygen.  All of these
+OTPasswd may be installed either through compilation from source, or
+if available, from a pre-compiled binary package.  Prefer distribution
+packages if possible.
+
+OTPasswd has no external runtime dependencies except for
+PAM. Additional packages are required when OTPasswd is compiled from
+source, namely, the CMake cross-platform build system, as well as the
+corresponding development packages for PAM.  To generate documentation
+of internal API one is required to install Doxygen.  All of these
 packages should be available in your distribution's repositories.
 
-The following table provides a number of known configurations under which
-OTPasswd is known to compile and run.  This table is not intended to be
-comprehensive, but merely to serve as a point of reference.
-
-   Distribution     Type     Package         Comment
-   ---------------  -------  ------------    ---------------------
-   Gentoo
-   ArchLinux
-   Debian
-   Ubuntu 8.04
-   Ubuntu 10.04     Runtime  libpam0g
-                    Build    cmake
-                             build-essential 
-                             libpam-dev
-
-To ensure you have all required dependencies when using either Debian
-or Ubuntu you may want to use command:
-# apt-get install cmake libpam-dev build-essential
-
-Future versions of OTPasswd may optionally use MySQL and LDAP.  It is also
-possible that a GNU Autotools build system will eventually either replace,
-or serve as an alternative to CMake.  These options may therefore introduce
-a different set of package dependencies.
+Packages you need:
+* cmake
+* libpam-dev (usually libpam0g-dev)
+* compilers (build-essential for Debian / Ubuntu)
+* doxygen
 
 
 3. Installation (Source Package)
@@ -164,54 +144,51 @@ then instead of using 'make install' you can copy the following files:
       Linux: /lib/security/ 
       FreeBSD: /usr/lib
       
-   b) Utility program 'otpasswd' 
+   b) Utility program 'otpasswd' and agent 'otp_agent'
       Linux: /usr/bin/
-      FreeBSD: /usr/local/bin/
-
-   c) OTP agent executable 'otp_agent'
-      Linux: /usr/bin
       FreeBSD: /usr/local/bin/
 
    c) PAM configuration
       Copy into /etc/pam.d one of files:        
       Linux:      example/otpasswd-login
       FreeBSD:    example/otpasswd-login_FreeBSD
+
    d) OTPasswd configuration    
-      'example/otpasswd.conf.dist'  -> /etc/otpasswd/otpasswd.conf
+      'example/otpasswd.conf'  -> /etc/otpasswd/otpasswd.conf
 
 
-When using 'GLOBAL DB' mode you should create a unique system user exclusively
-for OTPasswd, 'otpasswd' is recommended. Directory /etc/otpasswd should be
-owned by this user and otpasswd agent (not utility) binary should be SUID-root.
-By default, no OTPasswd binaries are SUID. If choosing a non-standard name for user
-please remember to update config file accordingly.
+Using GLOBAL DB
+---------------
+
+When using 'GLOBAL DB' mode you should: 
+
+* Create a unique system user exclusively for OTPasswd, 'otpasswd' is
+  recommended.
+  **    adduser --system --no-create-home otpasswd
+* Directory /etc/otpasswd should be owned by this selected user.
+* `agent_otp' and `otpasswd' should be owned by root.
+* `agent_otp' should be SETUID root.  
+* Set DB option to GLOBAL in otpasswd configuration file.
+
+By default, no OTPasswd binaries are SUID. If choosing a non-standard
+name for user please remember to update config file accordingly.
 
 To run test suite you'd best install the otpasswd in the system
 (before updating PAM configuration) and then run tests. To run them in
 the source directory you need to compile otpasswd with -DDEBUG and
 place default config in /etc directory.
 
-4. Installation (Binary Package)
-================================
 
-Currently we're working on getting OTPasswd into sunrise repository of Gentoo.
-You can get .ebuild and build otpasswd for Gentoo yourself.
-
-
-5. System Configuration
+4. System Configuration
 =======================
 OTPasswd is configured via the /etc/otpasswd/otpasswd.conf file.  Upon
-initial installation, otpasswd.conf.dist located in this directory will
-contain a template of all valid configuration options along with copious
-commentary.  A pristine version of this file should be available in the
-OTPasswd package documentation directory of your system's /usr/share 
-hierarchy.
+initial installation, otpasswd.conf located in this directory will
+contain a template of all valid configuration options along with
+copious commentary.  A pristine version of this file should be
+available in the OTPasswd package documentation directory of your
+system's /usr/share hierarchy. Default file should allow for
+out-of-the-box usage with USER DB mode.
 
-You should copy the otpasswd.conf.dist to otpasswd.conf and proceed with its
-configuration.
-
-** Configure/select user
-**    adduser --system --no-create-home otpasswd
 
 The most important configuration setting is the "DB" option.  The DB option
 can be set as follows:
@@ -255,7 +232,7 @@ can be set as follows:
 
 
 
-6. User Configuration
+5. User Configuration
 =====================
 Generate OTPasswd Key & Print Passcard
 -----------------------------------------
@@ -294,22 +271,33 @@ been warned.
 
 
 
-7. PAM Configuration - General
+6. PAM Configuration - General
 ==============================
-To enable OTPasswd use with SSH, one line must be changed in the SSH daemon's PAM
-configuration '/etc/pam.d/sshd', as follows:
 
+Debian package comes with a PAM otpasswd profile in
+<examples/pam-configs/otpasswd> which after installation in
+</usr/share/pam-configs> can be easily enabled and disabled using
+`pam-auth-update' command. This method of PAM installation is
+preferred on all systems which support it.
+
+To enable OTPasswd use with SSH, pam_otpasswd must be called
+inside the `auth' PAM stack, right after the default pam_unix module.
+An example pam.d configuration file is in <examples/otpasswd-login>.
+
+One can move otpasswd-login example to /etc/pam.d directory and set it
+up for ssh instead of the original authentication stack by
+substituting:
    From:
          auth       include        system-remote-login
    to:
          auth       include        otpasswd-login
 
 Consult the section titled 'About PAM' in the <docs/security> document
-for more detailed information. Keep in mind that /etc/pam.d/otpasswd-login
-file must exist.
+for more detailed information. 
 
 
-8. PAM Configuration - OpenSSH
+
+7. PAM Configuration - OpenSSH
 ==============================
 While it would technically also be possible for OTPasswd to be used in
 GUI-based PAM applications, as one might find in the KDE or Gnome desktops,
@@ -334,17 +322,18 @@ files prior to making any changes.
 
 
 
-9. PAM Configuration - su
+8. PAM Configuration - su
 =========================
 As an example of the flexibility that OTPasswd is able to offer by using
 the PAM (Pluggable Authentication Modules) Library, once OTPasswd has
 been configured it is easy to incorporate OTP authentication with other
 PAM-aware applications.  The su(1) command is easily secured by OTPasswd
-by modifying its PAM configuration, as is described in this section.  (FIXME)
+by modifying its PAM configuration, as is described in this section.
+
+OTPasswd also works with xscreensaver.
 
 
-
-10. Copyright
+9. Copyright
 =============
 Copyright (c) 2010-2013 Tomasz bla Fortuna
 

@@ -18,10 +18,6 @@ Contents
 
 1. Security Concerns
 ====================
-TODO: Active / Passive methods of attacks.  Why we're just trying to
-make attack as impossible as possible.  What can be used to circumvent
-our inventions.
-
 There are certain security related issues you should be aware of.
 
   I. This program is not intended to replace normal passwords, it's
@@ -113,9 +109,11 @@ man-from-behind attacks when you're banged in the head after authenticating.
 
 2. Passcode Generation Algorithm
 ================================
-The heart of the system is the Rijndael (AES) cipher, which encrypts
-128-bit blocks with a 256-bit key; this operation generates 128-bits of
-data which is used to calculate a passcode.
+
+The heart of the system is the Rijndael (AES) cipher working in CTR
+(Counter) mode. It encrypts 128-bit blocks with a 256-bit key; single
+encryption operation generates 128-bits of data which is used to
+calculate a passcode.
 
 During key generation, the user is equipped with a 256-bit key and a
 128-bit passcode counter.  Whenever a passcode is validated or generated,

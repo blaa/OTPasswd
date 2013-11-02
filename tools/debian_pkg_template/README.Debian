@@ -21,6 +21,9 @@ this:
 # dpkg-statoverride --add root root 4755 /usr/bin/agent_otp 
 So that SUID will stick even when package gets updated.
 
+And create user for OTPasswd like this:
+# adduser --system --no-create-home otpasswd
+
 Release plan: Version 0.9 and 1.0 will be published after 0.8 is
   tested and reviewed (see upstream Changelog) No major new
   functionality is planned for 1.0 version.
