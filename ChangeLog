@@ -29,16 +29,16 @@ Trying to sort tasks according to their priority.
 	* [-] Approach to agent data passing is overcomplicated. stdin/stdout substitution
 	      causes problems with communication and as it turns out - valgrind. Would better
 	      keep stdin/stdout, but maybe not use them(?) Best to review.
-        * [-] Review documentation and ensure it's up to date.
-	* [-] Update Polish translation
+        * [+] Review documentation and ensure it's up to date.
+	* [+] Update Polish translation
 	* [-] Relicense so it can be used more universally - will require changing of sha256
               implementation, but it would be best to use system openssl lib probably.
-	* [-] Check how SUID version works. It should su to root, read config drop to nobody.
-	      No dedicated user! As the binary can then be modified and affect root more easily.
-	* [-] Update defaults for OOB. Explain better how to configure OOB messaging. 
+	* [+] Check how SUID version works.
+	      Update: Was fine.
+	* [-] Update defaults for OOB. Explain better how to configure OOB messaging.
 	      Add otpasswd_oob checks to --check-config
-	
-	
+
+
 2010-03-31 0.7_rc2
 Done:
         * [!] On DB=user when administrator creates a key with -u option user

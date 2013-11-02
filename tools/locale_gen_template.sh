@@ -1,6 +1,6 @@
 #!/bin/sh
 # Read all strings in _() from source code
-xgettext -d otpasswd -s -o po/otpasswd.pot -k_ */*.h  */*.c
+xgettext -d otpasswd -s -o po/otpasswd.pot -k_ $(find . -type f -regex '.*\.[ch]')
 
 # Create/update translation files
 #touch po/pl.po

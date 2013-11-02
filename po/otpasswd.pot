@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2010-09-30 01:28+0200\n"
+"POT-Creation-Date: 2013-11-02 21:16+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,23 +17,21 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: agent/agent.c:97
-#, c-format
-msgid ""
-"\n"
-"\n"
-"Global DB selected. Trying to initialize PPP and read state data to see if "
-"DB exists.\n"
-msgstr ""
-
-#: utility/actions.c:494
+#: src/utility/actions.c:495
 #, c-format
 msgid ""
 "\n"
 "* Your current flags:\n"
 msgstr ""
 
-#: utility/actions.c:309
+#: src/agent/agent.c:130
+#, c-format
+msgid ""
+"\n"
+"************************************\n"
+msgstr ""
+
+#: src/utility/actions.c:310
 msgid ""
 "\n"
 "*****************************************************\n"
@@ -43,520 +41,567 @@ msgid ""
 "*****************************************************\n"
 msgstr ""
 
-#: utility/actions_helpers.c:44
+#: src/utility/actions_helpers.c:44
 msgid " (yes/no): "
 msgstr ""
 
-#: utility/actions_helpers.c:288
+#: src/utility/actions_helpers.c:290
 #, c-format
 msgid "(salt=off)\n"
 msgstr ""
 
-#: utility/actions_helpers.c:286
+#: src/utility/actions_helpers.c:288
 #, c-format
 msgid "(salt=on)\n"
 msgstr ""
 
-#: utility/actions.c:480
+#: src/utility/actions.c:481
 #, c-format
 msgid "* User    = %s\n"
 msgstr ""
 
-#: utility/actions.c:486
+#: src/utility/actions.c:487
 #, c-format
 msgid "* Your current state:\n"
 msgstr ""
 
-#: agent/agent.c:55
+#: src/agent/agent.c:66
 #, c-format
 msgid "1) Config loaded correctly.\n"
 msgstr ""
 
-#: agent/agent.c:61
+#: src/agent/agent.c:72
 #, c-format
 msgid "2) DB option is set.\n"
 msgstr ""
 
-#: agent/agent.c:81
+#: src/agent/agent.c:93
 #, c-format
 msgid "3) Config file ownership and file mode is correct.\n"
 msgstr ""
 
-#: agent/agent.c:126
+#: src/agent/agent.c:103
 #, c-format
-msgid "4) No state loaded, but no other errors. That's fine\n"
+msgid "5) Checking agent binary: %s (must be absolute)\n"
 msgstr ""
 
-#: agent/agent.c:121
-#, c-format
-msgid "4) State loaded\n"
-msgstr ""
-
-#: agent/agent.c:85
+#: src/agent/agent.c:185
 #, c-format
 msgid ""
-"4) Your selected DB option doesn't require further checks. Everything is "
-"fine.\n"
+"5) No state loaded (state not found), but no other errors. That's fine.\n"
 msgstr ""
 
-#: libotp/ppp.c:621
+#: src/agent/agent.c:180
+#, c-format
+msgid "5) State loaded\n"
+msgstr ""
+
+#: src/libotp/ppp.c:621
 msgid "Action denied by policy."
 msgstr ""
 
-#: agent/agent_interface.c:237
+#: src/agent/agent.c:119
+#, c-format
+msgid "Agent binary permissions OK for selected mode.\n"
+msgstr ""
+
+#: src/agent/agent_interface.c:276
 #, c-format
 msgid "Agent detected configuration problem: %s\n"
 msgstr ""
 
-#: utility/actions.c:436
+#: src/utility/actions.c:437
 #, c-format
 msgid "Agent error while clearing recent failures: %s\n"
 msgstr ""
 
-#: utility/actions.c:421
+#: src/utility/actions.c:422
 #, c-format
 msgid "Agent error while reading warnings: %s\n"
 msgstr ""
 
-#: utility/actions.c:398
+#: src/utility/actions.c:399
 #, c-format
 msgid "Agent error while setting password: %s\n"
 msgstr ""
 
-#: utility/actions.c:389
+#: src/utility/actions.c:390
 #, c-format
 msgid "Agent error while unsetting password: %s\n"
 msgstr ""
 
-#: utility/actions.c:141
+#: src/utility/actions.c:141
 #, c-format
 msgid "Agent error: %s\n"
 msgstr ""
 
-#: agent/agent_interface.c:247
+#: src/agent/agent_interface.c:286
 #, c-format
 msgid "Agent failed to initialize correctly: %s\n"
 msgstr ""
 
-#: agent/agent_interface.c:377
+#: src/agent/agent_interface.c:426
 msgid "Agent protocol mismatch. Reinstall software."
 msgstr ""
 
-#: agent/agent_interface.c:208
+#: src/agent/agent_interface.c:247
 #, c-format
 msgid "Agent return value is: %d\n"
 msgstr ""
 
-#: agent/agent_interface.c:212
+#: src/agent/agent_interface.c:251
 msgid "Agent started but didn't sent any valid information back..\n"
 msgstr ""
 
-#: agent/agent_interface.c:379
+#: src/agent/agent_interface.c:428
 msgid "Agent unexpectedly disconnected."
 msgstr ""
 
-#: agent/agent_interface.c:223
+#: src/agent/agent_interface.c:262
 #, c-format
 msgid "Agent: Header type equals %d instead of %d.\n"
 msgstr ""
 
-#: agent/agent_interface.c:222
+#: src/agent/agent_interface.c:261
 msgid "Agent: Initial frame parsing error.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:217
+#: src/utility/actions_helpers.c:219
 #, c-format
 msgid "All auth failures   = %d\n"
 msgstr ""
 
-#: utility/actions_helpers.c:819
+#: src/utility/actions_helpers.c:818
 #, c-format
 msgid "Alphabet denied by policy. See -c alphabet=list\n"
 msgstr ""
 
-#: utility/actions.c:459
+#: src/utility/actions.c:460
 #, c-format
 msgid "Alphabet list ([-] means \"denied by the policy\"): \n"
 msgstr ""
 
-#: utility/actions.c:680
+#: src/utility/actions.c:681
 #, c-format
 msgid "Alphabet selected.\n"
 msgstr ""
 
-#: utility/actions.c:333
+#: src/utility/actions.c:334
 msgid "Are you ready to start using this one-time passwords?"
 msgstr ""
 
-#: utility/actions.c:169 utility/actions.c:276
+#: src/utility/actions.c:169 src/utility/actions.c:277
 msgid "Are you sure you want to continue?"
 msgstr ""
 
-#: libotp/ppp.c:624
+#: src/libotp/ppp.c:624
 msgid "Argument out of range."
 msgstr ""
 
-#: utility/actions.c:118
+#: src/utility/actions.c:118
 #, c-format
 msgid "Authentication failed (Counter overflowed, regenerate key).\n"
 msgstr ""
 
-#: utility/actions.c:134
+#: src/utility/actions.c:134
 #, c-format
 msgid "Authentication failed (policy error).\n"
 msgstr ""
 
-#: utility/actions.c:123
+#: src/utility/actions.c:123
 #, c-format
 msgid "Authentication failed (user doesn't have a key).\n"
 msgstr ""
 
-#: utility/actions.c:128
+#: src/utility/actions.c:128
 #, c-format
 msgid "Authentication failed (user doesn't have entry in db).\n"
 msgstr ""
 
-#: utility/actions.c:99
+#: src/utility/actions.c:99
 #, c-format
 msgid "Authentication failed (user has no state).\n"
 msgstr ""
 
-#: utility/actions.c:113
+#: src/utility/actions.c:113
 #, c-format
 msgid "Authentication failed (wrong passcode).\n"
 msgstr ""
 
-#: utility/actions.c:140
+#: src/utility/actions.c:140
 #, c-format
 msgid "Authentication failed with internal error.\n"
 msgstr ""
 
-#: utility/actions.c:107
+#: src/utility/actions.c:107
 #, c-format
 msgid "Authentication successful.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:686
+#: src/utility/actions_helpers.c:685
 #, c-format
 msgid "Changing a \"disable\" flag disallowed by policy.\n"
 msgstr ""
 
-#: agent/agent_interface.c:388
+#: src/agent/agent_interface.c:437
 msgid "Changing disabled flag is denied by the policy."
 msgstr ""
 
-#: agent/agent.c:131
+#: src/agent/agent.c:190
 #, c-format
 msgid "Check if you have %s\n"
 msgstr ""
 
-#: agent/agent_interface.c:232
+#: src/agent/agent_interface.c:271
 msgid "Check your installation and configuration.\n"
 msgstr ""
 
-#: utility/actions.c:694
+#: src/utility/actions.c:695
 #, c-format
 msgid "Code length set.\n"
 msgstr ""
 
-#: agent/agent_interface.c:401
+#: src/agent/agent_interface.c:450
 msgid "Coding error: Action requires created/read state."
 msgstr ""
 
-#: agent/agent_interface.c:361
+#: src/agent/agent_interface.c:410
 msgid "Coding error: Illegal request argument sent to agent."
 msgstr ""
 
-#: agent/agent_interface.c:359
+#: src/agent/agent_interface.c:408
 msgid "Coding error: Illegal request to agent."
 msgstr ""
 
-#: agent/agent_interface.c:397
+#: src/agent/agent_interface.c:446
 msgid "Coding error: Must create state before generating key."
 msgstr ""
 
-#: agent/agent_interface.c:399
+#: src/agent/agent_interface.c:448
 msgid "Coding error: Must drop state before removing it."
 msgstr ""
 
-#: utility/actions_helpers.c:636
+#: src/utility/actions_helpers.c:635
 #, c-format
 msgid "Column out of possible range!\n"
 msgstr ""
 
-#: agent/agent.c:49
+#: src/agent/agent.c:60
 #, c-format
 msgid "Config file verification...\n"
 msgstr ""
 
-#: agent/agent_interface.c:364
+#: src/agent/agent_interface.c:413
 msgid "Configuration error or unable to read configuration file."
 msgstr ""
 
-#: libotp/ppp.c:642
+#: src/libotp/ppp.c:642
 msgid "Configuration file should be owned by root."
 msgstr ""
 
-#: agent/agent_interface.c:242
+#: src/agent/agent_interface.c:281
 msgid "Configuration problem was detected:\n"
 msgstr ""
 
-#: agent/agent_interface.c:366
+#: src/agent/agent_interface.c:415
 msgid ""
 "Configuration problem: DB option set to 'global', but OTP agent is not SUID-"
 "root."
 msgstr ""
 
-#: utility/actions.c:48
+#: src/utility/actions.c:48
 msgid "Connected to agent\n"
 msgstr ""
 
-#: utility/otpasswd.c:243
+#: src/utility/otpasswd.c:244
 #, c-format
 msgid "Contact already defined\n"
 msgstr ""
 
-#: utility/actions_helpers.c:744
+#: src/utility/actions_helpers.c:743
 #, c-format
 msgid "Contact can't be longer than %d characters\n"
 msgstr ""
 
-#: utility/actions_helpers.c:749
+#: src/utility/actions_helpers.c:748
 #, c-format
 msgid "Contact changing denied by policy.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:739
+#: src/utility/actions_helpers.c:738
 #, c-format
 msgid ""
 "Contact contains illegal characters.\n"
 "Only alphanumeric + \" -+.@_*\" are allowed.\n"
 msgstr ""
 
-#: utility/actions.c:669
+#: src/utility/actions.c:670
 #, c-format
 msgid "Contact set.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:332
+#: src/utility/actions_helpers.c:334
 #, c-format
 msgid "Counter = "
 msgstr ""
 
-#: utility/actions_helpers.c:191
+#: src/utility/actions_helpers.c:193
 #, c-format
 msgid "Current card        = "
 msgstr ""
 
-#: utility/actions_helpers.c:195
+#: src/utility/actions_helpers.c:197
 #, c-format
 msgid "Current code        = "
 msgstr ""
 
-#: agent/agent_interface.c:243
+#: src/agent/agent_interface.c:282
 msgid ""
 "DB=global option is set in config file but agent executable (agent_otp)\n"
 msgstr ""
 
-#: utility/otpasswd.c:84
+#: src/utility/otpasswd.c:85
 #, c-format
 msgid "DEBUG "
 msgstr ""
 
-#: agent/agent.c:139
+#: src/agent/agent.c:198
 #, c-format
 msgid "ERROR while releasing state: %s\n"
 msgstr ""
 
-#: agent/agent.c:74
+#: src/agent/agent.c:115
+#, c-format
+msgid "ERROR: Agent binary (%s) in DB=user setting should NOT be SUID-root.\n"
+msgstr ""
+
+#: src/agent/agent.c:140
+#, c-format
+msgid "ERROR: Agent binary (%s) must be SUID-root.\n"
+msgstr ""
+
+#: src/agent/agent.c:134
+#, c-format
+msgid "ERROR: Agent binary (%s) must be owned by user/group root.\n"
+msgstr ""
+
+#: src/agent/agent.c:146
+#, c-format
+msgid "ERROR: Agent binary (%s) must not be SGID-root.\n"
+msgstr ""
+
+#: src/agent/agent.c:84
 #, c-format
 msgid "ERROR: Config file must be owned by root.\n"
 msgstr ""
 
-#: agent/agent.c:58
+#: src/agent/agent.c:69
 #, c-format
 msgid "ERROR: DB option in config file is not set.\n"
 msgstr ""
 
-#: agent/agent.c:130
+#: src/agent/agent.c:189
 #, c-format
 msgid "ERROR: Error while trying to load state: %s\n"
 msgstr ""
 
-#: agent/agent.c:69
+#: src/agent/agent.c:79
 #, c-format
 msgid "ERROR: Generic error while validating config file permissions. (%d)\n"
 msgstr ""
 
-#: agent/agent.c:77
+#: src/agent/agent.c:88
 #, c-format
 msgid "ERROR: In selected mode config file should not be readable by others.\n"
 msgstr ""
 
-#: agent/agent.c:91
+#: src/agent/agent.c:153
 #, c-format
 msgid ""
 "ERROR: To correctly validate GLOBAL DB configuration you have to run this "
 "option as root.\n"
 msgstr ""
 
-#: agent/agent.c:113
+#: src/agent/agent.c:172
 #, c-format
 msgid "ERROR: Unable to create state: %s\n"
 msgstr ""
 
-#: agent/agent.c:102
+#: src/agent/agent.c:105
+#, c-format
+msgid ""
+"ERROR: Unable to read agent_otp file data. \n"
+"       Permission/other problem. Relative paths won't work.\n"
+"\t Call agent_otp with a full path, not for e.g. ./agent_otp\n"
+msgstr ""
+
+#: src/agent/agent.c:162
 #, c-format
 msgid "ERROR: ppp_init: %s\n"
 msgstr ""
 
-#: utility/otpasswd.c:439
+#: src/utility/otpasswd.c:440
 #, c-format
 msgid "Error (not enough memory) while copying username.\n"
 msgstr ""
 
-#: agent/agent_interface.c:375
+#: src/agent/agent_interface.c:424
 msgid "Error during agent initialization."
 msgstr ""
 
-#: agent/agent_interface.c:373
+#: src/agent/agent_interface.c:422
 msgid "Error while allocating memory."
 msgstr ""
 
-#: utility/actions.c:615
+#: src/utility/actions.c:616
 msgid "Error while calculating passcode\n"
 msgstr ""
 
-#: utility/actions_helpers.c:593
+#: src/utility/actions_helpers.c:592
 msgid "Error while deciphering passcode specification\n"
 msgstr ""
 
-#: utility/actions.c:176
+#: src/utility/actions.c:176
 #, c-format
 msgid "Error while dropping state! %s (%d)\n"
 msgstr ""
 
-#: utility/actions.c:210
+#: src/utility/actions.c:211
 #, c-format
 msgid "Error while dropping state: %s\n"
 msgstr ""
 
-#: utility/actions.c:756
+#: src/utility/actions.c:757
 msgid "Error while generating destination passcode\n"
 msgstr ""
 
-#: agent/agent.c:52
+#: src/agent/agent.c:63
 #, c-format
 msgid "Error while loading config file.\n"
 msgstr ""
 
-#: utility/actions.c:74
+#: src/utility/actions.c:74
 #, c-format
 msgid "Error while loading user state: %s (%d)\n"
 msgstr ""
 
-#: utility/actions_helpers.c:542
+#: src/utility/actions_helpers.c:543
 #, c-format
 msgid "Error while parsing passcard number (%s).\n"
 msgstr ""
 
-#: utility/actions_helpers.c:516
+#: src/utility/actions_helpers.c:518
 #, c-format
 msgid "Error while parsing passcode number.\n"
 msgstr ""
 
-#: utility/actions.c:498
+#: src/utility/actions.c:499
 msgid "Error while printing state flags.\n"
 msgstr ""
 
-#: utility/actions.c:490
+#: src/utility/actions.c:491
 msgid "Error while printing state information.\n"
 msgstr ""
 
-#: utility/actions.c:511
+#: src/utility/actions.c:512
 #, c-format
 msgid "Error while printing user key: %s\n"
 msgstr ""
 
-#: agent/agent_interface.c:202
+#: src/agent/agent_interface.c:241
 #, c-format
 msgid "Error while reading initial data from agent: %s\n"
 msgstr ""
 
-#: utility/actions.c:186
+#: src/utility/actions.c:186
 #, c-format
 msgid "Error while removing key: %s\n"
 msgstr ""
 
-#: utility/actions.c:629
+#: src/utility/actions.c:630
 #, c-format
 msgid "Error while retrieving prompt: %s\n"
 msgstr ""
 
-#: utility/actions.c:665
+#: src/utility/actions.c:666
 #, c-format
 msgid "Error while setting contact: %s\n"
 msgstr ""
 
-#: utility/actions.c:257
+#: src/utility/actions.c:258
 #, c-format
 msgid "Error while setting flags: %s\n"
 msgstr ""
 
-#: utility/actions.c:654
+#: src/utility/actions.c:655
 #, c-format
 msgid "Error while setting label: %s\n"
 msgstr ""
 
-#: utility/actions.c:55
+#: src/utility/actions.c:55
 #, c-format
 msgid "Error while setting user: %s\n"
 msgstr ""
 
-#: utility/actions.c:326 utility/actions.c:574 utility/actions.c:597
+#: src/utility/actions.c:327 src/utility/actions.c:575
+#: src/utility/actions.c:598
 #, c-format
 msgid "Error while updating latest card entry: %s\n"
 msgstr ""
 
-#: utility/actions.c:234
+#: src/agent/agent_interface.c:224
+msgid "Error while waiting for agent intitial frame.\n"
+msgstr ""
+
+#: src/utility/actions.c:235
 #, c-format
 msgid "Error: %s\n"
 msgstr ""
 
-#: utility/actions.c:720
+#: src/agent/agent.c:56
+#, c-format
+msgid "Executing configuration checks\n"
+msgstr ""
+
+#: src/utility/actions.c:721
 #, c-format
 msgid "Flags cleared.\n"
 msgstr ""
 
-#: utility/actions.c:709
+#: src/utility/actions.c:710
 #, c-format
 msgid "Flags set.\n"
 msgstr ""
 
-#: utility/actions.c:451
+#: src/utility/actions.c:452
 #, c-format
 msgid "For your information: You've got no state created (see -k option).\n"
 msgstr ""
 
-#: utility/otpasswd.c:339
+#: src/utility/otpasswd.c:340
 #, c-format
 msgid "Garbage on command line. (%s)\n"
 msgstr ""
 
-#: libotp/ppp.c:618
+#: src/libotp/ppp.c:618
 msgid "Generic PPP error. (Try -v to get details)"
 msgstr ""
 
-#: agent/agent_interface.c:356
+#: src/agent/agent_interface.c:405
 msgid "Generic agent error."
 msgstr ""
 
-#: utility/cards.c:242
+#: src/utility/cards.c:248
 #, c-format
 msgid "Given passcard out of valid range. Unable to print 6 passcards.\n"
 msgstr ""
 
-#: utility/actions.c:295
+#: src/agent/agent.c:131
+#, c-format
+msgid "Global DB selected. Performing additional checks\n"
+msgstr ""
+
+#: src/utility/actions.c:296
 #, c-format
 msgid ""
 "HINT: To generate key we need to gather lots of random data.\n"
@@ -564,239 +609,239 @@ msgid ""
 "some network or disc activity\n"
 msgstr ""
 
-#: libotp/ppp.c:599
+#: src/libotp/ppp.c:596
 msgid "Have you created key with --key option?"
 msgstr ""
 
-#: libotp/ppp.c:602
+#: src/libotp/ppp.c:602
 msgid ""
 "I/O error (permissions, file type, ...) while reading state. Try agent_otp --"
 "config-check."
 msgstr ""
 
-#: agent/agent_interface.c:192 agent/agent_interface.c:215
+#: src/agent/agent_interface.c:231 src/agent/agent_interface.c:254
 msgid "If you would want to send a bug report remember about gdb backtrace\n"
 msgstr ""
 
-#: utility/actions_helpers.c:815
+#: src/utility/actions_helpers.c:814
 #, c-format
 msgid "Illegal alphabet ID specified. See -c alphabet=list\n"
 msgstr ""
 
-#: utility/actions_helpers.c:599
+#: src/utility/actions_helpers.c:598
 #, c-format
 msgid "Illegal argument passed to option.\n"
 msgstr ""
 
-#: libotp/ppp.c:627
+#: src/libotp/ppp.c:627
 msgid "Illegal character in input."
 msgstr ""
 
-#: utility/otpasswd.c:291
+#: src/utility/otpasswd.c:292
 #, c-format
 msgid "Illegal configuration defined.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:508
+#: src/utility/actions_helpers.c:510
 #, c-format
 msgid "Illegal passcode number!\n"
 msgstr ""
 
-#: utility/actions_helpers.c:581
+#: src/utility/actions_helpers.c:581
 #, c-format
 msgid "Incorrect passcard specification (%s).\n"
 msgstr ""
 
-#: utility/actions_helpers.c:569
+#: src/utility/actions_helpers.c:569
 #, c-format
 msgid "Incorrect passcode specification.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:575
+#: src/utility/actions_helpers.c:575
 #, c-format
 msgid "Incorrect passcode specification. (%d)\n"
 msgstr ""
 
-#: libotp/ppp.c:645
+#: src/libotp/ppp.c:645
 msgid ""
 "Incorrect permissions for config file. Should be accessible only by root."
 msgstr ""
 
-#: libotp/ppp.c:648
+#: src/libotp/ppp.c:648
 msgid "Incorrect static password entered."
 msgstr ""
 
-#: libotp/ppp.c:630
+#: src/libotp/ppp.c:630
 msgid "Input too long."
 msgstr ""
 
-#: utility/otpasswd.c:278
+#: src/utility/otpasswd.c:279
 #, c-format
 msgid "Invalid alphabet ID. Valid IDs are between 0 and %d.\n"
 msgstr ""
 
-#: utility/otpasswd.c:268
+#: src/utility/otpasswd.c:269
 #, c-format
 msgid "Invalid code length. Valid range is from 2 to 16.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:329
+#: src/utility/actions_helpers.c:331
 #, c-format
 msgid "Key     = "
 msgstr ""
 
-#: utility/actions.c:306
+#: src/utility/actions.c:307
 #, c-format
 msgid "Key generated successfully.\n"
 msgstr ""
 
-#: agent/agent_interface.c:386
+#: src/agent/agent_interface.c:435
 msgid "Key generation is denied by the policy."
 msgstr ""
 
-#: agent/agent_interface.c:384
+#: src/agent/agent_interface.c:433
 msgid "Key regeneration is denied by the policy."
 msgstr ""
 
-#: utility/actions.c:183
+#: src/utility/actions.c:183
 #, c-format
 msgid "Key removed!\n"
 msgstr ""
 
-#: utility/actions.c:354
+#: src/utility/actions.c:355
 #, c-format
 msgid "Key stored! One-time passwords enabled for this account.\n"
 msgstr ""
 
-#: utility/actions.c:622
+#: src/utility/actions.c:623
 #, c-format
 msgid "LaTeX parameter works only with passcard specification\n"
 msgstr ""
 
-#: utility/otpasswd.c:253
+#: src/utility/otpasswd.c:254
 #, c-format
 msgid "Label already defined\n"
 msgstr ""
 
-#: utility/actions_helpers.c:770
+#: src/utility/actions_helpers.c:769
 #, c-format
 msgid "Label can't be longer than %d characters\n"
 msgstr ""
 
-#: utility/actions_helpers.c:775
+#: src/utility/actions_helpers.c:774
 #, c-format
 msgid "Label changing denied by policy.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:765
+#: src/utility/actions_helpers.c:764
 #, c-format
 msgid ""
 "Label contains illegal characters.\n"
 "Only alphanumeric + \" -+.@_*\" are allowed.\n"
 msgstr ""
 
-#: utility/actions.c:658
+#: src/utility/actions.c:659
 #, c-format
 msgid "Label set.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:199
+#: src/utility/actions_helpers.c:201
 #, c-format
 msgid "Latest printed card = "
 msgstr ""
 
-#: utility/actions_helpers.c:203
+#: src/utility/actions_helpers.c:205
 #, c-format
 msgid "Max card            = "
 msgstr ""
 
-#: utility/actions_helpers.c:207
+#: src/utility/actions_helpers.c:209
 #, c-format
 msgid "Max code            = "
 msgstr ""
 
-#: utility/otpasswd.c:433
+#: src/utility/otpasswd.c:434
 #, c-format
 msgid "Multiple '--user' options passed\n"
 msgstr ""
 
-#: utility/otpasswd.c:89
+#: src/utility/otpasswd.c:90
 #, c-format
 msgid "NLS "
 msgstr ""
 
-#: utility/otpasswd.c:99
+#: src/utility/otpasswd.c:100
 #, c-format
 msgid "NONE"
 msgstr ""
 
-#: utility/otpasswd.c:505
+#: src/utility/otpasswd.c:506
 #, c-format
 msgid ""
 "No action specified. Try passing -k, -s, -t or -l\n"
 "\n"
 msgstr ""
 
-#: agent/agent_interface.c:354 libotp/ppp.c:591
+#: src/libotp/ppp.c:588 src/agent/agent_interface.c:403
 msgid "No error"
 msgstr ""
 
-#: utility/actions_helpers.c:294
+#: src/utility/actions_helpers.c:296
 #, c-format
 msgid "No label, "
 msgstr ""
 
-#: utility/actions.c:377
+#: src/utility/actions.c:378
 msgid "No password returned\n"
 msgstr ""
 
-#: libotp/ppp.c:614
+#: src/libotp/ppp.c:614
 msgid "No such Unix user in passwd database. Unable to locate home."
 msgstr ""
 
-#: utility/otpasswd.c:284
+#: src/utility/otpasswd.c:285
 #, c-format
 msgid "No such flag or illegal option (%s).\n"
 msgstr ""
 
-#: libotp/ppp.c:611
+#: src/libotp/ppp.c:611
 msgid "No user entry. Have you created key with --key option?"
 msgstr ""
 
-#: utility/actions.c:427
+#: src/utility/actions.c:428
 msgid "No warnings.\n"
 msgstr ""
 
-#: agent/agent_interface.c:434
+#: src/agent/agent_interface.c:483
 #, c-format
 msgid "Non-ascii character in static password.\n"
 msgstr ""
 
-#: agent/agent_interface.c:406
+#: src/agent/agent_interface.c:455
 msgid "Not an agent/PPP error."
 msgstr ""
 
-#: agent/agent_interface.c:418
+#: src/agent/agent_interface.c:467
 #, c-format
 msgid "Not enough digits in password.\n"
 msgstr ""
 
-#: agent/agent_interface.c:426
+#: src/agent/agent_interface.c:475
 #, c-format
 msgid "Not enough special characters in password.\n"
 msgstr ""
 
-#: agent/agent_interface.c:422
+#: src/agent/agent_interface.c:471
 #, c-format
 msgid "Not enough uppercase characters in password.\n"
 msgstr ""
 
-#: utility/otpasswd.c:560
+#: src/utility/otpasswd.c:561
 #, c-format
 msgid "OBSOLETE: Most of the checks were moved into agent executable.\n"
 msgstr ""
 
-#: utility/otpasswd.c:61
+#: src/utility/otpasswd.c:63
 #, c-format
 msgid ""
 "OTPasswd - One-Time Password Authentication System.\n"
@@ -817,424 +862,440 @@ msgid ""
 "along with this program in a LICENSE file.\n"
 msgstr ""
 
-#: utility/otpasswd.c:81
+#: src/utility/otpasswd.c:83
 #, c-format
 msgid "OTPasswd was build with following options enabled:\n"
 msgstr ""
 
-#: utility/otpasswd.c:232
+#: src/utility/otpasswd.c:233
 #, c-format
 msgid ""
 "Only one action can be specified on the command line\n"
 "and you can't mix alphabet listing with other flags.\n"
 msgstr ""
 
-#: utility/otpasswd.c:369 utility/otpasswd.c:389 utility/otpasswd.c:405
+#: src/utility/otpasswd.c:370 src/utility/otpasswd.c:390
+#: src/utility/otpasswd.c:406
 #, c-format
 msgid "Only one action can be specified on the command line.\n"
 msgstr ""
 
-#: utility/otpasswd.c:428
+#: src/utility/otpasswd.c:429
 #, c-format
 msgid "Only root can use the '--user' option\n"
 msgstr ""
 
-#: utility/otpasswd.c:348
+#: src/utility/otpasswd.c:349
 #, c-format
 msgid "Option argument too long!\n"
 msgstr ""
 
-#: utility/actions.c:605
+#: src/utility/actions.c:606
 #, c-format
 msgid "Option requires passcode as argument\n"
 msgstr ""
 
-#: libotp/ppp.c:593
+#: src/libotp/ppp.c:590
 msgid "Out of memory while reading state."
 msgstr ""
 
-#: agent/agent_interface.c:470
+#: src/agent/agent_interface.c:519
 #, c-format
 msgid "PPP WARNING: There were %d recent failures.\n"
 msgstr ""
 
-#: agent/agent_interface.c:466
+#: src/agent/agent_interface.c:515
 #, c-format
 msgid "PPP WARNING: You've ran out of printed passcards!\n"
 msgstr ""
 
-#: agent/agent_interface.c:462
+#: src/agent/agent_interface.c:511
 #, c-format
 msgid "PPP WARNING: You've reached your last printed card.\n"
 msgstr ""
 
-#: utility/otpasswd.c:94
+#: src/utility/otpasswd.c:95
 #, c-format
 msgid "PROFILE "
 msgstr ""
 
-#: utility/actions_helpers.c:292
+#: src/utility/actions_helpers.c:294
 #, c-format
 msgid "Passcard label=\"%s\", "
 msgstr ""
 
-#: utility/actions_helpers.c:587
+#: src/utility/actions_helpers.c:586
 #, c-format
 msgid "Passcard numbering starts with 1.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:792
+#: src/utility/actions_helpers.c:791
 #, c-format
 msgid "Passcode length must be between 2 and 16.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:522 utility/actions_helpers.c:548
+#: src/utility/actions_helpers.c:523 src/utility/actions_helpers.c:548
 #, c-format
 msgid "Passcode number out of range.\n"
 msgstr ""
 
-#: utility/cards.c:164
+#: src/utility/cards.c:170
 #, c-format
 msgid "Passcode printing is denied by policy.\n"
 msgstr ""
 
-#: utility/actions.c:336 utility/actions_helpers.c:72
+#: src/utility/actions.c:337 src/utility/actions_helpers.c:72
 #, c-format
 msgid "Please answer 'yes' or 'no'.\n"
 msgstr ""
 
-#: utility/actions.c:227
+#: src/utility/actions.c:228
 #, c-format
 msgid "Policy denies key generation. Ask administrator to create you state.\n"
 msgstr ""
 
-#: utility/actions.c:223
+#: src/utility/actions.c:224
 #, c-format
 msgid "Policy denies key regeneration.\n"
 msgstr ""
 
-#: utility/actions.c:247
+#: src/utility/actions.c:248
 #, c-format
 msgid "Policy denies toggling the DISABLE flag.\n"
 msgstr ""
 
-#: utility/actions.c:250
+#: src/utility/actions.c:251
 #, c-format
 msgid "Policy denies toggling the SALT flag.\n"
 msgstr ""
 
-#: utility/actions.c:253
+#: src/utility/actions.c:254
 #, c-format
 msgid "Policy denies toggling the SHOW flag.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:695
+#: src/utility/actions_helpers.c:694
 #, c-format
 msgid "Policy disallows salted keys.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:714
+#: src/utility/actions_helpers.c:713
 #, c-format
 msgid "Policy disallows showing entered passcodes.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:720
+#: src/utility/actions_helpers.c:719
 #, c-format
 msgid "Policy enforces entered passcode visibility.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:701
+#: src/utility/actions_helpers.c:700
 #, c-format
 msgid "Policy enforces salted keys.\n"
 msgstr ""
 
-#: agent/agent_interface.c:213
+#: src/agent/agent_interface.c:252
 msgid ""
 "Possible cause of this problem involves use of the wrong agent executable.\n"
 msgstr ""
 
-#: agent/agent_interface.c:190
+#: src/agent/agent_interface.c:229
 msgid ""
 "Possible cause of this problem involves wrong agent executable passed in "
 "configuration file.\n"
 msgstr ""
 
-#: utility/actions.c:509
+#: src/utility/actions.c:510
 #, c-format
 msgid "Printing the key is denied by the policy.\n"
 msgstr ""
 
-#: agent/agent_interface.c:233
+#: src/agent/agent_interface.c:272
 #, c-format
 msgid "Probable cause: %s\n"
 msgstr ""
 
-#: utility/actions.c:520
+#: src/utility/actions.c:521
 #, c-format
 msgid "Program error. You should never end up here.\n"
 msgstr ""
 
-#: utility/otpasswd.c:449 utility/otpasswd.c:565
+#: src/utility/otpasswd.c:450 src/utility/otpasswd.c:566
 #, c-format
 msgid "Program error. You shouldn't end up here.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:218
+#: src/utility/actions_helpers.c:220
 #, c-format
 msgid "Recent failures     = %d\n"
 msgstr ""
 
-#: utility/actions_helpers.c:110
+#: src/utility/actions_helpers.c:110
 #, c-format
 msgid "Repeat password: "
 msgstr ""
 
-#: agent/agent_interface.c:382
+#: src/agent/agent_interface.c:431
 msgid "Requested action is denied by the policy."
 msgstr ""
 
-#: utility/actions_helpers.c:641
+#: src/utility/actions_helpers.c:640
 #, c-format
 msgid "Row out of range!\n"
 msgstr ""
 
-#: utility/actions_helpers.c:678
+#: src/utility/actions_helpers.c:677
 #, c-format
 msgid "Salt configuration can be changed only during key creation.\n"
 msgstr ""
 
-#: agent/agent_interface.c:391
+#: src/agent/agent_interface.c:440
 msgid "Salt option setting is fixed by the policy."
 msgstr ""
 
-#: utility/actions_helpers.c:796
+#: src/utility/actions_helpers.c:795
 #, c-format
 msgid "Setting passcode length denied by policy.\n"
 msgstr ""
 
-#: agent/agent_interface.c:393
+#: src/agent/agent_interface.c:442
 msgid "Show option setting is fixed by the policy."
 msgstr ""
 
-#: utility/actions.c:767
+#: src/utility/actions.c:768
 #, c-format
 msgid "Skipped to specified passcode.\n"
 msgstr ""
 
-#: utility/actions.c:776
+#: src/utility/actions.c:777
 #, c-format
 msgid "Skipping denied by the policy.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:121
+#: src/utility/actions_helpers.c:121
 #, c-format
 msgid "Sorry passwords do not match.\n"
 msgstr ""
 
-#: utility/actions.c:771
+#: src/utility/actions.c:772
 #, c-format
 msgid "Specified passcode is larger than maximal possible.\n"
 msgstr ""
 
-#: libotp/ppp.c:608
+#: src/libotp/ppp.c:608
 msgid "State file invalid."
 msgstr ""
 
-#: agent/agent_interface.c:438
+#: src/agent/agent.c:175
+#, c-format
+msgid "State init OK\n"
+msgstr ""
+
+#: src/agent/agent_interface.c:487
 #, c-format
 msgid "Static password change is denied by the policy.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:214
+#: src/utility/actions_helpers.c:216
 #, c-format
 msgid "Static password is not set.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:212
+#: src/utility/actions_helpers.c:214
 #, c-format
 msgid "Static password is set.\n"
 msgstr ""
 
-#: agent/agent_interface.c:443
+#: src/agent/agent_interface.c:492
 #, c-format
 msgid "Static password set.\n"
 msgstr ""
 
-#: agent/agent_interface.c:414
+#: src/agent/agent_interface.c:463
 #, c-format
 msgid "Static password too short.\n"
 msgstr ""
 
-#: agent/agent_interface.c:447
+#: src/agent/agent_interface.c:496
 #, c-format
 msgid "Static password unset.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:102
+#: src/utility/actions_helpers.c:102
 #, c-format
 msgid "Static password: "
 msgstr ""
 
-#: utility/actions.c:170 utility/actions.c:277
+#: src/utility/actions.c:170 src/utility/actions.c:278
 #, c-format
 msgid "Stopping\n"
 msgstr ""
 
-#: agent/agent_interface.c:430
+#: src/agent/agent_interface.c:479
 #, c-format
 msgid "Strange error indeed: Unsupported ascii character.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:536
+#: src/utility/actions_helpers.c:537
 #, c-format
 msgid "Strange error while parsing passcard number.\n"
 msgstr ""
 
-#: utility/otpasswd.c:458
+#: src/agent/agent.c:168
+#, c-format
+msgid "System init OK\n"
+msgstr ""
+
+#: src/utility/otpasswd.c:459
 #, c-format
 msgid "The \"salt\" flag can only be specified during key creation!\n"
 msgstr ""
 
-#: agent/agent_interface.c:231
+#: src/agent/agent_interface.c:270
 #, c-format
 msgid "There was an error when trying to run agent executable (%s)\n"
 msgstr ""
 
-#: agent/agent_interface.c:189
+#: src/agent/agent_interface.c:228
 msgid "Timeout while waiting for agent initialization frame.\n"
 msgstr ""
 
-#: agent/agent_interface.c:191 agent/agent_interface.c:214
+#: src/agent/agent_interface.c:230 src/agent/agent_interface.c:253
 msgid "Try manually running agent executable to see where's the problem.\n"
 msgstr ""
 
-#: agent/agent_interface.c:239
+#: src/agent/agent_interface.c:278
 msgid ""
 "Try running agent (agent_otp) with --check-config option to get more "
 "details\n"
 msgstr ""
 
-#: utility/actions.c:716
+#: src/agent/agent.c:158
+#, c-format
+msgid "Trying to initialize PPP and read state data to see if DB exists.\n"
+msgstr ""
+
+#: src/utility/actions.c:717
 #, c-format
 msgid "Unable to disable required flags: %s\n"
 msgstr ""
 
-#: utility/actions.c:705
+#: src/utility/actions.c:706
 #, c-format
 msgid "Unable to enable required flags: %s\n"
 msgstr ""
 
-#: utility/actions.c:301
+#: src/utility/actions.c:302
 #, c-format
 msgid "Unable to generate new key: %s (%d)\n"
 msgstr ""
 
-#: utility/actions.c:219
+#: src/utility/actions.c:220
 #, c-format
 msgid "Unable to generate new state:\n"
 msgstr ""
 
-#: agent/agent_interface.c:370
+#: src/agent/agent_interface.c:419
 msgid "Unable to locate agent executable!"
 msgstr ""
 
-#: libotp/ppp.c:596
+#: src/libotp/ppp.c:593
 msgid "Unable to lock state file!"
 msgstr ""
 
-#: utility/actions_helpers.c:252
+#: src/utility/actions_helpers.c:254
 #, c-format
 msgid "Unable to read alphabet id: %s (%d)\n"
 msgstr ""
 
-#: utility/actions_helpers.c:246 utility/cards.c:53
+#: src/utility/cards.c:60 src/utility/actions_helpers.c:248
 #, c-format
 msgid "Unable to read code length: %s (%d)\n"
 msgstr ""
 
-#: libotp/ppp.c:636
+#: src/libotp/ppp.c:636
 msgid "Unable to read config file."
 msgstr ""
 
-#: utility/actions_helpers.c:258
+#: src/utility/actions_helpers.c:260
 #, c-format
 msgid "Unable to read contact: %s (%d)\n"
 msgstr ""
 
-#: utility/actions.c:202
+#: src/utility/actions.c:203
 #, c-format
 msgid "Unable to read flags: %s\n"
 msgstr ""
 
-#: utility/actions_helpers.c:240
+#: src/utility/actions_helpers.c:242
 #, c-format
 msgid "Unable to read flags: %s (%d)\n"
 msgstr ""
 
-#: utility/actions_helpers.c:264 utility/cards.c:84
+#: src/utility/cards.c:91 src/utility/actions_helpers.c:266
 #, c-format
 msgid "Unable to read label: %s (%d)\n"
 msgstr ""
 
-#: utility/cards.c:235
+#: src/utility/cards.c:241
 #, c-format
 msgid "Unable to read maximal card number: %s\n"
 msgstr ""
 
-#: utility/cards.c:167
+#: src/utility/cards.c:173
 #, c-format
 msgid "Unable to read passcode: %s\n"
 msgstr ""
 
-#: utility/actions.c:676
+#: src/utility/actions.c:677
 #, c-format
 msgid "Unable to select alphabet: %s\n"
 msgstr ""
 
-#: utility/actions.c:690
+#: src/utility/actions.c:691
 #, c-format
 msgid "Unable to set code length: %s\n"
 msgstr ""
 
-#: utility/actions_helpers.c:411
+#: src/utility/actions_helpers.c:413
 #, c-format
 msgid "Unable to set required option (%s): %s\n"
 msgstr ""
 
-#: agent/agent_interface.c:205
+#: src/agent/agent_interface.c:244
 #, c-format
 msgid "Unable to start agent executable: %s\n"
 msgstr ""
 
-#: utility/actions.c:349
+#: src/utility/actions.c:350
 #, c-format
 msgid "Unable to store new key: %s (%d)\n"
 msgstr ""
 
-#: agent/agent_interface.c:368
+#: src/agent/agent_interface.c:417
 msgid "Unable to switch to selected user."
 msgstr ""
 
-#: utility/actions_helpers.c:89 utility/actions_helpers.c:97
+#: src/utility/actions_helpers.c:89 src/utility/actions_helpers.c:97
 msgid "Unable to turn off character visibility!\n"
 msgstr ""
 
-#: utility/actions_helpers.c:801 utility/actions_helpers.c:826
+#: src/utility/actions_helpers.c:800 src/utility/actions_helpers.c:825
 #, c-format
 msgid "Unexpected error while setting code length.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:755
+#: src/utility/actions_helpers.c:754
 #, c-format
 msgid "Unexpected error while setting contact information.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:782
+#: src/utility/actions_helpers.c:781
 #, c-format
 msgid "Unexpected error while setting label information.\n"
 msgstr ""
 
-#: utility/otpasswd.c:110
+#: src/utility/otpasswd.c:111
 #, c-format
 msgid ""
 "Usage: %s [options]\n"
@@ -1336,20 +1397,31 @@ msgid ""
 "pdflatex tmp.latex\n"
 msgstr ""
 
-#: libotp/ppp.c:633
+#: src/libotp/ppp.c:599
+msgid "User doesn't have a HOME directory."
+msgstr ""
+
+#: src/libotp/ppp.c:633
 msgid "User state disabled."
 msgstr ""
 
-#: utility/actions.c:681 utility/actions.c:695
+#: src/agent/agent.c:57
+#, c-format
+msgid ""
+"WARNING: Make sure you run agent with a FULL path, \n"
+"         otherwise some checks will fail.\n"
+msgstr ""
+
+#: src/utility/actions.c:682 src/utility/actions.c:696
 #, c-format
 msgid "WARNING: This invalidates your previously printed passcards.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:135
+#: src/utility/actions_helpers.c:137
 msgid "WARNING: Unable to turn on characters visibility!\n"
 msgstr ""
 
-#: utility/actions_helpers.c:830
+#: src/utility/actions_helpers.c:829
 #, c-format
 msgid ""
 "Warning: Changing alphabet invalidates already printed passcards.\n"
@@ -1357,7 +1429,7 @@ msgid ""
 "\n"
 msgstr ""
 
-#: utility/actions_helpers.c:805
+#: src/utility/actions_helpers.c:804
 #, c-format
 msgid ""
 "Warning: Changing codelength invalidates already printed passcards.\n"
@@ -1365,124 +1437,120 @@ msgid ""
 "\n"
 msgstr ""
 
-#: utility/actions.c:415
+#: src/utility/actions.c:416
 #, c-format
 msgid "Warning: You've got no state. Create on with -k option.\n"
 msgstr ""
 
-#: utility/actions.c:342
+#: src/utility/actions.c:343
 #, c-format
 msgid "Wiping out key. User state left unchanged.\n"
 msgstr ""
 
-#: utility/actions.c:231
+#: src/utility/actions.c:232
 #, c-format
 msgid "You currently have state but it was disabled.\n"
 msgstr ""
 
-#: utility/actions.c:738
+#: src/utility/actions.c:739
 #, c-format
 msgid "You have skipped state creation. (see -k option).\n"
 msgstr ""
 
-#: libotp/ppp.c:639
+#: src/libotp/ppp.c:639
 msgid "You have to edit otpasswd.conf and select correct DB option."
 msgstr ""
 
-#: utility/actions.c:367
+#: src/utility/actions.c:368
 #, c-format
 msgid "You really need to create some state first (see -k option).\n"
 msgstr ""
 
-#: utility/actions.c:544
+#: src/utility/actions.c:545
 #, c-format
 msgid ""
 "You've got no state created! Unable to print passcodes (see -k option).\n"
 msgstr ""
 
-#: utility/actions.c:155
+#: src/utility/actions.c:155
 #, c-format
 msgid "You've got no state to remove.\n"
 msgstr ""
 
-#: utility/cards.c:70 utility/cards.c:309
+#: src/utility/cards.c:77 src/utility/cards.c:314
 #, c-format
 msgid "You've run out of memory. Unable to print passcards\n"
 msgstr ""
 
-#: libotp/ppp.c:605
+#: src/libotp/ppp.c:605
 msgid "You've used up all available passcodes! Regenerate key."
 msgstr ""
 
-#: utility/actions.c:286
+#: src/utility/actions.c:287
 #, c-format
 msgid "Your current set of flags:\n"
 msgstr ""
 
-#: utility/actions_helpers.c:282
+#: src/agent/agent.c:121
+#, c-format
+msgid ""
+"Your selected DB option doesn't require further checks. Everything is fine.\n"
+msgstr ""
+
+#: src/utility/actions_helpers.c:284
 #, c-format
 msgid "alphabet=%d "
 msgstr ""
 
-#: agent/agent_interface.c:193 agent/agent_interface.c:216
+#: src/agent/agent_interface.c:232 src/agent/agent_interface.c:255
 msgid ""
 "and log created with strace: strace -f -o otpasswd_log <command you've "
 "tried>\n"
 msgstr ""
 
-#: utility/actions_helpers.c:283
+#: src/utility/actions_helpers.c:285
 #, c-format
 msgid "code_length=%d "
 msgstr ""
 
-#: utility/actions_helpers.c:298
+#: src/utility/actions_helpers.c:300
 #, c-format
 msgid "contact=\"%s\".\n"
 msgstr ""
 
-#: utility/actions_helpers.c:280
+#: src/utility/actions_helpers.c:282
 #, c-format
 msgid "disabled=off "
 msgstr ""
 
-#: utility/actions_helpers.c:278
+#: src/utility/actions_helpers.c:280
 #, c-format
 msgid "disabled=on "
 msgstr ""
 
-#: agent/agent_interface.c:244
+#: src/agent/agent_interface.c:283
 msgid "doesn't have necessary SUID-root permissions.\n"
 msgstr ""
 
-#: utility/actions_helpers.c:58
+#: src/utility/actions_helpers.c:58
 msgid "no"
 msgstr ""
 
-#: utility/actions_helpers.c:300
+#: src/utility/actions_helpers.c:302
 #, c-format
 msgid "no contact information.\n"
 msgstr ""
 
-#: agent/agent.c:108
-#, c-format
-msgid "ppp_init OK\n"
-msgstr ""
-
-#: agent/agent.c:116
-#, c-format
-msgid "ppp_state_init OK\n"
-msgstr ""
-
-#: utility/actions_helpers.c:275
+#: src/utility/actions_helpers.c:277
 #, c-format
 msgid "show=off "
 msgstr ""
 
-#: utility/actions_helpers.c:273
+#: src/utility/actions_helpers.c:275
 #, c-format
 msgid "show=on "
 msgstr ""
 
-#: utility/actions_helpers.c:55
+#: src/utility/actions_helpers.c:55
 msgid "yes"
 msgstr ""
