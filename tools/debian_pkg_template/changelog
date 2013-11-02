@@ -1,3 +1,10 @@
+otpasswd (0.8-2) experimental; urgency=low
+  * Documentation update
+  * Manpages headers fixed for Debian packaging.
+  * GLOBAL mode tests
+
+ -- Tomasz bla Fortuna <bla@thera.be>  Sat, 02 Nov 2013 19:56:55 +0100
+
 otpasswd (0.8-1) experimental; urgency=low
   * Major update since 0.4 release, see the upstream Changelog
   * Upstream maintenance and development reinstated

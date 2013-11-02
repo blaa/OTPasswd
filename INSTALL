@@ -15,9 +15,7 @@ Contents
   3. Installation - Source Package
   4. System Configuration
   5. User Configuration
-  6. PAM Configuration - General
-  7. PAM Configuration - OpenSSH
-  8. PAM Configuration - su
+  6. PAM Configuration
   9. Copyright
 
 
@@ -36,9 +34,12 @@ $ make
 # Enable otpasswd in PAM (see examples).
 You need cmake and libpam-dev.
 
+In case of problems you can always check your configuration with:
+$(which agent_otp) --check-config
+
+
 Operational Mode
 ----------------
-
 OTPasswd is able to run in two slightly different modes, which are
 distinguished by the location of the stored user data (called `the
 state').  By default OTPasswd works in a less intrusive mode called
@@ -189,7 +190,6 @@ available in the OTPasswd package documentation directory of your
 system's /usr/share hierarchy. Default file should allow for
 out-of-the-box usage with USER DB mode.
 
-
 The most important configuration setting is the "DB" option.  The DB option
 can be set as follows:
 
@@ -231,9 +231,9 @@ can be set as follows:
    LDAP database.  See the DB=mysql description above for more information.
 
 
-
 5. User Configuration
 =====================
+
 Generate OTPasswd Key & Print Passcard
 -----------------------------------------
 To use OTPasswd, a user is required to have a cryptographic key, which is
@@ -270,9 +270,8 @@ this passcard, or minimally jot down the first few passcodes.  You have
 been warned.
 
 
-
-6. PAM Configuration - General
-==============================
+6. PAM Configuration
+====================
 
 Debian package comes with a PAM otpasswd profile in
 <examples/pam-configs/otpasswd> which after installation in
@@ -296,17 +295,14 @@ Consult the section titled 'About PAM' in the <docs/security> document
 for more detailed information. 
 
 
-
-7. PAM Configuration - OpenSSH
-==============================
+PAM Configuration - OpenSSH
+---------------------------
 While it would technically also be possible for OTPasswd to be used in
 GUI-based PAM applications, as one might find in the KDE or Gnome desktops,
 the necessary GUI layers do not presently exist.  The typical use case for
 OTPasswd by far, however, is to secure non-publickey SSH logins, which is
 what will be described in this section.
 
-Configure SSHD to Use PAM Authentication
--------------------------------------------
 The OpenSSH daemon's (SSHD) configuration is usually located in the file
 '/etc/ssh/sshd_config'.  Ensure that this file contains the following
 two lines:
@@ -321,9 +317,8 @@ Note that it is always advisable to make a backup copy of configuration
 files prior to making any changes.
 
 
-
-8. PAM Configuration - su
-=========================
+PAM Configuration - su
+----------------------
 As an example of the flexibility that OTPasswd is able to offer by using
 the PAM (Pluggable Authentication Modules) Library, once OTPasswd has
 been configured it is easy to incorporate OTP authentication with other
@@ -334,7 +329,7 @@ OTPasswd also works with xscreensaver.
 
 
 9. Copyright
-=============
+============
 Copyright (c) 2010-2013 Tomasz bla Fortuna
 
 This file is part of OTPasswd. See README file for licensing

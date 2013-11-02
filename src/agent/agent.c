@@ -23,6 +23,11 @@
 #include <getopt.h>
 #include <assert.h>
 
+/* stat */
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 /* agent communication */
 #include "agent_private.h"
 #include "request.h"
@@ -34,16 +39,23 @@
 #include "security.h"
 #include "testcases.h"
 #include "nls.h"
+#include "print.h"
 
 /* Show any config validation errors */
-int do_verify_config(void)
+int do_verify_config(const char *agent_bin)
 {
 	int ret;
 	cfg_t *cfg = NULL;
 	state *s = NULL;
+	struct stat st;
 
 	(void) print_init(PRINT_NOTICE | PRINT_STDOUT, NULL);
 	locale_init(); /* Only place where agent uses NLS */
+
+	printf(  "******************************\n");
+	printf(_("Executing configuration checks\n"));
+	printf(_("WARNING: Make sure you run agent with a FULL path, \n"
+	         "         otherwise some checks will fail.\n"));
 
 	printf(_("Config file verification...\n"));
 	cfg = cfg_get();
@@ -71,10 +83,12 @@ int do_verify_config(void)
 	case PPP_ERROR_CONFIG_OWNERSHIP:
 		printf(_("ERROR: Config file must be owned by root.\n"));
 		return 4;
+
 	case PPP_ERROR_CONFIG_PERMISSIONS:
 		printf(_("ERROR: In selected mode config file should not be readable"
 		         " by others.\n"));
 		return 5;
+
 	case 0:
 		printf(_("3) Config file ownership and file mode is correct.\n"));
 	}
@@ -85,39 +99,80 @@ int do_verify_config(void)
 	system("egrep -i 'UsePAM|ChallengeResponseAuthentication[ \t]+(yes|no)' /etc/ssh/sshd_config");
 	printf("\n");
 
+
+	printf(_("5) Checking agent binary: %s (must be absolute)\n"), agent_bin);
+	if (stat(agent_bin, &st) != 0) {
+		printf(_("ERROR: Unable to read agent_otp file data. \n"
+		         "       Permission/other problem. Relative paths won't work.\n"
+		         "	 Call agent_otp with a full path, not for e.g. ./agent_otp\n"));
+		print_perror(PRINT_ERROR, "stat:");
+		return 7;
+	}
+
+
 	if (cfg->db != CONFIG_DB_GLOBAL) {
-		printf(_("5) Your selected DB option doesn't require further checks. "
+		if ((st.st_mode & (S_ISUID | S_ISGID)) != 0) {
+			printf(_("ERROR: Agent binary (%s) in DB=user setting should NOT be SUID-root.\n"),
+			       agent_bin);
+			return 9;
+		}
+		printf(_("Agent binary permissions OK for selected mode.\n"));
+
+		printf(_("Your selected DB option doesn't require further checks. "
 		         "Everything is fine.\n"));
 		return 0;
 	}
 
-	if (security_is_privileged() == 0) {
-		printf(_("ERROR: To correctly validate GLOBAL DB configuration you have "
-		         "to run this option as root.\n"));
-		return 6;
+
+	/*
+	 * GLOBAL mode tests
+	 */
+	printf(_("\n************************************\n"));
+	printf(_("Global DB selected. Performing additional checks\n"));
+
+	if (st.st_uid != 0 || st.st_gid != 0) {
+		printf(_("ERROR: Agent binary (%s) must be owned by user/group root.\n"), 
+		       agent_bin);
+		return 8;
+	}
+
+	if ((st.st_mode & S_ISUID) == 0) {
+		printf(_("ERROR: Agent binary (%s) must be SUID-root.\n"), 
+		       agent_bin);
+		return 9;
+	}
+
+	if ((st.st_mode & S_ISGID) != 0) {
+		printf(_("ERROR: Agent binary (%s) must not be SGID-root.\n"), 
+		       agent_bin);
+		return 9;
 	}
 
 
-	printf(_("\n\nGlobal DB selected. Trying to initialize PPP and read state data "
-	         "to see if DB exists.\n"));
+	if (security_is_privileged() == 0) {
+		printf(_("ERROR: To correctly validate GLOBAL DB configuration you have "
+		         "to run this option as root.\n"));
+		return 10;
+	}
+
+	printf(_("Trying to initialize PPP and read state data to see if DB exists.\n"));
 
 	ret = ppp_init(PRINT_STDOUT, NULL);
 	if (ret != 0) {
 		printf(_("ERROR: ppp_init: %s\n"), ppp_get_error_desc(ret));
 		ppp_fini();
-		return 6;
+		return 11;
 	}
 	print_config(PRINT_STDOUT | PRINT_NOTICE);
 
-	printf(_("ppp_init OK\n"));
-
+	printf(_("System init OK\n"));
 
 	ret = ppp_state_init(&s, "root");
 	if (ret != 0) {
 		printf(_("ERROR: Unable to create state: %s\n"), ppp_get_error_desc(ret));
-		return 7;
+		return 12;
 	}
-	printf(_("ppp_state_init OK\n"));
+	printf(_("State init OK\n"));
 
 	ret = ppp_state_load(s, PPP_DONT_LOCK);
 	switch (ret) {
@@ -127,14 +182,14 @@ int do_verify_config(void)
 
 	case STATE_NON_EXISTENT:
 	case STATE_NO_USER_ENTRY:
-		printf(_("5) No state loaded, but no other errors. That's fine\n"));
+		printf(_("5) No state loaded (state not found), but no other errors. That's fine.\n"));
 		break;
 
 	default:
 		printf(_("ERROR: Error while trying to load state: %s\n"), ppp_get_error_desc(ret));
 		printf(_("Check if you have %s\n"), cfg->global_db_path);
 		ppp_state_fini(s);
-		return 8;
+		return 13;
 	}	
 
 	if (ret == 0) {
@@ -143,10 +198,9 @@ int do_verify_config(void)
 			printf(_("ERROR while releasing state: %s\n"), 
 				ppp_get_error_desc(ret));
 			ppp_state_fini(s);
-			return 9;
+			return 14;
 		}
 	}
-
 	ppp_state_fini(s);
 	return 0;
 }
@@ -328,7 +382,7 @@ int main(int argc, char **argv)
 		if (argc == 2 && strcmp(argv[1], "--check-config") == 0) {
 			if (!security_is_suid() || security_is_privileged()) {
 				/* We're not suid or we are root already */
-				return do_verify_config();
+				return do_verify_config(argv[0]);
 			}
 		}
 

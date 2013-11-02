@@ -17,7 +17,7 @@ PACKAGE="otpasswd-$VERSION"
 TARBALL="otpasswd_$VERSION".tar.xz
 ORIG_TARBALL="otpasswd_$VERSION".orig.tar.xz
 
-if [ ! -f $TBZ2 ]; then
+if [ ! -f "$TARBALL" ]; then
     echo "Call package.sh first and get back here"
     exit 1
 fi

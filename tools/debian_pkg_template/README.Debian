@@ -13,6 +13,9 @@ To use with SSH:
 2. Enable PAM module with pam-auth-update
 3. Create otpasswd state file using otpasswd -k
 
+In case of problems you can always check your configuration with:
+$(which agent_otp) --check-config
+
 For more information see homepage and upstream README/INSTALL files.
 
 
