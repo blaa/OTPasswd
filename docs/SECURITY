@@ -32,87 +32,98 @@ really trust my mobile in the first place, so... the answer for me is
 ====================
 There are certain security related issues you should be aware of.
 
-  I. This program is not intended to replace normal passwords, it's
-     supposed to add a second level of authentication -- a second "factor".
-     In other words, an attacker attempting to log into your system must
-     know something you know -- a UNIX password -- and additionally must
-     possess something only you have -- a passcard with one-time passcodes,
-     or a mobile device to which a passcode can be sent.  Therefore, even
-     if the attacker manages to discover your UNIX password, for example
-     through the use of a key logger or by sniffing the E-M radiation of
-     your keyboard's PS/2 connection, the attacker would still need to
-     have access to your passcard. 
+OTPasswd goal
+-------------
+This program is not intended to replace normal passwords, it's
+supposed to add a second level of authentication -- a second "factor".
+In other words, an attacker attempting to log into your system must
+know something you know -- a UNIX password -- and additionally must
+possess something only you have -- a passcard with one-time passcodes,
+or a mobile device to which a passcode can be sent.  Therefore, even
+if the attacker manages to discover your UNIX password, for example
+through the use of a key logger or by sniffing the E-M radiation of
+your keyboard's PS/2 connection, the attacker would still need to have
+access to your passcard.
 
- II. The second issue is that a Denial-of-Service (DoS) attack is possible in
-     some configurations.  When an attacker repeatedly tries to authenticate
-     he can use up all of your printed passcodes and therefore cause you
-     to be unable to login.  This can be fixed in several ways:
+It lets you use weaker unix passwords which you might be willing to
+type-in on an untrusted client station without compromising security.
 
-     1) By requesting that the UNIX password be correctly entered
-        before asking for (and therefore using up) a passcode.  (Consult
-        the PAM description chapter for the distinction between the
-        required/requisite keywords).  This will limit the problem to the
-        case when the attacker sniffs your password.  In this case, the
-        attacker will still be unable to login, but the DoS described above
-        would now be possible.  This is arguably an acceptable situation,
-        since it alerts the user to the fact that his UNIX password has
-        been compromised and must be changed.
+Denial-of-Service
+-----------------
+The second issue is that a Denial-of-Service (DoS) attack is possible in
+some configurations.  When an attacker repeatedly tries to authenticate
+he can use up all of your printed passcodes and therefore cause you
+to be unable to login.  This can be fixed in several ways:
 
-     2) By limiting number of failed authentication attempts.  For example,
-        sshguard can block IP access to SSH after 3 unsuccessful attempts
-        to authenticate.  The use of such a security measure is advisable
-        regardless of whether OTP is used, or not.  This type of filter
-        would force an attacker to consume a large number of IP addresses in
-        the process of an attack.  In certain configurations of OTPasswd an
-        attacker would need around 23 IP addresses to skip a single passcard.
+1) By requesting that the UNIX password be correctly entered
+   before asking for (and therefore using up) a passcode.  (Consult
+   the PAM description chapter for the distinction between the
+   required/requisite keywords).  This will limit the problem to the
+   case when the attacker sniffs your password.  In this case, the
+   attacker will still be unable to login, but the DoS described above
+   would now be possible.  This is arguably an acceptable situation,
+   since it alerts the user to the fact that his UNIX password has
+   been compromised and must be changed.
 
-     3) By receiving passcodes on an as-needed basis via a secure channel
-        which cannot be blocked by attacker, such as SMS text-messaging.
+2) By limiting number of failed authentication attempts.  For example,
+   sshguard can block IP access to SSH after 3 unsuccessful attempts
+   to authenticate.  The use of such a security measure is advisable
+   regardless of whether OTP is used, or not.  This type of filter
+   would force an attacker to consume a large number of IP addresses in
+   the process of an attack.  In certain configurations of OTPasswd an
+   attacker would need around 23 IP addresses to skip a single passcard.
 
-        In some scenarios this scheme could also be susceptible to a
-        DoS attack.  For example, if a free SMS gateway is used which
-        imposes usage limits, an attacker who is aware of your phone
-        number could easily exhaust your daily quota of text messages.
-        While this type of attack is technically possible, it's also
-        quite unlikely.  However, it does serve to highlight the fact
-        that every countermeasure has vulnerabilities.  As far as this
-        particular attack is concerned, SMS transmissions could simply
-        be sent using a different method, such as making use of a GSM
-        phone/modem connected to the computer.
+3) By receiving passcodes on an as-needed basis via a secure channel
+   which cannot be blocked by attacker, such as SMS text-messaging.
+
+   In some scenarios this scheme could also be susceptible to a
+   DoS attack.  For example, if a free SMS gateway is used which
+   imposes usage limits, an attacker who is aware of your phone
+   number could easily exhaust your daily quota of text messages.
+   While this type of attack is technically possible, it's also
+   quite unlikely.  However, it does serve to highlight the fact
+   that every countermeasure has vulnerabilities.  As far as this
+   particular attack is concerned, SMS transmissions could simply
+   be sent using a different method, such as making use of a GSM
+   phone/modem connected to the computer.
 
 
-     NOTE: Early versions of OTPasswd included what was known as the
-     'dont-skip' option.  This option prevented the skipping of a passcode
-     that was used in a failed authentication attempt.  In essence, the
-     dont-skip option slightly changed the semantics of what is meant by a
-     "one-time password" from never allowing the reuse of a passcode, to
-     allowing reuse of passcodes on authentication failures.  The intent
-     of this modified semantic was to protect against passcode exhaustion
-     as a consequence of a DoS attack.  However, due to limitations of the
-     implementation, enabling this option did not completely prevent the
-     consumption of passcodes when the attack involved concurrent login
-     sessions.  Since this option did not meet its intended design goal,
-     it was ultimately removed.
+NOTE: Early versions of OTPasswd included what was known as the
+'dont-skip' option.  This option prevented the skipping of a passcode
+that was used in a failed authentication attempt.  In essence, the
+dont-skip option slightly changed the semantics of what is meant by a
+"one-time password" from never allowing the reuse of a passcode, to
+allowing reuse of passcodes on authentication failures.  The intent
+of this modified semantic was to protect against passcode exhaustion
+as a consequence of a DoS attack.  However, due to limitations of the
+implementation, enabling this option did not completely prevent the
+consumption of passcodes when the attack involved concurrent login
+sessions.  Since this option did not meet its intended design goal,
+it was ultimately removed.
 
-III. Theoretical attack on cryptographic algorithms:
-     If an attacker is able to collect used passcards, it is conceivable
-     that a brute-force attack could be made on the cryptographic key
-     which was used to generate the passcodes.  If the key is discovered,
-     then future passcodes could be generated at will.  Given the cipher
-     currently being used in OTPasswd, this type of attack is not likely
-     to be successful, particularly if the optional cryptographic "salt"
-     is applied to the passcode counter.  However, if weaknesses are
-     discovered in the Rijndael cipher at some point, then it is possible
-     that such an attack may be more likely to succeed.  See 'Passcode
-     Generation Algorithm' (below) for details.
 
- IV. OTPasswd secures the process of authentication by addressing the
-     problem of classic static passwords -- the fact that they are /static/.
-     After you've successfully authenticated, however, someone might still
-     be able to takeover your session to do something nasty.  So while a
-     man-in-the-middle (MITM) attack on your SSH session to eavesdrop your
-     password for later authentication might not be feasible, a MITM can
-     still be used to hijack authenticated sessions.
+Cryptographic security
+----------------------
+If an attacker is able to collect used passcards, it is conceivable
+that a brute-force attack could be made on the cryptographic key which
+was used to generate the passcodes.  If the key is discovered, then
+future passcodes could be generated at will.  Brute-forcing a 256 bit
+long key is currently in unfeasible.
+
+However, if weaknesses are discovered in the Rijndael cipher at some
+point, then it is possible that such an attack may be more likely to
+succeed.  See 'Passcode Generation Algorithm' (below) for details.
+
+
+Man-in-the middle attacks
+-------------------------
+OTPasswd secures the process of authentication by addressing the
+problem of classic static passwords -- the fact that they are /static/.
+After you've successfully authenticated, however, someone might still
+be able to takeover your session to do something nasty.  So while a
+man-in-the-middle (MITM) attack on your SSH session to eavesdrop your
+password for later authentication might not be feasible, a MITM can
+still be used to hijack authenticated sessions.
 
 IMPORTANT.  In order to securely login to a system with SSH you still
 must have trusted SSH client software (from a pendrive, for example)
@@ -121,10 +132,8 @@ man-from-behind attacks when you're banged in the head after
 authenticating. 
 
 
-
 2. Passcode Generation Algorithm
 ================================
-
 The heart of the system is the Rijndael (AES) cipher working in CTR
 (Counter) mode. It encrypts 128-bit blocks with a 256-bit key; single
 encryption operation generates 128-bits of data which is used to
@@ -188,7 +197,6 @@ it would still take you... 1.22 * 10^54 yeeeaaarrrsss to check every key.
 By salting the counter, each key would now need to be checked against 2^96
 counter values instead of just one, so it would now take longer than 10^82
 years for an exhaustive search of the key-space.  Good luck!
-
 
 
 3. About PAM (short lecture)
