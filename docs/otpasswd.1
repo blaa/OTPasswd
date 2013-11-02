@@ -1,7 +1,7 @@
 .\"
 .\"   otpasswd(1) - One-Time Password Authentication System
 .\"
-.\"   Copyright (c) 2010 Tomasz bla Fortuna
+.\"   Copyright (c) 2010-2013 Tomasz bla Fortuna
 .\"
 .\"   This file is part of OTPasswd.
 .\"
@@ -19,18 +19,20 @@
 .\"   along with OTPasswd.  If not, see <http://www.gnu.org/licenses/>.
 .\"
 .\"   Author:  R Hannes Beinert & Tomasz bla Fortuna
-.\"   Version: otpasswd v0.7
-.\"   Update:  15-Sep-10
+.\"   Update:  02-Nov-13
 .\"
-.TH OTPASSWD 1 2010-09-15 "OTPasswd v0.7" "OTPasswd User Manual"
+.TH OTPASSWD 1 2013-11-02 "OTPasswd v0.8" "OTPasswd User Manual"
 .\"
+
 .SH NAME
 otpasswd \- One-time password management utility
 .\"
+
 .SH SYNOPSIS
 .B otpasswd
 [\fIoptions\fR]
 .\"
+
 .SH DESCRIPTION
 The \fIotpasswd\fR utility serves as the primary management tool
 for the \fBOTPasswd\fR one-time password authentication package
@@ -247,11 +249,13 @@ Brackets are optional.
 .RE
 .PD
 .\"
+
 .SH SECURITY NOTES
 This section needs to be completed (FIXME).
 Until this section is written, see the docs/security file which
 is distributed with the \fBOTPasswd\fR sources.
 .\"
+
 .SH EXIT STATUS
 \fBotpasswd\fR will return zero on success and non-zero on failure.
 This can be used for scripting
@@ -261,6 +265,7 @@ This can be used for scripting
 .\"   ERRORS             [Typically only in Sections 2, 3]
 .\"   ENVIRONMENT
 .\"
+
 .SH FILES
 .TP
 /etc/otpasswd
@@ -316,6 +321,7 @@ operation.  For more information, see \fBpam_otpasswd\fR(8).
 .\"
 .\"   VERSIONS           [Normally only in Sections 2, 3]
 .\"
+
 .SH COMPATIBILITY
 The \fBOTPasswd\fR authentication system is compatible with the
 "Perfect Paper Passwords" specification version 3 (PPPv3) as
@@ -337,6 +343,7 @@ of the PPP specification.
 .\"   NOTES
 .\"   BUGS
 .\"
+
 .SH EXAMPLES
 Every user must generate a key in order to use \fBOTPasswd\fR.
 Depending on the value of the \fBSALT_DEF\fR parameter in the
@@ -401,13 +408,11 @@ $ rm tmp.latex tmp.pdf
 .RE
 .\"
 .SH SEE ALSO
-\fBotpasswd\fR(7),
 \fBpam_otpasswd\fR(8),
-\fBotpasswd.conf\fR(5),
-\fBotshadow\fR(5),
 \fBotpasswd\fR(5)
 \fBagent_otp\fR(1)
 .\"
+
 .SH DOCUMENTATION
 The documentation for \fBotpasswd\fR is also maintained as a Texinfo manual.
 If the \fBinfo\fR and \fBotpasswd\fR programs are properly installed at your
@@ -439,6 +444,7 @@ NNTP newsreader at <news://news.grc.com/grc.thinktank>.
 .\"
 .\"  *AUTHORS
 .\"
+
 .SH HISTORY
 The creation of this program was inspired by the \fBppp\-pam\fR project
 (http://code.google.com/p/ppp\-pam).
@@ -448,6 +454,7 @@ however ultimately it was decided to do a complete rewrite.
 The two projects share some code, such as locking functions, but nothing more.
 It would be reasonable to think of \fBOTPasswd\fR as a fork of \fBppp\-pam\fR.
 .\"
+
 .SH LICENSE
 Copyright (c) 2009, 2010 Tomasz bla Fortuna
 .PP
@@ -464,6 +471,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program in a LICENSE file.
 .\"
+
 .SH AVAILABILITY
 The latest version of the \fBOTPasswd\fR package is available in source form
 at the project website

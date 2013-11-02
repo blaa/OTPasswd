@@ -1,6 +1,6 @@
 This package was debianized by Luke Faraone <luke@faraone.cc> on Fri,
-18 Dec 2009 20:46:18 -0500 - version 0.4. Completely new package
-created by Tomasz bla Fortuna on Sat 26 Oct 2013.
+18 Dec 2009 20:46:18 -0500 - version 0.4. Package completely redone by
+Tomasz bla Fortuna on Sat 26 Oct 2013.
 
 It was downloaded from <http://otpasswd.thera.be/>
 
@@ -39,7 +39,7 @@ License:
     version.  If you delete this exception statement from all source
     files in the program, then also delete it here.
 
-
+    IMPORTANT:
     It was always planned to relicense this software under BSD-like
     license one day. Most changes required for relicensing are already
     complete. To contribute to the project you have to agree to

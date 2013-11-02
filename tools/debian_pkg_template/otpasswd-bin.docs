@@ -1,2 +1,5 @@
 README
 docs/SECURITY
+examples/otpasswd.conf 
+examples/otpasswd-login 
+examples/otpasswd_oob.sh

@@ -1,20 +1,32 @@
 
               OTPasswd - One-Time Password Authentication System
               --------------------------------------------------
-                https://savannah.nongnu.org/projects/otpasswd
-                        Updated: 29-Dec-09 (v0.5pre1)
+                         http://otpasswd.thera.be
+                        Updated: 02-Nov-2013 (v0.8)
 
                                 SECURITY GUIDE
 
 
-
 Contents
 ========
+  0. Intro
   1. Security Concerns
   2. Passcode Generation Algorithm
   3. About PAM (short lecture)
 
 
+Intro
+-----
+Security is a difficult topic, especially once you give up the notion
+of ultimately `trusted' client while being unable to estimate your
+trust at all.  Use appropriate measures against threats based on their
+probability and risk factor. This file sumarises some topics the
+authors of OTPasswd had in mind while developing it.  Let it inspire
+you to do your own thinking.
+
+How often do you log into your systems from untrusted clients? I don't
+really trust my mobile in the first place, so... the answer for me is
+'often'. OTPasswd lets me reduce the risks a bit.
 
 1. Security Concerns
 ====================
@@ -29,7 +41,7 @@ There are certain security related issues you should be aware of.
      if the attacker manages to discover your UNIX password, for example
      through the use of a key logger or by sniffing the E-M radiation of
      your keyboard's PS/2 connection, the attacker would still need to
-     have access to your passcard.
+     have access to your passcard. 
 
  II. The second issue is that a Denial-of-Service (DoS) attack is possible in
      some configurations.  When an attacker repeatedly tries to authenticate
@@ -57,15 +69,16 @@ There are certain security related issues you should be aware of.
      3) By receiving passcodes on an as-needed basis via a secure channel
         which cannot be blocked by attacker, such as SMS text-messaging.
 
-        In some scenarios this scheme could also be susceptible to a DoS
-        attack.  For example, if a free SMS gateway is used which imposes
-        usage limits, an attacker who is aware of your phone number could
-        easily exhaust your daily quota of text messages.  While this type of
-        attack is technically possible, it's also quite unlikely.  However,
-        it does serve to highlight the fact that every countermeasure has
-        vulnerabilities.  As far as this particular attack is concerned,
-        SMS transmissions could simply be sent using a different method,
-        such as making use of a GSM phone/modem connected to the computer.
+        In some scenarios this scheme could also be susceptible to a
+        DoS attack.  For example, if a free SMS gateway is used which
+        imposes usage limits, an attacker who is aware of your phone
+        number could easily exhaust your daily quota of text messages.
+        While this type of attack is technically possible, it's also
+        quite unlikely.  However, it does serve to highlight the fact
+        that every countermeasure has vulnerabilities.  As far as this
+        particular attack is concerned, SMS transmissions could simply
+        be sent using a different method, such as making use of a GSM
+        phone/modem connected to the computer.
 
 
      NOTE: Early versions of OTPasswd included what was known as the
@@ -81,7 +94,8 @@ There are certain security related issues you should be aware of.
      sessions.  Since this option did not meet its intended design goal,
      it was ultimately removed.
 
-III. If an attacker is able to collect used passcards, it is conceivable
+III. Theoretical attack on cryptographic algorithms:
+     If an attacker is able to collect used passcards, it is conceivable
      that a brute-force attack could be made on the cryptographic key
      which was used to generate the passcodes.  If the key is discovered,
      then future passcodes could be generated at will.  Given the cipher
@@ -103,7 +117,8 @@ III. If an attacker is able to collect used passcards, it is conceivable
 IMPORTANT.  In order to securely login to a system with SSH you still
 must have trusted SSH client software (from a pendrive, for example)
 and you must validate the SSH server key fingerprint.  Also, beware of
-man-from-behind attacks when you're banged in the head after authenticating.
+man-from-behind attacks when you're banged in the head after
+authenticating. 
 
 
 
@@ -227,9 +242,28 @@ and finally:
 
    pam_unix     - checks password according to /etc/shadow
 
-This is an overview of the default PAM authentication schema (for Gentoo).
-Somewhere in this process we will need to add our OTP authentication.
+This is an overview of the default PAM authentication schema (for
+Gentoo).  Somewhere in this process we will need to add our OTP
+authentication.  There exists also alternative way of PAM module
+configuration using [] notation instead of required/requisite
+options. For more information about Linux-PAM, you may consult the
+PAM(7) man page on your system, or read the PAM System Administrator's
+Guide, which can be found at:
 
+   http://www.kernel.org/pub/linux/libs/pam/Linux-PAM-html/Linux-PAM_SAG.html
+
+
+PAM Profiles
+------------
+Newer systems allows for PAM profile configuration. System keeps
+profiles in (e.g.) /usr/share/pam-configs and a certain tool
+(pam-auth-update) allows one to enable or disable selected
+profile. OTPasswd has a profile included in `examples' directory and
+it's the recommended way of configuring OTPasswd.
+
+
+Manual PAM configuration:
+------------------------
 The easiest approach is just to modify the first file: /etc/pam.d/sshd.
 At the end of all the 'auth' entries, we can just add our pam_otpasswd
 module.  The file would then look like this:
@@ -295,10 +329,5 @@ by modifying auth line:
    password   include        system-remote-login
    session    include        system-remote-login
 
-For more information about Linux-PAM, you may consult the PAM(7) man page
-on your system, or read the PAM System Administrator's Guide, which can
-be found at:
-
-   http://www.kernel.org/pub/linux/libs/pam/Linux-PAM-html/Linux-PAM_SAG.html
 
                                      ###

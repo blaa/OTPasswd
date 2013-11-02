@@ -2,7 +2,7 @@ Source: otpasswd
 Section: admin
 Priority: optional
 Maintainer: Tomasz bla Fortuna <bla@thera.be>
-Build-Depends: cdbs, debhelper (>= 9), cmake, libpam0g-dev
+Build-Depends: cdbs, debhelper (>= 8), cmake, libpam0g-dev
 Standards-Version: 3.9.4
 Homepage: http://otpasswd.thera.be
 

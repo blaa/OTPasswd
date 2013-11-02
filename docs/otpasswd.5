@@ -1,7 +1,7 @@
 .\"
 .\"   otpasswd(5) - One-Time Password Authentication System
 .\"
-.\"   Copyright (c) 2010 Tomasz bla Fortuna
+.\"   Copyright (c) 2010-2013 Tomasz bla Fortuna
 .\"
 .\"   This file is part of OTPasswd.
 .\"
@@ -19,10 +19,9 @@
 .\"   along with OTPasswd.  If not, see <http://www.gnu.org/licenses/>.
 .\"
 .\"   Author:  R Hannes Beinert & Tomasz bla Fortuna
-.\"   Version: otpasswd v0.7
-.\"   Update:  15-Sep-10
+.\"   Update:  02-Nov-13
 .\"
-.TH OTPASSWD 1 2010-09-15 "OTPasswd v0.7" "OTPasswd User Manual"
+.TH OTPASSWD 5 2013-11-02 "OTPasswd v0.8" "OTPasswd User Manual"
 .\"
 .SH NAME
 ~/.otpasswd - OTPasswd user state information file
@@ -31,19 +30,18 @@
 .\"  CONFIGURATION      [Normally only in Section 4]
 .\"
 .SH DESCRIPTION
-This file is used to store the user state information in the user's $HOME
-directory for the \fBOTPasswd\fR one-time password authentication system.
-It is \fIonly\fR used when the \fIDB=user\fR parameter setting has been
-specified in the \fBotpasswd.conf\fR(5) system configuration file.
+This file is used to store the user state information in the user's
+$HOME directory and in the /etc/otpasswd/otshadow global file for the
+\fBOTPasswd\fR one-time password authentication system.
+The only difference is that the system-wide database contains
+records for all users with \fBOTPasswd\fR state information.
+
 .PP
 The \fB~/.otpasswd\fR file contains all state information required for the
 \fBOTPasswd\fR system to properly authenticate a user.
 .PP
-Note that the system-wide user state information database \fBotshadow\fR(5)
-is formatted in exactly the same manner as the \fB~/.otpasswd\fR file
-described here, with the exception that the system-wide database contains
-records for all users with \fBOTPasswd\fR state information.
 .\"
+
 .SH FORMAT
 \fBOTPasswd\fR user state information is formatted as a single line of
 plain text with 14 fields delimited by colons (':').
@@ -85,6 +83,7 @@ Channel Contact Information
 .RE
 .PD
 .\"
+
 .SH FIELD DEFINITIONS
 .TP
 \fBLogin name\fR
@@ -254,6 +253,7 @@ types of information to be present.
 .\"
 .\"  OPTIONS            [Normally only in Sections 1, 8]
 .\"
+
 .SH SECURITY NOTES
 When the \fBOTPasswd\fR system operates by keeping user state information
 in the user's $HOME directory, it presents a fundamental security problem.
@@ -308,26 +308,23 @@ The implicit security policy by operating in this manner is that
 .\" *COMPATIBILITY
 .\"  CONFORMING TO
 .\"
-.SH NOTES
-See \fBotpasswd\fR(7) for further information about the
-\fBOTPasswd\fR one-time password authentication system.
 .\"
 .\"  BUGS
 .\"  EXAMPLE(S)
 .\"
+
 .SH SEE ALSO
-\fBotpasswd\fR(7),
 \fBotpasswd\fR(1),
+\fBagent_otp\fR(1),
 \fBpam_otpasswd\fR(8),
-\fBotpasswd.conf\fR(5),
-\fBotshadow\fR(5),
 .\"
 .\" *DOCUMENTATION
 .\" *AUTHORS
 .\" *HISTORY
 .\"
+
 .SH LICENSE
-Copyright (c) 2009, 2010 Tomasz bla Fortuna
+Copyright (c) 2009-2013 Tomasz bla Fortuna
 .PP
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -342,6 +339,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program in a LICENSE file.
 .\"
+
 .SH AVAILABILITY
 The latest version of the \fBOTPasswd\fR package is available in source form
 at the project website

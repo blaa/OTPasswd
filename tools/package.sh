@@ -47,10 +47,14 @@ test_build () {
 
 check_versions () {
     echo
+    echo "* DATES:"
+    egrep '20[01][0-9]|[0-9]{2}-[A-Za-z]{3}-[0-9]{2}' $(find . -type f -regex '.*\.[hc158]')
+    echo
     echo '* CHECK VERSIONS'
     echo "Cmakelists versions:"
     grep OR_VERSION CMakeLists.txt
     grep PROG_VERSION $(find . -type f -regex '.*\.[ch]') | grep -i define
+    egrep 'v[0-9]+\.[0-9]+' docs/*.1 docs/*.5 docs/*.8 examples/*conf | grep -v PPPv3.1
 
     echo
     echo "If they are ok - hit enter to continue"
