@@ -6,11 +6,11 @@ msgstr ""
 "PO-Revision-Date: \n"
 "Last-Translator: Tomasz bla Fortuna <bla@thera.be>\n"
 "Language-Team: \n"
+"Language: Polish\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: Poedit 1.5.4\n"
-"Language: Polish\n"
 "X-Poedit-SourceCharset: UTF-8\n"
 
 #: src/utility/actions.c:495
@@ -1745,9 +1745,6 @@ msgstr "pokaż=tak "
 msgid "yes"
 msgstr "tak"
 
-#~ msgid "ppp_init OK\n"
-#~ msgstr "ppp_init OK\n"
-
 #~ msgid "*** Running testcases\n"
 #~ msgstr "*** Włączam testy\n"
 
@@ -1785,3 +1782,6 @@ msgstr "tak"
 #~ msgid "Your state was eaten by Grue, nothing to remove.\n"
 #~ msgstr ""
 #~ "Twój stan został zjedzony przez Grue, nie pozostało nic co mogę usunąć.\n"
+
+#~ msgid "ppp_init OK\n"
+#~ msgstr "ppp_init OK\n"
